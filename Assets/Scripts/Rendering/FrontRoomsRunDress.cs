@@ -59,6 +59,7 @@ public static class FrontRoomsRunDress
             Kit(it.kit, outside ? parent : root, it.point, Quaternion.LookRotation(it.normal, Vector3.up), false, "run b " + it.kit);
         }
         SideDoors(root, l);
+        CompartmentFrames(root, l);
         for (var i = 0; i < l.obstacles.Length; i++)
         {
             var o = l.obstacles[i];
@@ -244,10 +245,14 @@ public static class FrontRoomsRunDress
                 Slab(root, "run b upper tone header", new Vector3(c.x, (l.height + bottom) * .5f, c.z), new Vector3(b - a, l.height - bottom, t), rot, upper, false, false);
             }
             // An end-face opening without a door (the arch; the goal door's DA frame sleeves its own reveal): its reveal.
-            if (shortFace && !IsGoalFace(l, f))
+            // Card 4: a Run door entrance (RunRigLayout.entranceDoor) is sleeved by its own DA frame too.
+            if (shortFace && !IsGoalFace(l, f) && !(l.entranceDoor && IsEntranceFace(l, f)))
                 for (var g = 0; g < openings.Length; g++) Reveal(root, l, f, openings[g], tops[g]);
         }
     }
+
+    /// <summary>Card 4: the end face the entrance stands in (its plane within half a wall of the entrance line, z 0).</summary>
+    static bool IsEntranceFace(RunRigLayout l, RunWallFace f) => Mathf.Abs(Vector3.Dot(-f.start, f.normal)) <= l.WallHalf + .01f;
 
     /// <summary>The end face the goal door stands in (its plane within half a wall of the goal point).</summary>
     static bool IsGoalFace(RunRigLayout l, RunWallFace f) =>
@@ -613,6 +618,48 @@ public static class FrontRoomsRunDress
             var plate = d.face == "staff" ? "Kit_SafetyPlate_Staff" : d.face == "electrical" ? "Kit_SafetyPlate_Electrical" : "Kit_StencilNotExit";
             var centreZ = leafInfo != null ? (leafInfo.Min.z + leafInfo.Max.z) * .5f : .5f;
             Kit(plate, lt, new Vector3(leafFace + .0005f, SideDoorPlateY, centreZ), FaceS, false, "run b side door " + d.face);
+        }
+    }
+
+    /// <summary>The compartment frame's kit and its opening's half width (Kit_RunCompartmentFrame: a 2.0 x 2.1 m pair frame).</summary>
+    public const string FrameKit = "Kit_RunCompartmentFrame", FrameHolderKit = "Kit_RunMagnetHolder";
+    const float FrameHingeX = .988f, FrameHingeZ = .095f, FrameLeafOpen = 115f, FrameHolderY = 1.95f, FrameHolderZ = .86f;
+
+    /// <summary>
+    /// The compartment frames (71 s.10 SP7: FD1 on z 9, the receding variant's trigger plane, and FD2 on z 18; 10 RN-2; card 2):
+    /// Kit_RunCompartmentFrame on each line, its two leaves (the side doors' Kit_DoorLeaf_SteelRun_DA in almond with a dead lite and no
+    /// trim) hinged on the jambs' goal side and swung 115 deg toward the goal until their edges meet the side walls, each held there by a
+    /// Kit_RunMagnetHolder at 1.95 m (held open on magnets; 叙事设计 P1, 11-04: the frames behind the runner stay open at the trip).
+    /// None unless the layout asks (rule 5b: never in today's game). Render-only.
+    /// </summary>
+    static void CompartmentFrames(Transform root, RunRigLayout l)
+    {
+        if (l.compartmentFrames == null || l.compartmentFrames.Length == 0) return;
+        var almond = Mat("Prop_SteelAlmond");
+        var satin = FrontRoomsSurfaces.TryGet(FrontRoomsInteractableKit.HardwareChromeTo);
+        var stainless = FrontRoomsSurfaces.TryGet(FrontRoomsInteractableKit.LeafPlateTo) ?? satin;
+        var leafInfo = FrontRoomsKitLibrary.GetInfo(SideDoorLeafKit);
+        for (var i = 0; i < l.compartmentFrames.Length; i++)
+        {
+            var z = l.compartmentFrames[i];
+            Kit(FrameKit, root, new Vector3(0f, 0f, z), Quaternion.identity, false, "run b compartment frame");
+            for (var s = -1; s <= 1; s += 2)
+            {
+                // Closed, a leaf runs from its hinge toward the axis (the kit's +Z from the hinge to the latch); open, it has turned
+                // FrameLeafOpen about the hinge toward the goal: Euler(0, s x (115 - 90)).
+                var hinge = new Vector3(s * FrameHingeX, 0f, z + FrameHingeZ);
+                var leaf = Kit(SideDoorLeafKit, root, hinge, Quaternion.Euler(0f, s * (FrameLeafOpen - 90f), 0f), false, "run b compartment leaf");
+                if (leaf != null)
+                {
+                    foreach (var r in leaf.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
+                    Swap(leaf, "Door_Enamel", almond);
+                    Swap(leaf, FrontRoomsInteractableKit.HardwareChromeFrom, satin);
+                    Swap(leaf, FrontRoomsInteractableKit.LeafPlateFrom, stainless);
+                    if (leafInfo != null && leafInfo.HasLite) FrontRoomsDoorLite.AttachDead(leaf, leaf.transform, leafInfo.LiteRect);
+                }
+                Kit(FrameHolderKit, root, new Vector3(s * l.halfWidth, FrameHolderY, z + FrameHolderZ),
+                    Quaternion.LookRotation(s > 0 ? Vector3.left : Vector3.right, Vector3.up), false, "run b compartment magnet");
+            }
         }
     }
 

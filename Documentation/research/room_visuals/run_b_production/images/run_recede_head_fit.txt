@@ -1,0 +1,60 @@
+/Users/redwang/FrontRoomsVisualWork/run_rethink/out/run_recede_head.jpg 2560x4474 u=1.333 tile=850
+film 0.00 s | armed, armed, end 27 m | label 132 of 824 px, data 242 of 676 px OK
+film 2.50 s | armed, armed, end 27 m | label 132 of 824 px, data 242 of 676 px OK
+film 3.33 s | tripping, the magnets let go, end 27 m | label 132 of 824 px, data 418 of 676 px OK
+film 3.73 s | tripping, the end rolls back, end 27.545 m | label 132 of 824 px, data 462 of 676 px OK
+film 4.67 s | tripped, seat, end 33 m | label 132 of 824 px, data 253 of 676 px OK
+film 5.50 s | tripped, the end rolls back, end 33.364 m | label 132 of 824 px, data 451 of 676 px OK
+film 6.67 s | tripped, seated at 36 m, end 36 m | label 132 of 824 px, data 363 of 676 px OK
+film 9.67 s | tripped, seated at 36 m, end 36 m | label 132 of 824 px, data 363 of 676 px OK
+TODAY arch | armed, eye 1.62 at the arch, 9 cells | label 124 of 824 px, data 396 of 684 px OK
+HEAD arch | armed, 9 to 12 cells, end at 27 m | label 113 of 824 px, data 363 of 695 px OK
+HEAD arch phone | handheld tier, same camera | label 186 of 824 px, data 286 of 622 px OK
+TODAY soffit corner | armed, 1 m in, up the right corner | label 226 of 824 px, data 374 of 582 px OK
+HEAD the tell | the track runs in both soffit corners | label 154 of 824 px, data 407 of 654 px OK
+HEAD lite 0.35 m | before the trip: C42 lights the length | label 191 of 824 px, data 418 of 617 px OK
+TODAY 9 m | tripped since 1.5 m, +2 s | label 112 of 824 px, data 275 of 696 px OK
+HEAD 9 m flinch | trip at FD1 +0.9 s, end at 30.5 m | label 179 of 824 px, data 363 of 629 px OK
+HEAD 9 m seated | +4 s, seated at 36 m, strips red | label 184 of 824 px, data 352 of 624 px OK
+TODAY seat | 6 m before the door, tripped | label 120 of 824 px, data 308 of 688 px OK
+HEAD seat | 6 m before the seated door, bands, slots | label 109 of 824 px, data 440 of 699 px OK
+HEAD seat phone | handheld tier, same camera | label 182 of 824 px, data 286 of 626 px OK
+TODAY door 0.35 m | RN-F lever set, armed after the reset | label 214 of 824 px, data 407 of 594 px OK
+HEAD door 0.35 m | the same RN-F on the end, armed | label 203 of 824 px, data 341 of 605 px OK
+HEAD lite seated | onto the release stand-in | label 185 of 824 px, data 275 of 623 px OK
+TODAY corner 1.95 m | hero fill, 0.35 m | label 239 of 824 px, data 187 of 569 px OK
+HEAD magnet | holder on the wall, armature on the end | label 138 of 824 px, data 429 of 670 px OK
+HEAD trolley | track, hanger, brushes, hero fill | label 147 of 824 px, data 363 of 661 px OK
+TODAY base corner | hero fill, 0.35 m | label 208 of 824 px, data 187 of 600 px OK
+HEAD sweep seated | pressed on the wall and floor, slot | label 211 of 824 px, data 385 of 597 px OK
+HEAD sweep moving | swung back 40 deg, shown at rest | label 210 of 824 px, data 352 of 598 px OK
+COST end wall       3796 / 1876 / 360 | 384 of 812 px OK
+COST running gear   5744 / 1420 / 284 | 384 of 812 px OK
+COST sweeps x 2     768 / 224 / 96 | 348 of 812 px OK
+COST track 3 m      532 / 84 / 12 | 336 of 812 px OK
+COST track stop     268 / 116 / 12 | 348 of 812 px OK
+COST floor slot 3 m 340 / 36 / 12 | 336 of 812 px OK
+COST magnet holder  896 / 176 / 24 | 348 of 812 px OK
+COST FD frame       2292 / 564 / 96 | 360 of 812 px OK
+COST meshes 3.40 MiB, textures 0 (corridor sets) | 516 of 812 px OK
+COST   7 ghost twins of the corridor finishes | 480 of 812 px OK
+COST moving end  36 rend  66 draws  32788 tris | 492 of 812 px OK
+COST   incl. the RN-F door kits as today | 420 of 812 px OK
+COST carried unit 15 rend  40 draws  10128 tris | 504 of 812 px OK
+COST 9-cell room  1017 rend  1480 draws | 408 of 812 px OK
+COST 12-cell recede room 1464 rend  2083 draws | 492 of 812 px OK
+COST   room tris 335529 vs 415235 (LOD0, all) | 480 of 812 px OK
+COST lights at the end: 10 on, 10 shadowed | 444 of 812 px OK
+COST   hidden cells: renderers and strips off | 480 of 812 px OK
+COST seats T2: R9 1.55 / 3.35 s | 312 of 812 px OK
+COST   R15 1.55 / 2.90 / 4.25 / 6.05 s | 396 of 812 px OK
+COST keep-away glide 6.0 m/s peak | 336 of 812 px OK
+COST rig + recede tick 0.19 ms mean | 360 of 812 px OK
+COST light gate rewrite 1.21 ms, once a step | 468 of 812 px OK
+COST GPU frame time: not measured | 336 of 812 px OK
+COST tests 22 pass, 0 fail (R1-R20, W1, W2) | 456 of 812 px OK
+COST nothing landed; rule 5b: inert today | 432 of 812 px OK
+COST kits | hand-built LODs | label 104 of 824 px, data 165 of 704 px OK
+COST scene | counted in Unity | label 122 of 824 px, data 176 of 686 px OK
+COST time | schedule and CPU | label 105 of 824 px, data 176 of 703 px OK
+ALL LABELS FIT

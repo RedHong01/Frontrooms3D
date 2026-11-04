@@ -44,10 +44,13 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
         // Door break debris (Kit_DoorLeafBreak_*_Deb<k>, production P1): readable, because the break merges the settled
         // pieces into one floor mesh per door at run time (research/door_break/50_rethink.md 3.9). BS7: the station kits with
         // a dated paper cell (FrontRoomsStationPaper.DatedKits: the DAR and sign-out clipboards, the register) are readable
-        // too, because the live date's patch is laid through their UVs at run time. Every other kit stays GPU-only.
+        // too, because the live date's patch is laid through their UVs at run time. The Run! T2 re-stack's pieces
+        // (Kit_RunRestack_*, 71_run_room.md s.5.3) are readable because the receding end merges them, once a session, into the
+        // one skinned body that flies them (FrontRoomsRunRestack). Every other kit stays GPU-only.
         var stem = Path.GetFileNameWithoutExtension(assetPath);
         importer.isReadable = (stem.StartsWith("Kit_DoorLeafBreak_", System.StringComparison.Ordinal) && stem.Contains("_Deb"))
-            || FrontRoomsStationPaper.IsDatedKit(stem);
+            || FrontRoomsStationPaper.IsDatedKit(stem)
+            || stem.StartsWith(FrontRoomsRunRestack.KitPrefix, System.StringComparison.Ordinal);
         importer.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
 
         var sidecar = Path.ChangeExtension(assetPath, ".json");

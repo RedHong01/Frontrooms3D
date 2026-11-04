@@ -80,6 +80,7 @@ public sealed partial class FrontRoomsStructuresLevel0
         p.Run(50, 3, 'W', .6f, 1.8f); p.Run(50, 5, 'W', .9f, 2.1f);
         p.Run(51, 2, 'W', 1.2f, 2.4f); p.Run(51, 4, 'W', .6f, 1.8f);
         p.Run(52, 3, 'W', .3f, 1.5f); p.Run(52, 5, 'W', 1.2f, 2.4f);
+        p.Dark(9, 8, 14, 9);   // the bowl's far rows: hung by hand as view lamps in BuildBowl (review SP3-F5)
         p.Build(kit);
 
         kit.Safe("(f) training room", BuildTraining);
@@ -112,6 +113,11 @@ public sealed partial class FrontRoomsStructuresLevel0
     {
         // 2 m back on the far rim, facing the near rim: from the near rim the pit's lid cuts the view at about 1.75 m.
         kit.Relay(new Vector3(84f, 0f, 29f), new Vector3(84f, 0f, 7f));
+        // The far terrace and rim (rows 8-9, 18-24 m from the near rim's stop) as view lamps, so the stand-in Red judges
+        // stands against a lit wall, not past the light budget's fade (review SP3-F5).
+        for (var i = 9; i <= 14; i++)
+            for (var j = 8; j <= 9; j++)
+                kit.Troffer(new Vector3(BX(i) + 1.5f, j == 8 ? 2.3f : 2.9f, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
     }
 
     // ---------------------------------------------------------------- (h) F7: bridges, the grid over the lanes, the patch below
@@ -218,12 +224,17 @@ public sealed partial class FrontRoomsStructuresLevel0
         kit.Slab(171.6f, 9.0f, 172.5f, 10.5f, g, carpet, .2f);
         kit.Guard(new Vector3(171.68f, 0f, 9.0f), new Vector3(171.68f, 0f, 10.45f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
         kit.Guard(new Vector3(171.6f, 0f, 9.08f), new Vector3(172.42f, 0f, 9.08f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
+        // The gap between the stair's outer screen and the gallery's guard (z 9.85..10.5, a 2.7 m drop; walk test 11-04 BUG 3).
+        kit.Guard(new Vector3(172.75f, 0f, 9.85f), new Vector3(172.75f, 0f, 10.55f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
         kit.RelayBlocker("B4-S foot", new Vector3(171.6f, 0f, 9.0f), new Vector3(172.6f, 2.4f, 10.5f));
         kit.RelayBlocker("B4-S top", new Vector3(171.6f, g, 9.0f), new Vector3(172.5f, g + 2.4f, 10.5f));
         // B2: along the gallery's south edge, rising east from x 176.1 to 181.2, a landing to the east wall.
         kit.Shell(5.4f, 0f);
         kit.Flight(new Vector3(176.1f, 0f, 9.9f), Vector3.right, 1.2f, 18, .15f, .3f, carpet, null, true);
         kit.Box(181.2f, 0f, 9.3f, 182.92f, g, 10.5f, carpet);
+        // The B2 is drawn solid but collides as its ramp only: close the space under its top (x 179.9..181.2), which the 1.75 m
+        // capsule could walk through (walk test 11-04 BUG 2). Collision only; the top stays under the ramp's soffit.
+        kit.Mesh.Collider(new Vector3(180.55f, .85f, 9.9f), new Vector3(1.3f, 1.7f, 1.2f));
         SlopedRail(new Vector3(176.1f, .15f, 9.26f), new Vector3(181.2f, g, 9.26f));
         kit.Guard(new Vector3(181.2f, 0f, 9.26f), new Vector3(182.92f, 0f, 9.26f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
         // Glass guards on the gallery's open south edge, but where the two landings join it.

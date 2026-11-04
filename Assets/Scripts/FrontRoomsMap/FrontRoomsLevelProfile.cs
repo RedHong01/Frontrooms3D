@@ -47,12 +47,25 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     public FrontRoomsRoomModule stationModule;
 
     [Header("Run! rooms (L7; R2, off in the PT4 snapshot)")]
-    [Tooltip("Master switch, off by default. On: alarm corridors (1 x 9 cells, 27 m) are planned in Standard zones first met at tier 2 or later and after the run's first send (never the arrival zone), with the Run finish, the rig's lamps, the alarm (RoomTriggered / RoomReset) and the goal door (RN-F, F5, never locked). Off: today's map, byte for byte.")]
+    [Tooltip("Master switch, off by default. On: alarm corridors are planned in Standard zones first met at tier 2 or later and after the run's first send (never the arrival zone), at most one a floor from the run's deck, 7 cells for the run's first, then 9, 12 from tier 4, 14 at tier 5 where it fits (71 s.9 cards 1-3), with the Run finish, the rig's lamps, the alarm (RoomTriggered / RoomReset), the goal door (RN-F, F5, never locked) and no other trigger in the host zone or beyond the goal door. Off: today's map, byte for byte.")]
     public bool runRooms = false;
     [Tooltip("Red's call 2 (CR-6a): on, the goal door is a forced Door edge (the C22 way) into the room's own zone or a Low zone; off (CR-6b), a Run! room may only end on a Standard-to-Low border. Read only with Run! rooms on.")]
     public bool runGoalDoorForced = true;
     [Tooltip("Red's call 5: on, Run! rooms may open off Office zones too (the same B look); off, Level 0 zones only. Read only with Run! rooms on.")]
     public bool runInOffice = true;
+    [Tooltip("71 s.9 card 5 (Red 11-03, decision 8c): the deck's Run door entrance (RN-F with the F5 lite on the entrance edge, the room arming 2.5 m in), from T3 after one plain Run! has been met. Off (rule 5b: until Red has walked SP7 in scene 4 and said so): that card plays as the tier's plain room (9 at tier 3, 12 at tier 4, 14 at tier 5). Read only with Run! rooms on.")]
+    public bool runDoorEntrance = false;
+    // 71 s.9 card 4 (Red 11-03, decision 4): the deck's receding end (9 -> 12 from T4 on B2 or deeper, 9 -> 14 at T5 on B3 or
+    // deeper), arming at the 9 m frame. Never serialized, so no asset and no Inspector can turn it on: the map shuts the hidden
+    // length for the Relay's graph only (FrontRoomsRunRooms.HeldShut), and the walk side (the hidden cells' colliders and walk
+    // volume per seat, the blind panel in the L_max frame, the goal door on the head's DoorMount) waits for the visual line's
+    // recede rig in main (W/apply/run_recede_head); then rule 5b (Red walks SP7 first). Off, that card plays as the tier's plain
+    // room. Tools set FrontRoomsRunRules.recede (or RunCardForTools) themselves. A serialized switch again once the walk side is in.
+    [System.NonSerialized] public bool runRecede = false;
+    // 71 s.9 card 6 (Red 11-03, decision 2): the deck's Run! ramp (1:8, at most 24 m and 3.0 m down). Never serialized: the map
+    // holds no per-cell floor levels and Apply builds no slope (research/level_space/40 s.11.7), so a ramp room would be flat.
+    // Off, that card plays as the tier's plain room. A serialized switch again with the per-cell levels.
+    [System.NonSerialized] public bool runRamps = false;
     [Header("Floor stations (BS1)")]
     [Tooltip("Station · Waiting, the found room of a floor below the first when it stands in a Level 0 zone (FrontRoomsFloorStation). Never a random pick. With this and Station Desk both empty every floor plays as it does today.")]
     public FrontRoomsRoomModule stationWaiting;
@@ -143,7 +156,13 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
         t.Normalize();
         var budget = new float[t.v2.Length];
         for (var i = 0; i < budget.Length; i++) budget[i] = t.v2[i].zonesPerDevice;
-        return new FrontRoomsRunRules { goalDoorForced = runGoalDoorForced, office = runInOffice, zonesPerDevice = budget };
+        return new FrontRoomsRunRules
+        {
+            goalDoorForced = runGoalDoorForced, office = runInOffice, zonesPerDevice = budget,
+            // The Run! rethink (71 s.9): lengths by depth and one Run! a floor from the deck (deck, calm: the rules' defaults);
+            // its twists each behind their own switch, off.
+            doorEntrance = runDoorEntrance, recede = runRecede, ramps = runRamps,
+        };
     }
 
     /// <summary>

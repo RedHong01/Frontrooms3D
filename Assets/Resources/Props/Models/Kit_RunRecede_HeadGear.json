@@ -1,0 +1,54 @@
+{
+ "name": "Kit_RunRecede_HeadGear",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_recede",
+  "receding_end"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  10.0,
+  28.0,
+  0.0
+ ],
+ "lodBudget": [
+  6000,
+  1500,
+  300
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "runRecede": "card 2 head first, 2026-11-04 (71_run_room.md s.5.1); inert until rule 5b",
+ "boundsMin": [
+  -1.287000060081482,
+  -0.03200000151991844,
+  -0.07000000029802322
+ ],
+ "boundsMax": [
+  1.287000060081482,
+  2.901684522628784,
+  0.6076623201370239
+ ],
+ "triangles": 5744,
+ "slots": [
+  "RunB_GalvSteel",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 1420,
+ "trianglesLod2": 284,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.26883115991950035
+ ],
+ "footprintSize": [
+  2.574000120162964,
+  0.6776623204350471
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.952
+}

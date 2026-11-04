@@ -53,6 +53,7 @@ public static class FrontRoomsRenderSetup
             QualitySettings.renderPipeline = pipeline;
         }
         QualitySettings.SetQualityLevel(activeLevel, false);
+        FrontRoomsHandheldPipeline.Sync(pipeline); // HANDHELD HOOK: the handheld URP pair follows this one (settings line).
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("[FrontRoomsRender] URP pipeline, post profile and " + SurfaceDefs.Length + " surface materials are up to date.");
@@ -137,7 +138,7 @@ public static class FrontRoomsRenderSetup
         Set(fso, "m_Settings.DirectLightingStrength", .35f);
         Set(fso, "m_Settings.Radius", .45f);
         Set(fso, "m_Settings.Falloff", 40f);
-        Set(fso, "m_Settings.Samples", 0);       // high
+        Set(fso, "m_Settings.Samples", 1);       // medium: 8 samples look the same as 12 (tech_art 20_ranked_changes 3.3)
         Set(fso, "m_Settings.BlurQuality", 0);   // high
         fso.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(feature);

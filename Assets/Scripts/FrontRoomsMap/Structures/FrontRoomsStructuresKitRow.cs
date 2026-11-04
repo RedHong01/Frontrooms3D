@@ -41,13 +41,13 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
             var a = new FrontRoomsStructuresKit.Plate(0f, 0f, 0f, Width, Rows)
             {
                 WallMat = paper, FloorMat = carpet, FloorThick = .05f, CeilingMat = tiles, LedgeMat = paper, TreadMat = carpet,
-                Troffers = true, LampScale = 1.6f, LampRange = 14f, ViewLamps = true,
-                VoidGuard = FrontRoomsStructuresKit.GuardStyle.HalfWall, LedgeGuard = FrontRoomsStructuresKit.GuardStyle.HalfWall,
+                Troffers = true, LampScale = 1.6f, LampRange = 12f, ViewLamps = true, RunCheeks = true,
+                VoidGuard = FrontRoomsStructuresKit.GuardStyle.Rail, LedgeGuard = FrontRoomsStructuresKit.GuardStyle.HalfWall,
                 GuardWall = paper, GuardCap = oak, SectionMat = concrete, SectionDepth = 1.0f,
             };
             Ladder(a);
             a.Build(kit);
-            Below(0f, 3.9f, paper, carpet, concrete);
+            Below(0f, 3.9f, a.SectionDepth, paper, carpet, tiles);
             Units(0f, carpet);
         });
         kit.Safe("tile hall", () =>
@@ -55,21 +55,26 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
             var b = new FrontRoomsStructuresKit.Plate(0f, Hall2Z, 0f, Width, Rows)
             {
                 WallMat = tile, FloorMat = tile, FloorThick = .2f, CeilingMat = tile, LedgeMat = tile, TreadMat = tile, NosingMat = nosing,
-                Troffers = false,
-                VoidGuard = FrontRoomsStructuresKit.GuardStyle.TileWall, LedgeGuard = FrontRoomsStructuresKit.GuardStyle.TileWall,
+                Troffers = false, RunCheeks = true,
+                VoidGuard = FrontRoomsStructuresKit.GuardStyle.Glass, LedgeGuard = FrontRoomsStructuresKit.GuardStyle.TileWall,
                 GuardWall = tile, GuardCap = tile, SectionMat = concrete, SectionDepth = 1.2f,
             };
             Ladder(b);
             b.Build(kit);
-            Below(Hall2Z, FrontRoomsStructuresKit.PoolStorey, tile, tile, concrete);
-            // Pool hall light (70 section 2): metal-halide wall boxes throwing up on both long walls every 6 m, a down-fill grid.
+            Below(Hall2Z, FrontRoomsStructuresKit.PoolStorey, b.SectionDepth, tile, tile, tile);
+            // Pool hall light (70 section 2): metal-halide wall boxes throwing up on both long walls every 6 m, about 3.4 m up
+            // (70 section 2), a down-fill grid; view lamps, so the hall's far half is lit from the arrival (review KIT-F6).
             for (var x = 3f; x < Width * 3f; x += 6f)
             {
-                kit.WallBox(new Vector3(x, 3.4f, Hall2Z + .08f), Vector3.forward, 6f, 10f, false);
-                kit.WallBox(new Vector3(x + 3f, 4.2f, Hall2Z + 9f - .08f), Vector3.back, 6f, 10f, false);
+                kit.WallBox(new Vector3(x, 3.4f, Hall2Z + .08f), Vector3.forward, 6f, 10f, true);
+                kit.WallBox(new Vector3(x + 3f, 3.4f, Hall2Z + 9f - .08f), Vector3.back, 6f, 10f, true);
             }
-            for (var x = 6f; x < Width * 3f; x += 9f) kit.DownFill(new Vector3(x, Tall - .07f, Hall2Z + 3.5f), 2.2f, 11f, false);
+            for (var x = 6f; x < Width * 3f; x += 9f) kit.DownFill(new Vector3(x, Tall - .07f, Hall2Z + 3.5f), 2.2f, 11f, true);
             Units(Hall2Z, tile);
+            // The tile hall's own box probe, as SP1's and SP2's halls (the Pool preset expects one; review KIT-F15); its
+            // lamps are view lamps, so they are on when it renders.
+            try { host.Look.Probe(Root, new Bounds(Site + new Vector3(Width * 1.5f, Tall * .5f, Hall2Z + 4.5f), new Vector3(Width * 3f, Tall, 9f)), 1024); }
+            catch (System.Exception e) { FrontRoomsPoolMaterials.LogOnce("KIT probe", "KIT probe: " + e.Message); }
         });
         kit.Finish();
         kit.Safe("labels", Labels);
@@ -85,14 +90,17 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
         Stops.Clear();
         kit.Stop("到达点：Level 0 版，从西头看过去", new Vector3(1.5f, 0f, 2.2f), new Vector3(30f, 1.2f, 7.5f));
         kit.Stop("Level 0 版：台子正面", new Vector3(16.5f, 0f, 1.2f), new Vector3(16.5f, 1.2f, 7.5f));
-        kit.Stop("Level 0 版：空洞边", new Vector3(37.5f, 0f, .9f), new Vector3(37.5f, -1.5f, 4.5f));
+        kit.Stop("Level 0 版：空洞边", new Vector3(37.5f, 0f, 2.35f), new Vector3(37.5f, -3.9f, 4.5f), 60f);
         kit.Stop("瓷砖版，从西头看过去", new Vector3(1.5f, 0f, Hall2Z + 2.2f), new Vector3(30f, 1.2f, Hall2Z + 7.5f));
         kit.Stop("瓷砖版：台子正面", new Vector3(16.5f, 0f, Hall2Z + 1.2f), new Vector3(16.5f, 1.2f, Hall2Z + 7.5f));
-        kit.Stop("瓷砖版：空洞边", new Vector3(37.5f, 0f, Hall2Z + .9f), new Vector3(37.5f, -1.5f, Hall2Z + 4.5f));
+        kit.Stop("瓷砖版：空洞边", new Vector3(37.5f, 0f, Hall2Z + 2.35f), new Vector3(37.5f, -4.5f, Hall2Z + 4.5f), 60f);
     }
 
     // One hall's cells: rows 0-1 the walk at +-0, row 2 the plinths at odd columns one to six steps high (the even columns at
     // +-0 between them), each front edge crossed from 0.3 to 1.5 m (no crossing at six steps); the void at column 12, row 1.
+    // Plinth 6's way on (R2, KIT-3; review KIT-F4, Red 11-04 "所有结构都能够正常让玩家通行"): nothing crosses its own edge; a
+    // connector of its own in column 10 (a straight flight of 12 risers up the south edge of cell (10, 2), its foot in rows 0-1)
+    // reaches a landing at +1.80 beside it, and a STEP from plinth 5 is the raised area's second way on (R6).
     static void Ladder(FrontRoomsStructuresKit.Plate p)
     {
         var floor = FrontRoomsStructuresKit.Plate.Kind.Floor;
@@ -103,20 +111,44 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
             p.Fill(i, 2, i, 2, floor, Step * k, Tall, 1);
             if (k <= 5) p.Run(i, 2, 'S', .3f, 1.5f);
         }
+        p.Fill(10, 2, 10, 2, floor, Step * 6, Tall, 1);
+        p.Run(10, 2, 'S', .3f, 1.5f);
+        p.Run(10, 2, 'W', 1.5f, 2.7f);
         p.Fill(12, 1, 12, 1, FrontRoomsStructuresKit.Plate.Kind.Void, 0f, Tall, 1);
     }
 
-    // Under the void (column 12, row 1): the storey below as a patch, its walls and floor, lit from above.
-    void Below(float z0, float storey, Material wall, Material floorMat, Material section)
+    // Under the void (column 12, row 1): the storey below as a room of 3 x 3 cells round the void's column (review KIT-F5, as
+    // SP3's V1: its floor runs on past the cut's edges), its lid at the section's foot (open under the void), its own lamps;
+    // and the hall's ceiling carried on over the void cell.
+    void Below(float z0, float storey, float sectionDepth, Material wall, Material floorMat, Material ceiling)
     {
-        float x0 = 36f, x1 = 39f, za = z0 + 3f, zb = z0 + 6f;
-        kit.Shell(-storey + 2.9f, -storey);
+        float x0 = 33f, x1 = 42f, za = z0, zb = z0 + 9f, vx0 = 36f, vx1 = 39f, vz0 = z0 + 3f, vz1 = z0 + 6f;
+        var lid = -sectionDepth - .002f;
+        kit.Shell(lid, -storey);
         kit.Slab(x0, za, x1, zb, -storey, floorMat, .2f);
-        kit.WallX(za, x0 - .08f, x1 + .08f, -storey, -1f, wall);
-        kit.WallX(zb, x0 - .08f, x1 + .08f, -storey, -1f, wall);
-        kit.WallZ(x0, za, zb, -storey, -1f, wall);
-        kit.WallZ(x1, za, zb, -storey, -1f, wall);
+        kit.WallX(za, x0 - .08f, x1 + .08f, -storey, lid + .16f, wall);
+        kit.WallX(zb, x0 - .08f, x1 + .08f, -storey, lid + .16f, wall);
+        kit.WallZ(x0, za, zb, -storey, lid + .16f, wall);
+        kit.WallZ(x1, za, zb, -storey, lid + .16f, wall);
+        // The lid round the void, its opening 2 mm wider than the void so the slab's section stays in front at the cut.
+        kit.Lid(x0, za, x1, vz0 - .002f, lid, ceiling);
+        kit.Lid(x0, vz1 + .002f, x1, zb, lid, ceiling);
+        kit.Lid(x0, vz0 - .002f, vx0 - .002f, vz1 + .002f, lid, ceiling);
+        kit.Lid(vx1 + .002f, vz0 - .002f, x1, vz1 + .002f, lid, ceiling);
+        var tileHall = z0 > 1f;
+        for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 3; j++)
+            {
+                if (i == 1 && j == 1) continue;
+                var c = new Vector3(x0 + 3f * i + 1.5f, lid, za + 3f * j + 1.5f);
+                if (tileHall) { if ((i + j) % 2 == 0) kit.DownFill(c + Vector3.down * .07f, 2.2f, 8f, false); }
+                else kit.Troffer(c + new Vector3(0f, 0f, FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
+            }
+        // The hall's own ceiling over the void cell (a void through the storey below, not a hole in the roof).
         kit.Shell(Tall, 0f);
+        kit.Lid(vx0, vz0, vx1, vz1, Tall, ceiling);
+        if (tileHall) kit.DownFill(new Vector3(37.5f, Tall - .07f, z0 + 4.5f), 2.2f, 11f, true);
+        else kit.Troffer(new Vector3(37.5f, Tall, z0 + 4.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true, false, 1.6f, 12f);
     }
 
     // The units on the arrival cell (0, 0): the 0.6 m fine module drawn on the floor, a 0.30 m step gauge to one storey in the
@@ -133,9 +165,10 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
             kit.Box(0f, .0005f, z0 + f - .006f, 3f, .0035f, z0 + f + .006f, ink, false);
         }
         var storeys = Mathf.RoundToInt((z0 > 1f ? FrontRoomsStructuresKit.PoolStorey : FrontRoomsStructuresKit.OfficeStorey) / Step);
+        // The gauge in the cell's north-west corner, behind-left of the arrival, out of the main view (review KIT-F2).
         for (var s = 0; s < storeys; s++)
-            kit.Box(2.82f, s * Step, z0 + 2.82f, 2.9f, (s + 1) * Step, z0 + 2.9f, s % 2 == 0 ? ink : light, false);
-        kit.Box(2.80f, storeys * Step - .01f, z0 + 2.80f, 2.92f, storeys * Step + .01f, z0 + 2.92f, accent, false);
+            kit.Box(.10f, s * Step, z0 + 2.82f, .18f, (s + 1) * Step, z0 + 2.9f, s % 2 == 0 ? ink : light, false);
+        kit.Box(.08f, storeys * Step - .01f, z0 + 2.80f, .20f, storeys * Step + .01f, z0 + 2.92f, accent, false);
     }
 
     // A small label (outside the fiction) on a post in front of each plinth, in the placard's colours.
@@ -198,7 +231,8 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
         var r = t.GetComponent<MeshRenderer>();
         if (r != null)
         {
-            if (font != null && font.material != null) r.sharedMaterial = font.material;
+            var depth = FrontRoomsStructuresSigns.DepthText(font);
+            if (depth != null) r.sharedMaterial = depth;
             r.shadowCastingMode = ShadowCastingMode.Off;
         }
     }

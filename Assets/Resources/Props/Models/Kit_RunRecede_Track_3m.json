@@ -1,0 +1,53 @@
+{
+ "name": "Kit_RunRecede_Track_3m",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_recede",
+  "ceiling"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  6.0,
+  18.0,
+  46.0
+ ],
+ "lodBudget": [
+  600,
+  120,
+  12
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "runRecede": "card 2 head first, 2026-11-04 (71_run_room.md s.5.1); inert until rule 5b",
+ "boundsMin": [
+  -0.05700000002980232,
+  -0.0650000050663948,
+  -0.07500000298023224
+ ],
+ "boundsMax": [
+  0.05700000002980232,
+  0.0,
+  3.0
+ ],
+ "triangles": 532,
+ "slots": [
+  "Prop_SteelAlmond"
+ ],
+ "trianglesLod1": 84,
+ "trianglesLod2": 12,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  1.4624999985098839
+ ],
+ "footprintSize": [
+  0.11400000005960464,
+  3.0750000029802322
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

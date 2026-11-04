@@ -72,6 +72,41 @@ public sealed partial class FrontRoomsInteractablesShowcase
     static readonly string[] DevNames = { "DESK PHONE", "WALL CLOCK", "VENDING MACHINE", "COPIER" };
     const string MuseumKeysLine = "[ ] ROOM  ·  1-7 STATION (AGAIN: VARIANT)  ·  0 HUB  ·  R RESET  ·  B BREAK  ·  P PLAN  ·  G HIDE  ·  F2 TOURS";
 
+    // The world placards (inc 8b; FrontRoomsShowcasePlacards to 20_placard_type.md v2, placed by 10_research §3.2-3.7). Every
+    // length in metres; ~/FrontRoomsInteractionWork/scene3/land_inc8b/placement/model.py reads these and mirrors the placing.
+    /// <summary>C's clearance from walls, kits, every leaf's sweep and every arch's opening.</summary>
+    const float PlacardClear = .05f;
+    /// <summary>C in plan: half its width plus PlacardSlack; behind its face the slab and bracket reach PlacardBack more.</summary>
+    const float PlacardSlack = .01f, PlacardBack = .03f;
+    /// <summary>Half the side of C's post and floor plate about its face's centre (v1 .13): kept out of every stop area.</summary>
+    const float PlacardStand = .18f;
+    /// <summary>C's face grown by this in the test that it hides nothing of its exhibit from the stop's eye.</summary>
+    const float PlacardViewPad = .02f;
+    /// <summary>C's bearing, degrees right of the stop's facing: tried from 0 in 1-degree steps up to this.</summary>
+    const int PlacardBearingMax = 120;
+    /// <summary>A leaf's sweep into the lane: the leaf (0.98 m) with half its thickness and the kit's pivot, to a dressed
+    /// double-acting leaf's stop at 95.4 degrees (FrontRoomsMapWorld.DoorBreakStopDegreesDA).</summary>
+    const float SwingReach = 1.03f, SwingDegrees = 96f;
+    /// <summary>W1's stop area on every stop (10_research §3.2), centred on it: across the front, and toward it.</summary>
+    const float StopAlong = .76f, StopDeep = 1.22f;
+    /// <summary>An arch: its opening and this far into the room stay clear (a body standing in the opening: PlayerRadius).</summary>
+    const float ArchPassage = .3f;
+    /// <summary>The exhibit as the view test samples it: a door with its frame kit (75 mm past the opening, 2.175 m), a window
+    /// with its casing and latch, an arch, a framed code (FrameExhibitRise about its tag's height); grid steps.</summary>
+    const float DoorExhibitHalf = .58f, DoorExhibitTop = 2.18f, DoorExhibitProud = .025f;
+    const float WindowExhibitHalf = .78f, WindowExhibitSill = .28f, WindowExhibitHead = 2.08f, WindowExhibitProud = .05f;
+    const float ArchExhibitHalf = .75f, ArchExhibitTop = 2.25f, FrameExhibitHalf = .6f, FrameExhibitRise = .3f;
+    const float ExhibitStep = .1f, AlcoveStep = .25f;
+    /// <summary>B and D stay this far from a corner, a casing or a kit; a floor tag's far edge stands TagGap in front of its kit,
+    /// two tags side by side TagSideGap apart.</summary>
+    const float SignGap = .05f, TagGap = .1f, TagSideGap = .04f;
+    /// <summary>C's live state (its foot): refreshed this often, only in the room the player stands in (s).</summary>
+    const float MuseumLiveSeconds = .25f;
+    /// <summary>The kits of the exhibits that only carry one (desks, the credenza, the plinth, the cabinet): kept clear, but
+    /// not the exhibit a placard must leave in view. Their labels are BuildMuseumExhibits'.</summary>
+    static readonly string[] PlacardSupports = { "2.5 plinth", "4.1 terminal desk", "4.3 credenza", "4.6 station desk", "4.7 filing cabinet" };
+    static readonly string[] DevLetters = { "A", "B", "C", "D" };
+
     static readonly Vector2 HubSpawn = new Vector2(8f, .8f);
 
     enum MuseumState { Title, Carved, Building, Built, Failed }
@@ -143,6 +178,20 @@ public sealed partial class FrontRoomsInteractablesShowcase
     Func<FrontRoomsMapWorld.Door, bool?> museumLockRule;
     FrontRoomsMapWorld museumRuleMap;
     Vector3 museumTagLook;
+    // The world placards: ONE root of ours in the game scene (unit scale at the origin, never a chunk's, so rebuilds leave it
+    // be), its parts by room (index 1-4: a room's inside, on only while the player is in it or at its entry; 0 the hub's, always
+    // on), C by station (room * 8 + slot; 1.1's B apart: both stand, the door's variant shows), 1.7's four floor tags (the
+    // member on the door shows), the hub cells at each room's E and X (2 per room, museum cells).
+    GameObject museumPlacards;
+    readonly GameObject[] museumPlacardC = new GameObject[5 * 8];
+    GameObject museumPlacardC11B;
+    readonly GameObject[] museumMemberTags = new GameObject[4];
+    readonly List<Canvas>[] museumPlacardCanvases = { new List<Canvas>(), new List<Canvas>(), new List<Canvas>(), new List<Canvas>(), new List<Canvas>() };
+    readonly List<Renderer>[] museumPlacardRenderers = { new List<Renderer>(), new List<Renderer>(), new List<Renderer>(), new List<Renderer>(), new List<Renderer>() };
+    readonly Vector2Int[] museumEntryCells = new Vector2Int[8];
+    int museumPlacardMask = -1, museumPlacardMember = -1;
+    bool museumPlacardBody;
+    float museumLiveClock;
 
     static MethodInfo GameMethod(string name)
     {
@@ -272,11 +321,12 @@ public sealed partial class FrontRoomsInteractablesShowcase
 
     /// <summary>
     /// Put the kit's two tools statics back (as they were before the museum set them), take the map's lock rule off (room 2),
-    /// leave the map's window events, take the exhibits down and forget the museum's doors, windows and key. OnDestroy,
-    /// BackToMenu (F2), Choose, the run's end, the floor change, a failure, a new scene.
+    /// leave the map's window events, take the exhibits and the placards down and forget the museum's doors, windows and key.
+    /// OnDestroy, BackToMenu (F2), Choose, the run's end (TRY AGAIN and R restart too), the floor change, a failure, a new scene.
     /// </summary>
     void ClearMuseumTools()
     {
+        DestroyMuseumPlacards();
         if (museumHooksSet)
         {
             if (FrontRoomsInteractableKit.DoorMemberOverride == museumMemberHook) FrontRoomsInteractableKit.DoorMemberOverride = museumPrevMember;
@@ -1130,6 +1180,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
             }
             // Room 3's ALARM ZONE tell and room 4's kits: under our own root, each on its own (one that fails stays a frame).
             BuildMuseumExhibits();
+            // The placards, once the exhibits stand (C keeps clear of their kits and out of their view): one root of their own.
+            BuildMuseumPlacards();
             // The stream follows the player from now on (it held the start door); the start rooms drop behind.
             map.StreamFocus = null;
             Physics.SyncTransforms();
@@ -1464,6 +1516,1048 @@ public sealed partial class FrontRoomsInteractablesShowcase
         museumDevLook[k] = target.Face.position;
     }
 
+    // ---------- the world placards (inc 8b): FrontRoomsShowcasePlacards to 20_placard_type.md v2, placed by 10_research §3.2-3.7
+
+    /// <summary>
+    /// One room's keep-outs for its placards, in room-local metres: x from the room's left wall line as one walks in (its cells
+    /// i), y from its hub wall line (cells j); boxes are (x, height, y). The model (land_inc8b/placement/model.py) builds the same.
+    /// </summary>
+    sealed class PlacardScene
+    {
+        public int room;
+        /// <summary>Where a stand may stand: the lane with its alcove, an open bay (2.2).</summary>
+        public readonly List<Rect> floor = new List<Rect>();
+        /// <summary>Kits on the floor, floor tags, and the C placards set so far (plan polygons).</summary>
+        public readonly List<Vector2[]> blocks = new List<Vector2[]>();
+        /// <summary>Every leaf's sweep into the lane, for each jamb its hinge can take (either door mode).</summary>
+        public readonly List<Vector2[]> swings = new List<Vector2[]>();
+        /// <summary>The arches' openings with their first ArchPassage into the room.</summary>
+        public readonly List<Vector2[]> passages = new List<Vector2[]>();
+        /// <summary>W1's stop area at every stop.</summary>
+        public readonly List<Vector2[]> stops = new List<Vector2[]>();
+        /// <summary>The room's kit renderers as boxes, and the exhibit object each belongs to (BuildMuseumExhibits' labels).</summary>
+        public readonly List<Bounds> kits = new List<Bounds>();
+        public readonly List<string> kitNames = new List<string>();
+        /// <summary>E's and X's centres on the hub wall (x) and half spans: the carve's own for an authored arch, else the widest
+        /// the map's hash can give an arch centred there (ArchOpening: 1.1-1.8 m, 0.2 m from the cell's corners).</summary>
+        public float eCentre, eHalf, xCentre, xHalf;
+    }
+
+    /// <summary>
+    /// Every placard, once per museum build, after the exhibits stand (BuildMuseum; no other tour builds the museum): C at every
+    /// station of rooms 1-4 (1.1 both variants at one place, the door's shown), D and the floor tags at the variant rows 1.7 and
+    /// 4.7, B just inside each room, then on the hub side B beside each entry, the room number over it and A facing the spawn.
+    /// Under one root of ours (unit scale, at the origin), with the hub's and each room's parts apart (TickMuseumPlacards turns a
+    /// room's on and off). A part that fails is left out with one note; the museum stands all the same. Nothing collides: the
+    /// builder makes no collider (a code mesh, no primitive; no raycaster, raycastTarget off) and any found is switched off, so the
+    /// game's USE ray (FrontRooms3DGame.AimCast: every layer, 2.4 m), the museum's own casts and the player's body pass through.
+    /// </summary>
+    void BuildMuseumPlacards()
+    {
+        DestroyMuseumPlacards();
+        museumPlacards = new GameObject("Scene 3 museum · placards (交互设计)");
+        var root = museumPlacards.transform;
+        root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        root.localScale = Vector3.one;
+        var groups = new Transform[5];
+        for (var r = 0; r <= 4; r++)
+        {
+            groups[r] = new GameObject(r == 0 ? "Hub" : "Room " + r).transform;
+            groups[r].SetParent(root, false);
+        }
+        for (var r = 1; r <= 4; r++)
+        for (var k = 0; k < 2; k++)
+        {
+            int u, v;
+            LocalToMuseum(r, 2 - k, 0, out u, out v);
+            var outward = LocalDir(r, 0f, -1f);
+            museumEntryCells[2 * (r - 1) + k] = new Vector2Int(u + Mathf.RoundToInt(outward.x), v + Mathf.RoundToInt(outward.y));
+        }
+        var lost = "";
+        var scenes = new PlacardScene[5];
+        for (var room = 1; room <= 4; room++)
+        {
+            try
+            {
+                scenes[room] = MuseumPlacardScene(room);
+                lost += BuildRoomPlacards(scenes[room], groups[room]);
+            }
+            catch (Exception e)
+            {
+                lost += " room " + room + " (" + e.GetType().Name + ": " + e.Message + ")";
+            }
+        }
+        try
+        {
+            lost += BuildHubPlacards(scenes, groups[0]);
+        }
+        catch (Exception e)
+        {
+            lost += " the hub's (" + e.GetType().Name + ": " + e.Message + ")";
+        }
+        var colliders = 0;
+        foreach (var c in root.GetComponentsInChildren<Collider>(true))
+        {
+            if (!c.enabled) continue;
+            c.enabled = false;
+            colliders++;
+        }
+        if (colliders > 0) Debug.LogWarning("Interactables showcase (museum): " + colliders + " placard collider(s) switched off (the USE ray and the walk pass through placards).");
+        for (var r = 0; r <= 4; r++)
+        {
+            museumPlacardCanvases[r].Clear();
+            museumPlacardRenderers[r].Clear();
+            groups[r].GetComponentsInChildren(true, museumPlacardCanvases[r]);
+            groups[r].GetComponentsInChildren(true, museumPlacardRenderers[r]);
+        }
+        museumPlacardMask = -1;
+        museumLiveClock = 0f;
+        SyncMuseumPlacardVariants();
+        if (lost.Length > 0) MuseumNote("Placards left out:" + lost + ".");
+    }
+
+    void DestroyMuseumPlacards()
+    {
+        if (museumPlacards != null) Destroy(museumPlacards);
+        museumPlacards = null;
+        Array.Clear(museumPlacardC, 0, museumPlacardC.Length);
+        museumPlacardC11B = null;
+        Array.Clear(museumMemberTags, 0, museumMemberTags.Length);
+        for (var r = 0; r < museumPlacardCanvases.Length; r++)
+        {
+            museumPlacardCanvases[r].Clear();
+            museumPlacardRenderers[r].Clear();
+        }
+        museumPlacardMask = museumPlacardMember = -1;
+    }
+
+    /// <summary>A room's inside placards: D and the floor tags at a variant row (the tags are kept-out floor for C), B just
+    /// inside, then C at each station in order. Returns what was left out (empty: nothing).</summary>
+    string BuildRoomPlacards(PlacardScene sc, Transform parent)
+    {
+        var room = sc.room;
+        var lost = "";
+        for (var slot = 1; slot <= 7; slot++)
+        {
+            var row = FrontRoomsShowcaseTable.At(room, slot);
+            if (row != null && row.group != null) lost += BuildRowPlacards(sc, slot, row, parent);
+        }
+        Vector2 wallPoint, outward;
+        if (!MuseumInsideSign(sc, out wallPoint, out outward)) lost += " " + room + " B inside (no wall wide enough)";
+        else if (FrontRoomsShowcasePlacards.BuildRoomSign(RoomSign(room), parent,
+                     FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, wallPoint, 0f), RoomWorldDir(room, outward), FrontRoomsShowcasePlacards.RoomSignCentre)) == null)
+            lost += " " + room + " B inside";
+        var samples = new List<Vector3>();
+        for (var slot = 1; slot <= 7; slot++)
+        {
+            var st = room == 1 && slot == 1 ? FrontRoomsShowcaseTable.Find("1.1A") : FrontRoomsShowcaseTable.At(room, slot);
+            if (st == null) continue;
+            Vector2 floorPoint, toward;
+            int bearing;
+            string fails;
+            if (!MuseumPlaceStation(sc, slot, samples, out floorPoint, out toward, out bearing, out fails))
+            {
+                lost += " " + st.code + " C (no stop)";
+                continue;
+            }
+            if (fails != null)
+                Debug.LogWarning("Interactables showcase (museum): " + st.code + "'s placard stands at " + bearing + " degrees, the least crowded place, but " + fails + ".");
+            var pose = FrontRoomsShowcasePlacards.Standing(RoomWorld(room, floorPoint, 0f), RoomWorldDir(room, toward));
+            museumPlacardC[room * 8 + slot] = FrontRoomsShowcasePlacards.BuildStationPlacard(st, parent, pose, true);
+            if (museumPlacardC[room * 8 + slot] == null) lost += " " + st.code + " C";
+            if (room == 1 && slot == 1)
+            {
+                // 1.1 is one door, A body / B E (the floor's switch): both placards stand at its place, the door's variant shows.
+                museumPlacardC11B = FrontRoomsShowcasePlacards.BuildStationPlacard(FrontRoomsShowcaseTable.Find("1.1B"), parent, pose, true);
+                if (museumPlacardC11B == null) lost += " 1.1B C";
+            }
+        }
+        return lost;
+    }
+
+    /// <summary>
+    /// A variant row (10_research §3.4 D; 20 §2): card D on the front at the row's left end as seen from the lane, centred in the
+    /// wall between that corner and the row, GroupCentre high; a floor tag before each variant, read from TagStandBehind behind
+    /// it. 1.7 is one door showing its four members in turn: its four tags lie at one place before it, clear of its leaf's sweep,
+    /// and the member on the door shows. 4.7's four close-ups stand along the wall: each tag's far edge TagGap off the kit it
+    /// stands before (the phone and the clock share the cabinet: two tags side by side). Returns what was left out.
+    /// </summary>
+    string BuildRowPlacards(PlacardScene sc, int slot, FrontRoomsShowcaseTable.Station st, Transform parent)
+    {
+        var room = sc.room;
+        var cs = MapGrid.CellSize;
+        var wh = ModuleUnits.WallHalf;
+        int i, j;
+        if (!BayOfSlot(slot, out i, out j)) return " " + st.code + " D";
+        float faceX, into;
+        FrontFace(slot, out faceX, out into);
+        faceX *= cs;
+        var lost = "";
+        float lo, hi;
+        FrontSpan(sc, slot, out lo, out hi);
+        // Facing the front from the lane: on the left wall (into +1, facing -x) the left is -y; on the right wall it is +y.
+        var leftIsLow = into > 0f;
+        var corner = leftIsLow ? j * cs + wh : (j + 1) * cs - wh;
+        var edge = leftIsLow ? lo : hi;
+        if (Mathf.Abs(edge - corner) >= FrontRoomsShowcasePlacards.GroupWidth + 2f * SignGap - 1e-4f)
+        {
+            var pose = FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, new Vector2(faceX, (corner + edge) * .5f), 0f), RoomWorldDir(room, new Vector2(into, 0f)),
+                FrontRoomsShowcasePlacards.GroupCentre);
+            if (FrontRoomsShowcasePlacards.BuildGroupCard(st, parent, pose) == null) lost += " " + st.code + " D";
+        }
+        else lost += " " + st.code + " D (no wall wide enough)";
+        var g = st.group;
+        var count = g.letters != null ? g.letters.Length : 0;
+        var toward = new Vector2(-into, 0f);
+        var halfDeep = FrontRoomsShowcasePlacards.TagHeight * .5f;
+        var halfWide = FrontRoomsShowcasePlacards.TagWidth * .5f;
+        if (FrontKind(room, slot) == EdgeKind.Door)
+        {
+            // Before the door, on its middle, the nearest place clear of every leaf's sweep and kit.
+            var wallLine = faceX - into * wh;
+            var mid = (j + .5f) * cs;
+            var at = Vector2.zero;
+            var found = false;
+            for (var step = 0; step < 300 && !found; step++)
+            {
+                at = new Vector2(wallLine + into * (wh + PlacardClear + halfDeep + step * .01f), mid);
+                found = KeptClear(RectPolygon(at.x - halfDeep, at.y - halfWide, at.x + halfDeep, at.y + halfWide), sc.swings, PlacardClear)
+                    && KeptClear(RectPolygon(at.x - halfDeep, at.y - halfWide, at.x + halfDeep, at.y + halfWide), sc.blocks, PlacardClear);
+            }
+            if (!found) return lost + " " + st.code + " floor tags";
+            sc.blocks.Add(RectPolygon(at.x - halfDeep, at.y - halfWide, at.x + halfDeep, at.y + halfWide));
+            var pose = FrontRoomsShowcasePlacards.OnFloor(RoomWorld(room, at, 0f), RoomWorldDir(room, toward));
+            for (var k = 0; k < count && k < museumMemberTags.Length; k++)
+            {
+                museumMemberTags[k] = FrontRoomsShowcasePlacards.BuildFloorTag(st, k, parent, pose);
+                if (museumMemberTags[k] == null) lost += " " + st.code + " " + g.letters[k] + " tag";
+            }
+            return lost;
+        }
+        // 4.7: each variant before the kit it stands on or over (BuildMuseumExhibits' labels), side by side where they share one.
+        for (var k = 0; k < count; k++)
+        {
+            var stand = k < DevStands.Length ? DevStands[k] : null;
+            Bounds kit;
+            if (stand == null || !KitBox(sc, stand, out kit))
+            {
+                lost += " " + st.code + " " + g.letters[k] + " tag";
+                continue;
+            }
+            int share = 0, nth = 0;
+            for (var m = 0; m < count && m < DevStands.Length; m++)
+            {
+                if (DevStands[m] != stand) continue;
+                if (m < k) nth++;
+                share++;
+            }
+            var front = into > 0f ? kit.max.x : kit.min.x;
+            var y = kit.center.z + (leftIsLow ? 1f : -1f) * (nth - (share - 1) * .5f) * (FrontRoomsShowcasePlacards.TagWidth + TagSideGap);
+            var at = new Vector2(front + into * (TagGap + halfDeep), y);
+            sc.blocks.Add(RectPolygon(at.x - halfDeep, at.y - halfWide, at.x + halfDeep, at.y + halfWide));
+            if (FrontRoomsShowcasePlacards.BuildFloorTag(st, k, parent, FrontRoomsShowcasePlacards.OnFloor(RoomWorld(room, at, 0f), RoomWorldDir(room, toward))) == null)
+                lost += " " + st.code + " " + g.letters[k] + " tag";
+        }
+        return lost;
+    }
+
+    /// <summary>The kit each of 4.7's variants stands on or before (A the phone on the cabinet, B the clock over it, C, D).</summary>
+    static readonly string[] DevStands = { "4.7 filing cabinet", "4.7 filing cabinet", "4.7 C vending machine", "4.7 D copier" };
+
+    /// <summary>The union of an exhibit object's renderer boxes (room-local), by its label's start.</summary>
+    static bool KitBox(PlacardScene sc, string label, out Bounds box)
+    {
+        box = default(Bounds);
+        var found = false;
+        for (var k = 0; k < sc.kits.Count; k++)
+        {
+            if (!sc.kitNames[k].StartsWith(label, StringComparison.Ordinal)) continue;
+            if (!found) box = sc.kits[k];
+            else box.Encapsulate(sc.kits[k]);
+            found = true;
+        }
+        return found;
+    }
+
+    /// <summary>
+    /// B just inside a room (10_research §3.4: "beside each entry on the hub side and again just inside"): on bay .1's front by
+    /// the hub corner, where its exhibit leaves the sign's width and SignGap each side; else on the hub wall between X and E;
+    /// else on bay .7's front by the hub corner. Room-local wall point and the way out of the wall; false where none is wide enough.
+    /// </summary>
+    bool MuseumInsideSign(PlacardScene sc, out Vector2 wallPoint, out Vector2 outward)
+    {
+        var cs = MapGrid.CellSize;
+        var wh = ModuleUnits.WallHalf;
+        var width = FrontRoomsShowcasePlacards.RoomSignWidth;
+        var need = width + 2f * SignGap - 1e-4f;
+        float lo, hi;
+        if (FrontKind(sc.room, 1) != EdgeKind.Open && FrontSpan(sc, 1, out lo, out hi) && lo - wh >= need)
+        {
+            wallPoint = new Vector2(3f * cs - wh, wh + SignGap + width * .5f);
+            outward = new Vector2(-1f, 0f);
+            return true;
+        }
+        var a = sc.xCentre + sc.xHalf + SignGap;
+        var b = sc.eCentre - sc.eHalf - SignGap;
+        if (b - a >= width - 1e-4f)
+        {
+            wallPoint = new Vector2((a + b) * .5f, wh);
+            outward = new Vector2(0f, 1f);
+            return true;
+        }
+        if (FrontKind(sc.room, 7) != EdgeKind.Open && FrontSpan(sc, 7, out lo, out hi) && lo - wh >= need)
+        {
+            wallPoint = new Vector2(cs + wh, wh + SignGap + width * .5f);
+            outward = new Vector2(1f, 0f);
+            return true;
+        }
+        wallPoint = outward = Vector2.zero;
+        return false;
+    }
+
+    /// <summary>What a bay front shows along its wall (room-local y): a door with its frame kit, a window with its casing, an arch
+    /// (and, 3.6, its card), an open front its whole width, else its kits, else the framed code. False for no bay.</summary>
+    bool FrontSpan(PlacardScene sc, int slot, out float lo, out float hi)
+    {
+        lo = hi = 0f;
+        int i, j;
+        if (!BayOfSlot(slot, out i, out j)) return false;
+        var mid = (j + .5f) * MapGrid.CellSize;
+        var kind = FrontKind(sc.room, slot);
+        var half = kind == EdgeKind.Door ? DoorExhibitHalf : kind == EdgeKind.Window ? WindowExhibitHalf : kind == EdgeKind.Arch ? ArchExhibitHalf
+            : kind == EdgeKind.Open ? MapGrid.CellSize * .5f : FrameExhibitHalf;
+        lo = mid - half;
+        hi = mid + half;
+        Bounds kits;
+        if (kind != EdgeKind.Door && kind != EdgeKind.Window && kind != EdgeKind.Open && KitBox(sc, sc.room + "." + slot + " ", out kits))
+        {
+            lo = kind == EdgeKind.Arch ? Mathf.Min(lo, kits.min.z) : kits.min.z;
+            hi = kind == EdgeKind.Arch ? Mathf.Max(hi, kits.max.z) : kits.max.z;
+        }
+        return true;
+    }
+
+    /// <summary>The hub's placards: B on each entry's hub side beside its arch (away from X), the room's number over the arch, A
+    /// facing the spawn (its centre BoardFar from the spawn's eye, straight ahead: rooms 2 and 3 open over it, the four walks from
+    /// the spawn to the entries pass beside it), its plan from the museum's own rules. Returns what was left out.</summary>
+    string BuildHubPlacards(PlacardScene[] scenes, Transform parent)
+    {
+        var lost = "";
+        var wh = ModuleUnits.WallHalf;
+        var into = new Vector2(0f, -1f);
+        for (var room = 1; room <= 4; room++)
+        {
+            var sc = scenes[room];
+            if (sc == null)
+            {
+                lost += " " + room + " B, number";
+                continue;
+            }
+            var x = sc.eCentre + sc.eHalf + SignGap + FrontRoomsShowcasePlacards.RoomSignWidth * .5f;
+            var sign = FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, new Vector2(x, -wh), 0f), RoomWorldDir(room, into), FrontRoomsShowcasePlacards.RoomSignCentre);
+            if (FrontRoomsShowcasePlacards.BuildRoomSign(RoomSign(room), parent, sign) == null) lost += " " + room + " B";
+            var number = FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, new Vector2(sc.eCentre, -wh), 0f), RoomWorldDir(room, into), SignTagHeight);
+            if (FrontRoomsShowcasePlacards.BuildEntryNumber(room, parent, number) == null) lost += " " + room + " number";
+        }
+        var drop = ModuleUnits.PlayerEye - (FrontRoomsShowcasePlacards.BoardTop - FrontRoomsShowcasePlacards.BoardHeight * .5f);
+        var reach = Mathf.Sqrt(Mathf.Max(0f, FrontRoomsShowcasePlacards.BoardFar * FrontRoomsShowcasePlacards.BoardFar - drop * drop));
+        var at = HubSpawn + new Vector2(0f, reach / MapGrid.CellSize);
+        var board = FrontRoomsShowcasePlacards.Standing(MuseumWorld(at, 0f), MuseumWorldDir(new Vector2(0f, -1f)));
+        if (FrontRoomsShowcasePlacards.BuildHubBoard(MuseumBoardPlan(), parent, board) == null) lost += " A";
+        return lost;
+    }
+
+    /// <summary>Board A's plan from the museum's own layout rules (MuseumRoomOf, MuseumPartOf, MuseumEdge), never pasted: each room's
+    /// cells and its alcove's, and every arch between two rooms; x = u, up = v = forward from the spawn. No alcove pictures yet.</summary>
+    static FrontRoomsShowcasePlacards.Plan MuseumBoardPlan()
+    {
+        var lo = new Vector2Int[5];
+        var hi = new Vector2Int[5];
+        var aLo = new Vector2Int[5];
+        var aHi = new Vector2Int[5];
+        var has = new bool[5];
+        var hasAlcove = new bool[5];
+        var gates = new List<FrontRoomsShowcasePlacards.PlanGate>();
+        for (var v = 0; v < MuseumRows; v++)
+        for (var u = 0; u < MuseumCols; u++)
+        {
+            int i, j;
+            var room = MuseumRoomOf(u, v, out i, out j);
+            if (room < 0) continue;
+            var cell = new Vector2Int(u, v);
+            lo[room] = has[room] ? Vector2Int.Min(lo[room], cell) : cell;
+            hi[room] = has[room] ? Vector2Int.Max(hi[room], cell) : cell;
+            has[room] = true;
+            if (room > 0 && MuseumPartOf(i, j) == MuseumPart.Alcove)
+            {
+                aLo[room] = hasAlcove[room] ? Vector2Int.Min(aLo[room], cell) : cell;
+                aHi[room] = hasAlcove[room] ? Vector2Int.Max(aHi[room], cell) : cell;
+                hasAlcove[room] = true;
+            }
+            for (var k = 0; k < 2; k++)
+            {
+                var nu = u + (k == 0 ? 1 : 0);
+                var nv = v + (k == 0 ? 0 : 1);
+                int ni, nj;
+                var other = MuseumRoomOf(nu, nv, out ni, out nj);
+                if (other >= 0 && other != room && MuseumEdge(u, v, nu, nv) == EdgeKind.Arch)
+                    gates.Add(new FrontRoomsShowcasePlacards.PlanGate(cell, new Vector2Int(nu, nv)));
+            }
+        }
+        var rooms = new List<FrontRoomsShowcasePlacards.PlanRoom>();
+        for (var room = 0; room <= 4; room++)
+        {
+            if (!has[room]) continue;
+            rooms.Add(new FrontRoomsShowcasePlacards.PlanRoom
+            {
+                number = room,
+                cells = new RectInt(lo[room].x, lo[room].y, hi[room].x - lo[room].x + 1, hi[room].y - lo[room].y + 1),
+                alcove = hasAlcove[room] ? new RectInt(aLo[room].x, aLo[room].y, aHi[room].x - aLo[room].x + 1, aHi[room].y - aLo[room].y + 1) : default(RectInt),
+                alcovePicture = null
+            });
+        }
+        return new FrontRoomsShowcasePlacards.Plan { cols = MuseumCols, rows = MuseumRows, rooms = rooms.ToArray(), gates = gates.ToArray() };
+    }
+
+    /// <summary>
+    /// The keep-outs of a room (the model's Scene): its floor, its kits (BuildMuseumExhibits' renderers), every door front's leaf
+    /// sweep into the lane for each jamb the hinge can take (BuildEdge hangs an E door on the edge's start jamb, the south end of
+    /// an east edge or the west end of a north edge; a body door on the other where FrontRoomsMapWorld.BodyDoorReverseHinge says
+    /// so, and 1.1 switches the floor between the two), the arches (E and X on the hub wall where the map put them, 3.6's),
+    /// every stop's area, E's and X's centres.
+    /// </summary>
+    PlacardScene MuseumPlacardScene(int room)
+    {
+        var cs = MapGrid.CellSize;
+        var wh = ModuleUnits.WallHalf;
+        var sc = new PlacardScene { room = room };
+        sc.floor.Add(Rect.MinMaxRect(cs + wh, wh, 3f * cs - wh, 4f * cs - wh));
+        for (var slot = 1; slot <= 7; slot++)
+        {
+            int i, j;
+            if (FrontKind(room, slot) != EdgeKind.Open || !BayOfSlot(slot, out i, out j)) continue;
+            var x0 = i == 3 ? 3f * cs - wh : wh;
+            sc.floor.Add(Rect.MinMaxRect(x0, j * cs + wh, x0 + cs, (j + 1) * cs - wh));
+        }
+        MuseumKitBoxes(sc);
+        for (var k = 0; k < sc.kits.Count; k++)
+        {
+            var b = sc.kits[k];
+            if (b.min.y < FrontRoomsShowcasePlacards.StationTop + PlacardClear) sc.blocks.Add(RectPolygon(b.min.x, b.min.z, b.max.x, b.max.z));
+        }
+        for (var slot = 1; slot <= 7; slot++)
+        {
+            Vector2 first, second;
+            bool both;
+            if (FrontKind(room, slot) != EdgeKind.Door || !MuseumDoorJambs(room, slot, out first, out second, out both)) continue;
+            float faceX, into;
+            FrontFace(slot, out faceX, out into);
+            var open = new Vector2(into, 0f);
+            sc.swings.Add(SweepPolygon(first, (second - first).normalized, open));
+            if (both) sc.swings.Add(SweepPolygon(second, (first - second).normalized, open));
+        }
+        MuseumArch(room, 2, out sc.eCentre, out sc.eHalf);
+        MuseumArch(room, 1, out sc.xCentre, out sc.xHalf);
+        sc.passages.Add(RectPolygon(sc.eCentre - sc.eHalf, 0f, sc.eCentre + sc.eHalf, wh + ArchPassage));
+        sc.passages.Add(RectPolygon(sc.xCentre - sc.xHalf, 0f, sc.xCentre + sc.xHalf, wh + ArchPassage));
+        for (var slot = 1; slot <= 7; slot++)
+        {
+            int i, j;
+            if (FrontKind(room, slot) != EdgeKind.Arch || !BayOfSlot(slot, out i, out j)) continue;
+            float faceX, into;
+            FrontFace(slot, out faceX, out into);
+            var wallLine = faceX * cs - into * wh;
+            var reach = faceX * cs + into * ArchPassage;
+            var mid = (j + .5f) * cs;
+            sc.passages.Add(RectPolygon(Mathf.Min(wallLine, reach), mid - ArchExhibitHalf, Mathf.Max(wallLine, reach), mid + ArchExhibitHalf));
+        }
+        for (var slot = 1; slot <= 7; slot++)
+        {
+            Vector2 stand, face;
+            if (!PlacardStop(room, slot, out stand, out face)) continue;
+            sc.stops.Add(Obb(stand, new Vector2(face.y, -face.x), face, StopAlong * .5f, StopDeep * .5f));
+        }
+        return sc;
+    }
+
+    /// <summary>A room's arch on its hub wall (lane cell i 2: E, 1: X) as room-local x of its centre (where the map put it,
+    /// CrossingPoint) and its half span (the carve's for an authored arch, else the widest ArchOpening gives at that centre).</summary>
+    void MuseumArch(int room, int i, out float centre, out float half)
+    {
+        var cs = MapGrid.CellSize;
+        int u, v;
+        LocalToMuseum(room, i, 0, out u, out v);
+        var outward = LocalDir(room, 0f, -1f);
+        var lane = MuseumCell(u, v);
+        var hub = MuseumCell(u + Mathf.RoundToInt(outward.x), v + Mathf.RoundToInt(outward.y));
+        centre = RoomLocal(room, map.CrossingPoint(lane, hub)).x;
+        float width, along;
+        if (map.Cache != null && map.Cache.ArchOverride(lane, hub, out width, out along))
+        {
+            half = width * .5f;
+            return;
+        }
+        var inCell = centre - i * cs;
+        half = Mathf.Min(ModuleUnits.ArchMaxWidth * .5f, Mathf.Min(inCell - ModuleUnits.ArchCornerMargin, cs - ModuleUnits.ArchCornerMargin - inCell));
+        half = Mathf.Max(half, ModuleUnits.ArchMinWidth * .5f);
+    }
+
+    /// <summary>A door front's two jambs (room-local) as BuildEdge hangs its leaf: first the E door's hinge (the edge's start
+    /// jamb), second the other; both: a body door takes the second (FrontRoomsMapWorld.BodyDoorReverseHinge).</summary>
+    bool MuseumDoorJambs(int room, int slot, out Vector2 first, out Vector2 second, out bool both)
+    {
+        first = second = Vector2.zero;
+        both = false;
+        GridCoord bay, lane;
+        if (!MuseumFront(room, slot, out bay, out lane)) return false;
+        var lo = bay;
+        var hi = lane;
+        if (hi.x < lo.x || hi.y < lo.y)
+        {
+            lo = lane;
+            hi = bay;
+        }
+        var cs = MapGrid.CellSize;
+        var east = hi.x > lo.x;
+        // The edge in the map's cell frame (metres): an east edge starts at its south end and runs north, a north edge starts at
+        // its west end and runs east (FrontRoomsMapWorld's BuildEdge calls); the door is centred on it.
+        var start = east ? new Vector2((lo.x + 1) * cs, lo.y * cs) : new Vector2(lo.x * cs, (lo.y + 1) * cs);
+        var along = east ? new Vector2(0f, 1f) : new Vector2(1f, 0f);
+        var half = ModuleUnits.DoorWidth * .5f;
+        first = MapToRoom(room, start + along * (cs * .5f - half));
+        second = MapToRoom(room, start + along * (cs * .5f + half));
+        both = FrontRoomsMapWorld.BodyDoorReverseHinge(lo, hi);
+        return true;
+    }
+
+    /// <summary>A leaf's sweep into the lane: from its hinge, from shut (toward the other jamb) through SwingDegrees, SwingReach
+    /// out, in 6-degree steps (convex: under 180 degrees).</summary>
+    static Vector2[] SweepPolygon(Vector2 hinge, Vector2 shut, Vector2 open)
+    {
+        var steps = Mathf.CeilToInt(SwingDegrees / 6f);
+        var polygon = new Vector2[steps + 2];
+        polygon[0] = hinge;
+        for (var k = 0; k <= steps; k++)
+        {
+            var a = Mathf.Min(k * 6f, SwingDegrees) * Mathf.Deg2Rad;
+            polygon[k + 1] = hinge + SwingReach * (Mathf.Cos(a) * shut + Mathf.Sin(a) * open);
+        }
+        return polygon;
+    }
+
+    /// <summary>The room's exhibit objects' renderers as room-local boxes (x, height, y), each with its object's label.</summary>
+    void MuseumKitBoxes(PlacardScene sc)
+    {
+        if (museumExhibits == null) return;
+        var prefix = sc.room + ".";
+        var root = museumExhibits.transform;
+        for (var k = 0; k < root.childCount; k++)
+        {
+            var child = root.GetChild(k);
+            if (!child.name.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            foreach (var r in child.GetComponentsInChildren<Renderer>(true))
+            {
+                var b = r.bounds;
+                var lo = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+                var hi = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+                for (var c = 0; c < 8; c++)
+                {
+                    var p = RoomLocal(sc.room, new Vector3((c & 1) == 0 ? b.min.x : b.max.x, (c & 2) == 0 ? b.min.y : b.max.y, (c & 4) == 0 ? b.min.z : b.max.z));
+                    lo = Vector3.Min(lo, p);
+                    hi = Vector3.Max(hi, p);
+                }
+                var box = new Bounds();
+                box.SetMinMax(lo, hi);
+                sc.kits.Add(box);
+                sc.kitNames.Add(child.name);
+            }
+        }
+    }
+
+    /// <summary>
+    /// C's place at a station (10_research §3.4, 20 §2 C): on the stop's right, its face's centre StationStandOff (flat) from the
+    /// stop's eye and facing it (the builder tilts it), so the eye is StationNear from it. The bearing, degrees right of the
+    /// stop's facing, is the first from 0 at which its stand is out of every stop area, its plan PlacardClear off walls, kits,
+    /// tags, the placards set, every leaf's sweep and every arch, and its face hides no point of the exhibit from the stop's eye.
+    /// None (a crowded station): the bearing that fails the fewest of those, then the smallest; fails names them. Its plan joins
+    /// the room's blocks. The walking line from stop to stop is no check (none can hold it here: NOTES); the model measures it.
+    /// </summary>
+    bool MuseumPlaceStation(PlacardScene sc, int slot, List<Vector3> samples, out Vector2 floorPoint, out Vector2 toward, out int bearing, out string fails)
+    {
+        floorPoint = toward = Vector2.zero;
+        bearing = 0;
+        fails = null;
+        Vector2 stand, face;
+        if (!PlacardStop(sc.room, slot, out stand, out face)) return false;
+        var eye = new Vector3(stand.x, ModuleUnits.PlayerEye, stand.y);
+        samples.Clear();
+        MuseumExhibitSamples(sc, slot, eye, samples);
+        var bestCount = int.MaxValue;
+        var bestMask = 0;
+        for (var b = 0; b <= PlacardBearingMax; b++)
+        {
+            var mask = PlacardChecks(sc, stand, face, b, eye, samples, bestCount);
+            if (mask == 0)
+            {
+                bearing = b;
+                bestMask = 0;
+                bestCount = 0;
+                break;
+            }
+            var count = Bits(mask);
+            if (count >= bestCount) continue;
+            bestCount = count;
+            bestMask = mask;
+            bearing = b;
+        }
+        Vector2 at, d, w;
+        PlacardAxes(stand, face, bearing, out at, out d, out w);
+        floorPoint = at;
+        toward = -d;
+        sc.blocks.Add(PlacardFootprint(at, d));
+        if (bestMask != 0) fails = CheckNames(bestMask);
+        return true;
+    }
+
+    // The checks of one bearing, as bits (wall 1, kit 2, sweep 4, arch 8, stop area 16, view 32); the view, the costly one, is
+    // skipped once the others already fail as many as the best so far (it could only add to them).
+    int PlacardChecks(PlacardScene sc, Vector2 stand, Vector2 face, int bearing, Vector3 eye, List<Vector3> samples, int bestCount)
+    {
+        Vector2 at, d, w;
+        PlacardAxes(stand, face, bearing, out at, out d, out w);
+        var plan = PlacardFootprint(at, d);
+        var mask = 0;
+        if (!OnFloor(sc, plan)) mask |= 1;
+        if (!KeptClear(plan, sc.blocks, PlacardClear)) mask |= 2;
+        if (!KeptClear(plan, sc.swings, PlacardClear)) mask |= 4;
+        if (!KeptClear(plan, sc.passages, PlacardClear)) mask |= 8;
+        var post = Obb(at, w, d, PlacardStand, PlacardStand);
+        for (var k = 0; k < sc.stops.Count; k++)
+            if (PolygonDistance(post, sc.stops[k]) <= 0f)
+            {
+                mask |= 16;
+                break;
+            }
+        if (mask != 0 && Bits(mask) >= bestCount) return mask;
+        if (Hides(eye, at, d, w, samples)) mask |= 32;
+        return mask;
+    }
+
+    static int Bits(int mask)
+    {
+        var n = 0;
+        for (; mask != 0; mask &= mask - 1) n++;
+        return n;
+    }
+
+    static string CheckNames(int mask)
+    {
+        var s = "";
+        if ((mask & 1) != 0) s += " a wall nearer than 5 cm";
+        if ((mask & 2) != 0) s += " a kit or tag nearer than 5 cm";
+        if ((mask & 4) != 0) s += " in a leaf's sweep";
+        if ((mask & 8) != 0) s += " at an arch";
+        if ((mask & 16) != 0) s += " its stand in a stop area";
+        if ((mask & 32) != 0) s += " hiding part of its exhibit from the stop";
+        return s.Trim();
+    }
+
+    /// <summary>C at a bearing from a stop (room-local): its floor point (under its face's centre), d (stop to it, flat, unit),
+    /// w (its width's way, flat).</summary>
+    static void PlacardAxes(Vector2 stand, Vector2 face, int bearing, out Vector2 at, out Vector2 d, out Vector2 w)
+    {
+        var right = new Vector2(face.y, -face.x);
+        var t = bearing * Mathf.Deg2Rad;
+        d = face * Mathf.Cos(t) + right * Mathf.Sin(t);
+        at = stand + d * FrontRoomsShowcasePlacards.StationStandOff;
+        w = new Vector2(-d.y, d.x);
+    }
+
+    /// <summary>C in plan: StationWidth (and PlacardSlack) across, its tilted face's depth (and PlacardBack) along d.</summary>
+    static Vector2[] PlacardFootprint(Vector2 at, Vector2 d)
+    {
+        var w = new Vector2(-d.y, d.x);
+        var halfWide = FrontRoomsShowcasePlacards.StationWidth * .5f + PlacardSlack;
+        var halfDeep = FrontRoomsShowcasePlacards.StationHeight * .5f * Mathf.Sin(FrontRoomsShowcasePlacards.StationTilt * Mathf.Deg2Rad) + PlacardBack;
+        return Obb(at, w, d, halfWide, halfDeep);
+    }
+
+    /// <summary>Does C's face (grown by PlacardViewPad) stand between the eye and any exhibit point? Its face as the builder
+    /// makes it: top StationTop, StationHeight tilted StationTilt back from the reader, StationWidth across.</summary>
+    static bool Hides(Vector3 eye, Vector2 at, Vector2 d, Vector2 w, List<Vector3> samples)
+    {
+        var tilt = FrontRoomsShowcasePlacards.StationTilt * Mathf.Deg2Rad;
+        var h = FrontRoomsShowcasePlacards.StationHeight;
+        var centre = new Vector3(at.x, FrontRoomsShowcasePlacards.StationTop - Mathf.Cos(tilt) * h * .5f, at.y);
+        var normal = new Vector3(-d.x * Mathf.Cos(tilt), Mathf.Sin(tilt), -d.y * Mathf.Cos(tilt));
+        var up = new Vector3(d.x * Mathf.Sin(tilt), Mathf.Cos(tilt), d.y * Mathf.Sin(tilt));
+        var across = new Vector3(w.x, 0f, w.y);
+        var halfWide = FrontRoomsShowcasePlacards.StationWidth * .5f + PlacardViewPad;
+        var halfHigh = h * .5f + PlacardViewPad;
+        var toFace = Vector3.Dot(centre - eye, normal);
+        for (var k = 0; k < samples.Count; k++)
+        {
+            var ray = samples[k] - eye;
+            var den = Vector3.Dot(ray, normal);
+            if (Mathf.Abs(den) < 1e-9f) continue;
+            var t = toFace / den;
+            if (t <= 1e-6f || t >= 1f - 1e-6f) continue;
+            var rel = eye + ray * t - centre;
+            if (Mathf.Abs(Vector3.Dot(rel, across)) <= halfWide && Mathf.Abs(Vector3.Dot(rel, up)) <= halfHigh) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// What C must leave in view from the stop: the alcove's walls (and 3.4's window); a door with its frame kit; a window with
+    /// its casing; 3.6's arch with its card and detector; 2.2's key on the bay floor; the station's kits but the ones that only
+    /// carry it (PlacardSupports); with none, the framed code's place. Points on the faces the eye sees, ExhibitStep apart.
+    /// </summary>
+    void MuseumExhibitSamples(PlacardScene sc, int slot, Vector3 eye, List<Vector3> samples)
+    {
+        var cs = MapGrid.CellSize;
+        var wh = ModuleUnits.WallHalf;
+        var room = sc.room;
+        if (slot == 4)
+        {
+            var top = ModuleUnits.StandardCeiling;
+            AddBoxSamples(samples, eye, PlanBox(cs + wh, 4f * cs - wh - .02f, 0f, 3f * cs - wh, 4f * cs - wh, top), AlcoveStep);
+            AddBoxSamples(samples, eye, PlanBox(cs + wh, 3f * cs, 0f, cs + wh + .02f, 4f * cs - wh, top), AlcoveStep);
+            AddBoxSamples(samples, eye, PlanBox(3f * cs - wh - .02f, 3f * cs, 0f, 3f * cs - wh, 4f * cs - wh, top), AlcoveStep);
+            if (room == 3)
+            {
+                var window = 3.5f * cs;
+                AddBoxSamples(samples, eye, PlanBox(3f * cs - wh - WindowExhibitProud, window - WindowExhibitHalf, WindowExhibitSill, 3f * cs - wh, window + WindowExhibitHalf, WindowExhibitHead), ExhibitStep);
+            }
+            return;
+        }
+        int i, j;
+        if (!BayOfSlot(slot, out i, out j)) return;
+        float faceX, into;
+        FrontFace(slot, out faceX, out into);
+        faceX *= cs;
+        var mid = (j + .5f) * cs;
+        var kind = FrontKind(room, slot);
+        if (kind == EdgeKind.Door) AddBoxSamples(samples, eye, WallBox(faceX, into, mid, DoorExhibitHalf, 0f, DoorExhibitTop, DoorExhibitProud), ExhibitStep);
+        else if (kind == EdgeKind.Window) AddBoxSamples(samples, eye, WallBox(faceX, into, mid, WindowExhibitHalf, WindowExhibitSill, WindowExhibitHead, WindowExhibitProud), ExhibitStep);
+        else if (kind == EdgeKind.Open)
+        {
+            // 2.2's key where it lies (the bay's middle when taken or not laid).
+            var key = MuseumKeyLying();
+            var k = key != null ? RoomLocal(room, key.position) : new Vector3(3.5f * cs, 0f, 1.5f * cs);
+            AddBoxSamples(samples, eye, PlanBox(k.x - .2f, k.z - .2f, 0f, k.x + .2f, k.z + .2f, .05f), .05f);
+        }
+        else
+        {
+            if (kind == EdgeKind.Arch) AddBoxSamples(samples, eye, WallBox(faceX, into, mid, ArchExhibitHalf, 0f, ArchExhibitTop, .02f), ExhibitStep);
+            var code = room + "." + slot + " ";
+            var any = false;
+            for (var k = 0; k < sc.kits.Count; k++)
+            {
+                if (!sc.kitNames[k].StartsWith(code, StringComparison.Ordinal) || IsSupport(sc.kitNames[k])) continue;
+                AddBoxSamples(samples, eye, sc.kits[k], ExhibitStep);
+                any = true;
+            }
+            if (!any && kind == EdgeKind.Wall)
+            {
+                var spot = MuseumSpotOf(room, slot);
+                AddBoxSamples(samples, eye, WallBox(faceX, into, mid, FrameExhibitHalf, spot.height - FrameExhibitRise, spot.height + FrameExhibitRise, .01f), ExhibitStep);
+            }
+        }
+    }
+
+    static bool IsSupport(string label)
+    {
+        for (var k = 0; k < PlacardSupports.Length; k++)
+            if (label.StartsWith(PlacardSupports[k], StringComparison.Ordinal)) return true;
+        return false;
+    }
+
+    // A box on a bay front's lane face: half along the wall about mid, z0-z1 high, proud into the lane.
+    static Bounds WallBox(float faceX, float into, float mid, float half, float z0, float z1, float proud) =>
+        PlanBox(Mathf.Min(faceX, faceX + into * proud), mid - half, z0, Mathf.Max(faceX, faceX + into * proud), mid + half, z1);
+
+    // A room-local box from plan x, plan y, height ranges (Bounds: x, height, y).
+    static Bounds PlanBox(float x0, float y0, float h0, float x1, float y1, float h1)
+    {
+        var b = new Bounds();
+        b.SetMinMax(new Vector3(x0, h0, y0), new Vector3(x1, h1, y1));
+        return b;
+    }
+
+    /// <summary>Points on the faces of a box that face the eye, on a grid no coarser than step (at least 2 a side).</summary>
+    static void AddBoxSamples(List<Vector3> samples, Vector3 eye, Bounds box, float step)
+    {
+        var lo = box.min;
+        var hi = box.max;
+        if (eye.x < lo.x) FaceSamples(samples, step, 0, lo.x, lo.z, hi.z, lo.y, hi.y);
+        if (eye.x > hi.x) FaceSamples(samples, step, 0, hi.x, lo.z, hi.z, lo.y, hi.y);
+        if (eye.z < lo.z) FaceSamples(samples, step, 2, lo.z, lo.x, hi.x, lo.y, hi.y);
+        if (eye.z > hi.z) FaceSamples(samples, step, 2, hi.z, lo.x, hi.x, lo.y, hi.y);
+        if (eye.y > hi.y) FaceSamples(samples, step, 1, hi.y, lo.x, hi.x, lo.z, hi.z);
+        if (eye.y < lo.y) FaceSamples(samples, step, 1, lo.y, lo.x, hi.x, lo.z, hi.z);
+    }
+
+    // One face: axis 0 (x = at; a along plan y, b along height), 2 (plan y = at; a along x, b along height), 1 (height = at; a
+    // along x, b along plan y).
+    static void FaceSamples(List<Vector3> samples, float step, int axis, float at, float a0, float a1, float b0, float b1)
+    {
+        var na = Mathf.Max(2, Mathf.CeilToInt((a1 - a0) / step) + 1);
+        var nb = Mathf.Max(2, Mathf.CeilToInt((b1 - b0) / step) + 1);
+        for (var p = 0; p < na; p++)
+        for (var q = 0; q < nb; q++)
+        {
+            var a = a0 + (a1 - a0) * p / (na - 1);
+            var b = b0 + (b1 - b0) * q / (nb - 1);
+            samples.Add(axis == 0 ? new Vector3(at, b, a) : axis == 2 ? new Vector3(a, b, at) : new Vector3(a, at, b));
+        }
+    }
+
+    // Every point along a plan's edges, 5 cm apart, on the floor (each floor rectangle shrunk by PlacardClear).
+    static bool OnFloor(PlacardScene sc, Vector2[] plan)
+    {
+        for (var k = 0; k < plan.Length; k++)
+        {
+            var a = plan[k];
+            var b = plan[(k + 1) % plan.Length];
+            var n = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(a, b) / .05f));
+            for (var t = 0; t < n; t++)
+            {
+                var p = Vector2.Lerp(a, b, (float)t / n);
+                var inside = false;
+                for (var r = 0; r < sc.floor.Count && !inside; r++)
+                {
+                    var f = sc.floor[r];
+                    inside = p.x >= f.xMin + PlacardClear && p.x <= f.xMax - PlacardClear && p.y >= f.yMin + PlacardClear && p.y <= f.yMax - PlacardClear;
+                }
+                if (!inside) return false;
+            }
+        }
+        return true;
+    }
+
+    static bool KeptClear(Vector2[] plan, List<Vector2[]> others, float gap)
+    {
+        for (var k = 0; k < others.Count; k++)
+            if (PolygonDistance(plan, others[k]) < gap) return false;
+        return true;
+    }
+
+    static Vector2[] Obb(Vector2 c, Vector2 ax, Vector2 ay, float hx, float hy) =>
+        new[] { c - hx * ax - hy * ay, c + hx * ax - hy * ay, c + hx * ax + hy * ay, c - hx * ax + hy * ay };
+
+    static Vector2[] RectPolygon(float x0, float y0, float x1, float y1) =>
+        new[] { new Vector2(x0, y0), new Vector2(x1, y0), new Vector2(x1, y1), new Vector2(x0, y1) };
+
+    static float Cross(Vector2 o, Vector2 a, Vector2 b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+    static bool InsideConvex(Vector2 p, Vector2[] polygon)
+    {
+        var sign = 0;
+        for (var k = 0; k < polygon.Length; k++)
+        {
+            var c = Cross(polygon[k], polygon[(k + 1) % polygon.Length], p);
+            if (Mathf.Abs(c) < 1e-12f) continue;
+            var s = c > 0f ? 1 : -1;
+            if (sign == 0) sign = s;
+            else if (s != sign) return false;
+        }
+        return true;
+    }
+
+    static float SegmentDistance(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        var l2 = ab.sqrMagnitude;
+        var t = l2 < 1e-12f ? 0f : Mathf.Clamp01(Vector2.Dot(p - a, ab) / l2);
+        return Vector2.Distance(a + ab * t, p);
+    }
+
+    static bool SegmentsCross(Vector2 a, Vector2 b, Vector2 c, Vector2 d) =>
+        (Cross(c, d, a) > 0f) != (Cross(c, d, b) > 0f) && (Cross(a, b, c) > 0f) != (Cross(a, b, d) > 0f);
+
+    /// <summary>The distance between two convex polygons (a two-point one is a segment); 0 when they touch or overlap.</summary>
+    static float PolygonDistance(Vector2[] a, Vector2[] b)
+    {
+        if (b.Length > 2)
+            for (var k = 0; k < a.Length; k++)
+                if (InsideConvex(a[k], b)) return 0f;
+        if (a.Length > 2)
+            for (var k = 0; k < b.Length; k++)
+                if (InsideConvex(b[k], a)) return 0f;
+        var ea = a.Length > 2 ? a.Length : 1;
+        var eb = b.Length > 2 ? b.Length : 1;
+        for (var p = 0; p < ea; p++)
+        for (var q = 0; q < eb; q++)
+            if (SegmentsCross(a[p], a[(p + 1) % a.Length], b[q], b[(q + 1) % b.Length])) return 0f;
+        var best = float.MaxValue;
+        for (var p = 0; p < a.Length; p++)
+        for (var q = 0; q < eb; q++)
+            best = Mathf.Min(best, SegmentDistance(a[p], b[q], b[(q + 1) % b.Length]));
+        for (var q = 0; q < b.Length; q++)
+        for (var p = 0; p < ea; p++)
+            best = Mathf.Min(best, SegmentDistance(b[q], a[p], a[(p + 1) % a.Length]));
+        return best;
+    }
+
+    // ---------- room-local metres <-> the world
+
+    /// <summary>A station's stop in room-local metres and its facing (MuseumSpotOf's, back from museum cells).</summary>
+    static bool PlacardStop(int room, int slot, out Vector2 stand, out Vector2 face)
+    {
+        var spot = MuseumSpotOf(room, slot);
+        stand = MuseumToLocal(room, spot.stand.x, spot.stand.y) * MapGrid.CellSize;
+        face = MuseumToLocalDir(room, spot.face).normalized;
+        return spot.ok;
+    }
+
+    /// <summary>Museum cells to room cells (the inverse of LocalPoint).</summary>
+    static Vector2 MuseumToLocal(int room, float u, float v)
+    {
+        if (room == 1) return new Vector2(v, 4f - u);
+        if (room == 2 || room == 3) return new Vector2(u - (room == 2 ? 4f : 8f), v - 4f);
+        return new Vector2(4f - v, u - 12f);
+    }
+
+    /// <summary>A museum direction in the room's frame (the inverse of LocalDir).</summary>
+    static Vector2 MuseumToLocalDir(int room, Vector2 d)
+    {
+        if (room == 1) return new Vector2(d.y, -d.x);
+        if (room == 2 || room == 3) return d;
+        return new Vector2(-d.y, d.x);
+    }
+
+    Vector3 RoomWorld(int room, Vector2 p, float height) => MuseumWorld(LocalPoint(room, p.x / MapGrid.CellSize, p.y / MapGrid.CellSize), height);
+
+    Vector3 RoomWorldDir(int room, Vector2 d) => MuseumWorldDir(LocalDir(room, d.x, d.y)).normalized;
+
+    /// <summary>A world point in room-local metres (x, height, y).</summary>
+    Vector3 RoomLocal(int room, Vector3 world)
+    {
+        var p = map.transform.InverseTransformPoint(world);
+        var cs = MapGrid.CellSize;
+        var l = MuseumToLocal(room, p.x / cs - museumCell0.x, p.z / cs - museumCell0.y) * cs;
+        return new Vector3(l.x, p.y, l.y);
+    }
+
+    // A point of the map's cell frame (metres, x and z) in room-local metres.
+    Vector2 MapToRoom(int room, Vector2 p)
+    {
+        var cs = MapGrid.CellSize;
+        return MuseumToLocal(room, p.x / cs - museumCell0.x, p.y / cs - museumCell0.y) * cs;
+    }
+
+    // ---------- the placards while the museum stands
+
+    /// <summary>
+    /// Every frame while the museum stands: a room's inside placards on only while the player stands in it or in the hub cell
+    /// at one of its arches (the hub's always: fewer canvases and draws on an iPhone), 1.1's and 1.7's variant as the door shows
+    /// it; every MuseumLiveSeconds the live state on the foot of each C in the player's room. Nothing here allocates.
+    /// </summary>
+    void TickMuseumPlacards()
+    {
+        if (museumPlacards == null) return;
+        var mask = MuseumPlacardMask();
+        if (mask != museumPlacardMask) ShowMuseumPlacardRooms(mask);
+        if (museumMember != museumPlacardMember || (map == null || map.BodyDoors) != museumPlacardBody) SyncMuseumPlacardVariants();
+        museumLiveClock -= Time.unscaledDeltaTime;
+        if (museumLiveClock > 0f) return;
+        museumLiveClock = MuseumLiveSeconds;
+        var room = MuseumRoomHere();
+        if (room < 1 || room > 4) return;
+        for (var slot = 1; slot <= 7; slot++)
+        {
+            var placard = room == 1 && slot == 1 && !museumPlacardBody ? museumPlacardC11B : museumPlacardC[room * 8 + slot];
+            if (placard != null) FrontRoomsShowcasePlacards.SetLiveState(placard, MuseumLiveWord(room, slot));
+        }
+    }
+
+    // The rooms whose inside placards show: the one the player stands in, or the ones whose E or X hub cell the player is in.
+    int MuseumPlacardMask()
+    {
+        if (map == null || player == null) return 0;
+        var c = map.CellOf(player.position);
+        var u = c.x - museumCell0.x;
+        var v = c.y - museumCell0.y;
+        int i, j;
+        var room = MuseumRoomOf(u, v, out i, out j);
+        if (room > 0) return 1 << room;
+        if (room < 0) return 0;
+        var mask = 0;
+        for (var k = 0; k < museumEntryCells.Length; k++)
+            if (museumEntryCells[k].x == u && museumEntryCells[k].y == v) mask |= 1 << (1 + k / 2);
+        return mask;
+    }
+
+    // A room's canvases and renderers on or off (Canvas.enabled keeps every line's mesh: no text is built again when it shows).
+    void ShowMuseumPlacardRooms(int mask)
+    {
+        museumPlacardMask = mask;
+        for (var r = 1; r <= 4; r++)
+        {
+            var on = (mask & (1 << r)) != 0;
+            var canvases = museumPlacardCanvases[r];
+            for (var k = 0; k < canvases.Count; k++)
+                if (canvases[k] != null && canvases[k].enabled != on) canvases[k].enabled = on;
+            var renderers = museumPlacardRenderers[r];
+            for (var k = 0; k < renderers.Count; k++)
+                if (renderers[k] != null && renderers[k].enabled != on) renderers[k].enabled = on;
+        }
+    }
+
+    /// <summary>1.1's placard is the variant on the door (A while the floor's doors are body doors, as MuseumRow reads it), 1.7's
+    /// floor tag the member on its door; the other one(s) stand switched off at the same place.</summary>
+    void SyncMuseumPlacardVariants()
+    {
+        museumPlacardBody = map == null || map.BodyDoors;
+        museumPlacardMember = museumMember;
+        if (museumPlacards == null) return;
+        var a = museumPlacardC[1 * 8 + 1];
+        if (a != null && a.activeSelf != museumPlacardBody) a.SetActive(museumPlacardBody);
+        if (museumPlacardC11B != null && museumPlacardC11B.activeSelf == museumPlacardBody) museumPlacardC11B.SetActive(!museumPlacardBody);
+        for (var k = 0; k < museumMemberTags.Length; k++)
+        {
+            var tag = museumMemberTags[k];
+            if (tag != null && tag.activeSelf != (k == museumMember)) tag.SetActive(k == museumMember);
+        }
+    }
+
+    /// <summary>
+    /// The live state on C's foot (20 §2 C: right-aligned, accent): the station's state in the words the museum's list uses
+    /// (MuseumRowTag, MuseumKeysTag, MuseumWindowTag, MuseumAlarmTag; a door SHUT, OPEN or BROKEN), or where a frame is tried
+    /// today. A constant string each: nothing is built per call.
+    /// </summary>
+    string MuseumLiveWord(int room, int slot)
+    {
+        if (slot == 4) return room == 3 && MuseumLive(3, 4) ? MuseumWindowTag(4) : "GAME LIGHT";
+        if (room == 3 && slot == 7) return "FREE";
+        if (!MuseumLive(room, slot))
+        {
+            if (room == 3 && slot == 5 && MuseumDoorAt(3, 5) != null) return "PLAIN DOOR";
+            var st = MuseumRow(room, slot);
+            var tour = st != null ? st.tour : 0;
+            return tour == 2 ? "TOUR 2" : tour == 3 ? "TOUR 3" : tour == 4 ? "TOUR 4" : tour == 1 ? "MEDIA BAY" : "FRAME";
+        }
+        switch (room)
+        {
+            case 1:
+            {
+                var door = MuseumDoor(slot);
+                return door == null ? "FRAME" : door.broken ? "BROKEN" : door.open ? "OPEN" : "SHUT";
+            }
+            case 2:
+                if (slot == 2) return map.HasKeyFor(museumKeyZone) ? "TAKEN" : "ON FLOOR";
+                if (slot == 5) return "LIVE";
+                var keys = MuseumKeysTag(slot);
+                return keys == "KEY IN HAND" ? "KEY HELD" : keys;
+            case 3:
+                return slot == 5 ? MuseumAlarmTag() : slot == 6 ? "LIVE" : MuseumWindowTag(slot);
+            case 4:
+                return slot == 7 && museumDev >= 0 && museumDev < DevCount ? DevLetters[museumDev] : "LIVE";
+        }
+        return "";
+    }
+
     // ---------- per frame
 
     /// <summary>The museum's frame: the title's start, the build, the framed codes; its keys (P the plan in every state).</summary>
@@ -1526,6 +2620,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
 
     void TickMuseum()
     {
+        TickMuseumPlacards();
         museumTagClock -= Time.unscaledDeltaTime;
         if (museumTagClock > 0f) return;
         museumTagClock = MuseumTagSeconds;
@@ -1790,6 +2885,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
             MuseumNote("1.1's switch failed (" + e.GetType().Name + ": " + e.Message + ").");
         }
         museumTagClock = 0f;
+        // 1.1's placard is the variant the door is now.
+        SyncMuseumPlacardVariants();
     }
 
     /// <summary>4.7: in front of the row's next close-up (A desk phone, B wall clock, C vending machine, D copier), facing its face.</summary>
@@ -1812,6 +2909,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
         if (!MuseumEdgeOf(7, out edge)) return;
         museumMember = (museumMember + 1) % 4;
         museumMembers[edge] = (FrontRoomsDoorMember)museumMember;
+        // 1.7's floor tag is the member's.
+        SyncMuseumPlacardVariants();
         var door = MuseumDoor(7);
         if (door == null) return;
         try
@@ -2399,7 +3498,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
     void DrawMuseumFrame(float cx, float cy, string code, string kind, string line, bool live, float alpha, float s)
     {
         var pad = 7f * s;
-        var codeSize = nameStyle.CalcSize(new GUIContent(code));
+        // The code in Plex Mono Medium (20 §1: codes and figures; Bayon's "2.1" read "2.I"), as the lists' rows set it.
+        var codeSize = rowCodeStyle.CalcSize(new GUIContent(code));
         var kindSize = smallStyle.CalcSize(new GUIContent(kind));
         var lineSize = smallStyle.CalcSize(new GUIContent(line));
         var w = Mathf.Max(codeSize.x, Mathf.Max(kindSize.x, lineSize.x)) + pad * 2f;
@@ -2411,7 +3511,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
         Outline(new Rect(r.x - 1f, r.y - 1f, r.width + 2f, r.height + 2f), new Color(Ink.r, Ink.g, Ink.b, .55f * alpha), th + 2f);
         Outline(r, new Color(rule.r, rule.g, rule.b, (live ? 1f : .7f) * alpha), th);
         var ty = r.y + pad;
-        Text(new Rect(r.x + pad, ty, w - pad * 2f, codeSize.y), code, nameStyle, live ? Accent : Paper, alpha);
+        Text(new Rect(r.x + pad, ty, w - pad * 2f, codeSize.y), code, rowCodeStyle, live ? Accent : Paper, alpha);
         ty += codeSize.y;
         Text(new Rect(r.x + pad, ty, w - pad * 2f, kindSize.y), kind, smallStyle, Paper, .95f * alpha);
         ty += kindSize.y + 2f * s;
@@ -2439,7 +3539,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
         if (sign != null)
         {
             y = Para(x, y, w, sign.holds, smallStyle, Paper, .85f, 2f * s);
-            y = Para(x, y, w, Decide(sign.decide), zhSmallStyle, Accent, .9f, 8f * s);
+            y = RowDecide(x, y, w, sign.decide, .9f, 8f * s);
         }
         int markRoom, markSlot;
         var marked = MuseumMarked(out markRoom, out markSlot);
@@ -2452,7 +3552,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
             var live = MuseumLive(room, slot);
             var isMarked = marked && markRoom == room && markSlot == slot && MuseumRow(room, slot) == st;
             if (isMarked) Fill(new Rect(x - 14f * s, y + 6f * s, 4f * s, 14f * s), Accent);
-            Text(new Rect(x, y, 64f * s, 26f * s), st.code ?? "", nameStyle, isMarked || live ? Accent : Paper, live || isMarked ? 1f : .75f);
+            Span(x, y + BayonAscent * nameStyle.fontSize, st.code ?? "", rowCodeStyle, PlexAscent, isMarked || live ? Accent : Paper, live || isMarked ? 1f : .75f);
             Text(new Rect(x + 64f * s, y, Mathf.Max(40f * s, w - 304f * s), 26f * s), st.kind ?? "", nameStyle, Paper, live ? 1f : .7f);
             Text(new Rect(x + w - 240f * s, y + 5f * s, 240f * s, 22f * s), MuseumRowTag(st), statusStyle, Paper, live ? .95f : .55f);
             y += 28f * s;
@@ -2494,27 +3594,22 @@ public sealed partial class FrontRoomsInteractablesShowcase
             : "Live: room 1's six doors; room 3's windows, alarm door and ALARM ZONE arch; room 4's terminal, screens, placard, papers and test bed. Room 2's locks and key, 2.6, 2.7 and 4.2 stand as framed codes; each placard says where to try that station today.", smallStyle, Paper, .8f, 6f * s);
         y = Para(x, y, w, BoardLine(3), smallStyle, Paper, .7f, 6f * s);
         var sign = RoomSign(0);
-        if (sign != null) Para(x, y, w, Decide(sign.decide), zhLineStyle, Accent, 1f, 0f);
+        if (sign != null && !string.IsNullOrEmpty(sign.decide))
+            DecideLines(x, y + NotoAscent * cardZhBoldStyle.fontSize, w, sign.decide, cardZhBoldStyle, ZhPitch * s, 1f, true, true);
     }
 
-    /// <summary>Placard C in the museum: code and kind, what the museum shows here now, Try, touch, what it is, what Red decides, the small line.</summary>
+    /// <summary>Placard C in the museum, in the placard type (.Plan.cs DrawCard, on C's 540 measure): code chip and kind, Try (KEYS,
+    /// TOUCH), what it is, what Red decides with its bar, the small line, then what the museum shows here now as the accent live
+    /// line at the foot, and the variants as letter chips.</summary>
     void DrawMuseumPlacard(FrontRoomsShowcaseTable.Station st, int room, int slot, float x, float y, float w, float s)
     {
-        var live = MuseumLive(room, slot);
-        Text(new Rect(x, y, w, 40f * s), LabelOf(st), titleStyle, live ? Accent : Paper);
-        y += 40f * s;
-        y = Para(x, y, w, MuseumHere(room, slot, st), lineStyle, live ? Accent : Paper, 1f, 6f * s);
         var tryLine = MuseumTryLine(room, slot) ?? st.tryKeys ?? (st.guideKind >= 0 && st.guideKind < KindCount ? HowTo[st.guideKind] : "");
-        if (!string.IsNullOrEmpty(tryLine)) y = Para(x, y, w, "TRY  " + tryLine, lineStyle, Paper, .95f, 4f * s);
-        if (!string.IsNullOrEmpty(st.tryTouch)) y = Para(x, y, w, "TOUCH  " + st.tryTouch, smallStyle, Paper, .8f, 8f * s);
-        y = Para(x, y, w, st.what ?? "", zhLineStyle, Paper, 1f, 4f * s);
-        y = Para(x, y, w, Decide(st.decide), zhLineStyle, Accent, 1f, 8f * s);
         var rule = st.rule == FrontRoomsShowcaseTable.Rule.Media ? "MEDIA BAY"
             : st.rule == FrontRoomsShowcaseTable.Rule.None ? "" : "RULE " + FrontRoomsShowcaseTable.RuleName(st.rule);
         var small = st.staging ?? "";
         if (!string.IsNullOrEmpty(st.status)) small += (small.Length > 0 ? "  ·  " : "") + st.status;
         if (rule.Length > 0) small += (small.Length > 0 ? "  ·  " : "") + rule;
-        y = Para(x, y, w, small, smallStyle, Paper, .7f, 6f * s);
-        if (!string.IsNullOrEmpty(st.variants)) Para(x, y, w, "VARIANTS  " + st.variants, smallStyle, Paper, .9f, 0f);
+        DrawCard(x, y + 8f * s, w, 1f, true, st.code, st.kind, TryLabel, tryLine, TouchLabel, st.tryTouch, st.what, st.decide, small,
+            MuseumHere(room, slot, st), st.variants, null);
     }
 }

@@ -52,9 +52,9 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
 
     FrontRoomsStructuresKit kit;
     GameObject wetPart;
-    Material tile, nosing, block, slA, ivory, teal, capMat, flangeA, flangeC, film;
+    Material tile, nosing, block, slA, ivory, teal, capMat, slCInside, flangeA, flangeC, film;
     readonly List<Light> hallLamps = new List<Light>(), nightLamps = new List<Light>();
-    Renderer redLamp, greenLamp;
+    readonly List<Renderer> redLamps = new List<Renderer>(), greenLamps = new List<Renderer>();
     Material redOn, redOff, greenOn, greenOff;
     bool riding, night, wet, enteredStart, clicked;
     float rideS, rideV, splash, redUntil = float.MaxValue, clickAt = -1f;
@@ -74,12 +74,17 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         nosing = FrontRoomsPoolMaterials.Nosing;
         block = FrontRoomsPoolMaterials.Surface("Stair_Block", new Color(.62f, .62f, .6f));
         slA = FrontRoomsPoolMaterials.Transparent("slide SL-A gelcoat", new Color(.42f, .82f, .84f, .55f), .85f);
-        ivory = FrontRoomsPoolMaterials.Lit("slide gelcoat ivory", new Color(.95f, .93f, .86f), .72f);
+        // 61's #F2EDDB family, nudged warmer (review SP1-F9: after the pool grade the gelcoat read R/G .91 against the tile's .89;
+        // 61 l.210 wants it to read as its own warmer material).
+        ivory = FrontRoomsPoolMaterials.Lit("slide gelcoat ivory", new Color(.96f, .92f, .82f), .72f);
         teal = FrontRoomsPoolMaterials.Lit("slide band teal", new Color(0f, .50f, .52f), .7f);
         capMat = FrontRoomsPoolMaterials.Lit("slide SL-C cap", new Color(.15f, .24f, .26f), .55f);
+        // SL-C is dark inside (61: caps #263D42, the dark marks the blind spots): the channel's riding surface under the cap
+        // takes the cap's colour with a wet gelcoat's sheen, so a closed section reads as a tube, not a lit plane (review SP1-F4).
+        slCInside = FrontRoomsPoolMaterials.Lit("slide SL-C inside", new Color(.15f, .24f, .26f), .85f);
         flangeA = FrontRoomsPoolMaterials.Transparent("slide SL-A flange", new Color(.38f, .74f, .76f, .85f), .8f);
         flangeC = FrontRoomsPoolMaterials.Lit("slide flange ivory", new Color(.88f, .86f, .79f), .6f);
-        film = FrontRoomsPoolMaterials.WaterOf(FrontRoomsPoolMaterials.Water.Club);
+        film = FrontRoomsPoolMaterials.WaterOf(FrontRoomsPoolMaterials.Water.Level);   // every pool in scene 4 is level water (70 section 2)
 
         BuildPath();
         kit.Shell(Lid, 0f);
@@ -282,11 +287,12 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         kit.Prism(new Vector3(1.6f, 0f, 1.6f), new Vector3(1.6f, 0f, 4.4f), Upper, Upper + 1.07f, .2f, tile);
         // The top guard's stool, the CRT on a tiled shelf (a still of the catch pool from above), a blank rules board.
         kit.StandIn("top guard's stool", new Vector3(-5.0f, Upper + .33f, 5.0f), new Vector3(.38f, .66f, .38f), FrontRoomsPoolMaterials.Steel);
-        kit.Box(new Vector3(-3.1f, Upper + .95f, 5.55f), new Vector3(-1.9f, Upper + 1.03f, 5.85f), tile);
-        kit.StandIn("CRT monitor (a still of the catch pool, no live camera)", new Vector3(-2.5f, Upper + 1.24f, 5.66f), new Vector3(.42f, .38f, .40f), FrontRoomsPoolMaterials.Lit("crt beige", new Color(.72f, .70f, .63f), .3f), 0f, false);
+        // Shelf, CRT and board stand on the north wall's face (z 5.92), the CRT seated on its 0.42 m shelf (review SP1, missed).
+        kit.Box(new Vector3(-3.1f, Upper + .95f, 5.50f), new Vector3(-1.9f, Upper + 1.03f, 5.92f), tile);
+        kit.StandIn("CRT monitor (a still of the catch pool, no live camera)", new Vector3(-2.5f, Upper + 1.22f, 5.71f), new Vector3(.42f, .38f, .40f), FrontRoomsPoolMaterials.Lit("crt beige", new Color(.72f, .70f, .63f), .3f), 0f, false);
         var screen = FrontRoomsSurfaces.TryGet("Prop_ScreenCRT_On");
-        kit.StandIn("CRT screen", new Vector3(-2.5f, Upper + 1.25f, 5.455f), new Vector3(.32f, .26f, .01f), screen != null ? screen : FrontRoomsPoolMaterials.Glow("crt still", new Color(.25f, .55f, .58f)), 0f, false);
-        kit.StandIn("rules board (blank)", new Vector3(.2f, Upper + 1.5f, 5.83f), new Vector3(.9f, 1.2f, .03f), FrontRoomsPoolMaterials.Lit("rules board", new Color(.93f, .93f, .9f), .3f), 0f, false);
+        kit.StandIn("CRT screen", new Vector3(-2.5f, Upper + 1.23f, 5.505f), new Vector3(.32f, .26f, .01f), screen != null ? screen : FrontRoomsPoolMaterials.Glow("crt still", new Color(.25f, .55f, .58f)), 0f, false);
+        kit.StandIn("rules board (blank)", new Vector3(.2f, Upper + 1.5f, 5.905f), new Vector3(.9f, 1.2f, .03f), FrontRoomsPoolMaterials.Lit("rules board", new Color(.93f, .93f, .9f), .3f), 0f, false);
     }
 
     void BuildTower()
@@ -308,10 +314,10 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
                 holes.Add(new FrontRoomsStructuresKit.RingHole(at - 7.5f, at + 7.5f, bottom, bottom + 1.2f));
             }
         // Angles below 0 for the window at 0 degrees: the ring runs -180..180 so a hole round 0 stays whole.
-        kit.Ring(c, 1.5f, 1.8f, 0f, Upper, -180f, 180f, tile, true, holes);
+        kit.Ring(c, 1.5f, 1.8f, 0f, Upper, -180f, 180f, tile, true, holes, 1.5f);
         // The newel and the spiral: 48 risers of 0.1875 in four turns of 12, first riser just past the door.
         kit.Ring(c, 0f, .25f, 0f, Upper + .9f, 0f, 360f, tile, true, null, 30f);
-        kit.Spiral(c, .25f, 1.5f, first, 30f, 48, .1875f, 0f, tile, nosing, .12f);
+        kit.Spiral(c, .25f, 1.5f, first, 30f, 48, .1875f, 0f, tile, nosing, .1875f);
         // The landing at +9.0 (one tread wide, so the stair a turn below keeps 2.1 m) and a rail across the shaft beside it;
         // the cap's opening (35..100) lets out. Its collision is a walking surface exactly its own size at +9.0: the sector's
         // tread boxes, wider than the sector near the newel, stopped the player's 1.75 m capsule climbing on the inner side
@@ -380,8 +386,8 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
             kit.Shell(p.zone == 1 ? 6.6f : p.zone == 2 ? 4.5f : Lid, p.floor);
             Bay(p);
             if (k > 0 && pieces[k - 1].style != Tub) Joint(pieces[k - 1], p);
-            Saddle(p.a, p.b - p.a, p.r0, p.floor);
-            if (k == pieces.Count - 1) Saddle(p.b, p.b - p.a, p.r1, p.floor);
+            Saddle(p.a, p.b - p.a, p.r0, p.floor, p.Grade);
+            if (k == pieces.Count - 1) Saddle(p.b, p.b - p.a, p.r1, p.floor, p.Grade);
         }
     }
 
@@ -463,13 +469,19 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         kit.Prism(a, b, top - .30f, top, .9f, tile);
     }
 
-    // The tiled saddle at a pier: 0.7 long, one course, under the trough.
-    void Saddle(Vector3 at, Vector3 dir, float riding, float floor)
+    // The tiled saddle at a pier: 0.7 long, one course raked with the riding line (the trough's bottom), 5 mm under it, so it
+    // never stands up through the trough downstream (review SP1-F1); the collider keeps to the lower end.
+    void Saddle(Vector3 at, Vector3 dir, float riding, float floor, float grade)
     {
         if (riding - Course < floor) return;
         dir.y = 0f;
         dir.Normalize();
-        kit.Prism(at - dir * .35f, at + dir * .35f, riding - Course, riding - .005f, .7f, tile);
+        var a = at - dir * .35f;
+        var b = at + dir * .35f;
+        a.y = riding + grade * .35f;
+        b.y = riding - grade * .35f;
+        kit.RakeWall(a, b, -.005f, Mathf.Max(floor, a.y - Course), Mathf.Max(floor, b.y - Course), .7f, tile, false);
+        if (b.y - .005f > Mathf.Max(floor, riding - Course) + .01f) kit.Prism(a, b, Mathf.Max(floor, riding - Course), b.y - .005f, .7f, null, true);
     }
 
     // The flume where it runs low over the deck: solid, so nobody walks into the trough.
@@ -508,10 +520,11 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         // the north-east corner. North arm basins 0.30 deep, water 0.10 under each terrace, falling over a tiled weir (C5,
         // 0.60) into the next; the last (+0.50) across the pool's north edge into the pool. The east arm dry.
         kit.Shell(Lid, .6f);
-        // T1 +0.6 (x -4.5..1.5): its basin only over the pool's edge (x -1.5..1.5).
+        // T1 +0.6 (x -4.5..1.5): its basin only over the pool's edge (x -1.5..1.5). Every basin is 0.28 deep (70 section 3: 0.30;
+        // they were built 0.40, over the player's 0.30 step: walk in from the terrace and nobody climbs out; walk test 11-04).
         kit.Box(-4.5f, 0f, 19.5f, 1.5f, .6f, 21f, tile);
         kit.Box(-4.5f, 0f, 18f, -1.5f, .6f, 19.5f, tile);
-        kit.Box(-1.5f, 0f, 18f, 1.5f, .2f, 19.5f, tile);
+        kit.Box(-1.5f, 0f, 18f, 1.5f, .32f, 19.5f, tile);
         kit.Box(-1.5f, 0f, 18f, 1.5f, .5f, 18.15f, tile);
         kit.Water(-1.5f, 18.15f, 1.5f, 19.5f, .5f);
         Sheet(new Vector3(-1.4f, 0f, 17.985f), new Vector3(1.4f, 0f, 17.985f), .5f, -.05f);
@@ -521,7 +534,7 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         kit.Shell(Lid, 2.4f);
         kit.Box(7.5f, 0f, 19.5f, 10.5f, 2.4f, 21f, tile);
         kit.Box(7.5f, 0f, 16.2f, 10.5f, 2.4f, 18f, tile);
-        kit.Box(7.65f, 0f, 18f, 10.5f, 2.0f, 19.5f, tile);
+        kit.Box(7.65f, 0f, 18f, 10.5f, 2.12f, 19.5f, tile);
         kit.Box(7.5f, 0f, 18f, 7.65f, 2.3f, 19.5f, tile);
         kit.Water(7.65f, 18f, 10.5f, 19.5f, 2.3f);
         Sheet(new Vector3(7.49f, 0f, 18.05f), new Vector3(7.49f, 0f, 19.45f), 2.3f, 1.7f);
@@ -546,8 +559,8 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         // Guards 1.07 where a terrace drops more than 0.76 to the deck or the pool's water (tiled half-walls).
         var g = FrontRoomsStructuresKit.GuardStyle.TileWall;
         f.Guard(new Vector3(1.5f, 0f, 18.1f), new Vector3(7.5f, 0f, 18.1f), 0f, FrontRoomsStructuresKit.GuardStyle.None);
-        f.Guard(new Vector3(1.5f, 0f, 18.08f), new Vector3(3.9f, 0f, 18.08f), 1.2f, g);
-        f.Guard(new Vector3(3.9f, 0f, 18.08f), new Vector3(7.5f, 0f, 18.08f), 1.8f, g);
+        f.Guard(new Vector3(1.5f, 0f, 18.08f), new Vector3(3.9f, 0f, 18.08f), 1.2f, FrontRoomsStructuresKit.GuardStyle.Glass);
+        f.Guard(new Vector3(3.9f, 0f, 18.08f), new Vector3(7.5f, 0f, 18.08f), 1.8f, FrontRoomsStructuresKit.GuardStyle.Glass);
         f.Guard(new Vector3(7.6f, 0f, 12f), new Vector3(7.6f, 0f, 13.8f), 1.2f, g);
         f.Guard(new Vector3(7.6f, 0f, 13.8f), new Vector3(7.6f, 0f, 16.2f), 1.8f, g);
         f.Guard(new Vector3(7.6f, 0f, 16.2f), new Vector3(7.6f, 0f, 18f), 2.4f, g);
@@ -561,7 +574,7 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         kit.Shell(Lid, h);
         kit.Box(x0, 0f, 19.5f, x1, h, 21f, tile);
         if (!basin) { kit.Box(x0, 0f, 18f, x1, h, 19.5f, tile); return; }
-        kit.Box(x0 + .15f, 0f, 18.15f, x1, h - .4f, 19.5f, tile);
+        kit.Box(x0 + .15f, 0f, 18.15f, x1, h - .28f, 19.5f, tile);
         kit.Box(x0, 0f, 18.15f, x0 + .15f, h - .1f, 19.5f, tile);
         kit.Box(x0, 0f, 18f, x1, h, 18.15f, tile);
         kit.Water(x0 + .15f, 18.15f, x1, 19.5f, h - .1f);
@@ -614,11 +627,22 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
             var l = kit.Troffer(new Vector3(c.x + 1.5f, y, c.y + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true, false, 1f, 8f, dead);
             if (l != null) hallLamps.Add(l);
         }
-        // The plenum box: sides on the L's open edges, a black top, wires up to the lid.
+        // The plenum box: sides on the L's open edges, a black top, wires up to the lid. Black inside only: each side carries
+        // a 0.05 tile skin on its hall face, so from the deck the box reads as part of the tiled hall with the grid hung in it,
+        // not a black beam (review SP1-F6; the grid stays the one surface in the hall that is not tile, 70 section 3).
         kit.Box(new Vector3(-4.55f, y, 18f), new Vector3(-4.5f, top, 21f), plenum, false);
         kit.Box(new Vector3(-4.5f, y, 17.95f), new Vector3(7.5f, top, 18f), plenum, false);
         kit.Box(new Vector3(7.45f, y, 9f), new Vector3(7.5f, top, 17.95f), plenum, false);
         kit.Box(new Vector3(7.5f, y, 8.95f), new Vector3(10.5f, top, 9f), plenum, false);
+        kit.Box(new Vector3(-4.6f, y, 17.9f), new Vector3(-4.55f, top, 21f), tile, false);
+        kit.Box(new Vector3(-4.55f, y, 17.9f), new Vector3(7.45f, top, 17.95f), tile, false);
+        kit.Box(new Vector3(7.4f, y, 8.9f), new Vector3(7.45f, top, 17.95f), tile, false);
+        kit.Box(new Vector3(7.45f, y, 8.9f), new Vector3(10.5f, top, 8.95f), tile, false);
+        // The grid's own floor bounce: its troffers aim down and the wall boxes up, so the lay-in's underside took only the
+        // pool trilight's cyan ground term and read dark olive; two weak warm up-fills over the terraces give it Level 0's
+        // lit cream back (review SP1, missed).
+        foreach (var f in new[] { new Vector3(-3f, 3.0f, 19.5f), new Vector3(3f, 3.4f, 19.5f), new Vector3(9f, 4.0f, 13.5f) })
+            hallLamps.Add(kit.Lamp("grid bounce (up-fill)", LightType.Spot, f, Vector3.up, 150f, 110f, 2.2f, 5f, new Color(1f, .93f, .80f), true, Vector3.zero, null, Color.black));
         kit.Box(new Vector3(-4.5f, top, 18f), new Vector3(10.5f, top + .04f, 21f), plenum, false);
         kit.Box(new Vector3(7.5f, top, 9f), new Vector3(10.5f, top + .04f, 18f), plenum, false);
         foreach (var w in new[] { new Vector2(-3f, 19.5f), new Vector2(3f, 19.5f), new Vector2(9f, 19.5f), new Vector2(9f, 13.5f) })
@@ -637,23 +661,41 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         kit.Box(TubX0, Upper, TubZ0 - .2f, TubX1, TubSeat + 1.15f, TubZ0, tile);
         kit.Box(TubX1 - .3f, Upper, TubZ1, TubX1, TubSeat + 1.15f, TubZ1 + .2f, tile);
         kit.Box(new Vector3(TubX1 - .18f, TubSeat + .97f, TubZ0 - .1f), new Vector3(TubX1 - .12f, TubSeat + 1.03f, TubZ1 + .1f), FrontRoomsPoolMaterials.Steel, false);
-        // The chain across the entry (visual only, no collider).
-        for (var k = 0; k < 9; k++)
+        // The chain across the entry (visual only, no collider), from the cap ring's face (x -6.0 at z 4.0) to the north cheek.
+        for (var k = 0; k < 12; k++)
         {
-            var x = TubX0 + .05f + k * .1f;
-            var sag = .08f * Mathf.Sin(Mathf.PI * k / 8f);
+            var x = -6.0f + .05f + k * .1f;
+            var sag = .08f * Mathf.Sin(Mathf.PI * k / 11f);
             kit.Box(new Vector3(x, TubSeat + .55f - sag, TubZ1 + .09f), new Vector3(x + .07f, TubSeat + .58f - sag, TubZ1 + .11f), FrontRoomsPoolMaterials.Steel, false);
         }
         // Nobody walks off the tub into the slot: the ride starts with E.
         kit.Mesh.Collider(new Vector3(TubX1 + .05f, TubSeat + .9f, (TubZ0 + TubZ1) * .5f), new Vector3(.1f, 1.8f, TubZ1 - TubZ0));
         kit.RelayBlocker("tub", new Vector3(TubX0 - .1f, Upper, TubZ0), new Vector3(TubX1, Upper + 2.4f, TubZ1 + .6f));
-        // The red / green start light on the north cheek, facing the rider.
+        // The red / green start light: a lamp head on the north cheek's east end (61: on a post facing the gate), two hooded
+        // lenses a colour, one face west toward the tub and the cap ring's opening (who comes in past the chain), one east down
+        // the slot toward the corridor door (review SP1-F11; the old plates faced south into the tub, edge-on from both ways).
         redOn = FrontRoomsPoolMaterials.Glow("start light red on", new Color(1.8f, .14f, .08f));
         redOff = FrontRoomsPoolMaterials.Glow("start light red off", new Color(.10f, .02f, .02f));
         greenOn = FrontRoomsPoolMaterials.Glow("start light green on", new Color(.10f, 1.6f, .35f));
         greenOff = FrontRoomsPoolMaterials.Glow("start light green off", new Color(.01f, .08f, .03f));
-        redLamp = kit.StandIn("start light red", new Vector3(TubX1 - .15f, TubSeat + .85f, TubZ1 - .005f), new Vector3(.09f, .09f, .01f), redOn, 0f, false).GetComponent<Renderer>();
-        greenLamp = kit.StandIn("start light green", new Vector3(TubX1 - .15f, TubSeat + .72f, TubZ1 - .005f), new Vector3(.09f, .09f, .01f), greenOff, 0f, false).GetComponent<Renderer>();
+        var headMat = FrontRoomsPoolMaterials.Lit("start light head", new Color(.16f, .17f, .18f), .45f, .3f);
+        var hx = TubX1 - .15f;
+        var hz = TubZ1 + .1f;
+        var h0 = TubSeat + 1.15f;
+        kit.Box(new Vector3(hx - .03f, h0, hz - .03f), new Vector3(hx + .03f, h0 + .08f, hz + .03f), headMat, false);
+        kit.Box(new Vector3(hx - .08f, h0 + .08f, hz - .1f), new Vector3(hx + .08f, h0 + .44f, hz + .1f), headMat, false);
+        for (var side = -1; side <= 1; side += 2)
+        {
+            var fx = hx + side * .08f;
+            for (var k = 0; k < 2; k++)
+            {
+                var cy = h0 + .17f + .17f * (1 - k);
+                kit.Box(new Vector3(Mathf.Min(fx, fx + side * .07f), cy + .065f, hz - .075f), new Vector3(Mathf.Max(fx, fx + side * .07f), cy + .075f, hz + .075f), headMat, false);
+                var lens = kit.StandIn(k == 0 ? "start light red" : "start light green", new Vector3(fx + side * .004f, cy, hz), new Vector3(.008f, .12f, .12f),
+                    k == 0 ? redOn : greenOff, 0f, false).GetComponent<Renderer>();
+                if (k == 0) redLamps.Add(lens); else greenLamps.Add(lens);
+            }
+        }
     }
 
     // ---------------------------------------------------------------- the flume
@@ -697,12 +739,12 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
 
     void BuildFlume()
     {
-        var tube = TubeProfile(.6f, 24);
+        var tube = TubeProfile(.6f, 48);   // 48 sides: the 24-gon's 15 deg facets showed on the mouths (review SP1-F21)
         var channel = ChannelProfile(0f);
         var cap = CapProfile();
         var bandL = new List<Vector2> { new Vector2(-.47f, .38f), new Vector2(-.47f, .65f) };
         var bandR = new List<Vector2> { new Vector2(.47f, .65f), new Vector2(.47f, .38f) };
-        var ringA = TubeProfile(.65f, 24);
+        var ringA = TubeProfile(.65f, 48);
         var ringC = ChannelProfile(.04f);
         kit.Shell(Lid, 0f);
         kit.Mesh.CastShadows = true;
@@ -721,7 +763,8 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
                     kit.Sweep(P, R, U, p.i0, p.i1, bandR, false, true, teal, S[p.i0]);
                     break;
                 default:
-                    kit.Sweep(P, R, U, p.i0, p.i1, channel, false, true, ivory, S[p.i0]);
+                    // The channel's back faces are its riding surface (its front normals point out of the hull).
+                    kit.Sweep(P, R, U, p.i0, p.i1, channel, false, true, ivory, S[p.i0], slCInside);
                     kit.Sweep(P, R, U, p.i0, p.i1, cap, false, true, capMat, S[p.i0]);
                     break;
             }
@@ -752,8 +795,29 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
             if (p.style == Tub) continue;
             kit.Sweep(P, R, U, p.i0, p.i1, filmProfile, false, true, film, S[p.i0]);
         }
-        kit.Water(TubX0 + .02f, TubZ0 + .02f, TubX1, TubZ1 - .02f, TubSeat + .42f, FrontRoomsPoolMaterials.Water.Club);
-        Sheet(new Vector3(TubX1 + .01f, 0f, TubZ0 + .3f), new Vector3(TubX1 + .01f, 0f, TubZ1 - .3f), TubSeat + .42f, TubSeat + .05f);
+        // 61: water 0.42 over the tub floor (+9.0), so 0.12 over the seat, spilling into the slot (review SP1-F14; the basin
+        // itself is still the solid seat block). The film leaves at the lip into the pool with a short fall and a white patch
+        // where it lands (review SP1-F7: nothing left the lip).
+        kit.Water(TubX0 + .02f, TubZ0 + .02f, TubX1, TubZ1 - .02f, Upper + .42f, FrontRoomsPoolMaterials.Water.Level);
+        Sheet(new Vector3(TubX1 + .01f, 0f, TubZ0 + .3f), new Vector3(TubX1 + .01f, 0f, TubZ1 - .3f), Upper + .42f, TubSeat + .05f);
+        if (P.Count > 1)
+        {
+            var e = P[P.Count - 1];
+            var er = R[R.Count - 1];
+            var et = T[T.Count - 1];
+            er.y = et.y = 0f;
+            er.Normalize();
+            et.Normalize();
+            var foot = new Vector3(e.x, 0f, e.z);
+            Sheet(foot - er * .28f, foot + er * .28f, e.y + .06f, -.05f);
+            var foam = FrontRoomsPoolMaterials.Transparent("lip outflow foam", new Color(.86f, .96f, .97f, .42f), .6f);
+            var keep = kit.Mesh.CastShadows;
+            kit.Mesh.CastShadows = false;
+            var a0 = foot - er * .45f;
+            var a1 = foot + er * .45f;
+            kit.QuadPlanar(a0 + Vector3.up * -.045f, a1 + Vector3.up * -.045f, a1 + et * 1.1f + Vector3.up * -.045f, a0 + et * 1.1f + Vector3.up * -.045f, Vector3.up, foam);
+            kit.Mesh.CastShadows = keep;
+        }
         kit.EndPart();
         wetPart = part != null ? part.gameObject : null;
         if (wetPart != null) wetPart.SetActive(false);
@@ -765,16 +829,17 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
     {
         // Metal-halide wall boxes throwing up (the lid the brightest surface), a soft down-fill grid at 6 m, three
         // underwater lamps in the catch pool; the hall's lamps stay on in SP1 (view lamps). Intensities by eye.
-        hallLamps.Add(kit.WallBox(new Vector3(-1.5f, 5.4f, .15f), Vector3.forward));
-        hallLamps.Add(kit.WallBox(new Vector3(4.5f, 5.4f, .15f), Vector3.forward));
-        hallLamps.Add(kit.WallBox(new Vector3(-7.5f, 5.4f, 20.85f), Vector3.back));
-        hallLamps.Add(kit.WallBox(new Vector3(1.5f, 7.2f, 20.85f), Vector3.back));
-        hallLamps.Add(kit.WallBox(new Vector3(-10.35f, 5.4f, 4.5f), Vector3.right));
-        hallLamps.Add(kit.WallBox(new Vector3(-10.35f, 5.4f, 18f), Vector3.right));
-        hallLamps.Add(kit.WallBox(new Vector3(10.35f, 5.4f, 6f), Vector3.left));
-        hallLamps.Add(kit.WallBox(new Vector3(10.35f, 7.2f, 19.5f), Vector3.left));
+        // Range 15 (was 11): in the 8.7 m hall the boxes at 5.4 / 7.2 reached the lid's middle at the window's tail (review SP1-F8).
+        hallLamps.Add(kit.WallBox(new Vector3(-1.5f, 5.4f, .15f), Vector3.forward, 10f, 15f));
+        hallLamps.Add(kit.WallBox(new Vector3(4.5f, 5.4f, .15f), Vector3.forward, 10f, 15f));
+        hallLamps.Add(kit.WallBox(new Vector3(-7.5f, 5.4f, 20.85f), Vector3.back, 10f, 15f));
+        hallLamps.Add(kit.WallBox(new Vector3(1.5f, 7.2f, 20.85f), Vector3.back, 10f, 15f));
+        hallLamps.Add(kit.WallBox(new Vector3(-10.35f, 5.4f, 4.5f), Vector3.right, 10f, 15f));
+        hallLamps.Add(kit.WallBox(new Vector3(-10.35f, 5.4f, 18f), Vector3.right, 10f, 15f));
+        hallLamps.Add(kit.WallBox(new Vector3(10.35f, 5.4f, 6f), Vector3.left, 10f, 15f));
+        hallLamps.Add(kit.WallBox(new Vector3(10.35f, 7.2f, 19.5f), Vector3.left, 10f, 15f));
         foreach (var d in new[] { new Vector2(-1.5f, 4.5f), new Vector2(4.5f, 4.5f), new Vector2(-7.5f, 10.5f), new Vector2(-1.5f, 10.5f), new Vector2(4.5f, 10.5f), new Vector2(-7.5f, 16.5f), new Vector2(-1.5f, 16.5f), new Vector2(4.5f, 16.5f) })
-            hallLamps.Add(kit.DownFill(new Vector3(d.x, Lid - .07f, d.y), 2.4f, 12f));
+            hallLamps.Add(kit.DownFill(new Vector3(d.x, Lid - .07f, d.y), 4f, 14f));   // 2.4 / 12 under an 8.7 lid (review SP1-F8)
         kit.Underwater(new Vector3(7.28f, -.5f, 15f), Vector3.left);
         kit.Underwater(new Vector3(2.5f, -.5f, 12.22f), Vector3.forward);
         kit.Underwater(new Vector3(3.5f, -.5f, 17.78f), Vector3.back);
@@ -796,7 +861,9 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         {
             if (p.style != SLA) continue;
             var mid = (p.i0 + p.i1) / 2;
-            var l = kit.Lamp("SL-A night line", LightType.Point, P[mid] + U[mid] * .6f, Vector3.down, 0f, 0f, 1f, 3f, new Color(.6f, 1f, 1f), true, Vector3.zero, null, Color.black);
+            // Aqua (.30, 1, .95), 0.8: the tube's specular takes the lamp's colour, so the line stays aqua at night instead of
+            // clipping to white (review SP1-F10: G/R 1.04 at (.6, 1, 1) x 1).
+            var l = kit.Lamp("SL-A night line", LightType.Point, P[mid] + U[mid] * .6f, Vector3.down, 0f, 0f, .8f, 3f, new Color(.30f, 1f, .95f), true, Vector3.zero, null, Color.black);
             nightLamps.Add(l);
             host().Look.Scale(l, 0f);
         }
@@ -810,7 +877,7 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
     {
         var dir = (new Vector3(ArrivalLook.x, 0f, ArrivalLook.z) - Arrival).normalized;
         var right = new Vector3(dir.z, 0f, -dir.x);
-        var at = Arrival + dir * 2f + right * 1.5f;
+        var at = Arrival + dir * 2f + right * 2.1f;
         kit.Sign(new Vector3(at.x, 1.5f, at.z), Arrival + Vector3.up * 1.5f, "SP1 · 滑梯：瓷砖墙在下面托着（你选的 A）",
             "泳池层。双层高的瓷砖大厅，滑道骑在一道瓷砖拱墙上，塔从天花板穿到楼上的起滑间（楼面 +9.0 米，起滑面 +9.3 米）。滑道从西墙出去，穿过一间你永远走不到的房间，在墙后转一圈，再从北墙回来，落进 0.9 米深的落水池，全长约 79 米。东北角是一层层往下溢水的台地，头顶悬着一块办公室吊顶。站进起滑间的池子按 E 滑一次（约 15 秒，中途不能停），滑完按 R 回到池子；N 切换夜景，F 切换滑道里有没有水。东墙外的楼梯是走回起滑间的路，也是 Relay 的路。\n"
             + "灰盒占位：滑道（没有真实的玻璃钢和螺栓）、拱墙细部、起滑灯、监视器、规则牌、水和焦散；瓷砖用的是 150 毫米瓷白砖贴图（只在这个场景里）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
@@ -888,7 +955,9 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         // The start light: red during a ride and 4 s after; the first visit to the start room clicks it from red to green
         // with nobody at the tub, once (63 Q7; silent, rule 24).
         var feet = walker.transform.position - Site;
-        if (!enteredStart && feet.y > Upper - .3f && feet.y < UpperLid && feet.x > -10.5f && feet.x < 4.5f && feet.z > 0f && feet.z < 6f)
+        // Only in the room itself, not on the tower's last risers inside the cap ring (review SP1-F11).
+        if (!enteredStart && feet.y > Upper - .3f && feet.y < UpperLid && feet.x > -10.5f && feet.x < 4.5f && feet.z > 0f && feet.z < 6f
+            && new Vector2(feet.x - TowerCentre.x, feet.z - TowerCentre.z).magnitude > 1.9f)
         {
             enteredStart = true;
             clickAt = Time.time + 1.2f;
@@ -900,8 +969,8 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
             if (clickAt > 0f && Time.time >= clickAt) { clicked = true; redUntil = 0f; red = false; }
         }
         else red = riding || Time.time < redUntil;
-        if (redLamp != null) redLamp.sharedMaterial = red ? redOn : redOff;
-        if (greenLamp != null) greenLamp.sharedMaterial = red ? greenOff : greenOn;
+        foreach (var r in redLamps) if (r != null) r.sharedMaterial = red ? redOn : redOff;
+        foreach (var g in greenLamps) if (g != null) g.sharedMaterial = red ? greenOff : greenOn;
     }
 
     void Ride(FrontRoomsStructures host, FrontRoomsStructuresWalker walker, float dt)
@@ -988,7 +1057,9 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
         night = on;
         foreach (var l in hallLamps) if (l != null) host.Look.Scale(l, on ? .2f : 1f);
         foreach (var l in nightLamps) if (l != null) host.Look.Scale(l, on ? 1f : 0f);
-        if (slA != null && slA.HasProperty("_EmissionColor")) slA.SetColor("_EmissionColor", on ? new Color(.10f, .55f, .55f) * 4f : Color.black);
+        // Aqua that stays aqua (G/R >= 1.6 in the frame): x4 tonemapped and bloomed to white (review SP1-F10); x1.4 under the
+        // pool grade's +.6 still clipped to G/R 1.2, so x0.8.
+        if (slA != null && slA.HasProperty("_EmissionColor")) slA.SetColor("_EmissionColor", on ? new Color(.02f, .55f, .55f) * .8f : Color.black);
         host.Look.Want(PresetAt(Site));
     }
 

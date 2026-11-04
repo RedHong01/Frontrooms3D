@@ -160,8 +160,9 @@ namespace FrontRooms.Map
     ///   RELAY 12) foils ONE window: the highest-ranked one that is neither plain nor excluded (RELAY 6: the first zone, 15
     ///   cells of the start door, Blocked: the station, its strip, its walk, X and the EXIT door). The ledger then holds the
     ///   slot for Foil; a slot a Run! room holds is never foiled again (Taken).
-    /// So foil is a pure function of the edge hash and the zone's stored tier (and the floor's fixed start and station): the
-    /// plan is made once per zone, at the first question after Ready (the floor set up: Begin), and kept for the floor.
+    /// So foil is a pure function of the edge hash and the zone's stored tier (and the floor's fixed start and station, and the
+    /// Run! rooms planned before it: 71 s.9 card 3 keeps their calm zones free): the plan is made once per zone, at the first
+    /// question after Ready (the floor set up: Begin), and kept for the floor.
     /// </summary>
     public sealed class FrontRoomsFoil
     {
@@ -179,6 +180,8 @@ namespace FrontRooms.Map
         readonly Dictionary<GridCoord, FrontRoomsFoilZone> plans = new Dictionary<GridCoord, FrontRoomsFoilZone>();
         readonly Dictionary<long, GridCoord> foiledEdges = new Dictionary<long, GridCoord>();
         readonly List<FrontRoomsFoilZone> decided = new List<FrontRoomsFoilZone>();
+        // 71 s.9 card 3: the zones on either side of every window foiled so far (Touches).
+        readonly HashSet<GridCoord> touched = new HashSet<GridCoord>();
 
         public FrontRoomsFoil(FrontRoomsFoilRules rules) { this.rules = (rules ?? new FrontRoomsFoilRules()).Clone(); }
 
@@ -242,6 +245,12 @@ namespace FrontRooms.Map
         /// <summary>A foiled edge's Tall zone, for an edge already decided (no decision is made here).</summary>
         public bool FoiledZone(long edge, out GridCoord zoneId) => foiledEdges.TryGetValue(edge, out zoneId);
 
+        /// <summary>
+        /// 71 s.9 card 3: a window foiled so far (decided, built or not) has a side in this zone. The Run! planner refuses a room
+        /// whose goal door would open into such a zone (FrontRoomsRunRooms.BeyondHoldsDevice). No decision is made here.
+        /// </summary>
+        public bool Touches(GridCoord zoneId) => touched.Contains(zoneId);
+
         /// <summary>The device id a foiled window's trip carries (DeviceTripped, the director's device id): "foil:(x, y)-(x, y)", the lower cell first.</summary>
         public static string DeviceId(GridCoord a, GridCoord b)
         {
@@ -302,10 +311,12 @@ namespace FrontRooms.Map
             return list.ToArray();
         }
 
-        // RELAY 6: the first zone (either side), 15 cells of the start door (either cell), Blocked (either cell).
+        // RELAY 6: the first zone (either side), 15 cells of the start door (either cell), Blocked (either cell); and (71 s.9 card
+        // 3) a Run! room's calm zones, its host zone and the zone beyond its goal door (nothing with Run! rooms off or none placed).
         bool Excluded(GridCoord tall, GridCoord other, GridCoord otherZone)
         {
             if (HasStart && (otherZone == ArrivalZone || Manhattan(tall, StartDoor) < rules.minStartCells || Manhattan(other, StartDoor) < rules.minStartCells)) return true;
+            if (cache != null && cache.Run != null && cache.Run.CalmTouches(tall, other)) return true;
             return Blocked != null && (Blocked(tall) || Blocked(other));
         }
 
@@ -336,6 +347,8 @@ namespace FrontRooms.Map
                 plan.Foiled = i;
                 budget.Take(plan.Zone, TriggerDeviceKind.Foil);
                 foiledEdges[plan.Windows[i].edge] = plan.Zone;
+                touched.Add(plan.Zone);
+                touched.Add(plan.Windows[i].neighbour);
                 plan.Miss = FoilMiss.None;
                 return;
             }
@@ -444,6 +457,8 @@ namespace FrontRooms.Map
         readonly Dictionary<GridCoord, FrontRoomsAlarmZone> plans = new Dictionary<GridCoord, FrontRoomsAlarmZone>();
         readonly Dictionary<long, GridCoord> alarmEdges = new Dictionary<long, GridCoord>();
         readonly List<FrontRoomsAlarmZone> decided = new List<FrontRoomsAlarmZone>();
+        // 71 s.9 card 3: the zones on either side of every door alarmed so far (Touches).
+        readonly HashSet<GridCoord> touched = new HashSet<GridCoord>();
 
         public FrontRoomsAlarmDoors(FrontRoomsAlarmDoorRules rules) { this.rules = (rules ?? new FrontRoomsAlarmDoorRules()).Clone(); }
 
@@ -509,6 +524,12 @@ namespace FrontRooms.Map
 
         /// <summary>An alarm door's owner zone, for an edge already decided (no decision is made here).</summary>
         public bool AlarmedZone(long edge, out GridCoord zoneId) => alarmEdges.TryGetValue(edge, out zoneId);
+
+        /// <summary>
+        /// 71 s.9 card 3: a door alarmed so far (decided, built or not) has a side in this zone. The Run! planner refuses a room
+        /// whose goal door would open into such a zone (FrontRoomsRunRooms.BeyondHoldsDevice). No decision is made here.
+        /// </summary>
+        public bool Touches(GridCoord zoneId) => touched.Contains(zoneId);
 
         /// <summary>
         /// The zone whose budget slot may alarm the door on the edge a-b (side by side, either order): one of its two zones,
@@ -594,10 +615,12 @@ namespace FrontRooms.Map
         bool Overridden(long edge) =>
             (gen.BorderOverride != null && gen.BorderOverride.ContainsKey(edge)) || (gen.RunBorderOverride != null && gen.RunBorderOverride.ContainsKey(edge));
 
-        // RELAY 6: the first zone (either side), 15 cells of the start door (either cell), Blocked (either cell).
+        // RELAY 6: the first zone (either side), 15 cells of the start door (either cell), Blocked (either cell); and (71 s.9 card
+        // 3) a Run! room's calm zones, its host zone and the zone beyond its goal door (nothing with Run! rooms off or none placed).
         bool Excluded(GridCoord near, GridCoord far, GridCoord farZone)
         {
             if (HasStart && (farZone == ArrivalZone || Manhattan(near, StartDoor) < rules.minStartCells || Manhattan(far, StartDoor) < rules.minStartCells)) return true;
+            if (cache != null && cache.Run != null && cache.Run.CalmTouches(near, far)) return true;
             return Blocked != null && (Blocked(near) || Blocked(far));
         }
 
@@ -637,6 +660,8 @@ namespace FrontRooms.Map
                 plan.Alarmed = i;
                 budget.Take(plan.Zone, TriggerDeviceKind.AlarmDoor);
                 alarmEdges[d.edge] = plan.Zone;
+                touched.Add(plan.Zone);
+                touched.Add(d.neighbour);
                 plan.Miss = AlarmDoorMiss.None;
                 return;
             }

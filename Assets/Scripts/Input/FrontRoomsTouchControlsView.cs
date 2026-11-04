@@ -42,12 +42,17 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     FrontRoomsLanguagePreview languagePreview;
     // The list's mask in frame points (TickSettings), where LANGUAGE's strip lives.
     Rect listMaskRect;
-    // CONTROLLER's map on touch (E4c): made on the first unfold, under its own clip in the list's mask; its words at the touch
-    // sheet's sizes (Bayon 17, Plex 11 for the desktop's 22, 13); 8 pt over and under the drawing, as the desktop's MapPad.
+    // CONTROLLER's map on touch (E4c): made once its row is listed, still folded, under its own clip in the list's mask; its words
+    // at the touch sheet's sizes (Bayon 17, Plex 11 for the desktop's 22, 13); 8 pt over and under the drawing, as the desktop's
+    // MapPad.
     RectTransform padClip;
     FrontRoomsKeyMapView padMap;
     bool padMapShown;
-    float padMapFitW = -1f;
+    // The list's width, height and bottom inset the map was last fitted to; on an unfold its scale is checked again.
+    Vector3 padMapFitRoom;
+    bool padMapRecheck;
+    // The map's scale on touch: at most 1.45x (the desktop's 58 px pitch), at least .3x.
+    const float PadMapMaxScale = 1.45f, PadMapMinScale = .3f;
     // The phone's map shows its callouts' action words alone; the chosen one's note is this line under the drawing (VL498).
     Text padCaption;
     const float PadCaptionGap = 6f, PadCaptionH = 14f;
@@ -2176,6 +2181,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var viewport = controls.SettingsScrollViewport;
         // The list's mask reaches 16 pt left of it for an open row's bar and underlay, and 8 pt right for a pressed row.
         var mask = Rect.MinMaxRect(viewport.xMin - 16f, viewport.yMin, viewport.xMax + 8f, viewport.yMax);
+        // With a pad's or a keyboard's band at the foot, CONTROLLER's row resting with its map out and its foot in the 8 pt the list
+        // keeps over the band (the list's follow leaves an unfolded row's foot there; the phone's map row fills the view to it): the
+        // list ends at that foot, so the row under it is clipped whole, never shown as its control's keyline in a sliver at the
+        // band's edge (11-04: RESET's, 0.01 pt from it on the phone, 0.94 pt over it on an iPad with the keys).
+        var mapFoot = PadMapFoot();
+        if (L.SettingsFooter > 0f && mapFoot > mask.yMin && mapFoot <= mask.yMin + L.SettingsBottomInset + .01f) mask.yMin = mapFoot;
         listMaskRect = mask;
         cardViewportRight.anchoredPosition = Local(mask.center);
         cardViewportRight.sizeDelta = mask.size;
@@ -2433,10 +2444,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         previewCaption.rectTransform.anchoredPosition = local(new Vector2(left + w * .5f, top - ph - 6f - 7f));
     }
 
-    /// <summary>CONTROLLER's map in its row (E4c; SETTINGS_MOTION.md: "On the phone the controller fills the 710 pt list"): made on
-    /// the first unfold under its own clip in the list's mask, as wide as the list, its words at the touch sizes; the clip is the
-    /// part of the row unfolded so far, so the graph fades in only there (as the desktop's, VL487 D-3). It plays its reveal as the
-    /// model unfolds it and its fade as it folds; the model reads where it is for taps and the list's follow.</summary>
+    /// <summary>CONTROLLER's map in its row (E4c; SETTINGS_MOTION.md: "On the phone the controller fills the 710 pt list"): made
+    /// once the row is listed, folded and hidden, under its own clip in the list's mask, as wide as the list, its words at the touch
+    /// sizes; the clip is the part of the row unfolded so far, so the graph fades in only there (as the desktop's, VL487 D-3). It
+    /// plays its reveal as the model unfolds it and its fade as it folds; the model reads where it is for taps and the list's
+    /// follow.</summary>
     void TickPadMap(FrontRoomsTouchLayout L)
     {
         controls.PadMapRect = default;
@@ -2445,16 +2457,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var found = false;
         foreach (var s in controls.SettingsSlots)
             if (!s.Header && s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadMap) { slot = s; found = true; }
-        var want = found && (controls.MapUnfolded || slot.Fold > 0f) && !controls.SettingsPeek;
-        if (!want)
+        if (!found || controls.SettingsPeek)
         {
             if (padMap != null && padMap.Root.gameObject.activeSelf) padMap.SetActive(false);
             padMapShown = false;
             return;
         }
+        // Made and fitted while the row is still folded (11-04): the model follows the row to its unfolded height in the frame it
+        // unfolds (FollowRow), before this tick, so PadMapHeight has to be the map's by then. Made on the first unfold, the map
+        // was followed at the model's 300 pt default: an iPad's first unfolded map ran 55 pt past the list's foot, its grips cut
+        // by the footer band and the row over it sliced by the list's top.
         if (padMap == null)
         {
-            if (!controls.MapUnfolded) return;
             padClip = Node("controller map clip", cardViewportRight, Vector2.zero, false);
             padClip.gameObject.AddComponent<RectMask2D>();
             padMap = FrontRoomsKeyMapView.CreatePad(padClip, bayon, plex, Paper, Ink, Accent, PadMapTextScale);
@@ -2467,31 +2481,41 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             ct.pivot = new Vector2(.5f, 1f);
             controls.PadMap = padMap;
         }
-        if (controls.MapUnfolded != padMapShown)
+        var want = controls.MapUnfolded || slot.Fold > 0f;
+        if (want && controls.MapUnfolded != padMapShown)
         {
             padMapShown = controls.MapUnfolded;
-            if (padMapShown) { padMap.SetActive(true); padMapFitW = -1f; padMap.PlayOpen(); }
+            if (padMapShown) { padMap.SetActive(true); padMapRecheck = true; padMap.PlayOpen(); }
             else padMap.PlayClose();
         }
         var list = L.SettingsListRect;
-        // As wide as the list, at most 1.45x (the desktop's 58 px pitch); the labels keep their size, so the scale settles in two
-        // passes. Again whenever the list's width or the language changes.
-        if (!Mathf.Approximately(padMapFitW, list.width) || !ReferenceEquals(padMapFitLang, FrontRoomsLanguage.Current))
+        var view = controls.SettingsScrollViewport;
+        // The phone fits the height too (VL498): the drawing, its pads and its caption within the list under the row's head.
+        var caption = padMap.ShowNotes ? 0f : PadCaptionGap + PadCaptionH;
+        var shown = view.height - L.SettingsBottomInset - slot.Rest;
+        var tall = padMap.ShowNotes ? float.PositiveInfinity : shown - 2f * PadMapPad - caption;
+        // Again whenever the list's size (a pad's footer band coming or going) or the language changes; on an unfold the scale
+        // it has is checked against its words as they are now.
+        var room = new Vector3(list.width, view.height, L.SettingsBottomInset);
+        var changed = room != padMapFitRoom || !ReferenceEquals(padMapFitLang, FrontRoomsLanguage.Current);
+        if (changed || padMapRecheck)
         {
-            padMapFitW = list.width;
+            padMapFitRoom = room;
             padMapFitLang = FrontRoomsLanguage.Current;
-            // The phone fits the height too (VL498): the drawing, its pads and its caption within the list under the row's head.
-            var caption = padMap.ShowNotes ? 0f : PadCaptionGap + PadCaptionH;
-            var tall = padMap.ShowNotes ? float.PositiveInfinity
-                : controls.SettingsScrollViewport.height - L.SettingsBottomInset - slot.Rest - 2f * PadMapPad - caption;
-            padMap.SetScale(1f);
-            for (var i = 0; i < 3; i++)
-            {
-                var fit = padMap.Bounds;
-                if (fit.width <= 1f || fit.height <= 1f) break;
-                padMap.SetScale(Mathf.Clamp(padMap.Scale * Mathf.Min((list.width - 8f) / fit.width, tall / fit.height), .3f, 1.45f));
-            }
-            controls.PadMapHeight = Mathf.Ceil(padMap.Bounds.height + 2f * PadMapPad + caption);
+            padMapRecheck = false;
+            FitPadMap(list, tall, !changed);
+            // The phone's row ends where the list's view does, whatever height its drawing fitted to (11-04: ending under its
+            // drawing, its foot moved with that height, and the row under it put its RESET keyline 1 pt, then 0.01 pt, over the
+            // footer band's edge); TickSettings clips the list there while a band is up. A tablet's row is as tall as its drawing,
+            // the rows under it in view.
+            var h = Mathf.Ceil(padMap.Bounds.height + 2f * PadMapPad + caption);
+            controls.PadMapHeight = padMap.ShowNotes ? h : Mathf.Max(h, shown);
+        }
+        if (!want)
+        {
+            if (padMap.Root.gameObject.activeSelf) padMap.SetActive(false);
+            padMapShown = false;
+            return;
         }
         var b = padMap.Bounds;
         // The row's top on screen; the clip is its unfolded part, from under its head down to its foot as it is now.
@@ -2500,24 +2524,94 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var clip = new Rect(list.x - 16f, top - slot.Rest - shownH, list.width + 24f, shownH);
         padClip.anchoredPosition = clip.center - listMaskRect.center;
         padClip.sizeDelta = clip.size;
-        var origin = new Vector2(Mathf.Round(list.x + (list.width - b.width) * .5f - b.x), Mathf.Round(top - slot.Rest - PadMapPad + b.y));
+        // Centred on the list on whole points, and inside it at both sides wherever it fits (FitPadMap; a chosen label's note can
+        // change its width meanwhile: PRESS A BUTTON, a flash).
+        var x = Mathf.Round(list.x + (list.width - b.width) * .5f - b.x);
+        var xFrom = Mathf.Ceil(list.x - b.x - .001f);
+        var xTo = Mathf.Floor(list.xMax - b.xMax + .001f);
+        if (xFrom <= xTo) x = Mathf.Clamp(x, xFrom, xTo);
+        var origin = new Vector2(x, Mathf.Round(top - slot.Rest - PadMapPad + b.y));
         padMap.PlaceAt(origin.x - clip.xMin, clip.yMax - origin.y);
         padMap.Animate();
-        // The chosen callout's note under the drawing on the phone, brighter while it listens.
+        // The chosen callout's note under the drawing on the phone, brighter while it listens: centred on the pad's middle, half
+        // the map's width (KeyMapView.Pad draws the body, triggers, shoulders, VIEW and MENU about it), as far as the list allows
+        // (11-04: centred on the list, it sat 16 pt left of the pad).
         padCaption.enabled = !padMap.ShowNotes;
         if (padCaption.enabled)
         {
             var note = padMap.ChosenNote;
             if (padCaption.text != note) padCaption.text = note;
             padCaption.color = WithAlpha(Paper, padMap.Capturing ? 1f : .8f);
-            padCaption.rectTransform.sizeDelta = new Vector2(list.width, PadCaptionH);
-            padCaption.rectTransform.anchoredPosition = new Vector2(list.center.x - clip.xMin, -(clip.yMax - (origin.y - (b.y + b.height)) + PadCaptionGap));
+            var half = Mathf.Min(padCaption.preferredWidth, list.width) * .5f;
+            var axis = Mathf.Clamp(origin.x + FrontRoomsKeyMapView.Width * .5f * padMap.Scale, list.x + half, list.xMax - half);
+            padCaption.rectTransform.sizeDelta = new Vector2(2f * Mathf.Min(axis - list.x, list.xMax - axis), PadCaptionH);
+            padCaption.rectTransform.anchoredPosition = new Vector2(axis - clip.xMin, -(clip.yMax - (origin.y - (b.y + b.height)) + PadCaptionGap));
         }
-        var view = controls.SettingsScrollViewport;
         controls.PadMapRect = Rect.MinMaxRect(clip.xMin, Mathf.Max(clip.yMin, view.yMin), clip.xMax, Mathf.Min(clip.yMax, view.yMax));
         controls.PadMapOrigin = origin;
         var cr = padMap.ChosenRect;
         controls.PadMapChosenRect = new Rect(origin.x + cr.x, origin.y - cr.yMax, cr.width, cr.height);
+    }
+
+    /// <summary>Sets the map to the largest scale, at most 1.45x and at least .3x, at which its Bounds (every label with its bar where
+    /// Declutter put it, every part) lie inside the list's width with the drawing on whole points, and on the phone within
+    /// <paramref name="tall"/>. The words keep their size while the drawing scales, so the Bounds grow along a line that does not
+    /// start at 0, and the scale times room over size falls short of it (11-04: three such passes left an iPad's map 6 pt wider than
+    /// its list, the USE bar 2.6 pt past its right edge and MOVE's 3.6 pt past its left). From 1x each try aims where the line
+    /// through the last two meets the room, half a point inside it, the first from that ratio; the largest scale that fits is kept,
+    /// between the two that bound it, until it is within 1.5 pt of the room (or at 1.45x, or the two are .0002 apart). Always from
+    /// 1x, so one room gives one scale whatever came before; <paramref name="recheck"/> keeps the scale it has while that still fits
+    /// as closely.</summary>
+    void FitPadMap(Rect list, float tall, bool recheck)
+    {
+        if (recheck && PadMapFits(list, tall, padMap.Scale, out var held) && held < 1.5f) return;
+        var fit = 0f;
+        var over = PadMapMaxScale + 1f;
+        var k = 1f;
+        var lastK = 0f;
+        var lastSlack = 0f;
+        for (var i = 0; i < 10; i++)
+        {
+            var fits = PadMapFits(list, tall, k, out var slack);
+            var b = padMap.Bounds;
+            if (fits) fit = k;
+            else over = k;
+            if (fits && (slack < 1.5f || k >= PadMapMaxScale)) return;
+            var floor = fit > 0f ? fit : PadMapMinScale;
+            if (over <= PadMapMinScale || Mathf.Min(over, PadMapMaxScale) - floor < .0002f) break;
+            var next = i == 0 || Mathf.Abs(slack - lastSlack) < .001f
+                ? k * Mathf.Min((list.width - .5f) / Mathf.Max(1f, b.width), (tall - .5f) / Mathf.Max(1f, b.height))
+                : k + (slack - .5f) * (k - lastK) / (lastSlack - slack);
+            next = Mathf.Clamp(next, PadMapMinScale, PadMapMaxScale);
+            // Outside the two that bound it: halfway between them.
+            if (next >= over || (fit > 0f && next <= fit)) next = (floor + Mathf.Min(over, PadMapMaxScale)) * .5f;
+            lastK = k;
+            lastSlack = slack;
+            k = next;
+        }
+        k = fit > 0f ? fit : PadMapMinScale;
+        if (!Mathf.Approximately(padMap.Scale, k)) padMap.SetScale(k);
+    }
+
+    /// <summary>The map laid out at scale <paramref name="k"/> (again at the scale it has: its words may be another language's now):
+    /// whether its Bounds lie inside the list's width with the drawing on whole points and within <paramref name="tall"/>, and how
+    /// near the closer of the two comes to its room.</summary>
+    bool PadMapFits(Rect list, float tall, float k, out float slack)
+    {
+        if (Mathf.Approximately(padMap.Scale, k)) padMap.Refresh(false);
+        else padMap.SetScale(k);
+        var b = padMap.Bounds;
+        slack = Mathf.Min(list.width - b.width, tall - b.height);
+        return b.height <= tall + .001f && Mathf.Ceil(list.x - b.x - .001f) <= Mathf.Floor(list.xMax - b.xMax + .001f);
+    }
+
+    /// <summary>CONTROLLER's row's foot on screen while its map is out (unfolded or folding); else -infinity.</summary>
+    float PadMapFoot()
+    {
+        foreach (var s in controls.SettingsSlots)
+            if (!s.Header && s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadMap && (controls.MapUnfolded || s.Fold > 0f))
+                return s.Rect.yMin + controls.SettingsScroll;
+        return float.NegativeInfinity;
     }
 
     /// <summary>A map row unfolding: its name grows as an open row's does (1.4x, never into the row's right end; the resting Label

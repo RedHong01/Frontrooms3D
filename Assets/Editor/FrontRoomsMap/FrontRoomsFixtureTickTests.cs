@@ -16,7 +16,8 @@ using UnityEngine;
 /// casts, the lens at the current glow; otherwise off, the lens within 5% of
 /// the glow). The player stands still, crosses chunk borders, walks far and
 /// comes back; the clocks run long enough for stutters, dropouts and blinks.
-/// The desktop path is checked the same way, so the checker itself is proven.
+/// The desktop path is checked the same way, and the old every-lens path
+/// (TickFixturesEveryLens, tech_art row 11), so the checker itself is proven.
 /// M2, the ambient flicker limits (RELAY_PURSUIT_REDESIGN.md 9.5), on both tick
 /// paths with Reduce flashing off and on: every built lamp is put to each mode
 /// in turn and run 120 s at 60 fps; this file's own WCAG 2.3.1 counter (a change
@@ -94,6 +95,17 @@ public static class FrontRoomsFixtureTickTests
         {
             Walk(roots, true, -41f, "WebGL near-only");
             Walk(roots, false, -43f, "desktop");
+            // The old path (every lens every frame), kept for tools: the checker proven on it too.
+            FrontRoomsMapWorld.TickFixturesEveryLens = true;
+            try { Walk(roots, false, -51f, "desktop, every lens"); }
+            finally { FrontRoomsMapWorld.TickFixturesEveryLens = false; }
+            // Row 12: the light budget of iPhone, iPad and WebGL, on both near paths.
+            try
+            {
+                Budget(roots, false, -53f, "handheld budget");
+                Budget(roots, true, -55f, "WebGL budget");
+            }
+            finally { FrontRoomsMapWorld.LightBudgetForTools = -1; }
             Flicker(roots);
             Pin(roots);
         }
@@ -196,6 +208,61 @@ public static class FrontRoomsFixtureTickTests
         world.RemoveLampOverride(handle);
         Verify("the Dip released", 120);
         Check(Mathf.Abs(world.LensDipForTools(dipCell) - 1f) < 1e-6f, label + " - V1: back to exactly 1 once released (" + world.LensDipForTools(dipCell).ToString("0.000000") + ")");
+    }
+
+    /// <summary>
+    /// Row 12 (tech_art): with a cap smaller than the lamps in reach, at most the cap are lit once settled (and at most
+    /// cap + 4 while a walk fades lamps in and out), no lit-level lamp is left dark more than the hold margin nearer than
+    /// a lit one, every light and lens agrees with the formula at its budget share; the cap off, every lamp is back.
+    /// </summary>
+    static void Budget(List<GameObject> roots, bool nearOnly, float period, string label)
+    {
+        FrontRoomsMapWorld.TickFixturesNearOnly = nearOnly;
+        var root = new GameObject("FIXTURE TICK TEST / " + label) { hideFlags = HideFlags.DontSave };
+        roots.Add(root);
+        root.transform.position = new Vector3(period * ModuleUnits.WorldPeriod, 0f, -27f * ModuleUnits.WorldPeriod);
+        var world = root.AddComponent<FrontRoomsMapWorld>();
+        world.Profile = FrontRoomsLevelProfiles.Resolve();
+        world.BuildForCapture();
+        Transform eye = null;
+        foreach (Transform child in world.transform) if (child.name == "CAPTURE / eye") eye = child;
+        if (eye == null) { Check(false, label + ": BuildForCapture left no eye"); return; }
+        var start = eye.position;
+        var problems = new List<string>();
+
+        // Free first: how many lamps the formula lights here.
+        FrontRoomsMapWorld.LightBudgetForTools = 0;
+        for (var i = 0; i < 60; i++) world.TickFixturesForTools(Dt);
+        world.CheckLampStatesForTools(out var freeLit, out _, null);
+        var cap = Mathf.Max(2, freeLit / 2);
+        FrontRoomsMapWorld.LightBudgetForTools = cap;
+        for (var i = 0; i < 60; i++) world.TickFixturesForTools(Dt);
+        var lit = world.BudgetStateForTools(out var candidates, out var farthest, out var nearestDark);
+        problems.Clear();
+        var wrong = world.CheckLampStatesForTools(out _, out _, problems);
+        var ordered = float.IsNaN(nearestDark) || float.IsNaN(farthest) || nearestDark >= farthest - FrontRoomsMapWorld.BudgetHoldForTools - 1e-3f;
+        Check(freeLit > 2 && lit <= cap && lit > 0 && ordered && wrong == 0,
+            label + ": " + freeLit + " lamps lit free; cap " + cap + ": " + lit + " lit of " + candidates + " in reach, farthest lit " + farthest.ToString("0.0") + " m, nearest dark "
+            + nearestDark.ToString("0.0") + " m, " + wrong + " disagree with the formula at their share" + (problems.Count > 0 ? "\n      " + string.Join("\n      ", problems) : ""));
+
+        // A walk of two chunks at 4 m/s: never over cap + 4, and the lights agree every second.
+        var most = 0;
+        var walkWrong = 0;
+        for (var i = 0; i < 360; i++)
+        {
+            eye.position = start + new Vector3(MapGrid.ChunkSize * 2f * (i + 1) / 360f, 0f, 0f);
+            world.TickFixturesForTools(Dt);
+            most = Mathf.Max(most, world.BudgetStateForTools(out _, out _, out _));
+            if (i % 60 == 59) walkWrong += world.CheckLampStatesForTools(out _, out _, null);
+        }
+        Check(most <= cap + 4 && walkWrong == 0, label + ": walking two chunks, at most " + most + " lit (cap " + cap + " + 4), " + walkWrong + " disagreements");
+
+        // The cap off: every lamp the formula lights is lit again.
+        FrontRoomsMapWorld.LightBudgetForTools = 0;
+        eye.position = start;
+        for (var i = 0; i < 30; i++) world.TickFixturesForTools(Dt);
+        var back = world.CheckLampStatesForTools(out var litBack, out _, null);
+        Check(back == 0 && litBack > cap, label + ": the cap off, " + litBack + " lit again (" + freeLit + " at the start, cap " + cap + "), " + back + " disagree with the formula");
     }
     // ---------- M2: the ambient flicker limits (RELAY_PURSUIT_REDESIGN.md 9.5) ----------
 

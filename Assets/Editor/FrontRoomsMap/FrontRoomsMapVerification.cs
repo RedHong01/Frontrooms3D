@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FrontRooms.Map;
@@ -28,6 +29,10 @@ using UnityEngine;
 /// C16 (Relay v2 step V7b), only with the profile's alarmDoor on: alarm push-bar doors in the one trigger budget over the same
 /// seeds (FrontRoomsMapValidator.RunAlarmDoors; Verification/alarm-door-verification.json). Off, nothing of it runs and no
 /// file is written. RunAlarmDoorBatch runs it forced on (foil forced and Run! rooms on too), whatever the profile says.
+/// Run! rooms (L7), only with the profile's runRooms on: the structure check per zone at today's plain 9
+/// (Verification/run-rooms-verification.json), then the Run! rethink's cards (71 s.9, RunCards): every length and twist per
+/// zone with its fit rate (run-lengths-verification.json) and the deck with the calm rule over a run of floors
+/// (run-deck-verification.json). RunRunCardsBatch runs them with Run! rooms forced on and the twists' switches on.
 /// Run with -executeMethod FrontRoomsMapVerification.RunBatch; failures throw after the JSON report is saved.
 /// </summary>
 public static class FrontRoomsMapVerification
@@ -208,6 +213,11 @@ public static class FrontRoomsMapVerification
     {
         var rules = profile.RunRules();
         if (rules == null) return true;
+        return RunRoomsWith(profile, modules, rules);
+    }
+
+    static bool RunRoomsWith(FrontRoomsLevelProfile profile, System.Collections.Generic.List<RoomModuleData> modules, FrontRoomsRunRules rules)
+    {
         var watch = System.Diagnostics.Stopwatch.StartNew();
         var report = FrontRoomsMapValidator.RunRunRooms(profile.generation, FirstSeed, SeedCount, RadiusChunks, modules, rules);
         var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "run-rooms-verification.json");
@@ -226,7 +236,104 @@ public static class FrontRoomsMapVerification
                 if (!seed.passed) { Debug.LogError("[FrontRoomsMap] Run! rooms, seed " + seed.seed + ": " + string.Join(" | ", seed.errors)); break; }
             Debug.LogError(line);
         }
+        // The Run! rethink (71 s.9): every length and twist, and the deck with the calm rule.
+        var cardsPass = RunCards(profile, modules, rules);
+        return pass && cardsPass;
+    }
+
+    /// <summary>The cards the lengths check builds, per zone (71 s.9 cards 1, 4, 5): plain 7, 9, 12, 14, a Run door 9, receding 9 -> 12 and 9 -> 14.</summary>
+    public static readonly RunCard[] LengthCards =
+    {
+        RunCard.Plain(7), RunCard.Plain(9), RunCard.Plain(12), RunCard.Plain(14), RunCard.Door(9), RunCard.Recede(9, 12), RunCard.Recede(9, 14),
+    };
+
+    /// <summary>The lengths check's report: one Run! report per card (Verification/run-lengths-verification.json).</summary>
+    [Serializable]
+    public sealed class RunLengthsReport
+    {
+        public string suite = "FrontRooms Run! lengths (71 s.9 card 1: the fit rates on 100 seeds; cards 4, 5: the twists' structure)";
+        public string timestampUtc;
+        public List<string> fit = new List<string>();
+        public List<MapRunReport> cards = new List<MapRunReport>();
+    }
+
+    // The deck check's square (chunks each way): 6 x 6 chunks a floor, six floors and their replay per seed.
+    const int DeckRadiusChunks = 3;
+
+    /// <summary>
+    /// The Run! rethink (71 s.9, cards 1-5) on the 100 seeds: (1) every card of LengthCards per zone, each room checked and
+    /// the fit rate counted (how many competing zones hold a straight of that length: 12 and 14 first, card 1), and (2) the
+    /// deck with the calm rule over six floors per seed (FrontRoomsMapValidator.RunRunDeck). Reports in Verification/.
+    /// </summary>
+    static bool RunCards(FrontRoomsLevelProfile profile, List<RoomModuleData> modules, FrontRoomsRunRules rules)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var dir = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification");
+        Directory.CreateDirectory(dir);
+        var pass = true;
+        var lengths = new RunLengthsReport { timestampUtc = DateTime.UtcNow.ToString("o") };
+        foreach (var card in LengthCards)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var r = rules.Clone();
+            r.forceCard = card;
+            var report = FrontRoomsMapValidator.RunRunRooms(profile.generation, FirstSeed, SeedCount, RadiusChunks, modules, r);
+            lengths.cards.Add(report);
+            var ok = report.failed == 0;
+            pass &= ok;
+            var line = "[FrontRoomsMap] Run! " + card + " " + (ok ? "PASS" : "FAIL") + " - " + report.passed + "/" + report.seedCount + " seeds - " + report.placed + " rooms (7: " + report.cells7 + ", 9: "
+                + report.cells9 + ", 12: " + report.cells12 + ", 14: " + report.cells14 + "; Run door " + report.doorEntrances + ", receding " + report.receding + ") - fit " + report.fit + " of " + report.competing
+                + " competing zones (" + (report.fitRate * 100f).ToString("0.0", inv) + " %) - " + report.noFit + " zones met with no straight, " + report.suppressed + " lost a chunk - "
+                + watch.Elapsed.TotalSeconds.ToString("0.0", inv) + " s";
+            lengths.fit.Add(card + ": " + report.fit + " / " + report.competing + " = " + (report.fitRate * 100f).ToString("0.0", inv) + " %, " + report.placed + " rooms placed per zone");
+            if (ok) Debug.Log(line);
+            else
+            {
+                foreach (var seed in report.seeds)
+                    if (!seed.passed) { Debug.LogError("[FrontRoomsMap] Run! " + card + ", seed " + seed.seed + ": " + string.Join(" | ", seed.errors)); break; }
+                Debug.LogError(line);
+            }
+        }
+        var lengthsPath = Path.Combine(dir, "run-lengths-verification.json");
+        File.WriteAllText(lengthsPath, JsonUtility.ToJson(lengths, true));
+        Debug.Log("[FrontRoomsMap] Run! fit rates (card 1): " + string.Join(" | ", lengths.fit.ToArray()) + " - " + lengthsPath);
+
+        var deckWatch = System.Diagnostics.Stopwatch.StartNew();
+        var deck = FrontRoomsMapValidator.RunRunDeck(profile.generation, FirstSeed, SeedCount, DeckRadiusChunks, modules, rules);
+        var deckPath = Path.Combine(dir, "run-deck-verification.json");
+        File.WriteAllText(deckPath, JsonUtility.ToJson(deck, true));
+        var deckOk = deck.failed == 0 && deck.seeds.Count == SeedCount;
+        pass &= deckOk;
+        var deckLine = "[FrontRoomsMap] Run! deck and calm (cards 2, 3) " + (deckOk ? "PASS" : "FAIL") + " - " + deck.passed + "/" + deck.seedCount + " runs of " + deck.floors + " floors (" + deck.tiers + ")"
+            + ", Run door " + (deck.doorEntrance ? "on" : "off") + ", receding " + (deck.recede ? "on" : "off") + ", ramp " + (deck.ramps ? "on" : "off") + " - " + deck.rooms + " rooms, " + deck.nothing
+            + " floors dealt nothing, " + deck.twists + " twists; " + deck.calmExcluded + " device candidates kept out of calm zones - built: " + string.Join(", ", deck.builtCounts.ToArray())
+            + " - devices first (the west half's devices decided before the floor's zones are met): " + deck.firstRooms + " rooms, " + deck.calmRefused + " zones refused (a goal door into a zone with a decided device), "
+            + deck.hostDevicesPlain + " devices decided before a room on its host zone's border (built plain)"
+            + " - " + deckWatch.Elapsed.TotalSeconds.ToString("0.0", inv) + " s - " + deckPath;
+        if (deckOk) Debug.Log(deckLine);
+        else
+        {
+            foreach (var seed in deck.seeds)
+                if (!seed.passed) { Debug.LogError("[FrontRoomsMap] Run! deck, seed " + seed.seed + ": " + string.Join(" | ", seed.errors)); break; }
+            Debug.LogError(deckLine);
+        }
         return pass;
+    }
+
+    /// <summary>
+    /// The Run! rethink's checks for the combined round, whatever the profile says (71 s.9 cards 1-5): Run! rooms on (the
+    /// profile's budget), the Run door entrance and the receding end on so the deck deals them (the ramp stays off: no per-cell
+    /// levels), then the structure check, every length and twist with its fit rate, and the deck with the calm rule.
+    /// -executeMethod FrontRoomsMapVerification.RunRunCardsBatch; a failure throws after the reports are saved.
+    /// </summary>
+    [MenuItem("FrontRooms/Map/Verify Run! cards (71 s.9, forced on)")]
+    public static void RunRunCardsBatch()
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var rules = profile.RunRules(true);
+        rules.doorEntrance = true;
+        rules.recede = true;
+        if (!RunRoomsWith(profile, profile.ModuleData(), rules)) throw new Exception("[FrontRoomsMap] Run! cards FAIL");
     }
 
     // A26 step 2: the floor-1 start group over every door row of a world period (16 rows, both chunk-local parities).

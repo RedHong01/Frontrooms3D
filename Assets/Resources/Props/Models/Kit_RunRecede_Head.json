@@ -1,0 +1,111 @@
+{
+ "name": "Kit_RunRecede_Head",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "door_hinge",
+   "pos": [
+    -0.5,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "lamp_mount",
+   "pos": [
+    0.0,
+    2.33,
+    -1.68
+   ]
+  },
+  {
+   "name": "goal_window_light",
+   "pos": [
+    0.0,
+    2.2,
+    0.53
+   ]
+  },
+  {
+   "name": "armature_l",
+   "pos": [
+    -1.3419999999999999,
+    1.95,
+    -0.125
+   ]
+  },
+  {
+   "name": "trolley_l",
+   "pos": [
+    -1.25,
+    2.8,
+    0.0
+   ]
+  },
+  {
+   "name": "armature_r",
+   "pos": [
+    1.3419999999999999,
+    1.95,
+    -0.125
+   ]
+  },
+  {
+   "name": "trolley_r",
+   "pos": [
+    1.25,
+    2.8,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "run",
+  "run_recede",
+  "receding_end"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  10.0,
+  28.0,
+  0.0
+ ],
+ "lodBudget": [
+  4600,
+  1900,
+  360
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "runRecede": "card 2 head first, 2026-11-04 (71_run_room.md s.5.1); T2 body: block field split out, lintel, cantilever arm; inert until rule 5b",
+ "boundsMin": [
+  -1.3420000076293945,
+  0.019999980926513672,
+  -1.693000078201294
+ ],
+ "boundsMax": [
+  1.3420000076293945,
+  2.8620002269744873,
+  0.08799999952316284
+ ],
+ "triangles": 4044,
+ "slots": [
+  "RunB_BlockUpper_Piece",
+  "Prop_SteelBrown"
+ ],
+ "trianglesLod1": 1780,
+ "trianglesLod2": 264,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.8025000393390656
+ ],
+ "footprintSize": [
+  2.684000015258789,
+  1.7810000777244568
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.912
+}

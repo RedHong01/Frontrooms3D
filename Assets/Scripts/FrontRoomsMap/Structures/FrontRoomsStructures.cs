@@ -442,13 +442,14 @@ public struct FrontRoomsStructuresStop
         this.pitch = pitch;
     }
 
-    /// <summary>A stop at a floor point facing a point (level heading; pitch toward it, clamped to 30 degrees).</summary>
-    public static FrontRoomsStructuresStop Facing(string name, Vector3 floor, Vector3 lookAt)
+    /// <summary>A stop at a floor point facing a point (level heading; pitch toward it, clamped to <paramref name="maxPitch"/>,
+    /// 30 degrees unless a stop looks down into a void or up a shaft: scene 4 review SP2-F1).</summary>
+    public static FrontRoomsStructuresStop Facing(string name, Vector3 floor, Vector3 lookAt, float maxPitch = 30f)
     {
         var d = lookAt - (floor + Vector3.up * FrontRoomsStructuresWalker.Eye);
         var flat = new Vector2(d.x, d.z);
         var yaw = flat.sqrMagnitude > 1e-6f ? Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg : 0f;
-        var pitch = flat.magnitude > 1e-3f ? Mathf.Clamp(-Mathf.Atan2(d.y, flat.magnitude) * Mathf.Rad2Deg, -30f, 30f) : 0f;
+        var pitch = flat.magnitude > 1e-3f ? Mathf.Clamp(-Mathf.Atan2(d.y, flat.magnitude) * Mathf.Rad2Deg, -maxPitch, maxPitch) : 0f;
         return new FrontRoomsStructuresStop(name, floor, yaw, pitch);
     }
 }

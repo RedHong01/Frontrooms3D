@@ -154,6 +154,7 @@ public static class FrontRoomsSettingsMenu
     static readonly string[] ResolutionNotes = { "100 %", "50–100 %" };
     static readonly string[] ScaleNotes = { "SOFTEST", "", "", "", "", "", "", "", "", "", "SHARPEST" };
     static readonly string[] UpscalingNotes = { "FSR 1", "BILINEAR" };
+    static readonly string[] TemporalUpscalingNotes = { "STP", "BILINEAR" };
     static readonly string[] HandheldRateNotes = { "33 MS", "17 MS" };
     static readonly string[] ProMotionRateNotes = { "33 MS", "25 MS", "17 MS", "8 MS" };
     static readonly string[] DesktopRateNotes = { "DISPLAY", "33 MS", "17 MS", "8 MS", "NO CAP" };
@@ -279,11 +280,14 @@ public static class FrontRoomsSettingsMenu
         }
         if (FrontRoomsQuality.EffectiveRenderScale < .999f)
         {
+            // A handheld under AUTO upscales SHARP with STP once the surfaces write motion vectors (FrontRoomsQuality.TemporalUpscaling).
+            var stp = FrontRoomsQuality.SharpIsTemporal;
             var up = Get(Key.Upscaling, Kind.Segments, "UPSCALING",
-                "How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.",
+                stp ? "How the smaller picture is scaled up to the screen. SHARP restores edges from the last few frames (STP); SOFT is a plain, smooth scale."
+                    : "How the smaller picture is scaled up to the screen. SHARP restores edges (FSR 1); SOFT is a plain, smooth scale.",
                 new[] { "SHARP", "SOFT" }, visual: true);
             up.Index = FrontRoomsQuality.Upscaling; up.DefaultIndex = 0;
-            Note(up, UpscalingNotes);
+            Note(up, stp ? TemporalUpscalingNotes : UpscalingNotes);
             list.Add(up);
         }
         var rateNames = !Handheld ? DesktopRateNames : FrontRoomsQuality.ProMotion ? ProMotionRateNames : HandheldRateNames;
@@ -297,11 +301,15 @@ public static class FrontRoomsSettingsMenu
         fr.Index = FrontRoomsQuality.FrameRate;
         fr.DefaultIndex = Handheld ? System.Array.IndexOf(FrontRoomsQuality.FrameRates, 60) : 0;
         list.Add(fr);
-        var aa = Get(Key.AntiAliasing, Kind.Segments, "ANTI-ALIASING",
-            "Smooths jagged edges. HIGH samples each pixel four times, LOW twice.", OffLowHigh, cost: 1, visual: true);
-        Note(aa, AntiAliasingNotes);
-        aa.Index = FrontRoomsQuality.AntiAliasing; aa.DefaultIndex = defaults == FrontRoomsQuality.Preset.Ultra || defaults == FrontRoomsQuality.Preset.High ? 2 : 1;
-        list.Add(aa);
+        // While STP draws the picture it smooths the edges itself and MSAA is off, so the row would change nothing.
+        if (!FrontRoomsQuality.TemporalUpscaling)
+        {
+            var aa = Get(Key.AntiAliasing, Kind.Segments, "ANTI-ALIASING",
+                "Smooths jagged edges. HIGH samples each pixel four times, LOW twice.", OffLowHigh, cost: 1, visual: true);
+            Note(aa, AntiAliasingNotes);
+            aa.Index = FrontRoomsQuality.AntiAliasing; aa.DefaultIndex = defaults == FrontRoomsQuality.Preset.Ultra || defaults == FrontRoomsQuality.Preset.High ? 2 : 1;
+            list.Add(aa);
+        }
         if (FrontRoomsQuality.AmbientOcclusionAvailable)
         {
             var ao = Get(Key.AmbientOcclusion, Kind.Segments, "AMBIENT OCCLUSION",

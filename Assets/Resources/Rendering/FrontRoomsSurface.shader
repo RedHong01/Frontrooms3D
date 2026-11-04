@@ -95,6 +95,28 @@ Shader "FrontRooms/Surface"
         // Only the Creature_* materials enable it; every other material is bit-identical.
         [Toggle(_FR_SHEEN)] _UseSheen ("Creature cloth (sheen + per-texel metal)", Float) = 0
         _Sheen ("Sheen strength", Range(0, 1)) = 0
+
+        // Pool tile (research/bathroom_rooms/70_look_build.md, "Tile"; maps from Tools/lookdev/pool_tile/gen_pool_tile.py). With
+        // this on, the Albedo slot holds TILE DATA (linear: R tone, the albedo multiplier 0.75 + 0.5 R; G glaze thickness; B grout)
+        // and the mask R smoothness, G cavity, B dirt potential, A chips. The colours are the material's: the glaze (_BaseColor)
+        // breaking to the body (_EdgeColor) where it thins or a chip took it off, the grout, the dirt as far as _TileWear. Every
+        // tile also takes its own shade and set (tilt) from a hash of its cell, so the map's repeat never shows. Only the
+        // Prop_PoolTile_* materials enable it; every other material is bit-identical.
+        [Toggle(_FR_TILE)] _UseTile ("Pool tile (data map, grout, per-tile shade and tilt)", Float) = 0
+        _TileGrid ("Tile: tiles per map (u, v), tilt deg, shade jitter", Vector) = (8, 8, 0.18, 0.004)
+        _GroutColor ("Grout colour", Color) = (0.66, 0.70, 0.67, 1)
+        _EdgeColor ("Glaze edge (body) colour", Color) = (0.80, 0.81, 0.80, 1)
+        _DirtColor ("Dirt colour", Color) = (0.36, 0.33, 0.27, 1)
+        _TileWear ("Wear: grout dirt, crazing, chips (0 pristine, 1 club)", Range(0, 1)) = 0
+        _TileShade ("Joint relief in the tone (walls; the lamps are overhead)", Range(0, 4)) = 0.6
+        _TileLot ("Odd lots: share of off-shade tiles, their shift", Vector) = (0, 0.035, 0, 0)
+
+        // Wet band (any material of this shader; off while _WaterY is below -999, the default): under and just above a water
+        // surface at _WaterY (world metres) porous parts (grout, unglazed faces) are darker, a water film evens the rest, a thin
+        // bright meniscus sits at the line, and a club's pool shows its scale line. The water stages drive _WaterY.
+        _WaterY ("Water height (world m; -1000 = no water)", Float) = -1000
+        _WetBand ("Wet band: height above the water m, fade m, darkening, meniscus", Vector) = (0.03, 0.05, 1, 1)
+        _WaterLine ("Waterline: scale line strength, its height m, band edge wobble m, unused", Vector) = (0, 0.012, 0.003, 0)
     }
 
     SubShader
@@ -149,6 +171,17 @@ Shader "FrontRooms/Surface"
             half4 _FR_DamageFines;
             // Creature cloth sheen: in every pass, so the SRP batcher layout never changes.
             half _Sheen;
+            // Pool tile and the wet band: in every pass, so the SRP batcher layout never changes.
+            float4 _TileGrid;
+            half4 _GroutColor;
+            half4 _EdgeColor;
+            half4 _DirtColor;
+            half _TileWear;
+            half _TileShade;
+            float4 _TileLot;
+            float _WaterY;
+            float4 _WetBand;
+            float4 _WaterLine;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -187,6 +220,8 @@ Shader "FrontRooms/Surface"
             #pragma shader_feature_local_fragment _FR_DAMAGE
             // Creature cloth (Creature_TwillSpruce, Creature_TapeSilver only). Off: bit-identical.
             #pragma shader_feature_local_fragment _FR_SHEEN
+            // Pool tile (Prop_PoolTile_* only). Off: bit-identical.
+            #pragma shader_feature_local_fragment _FR_TILE
             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
             // shader_feature: no material enables it, so player builds strip it; the editor
             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
@@ -206,6 +241,120 @@ Shader "FrontRooms/Surface"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            // Submerged (research/bathroom_rooms/70_look_build.md, "Submerged"): under a registered body of water the colour
+            // comes from the water (absorption, the trapping, the caustics); above it, in its room, the wet niches' thrown
+            // light. With no body registered (_FR_SubCount 0: everywhere outside a pool zone) it returns at once.
+            #include "Assets/Resources/Rendering/FrontRoomsWaterSubmerged.hlsl"
+
+            // Zone look (research/bathroom_rooms/70_look_build.md, "Zone look"): a height fog over a pool zone's water, set per
+            // render context by FrontRoomsZoneLook: x density per metre at the water, y the water's height (world), z 1 / scale
+            // height (the layer thins by e over that many metres), w unused; colour linear. x is 0 everywhere else, and the
+            // branch then returns the colour untouched, so every other zone renders exactly as before.
+            float4 _FR_HeightFog;
+            float4 _FR_HeightFogColor;
+
+            half3 FRHeightFog(half3 color, float3 positionWS)
+            {
+                UNITY_BRANCH
+                if (_FR_HeightFog.x <= 0.0)
+                    return color;
+                float3 cam = _WorldSpaceCameraPos.xyz;
+                float len = length(positionWS - cam);
+                float k = _FR_HeightFog.z;
+                // density(y) = x * exp(-k * max(y - water, 0)), integrated analytically along the view ray
+                float ya = max(cam.y - _FR_HeightFog.y, 0.0);
+                float yb = max(positionWS.y - _FR_HeightFog.y, 0.0);
+                float t = k * (yb - ya);
+                float f = abs(t) > 1e-3 ? (1.0 - exp(-t)) / t : 1.0 - 0.5 * t;
+                float tau = _FR_HeightFog.x * len * exp(-k * ya) * f;
+                return lerp(color, (half3)_FR_HeightFogColor.rgb, (half)saturate(1.0 - exp(-tau)));
+            }
+
+            // Wet band (research/bathroom_rooms/70_look_build.md, "Tile"; see _WaterY): Lagarde's porous and film model. Porous
+            // parts soak and darken under the water and in the band above it; a water film evens and glosses the band (above the
+            // water only: under it the water surface does the reflecting); the meniscus, the 2.7 mm skin the water draws up a
+            // wall, catches the light from above; a club's pool leaves a scale line. Off (the default) returns at once.
+            // waterY: the material's _WaterY, or (Submerged) the height of the body of water the point lies in.
+            void FRWetBand(float3 positionWS, float alongM, float3 nGeo, half porous, float waterY, inout half3 albedo, inout half smoothness, inout half3 nTS)
+            {
+                UNITY_BRANCH
+                if (waterY < -999.0)
+                    return;
+                float above = positionWS.y - waterY;
+                // the band's top wanders a little along the wall, where the splashes reached
+                float wob = _WaterLine.z * (sin(alongM * 7.3) * 0.6 + sin(alongM * 17.9 + 1.7) * 0.4);
+                half wet = above <= 0.0 ? 1.0h : (half)(1.0 - smoothstep(_WetBand.x + wob, _WetBand.x + _WetBand.y + wob, above));
+                half soak = wet * porous * (half)_WetBand.z;
+                albedo *= 1.0h - 0.42h * soak;
+                half film = above > 0.0 ? wet : 0.0h;
+                smoothness = lerp(smoothness, max(smoothness, 0.90h), film * (0.35h + 0.65h * porous));
+                nTS = lerp(nTS, half3(0.0h, 0.0h, 1.0h), film * porous * 0.6h);
+                half wallF = 1.0h - saturate(abs((half)nGeo.y) * 2.0h);
+                // the scale line: a thin rough grey deposit centred a little above the still level (TM 5-662 4-4, "scum ring")
+                half sc = (half)(_WaterLine.x * saturate(1.0 - abs(above - _WaterLine.y * 0.35) / max(_WaterLine.y, 1e-4))) * wallF;
+                albedo = lerp(albedo, half3(0.40h, 0.39h, 0.34h), sc * 0.45h);
+                smoothness = lerp(smoothness, 0.40h, sc * 0.8h);
+                // the meniscus, faded by its size on screen so it never shimmers
+                float px = max(fwidth(positionWS.y), 1e-5);
+                half men = (half)(_WetBand.w * saturate(1.0 - abs(above - 0.0014) / (0.0014 + px)) * saturate(0.0028 / px)) * wallF;
+                smoothness = lerp(smoothness, 0.97h, men);
+                nTS = normalize(lerp(nTS, half3(0.0h, 0.75h, 0.66h), men));
+            }
+
+        #if defined(_FR_TILE)
+            // ---------------------------------------------------------------- pool tile
+            // The maps are data (see Properties); the material holds the colours. Each tile takes a shade and a set from a hash
+            // of its cell. The cell index wraps every 192 m (the room stream's rebase holds whole maps), so a rebase never
+            // re-rolls a tile.
+            uint FRTileHashU(uint2 c, uint salt)
+            {
+                uint x = c.x * 73856093u ^ c.y * 19349663u ^ salt * 83492791u;
+                x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16;
+                return x;
+            }
+
+            half FRTileHash(uint2 c, uint salt)
+            {
+                return (half)((FRTileHashU(c, salt) & 0xffffu) / 65535.0);
+            }
+
+            // tile data -> albedo, mask (R smoothness after wear, G cavity, B dirt, A chips), tangent normal, and how porous the
+            // texel is (grout, unglazed faces) for the wet band
+            void FRTileSurface(float2 uv, float3 nGeo, out half4 albedo, out half4 mask, out half3 nTS, out half porous)
+            {
+                half4 d = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);
+                mask = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
+                nTS = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv), _BumpScale);
+                float2 cellF = floor(uv * _TileGrid.xy);
+                float2 period = max(round(192.0 / max(_TileSize.xy, 1e-3) * _TileGrid.xy), 1.0);
+                uint2 cell = (uint2)(cellF - period * floor(cellF / period));
+                half grout = d.b;
+                half glaze = 1.0h - grout;
+                // shade: a small lot jitter on every tile, and now and then a tile from another delivery, bluer or creamier
+                half j = (half)_TileGrid.w * (FRTileHash(cell, 1u) * 2.0h - 1.0h);
+                half odd = FRTileHash(cell, 2u) < (half)_TileLot.x ? 1.0h : 0.0h;
+                half3 oddShift = FRTileHash(cell, 3u) < 0.5h ? half3(-0.55h, 0.0h, 0.75h) : half3(0.45h, 0.2h, -0.65h);
+                half3 lot = 1.0h + j + odd * (half)_TileLot.y * oddShift;
+                // set: each tile sits at its own small angle, so a lamp's reflection breaks up tile by tile
+                half tilt = (half)tan(radians(_TileGrid.z));
+                nTS.xy += (half2(FRTileHash(cell, 4u), FRTileHash(cell, 5u)) * 2.0h - 1.0h) * tilt * glaze;
+                // colour: the glaze breaking to the body where it thins and where a chip took it off; the grout; the dirt
+                half chips = mask.a * _TileWear * glaze;
+                half thick = d.g * (1.0h - chips);
+                half m = 0.75h + 0.5h * d.r;
+                half3 glazeCol = lerp(_EdgeColor.rgb, _BaseColor.rgb, thick) * lot;
+                half3 col = lerp(glazeCol, _GroutColor.rgb, grout) * m;
+                half dirt = saturate(mask.b * _TileWear);
+                col = lerp(col, _DirtColor.rgb, dirt * 0.55h);
+                // relief in the tone on walls: cushion edges facing up a little lighter, facing down darker (lamps are overhead)
+                half wallF = 1.0h - saturate(abs((half)nGeo.y) * 2.0h);
+                col *= 1.0h + _TileShade * nTS.y * wallF * glaze;
+                albedo = half4(max(col, 0.0h), 1.0h);
+                // a chip is matte bisque; dirt dulls; an old glaze a little
+                mask.r = lerp(mask.r, 0.35h, chips) * (1.0h - 0.04h * _TileWear * glaze) - dirt * 0.18h;
+                porous = max(grout, saturate((0.55h - mask.r) / 0.4h));
+            }
+        #endif
 
             struct Attributes
             {
@@ -840,6 +989,10 @@ Shader "FrontRooms/Surface"
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
                 float3 nGeo = normalize(input.normalWS);
+                // Submerged: the body of water this point lies under or above (body -1 everywhere outside a pool zone). The
+                // footprint is taken here, in uniform control flow, for the caustics' mip.
+                float subPx = max(length(ddx(input.positionWS)), length(ddy(input.positionWS)));
+                FRSub sub = FRSubFind(input.positionWS, subPx);
                 float2 metres;
                 float3 t, b;
             #if defined(_FR_MESH_UV)
@@ -869,6 +1022,12 @@ Shader "FrontRooms/Surface"
                 // The emboss has to read past 2 m, where the wall's soft light no longer picks out a tilt this small, so its
                 // relief also goes into the tone: the top of each thread or grain lighter, the underside darker.
                 albedo.rgb *= 1.0h + _EmbossShade * nTS.y;
+            #elif defined(_FR_TILE)
+                // Pool tile: data maps, the material's colours, per-tile shade and set (FRTileSurface).
+                half4 albedo, mask;
+                half3 nTS;
+                half tilePorous;
+                FRTileSurface(uv, nGeo, albedo, mask, nTS, tilePorous);
             #else
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
                 half4 mask = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
@@ -925,14 +1084,23 @@ Shader "FrontRooms/Surface"
                 HungSeam(hung, damp, seamScale, smoothness, cavity, nTS);
                 albedo.rgb *= seamScale;
             #if defined(FR_SUBSTRATE)
-                half3 sub = UnpackNormalScale(SAMPLE_TEXTURE2D(_SubstrateMap, sampler_BumpMap, wearUV / FR_SUBSTRATE_TILE), _SubstrateScale);
-                nTS = BlendNormalRNM(normalize(nTS), sub);
+                half3 subN = UnpackNormalScale(SAMPLE_TEXTURE2D(_SubstrateMap, sampler_BumpMap, wearUV / FR_SUBSTRATE_TILE), _SubstrateScale);
+                nTS = BlendNormalRNM(normalize(nTS), subN);
                 // Every lamp is overhead and most of the wall's light is soft, so a tilt alone barely shows past 2 m.
                 // The same relief goes into the tone, as a texture artist bakes form: the upper side of a bump a little
                 // lighter, the lower side a little darker. It multiplies, so a dead lamp still shows nothing of its own.
-                albedo.rgb *= 1.0h + _SubstrateShade * sub.y;
+                albedo.rgb *= 1.0h + _SubstrateShade * subN.y;
             #endif
             #endif
+
+                // Wet band at _WaterY (FRWetBand): off unless a pool material or a water stage sets the water's height.
+            #if defined(_FR_TILE)
+                half wetPorous = tilePorous;
+            #else
+                half wetPorous = saturate((0.55h - smoothness) / 0.4h);
+            #endif
+                float wetY = (_WaterY < -999.0 && sub.body >= 0) ? sub.waterY : _WaterY;
+                FRWetBand(input.positionWS, metres.x, nGeo, wetPorous, wetY, albedo.rgb, smoothness, nTS);
 
             #if defined(_FR_DAMAGE)
                 // Door break onset mask, in the leaf's object space (canonical: +X = the burst face). Left half of the
@@ -1033,16 +1201,29 @@ Shader "FrontRooms/Surface"
                 if (_FR_DebugView > 0.5)
                     color = FRDebugLobePBR(inputData, s, _FR_DebugView < 1.5);   // one lobe, no fog
                 else
-                    color = half4(MixFog(UniversalFragmentPBR(inputData, s).rgb, inputData.fogCoord), 1);
+                    color = half4(FRHeightFog(MixFog(UniversalFragmentPBR(inputData, s).rgb, inputData.fogCoord), input.positionWS), 1);
             #elif defined(_FR_OWN_LIGHTS)
                 half4 color = FROwnLightsPBR(inputData, s);
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
+                color.rgb = FRHeightFog(color.rgb, input.positionWS);
             #else
-                half4 color = UniversalFragmentPBR(inputData, s);
+                half4 color;
+                // Submerged: under the water the light comes through it (FRSubmergedPBR); above it, in a pool room, the wet
+                // niches' thrown light adds. Both off (sub.body -1) outside a pool zone.
+                UNITY_BRANCH
+                if (sub.under)
+                    color = half4(FRSubmergedPBR(inputData, s, sub), 1.0h);
+                else
+                    color = UniversalFragmentPBR(inputData, s);
             #if defined(_FR_SHEEN)
-                color.rgb += FRSheen(inputData, s, mask.a);
+                if (!sub.under)
+                    color.rgb += FRSheen(inputData, s, mask.a);
             #endif
+                UNITY_BRANCH
+                if (sub.room)
+                    color.rgb += s.albedo * (0.96h * s.occlusion) * FRSubThrown(input.positionWS, inputData.normalWS, sub);
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
+                color.rgb = FRHeightFog(color.rgb, input.positionWS);
             #endif
                 color.a = 1;
                 outColor = color;

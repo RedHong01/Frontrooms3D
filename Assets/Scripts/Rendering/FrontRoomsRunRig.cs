@@ -30,6 +30,11 @@ public struct RunUnitDef
     /// from the entry unit (FrontRoomsRunDress); no cabinet, no pilot, no feed to the soffit. The heads, their aims, lights
     /// and pools are the cabinet unit's. Without the kit the unit keeps its cabinet.</summary>
     public bool remote;
+    /// <summary>The receding end's goal unit (71 s.5.1, card 2): built on the rig's goal mount (FrontRoomsRunRig.GoalMount), which rides
+    /// the receding end, at x 0 on the head's arm, its front toward the goal: its first head floods the goal door (the goal head,
+    /// carriedGoalGain), its second the floor carriedFloorAhead before the door; never culled. Only RunRigLayout.Receding builds one
+    /// (rule 5b): no layout of today's game has it.</summary>
+    public bool carried;
 }
 
 /// <summary>A per-state box probe (VL195 / VL236): centre and size in rig space.</summary>
@@ -232,6 +237,52 @@ public sealed class RunRigLayout
     /// corridor only through its openings, never through its walls.</summary>
     public bool isolate = true;
 
+    /// <summary>
+    /// Card 4 (71 s.7.2 and s.9, decision 8c: D1, an honest Run door): the entrance is a Run door, the map's RN-F with set A's
+    /// F5 lite as at the goal, instead of the arch. False in every room the map builds today (arches only); the binder sets it
+    /// through UseEntranceDoor when the map builds a door on the entrance edge (the level-design line's card 5, from T3 after one plain Run!).
+    /// </summary>
+    public bool entranceDoor;
+    /// <summary>Card 4: the entrance door's hinge jamb, +1 on the right (+X) or -1 on the left (the map hangs it); the ALARM ZONE
+    /// card goes on its latch side, the NOTICE plate on its hinge side.</summary>
+    public int entranceHinge = -1;
+
+    /// <summary>
+    /// Card 4: this layout's entrance becomes a Run door <paramref name="doorWidth"/> wide (ModuleUnits.DoorWidth, 1.0; its head
+    /// goalTop, 2.1, the same RN-F as the goal), hinged on <paramref name="hingeSide"/> (+1 right, -1 left). The entrance face's
+    /// opening and top become the door's, so the dress builds no arch reveal there (the DA frame sleeves its own, as at the goal);
+    /// the light gate's entrance portal is the whole door while the leaf is off the latch and none while it is shut
+    /// (FrontRoomsRunRig.SetEntranceOpen); the NOTICE plate moves to the hinge side, clear of the card on the latch side. Nothing
+    /// else changes: the strips, units, fire gear, probes and the reset are the arch room's.
+    /// </summary>
+    public void UseEntranceDoor(float doorWidth, int hingeSide)
+    {
+        entranceDoor = true;
+        entranceHinge = hingeSide >= 0 ? 1 : -1;
+        var half = doorWidth * .5f;
+        archHalf = half;
+        archTop = goalTop;
+        for (var i = 0; i < walls.Length; i++)
+        {
+            var f = walls[i];
+            if (Mathf.Abs(f.along.x) < .5f || Mathf.Abs(Vector3.Dot(-f.start, f.normal)) > WallHalf + .01f) continue;
+            f.gaps = new[] { new Vector2(halfWidth - half, halfWidth + half) };
+            f.gapTops = new[] { goalTop };
+            walls[i] = f;
+        }
+        for (var i = 0; i < wallItems.Length; i++)
+        {
+            var it = wallItems[i];
+            if (it.kit != NoticePlateKit || it.point.z > 0f) continue;
+            it.point.x = entranceHinge * Mathf.Min(half + NoticeClear, halfWidth - .15f);
+            wallItems[i] = it;
+        }
+    }
+
+    /// <summary>The NOTICE plate on the host face of the entrance wall (F8), and its clear distance from the opening's edge.</summary>
+    public const string NoticePlateKit = "Kit_SafetyPlate_10x7";
+    const float NoticeClear = .40f;
+
     /// <summary>Handheld tier (FrontRoomsRunRig.HandheldTier, never WebGL): every handheldWrapStride-th wrap (and the stutter
     /// tube) keeps its Light at wraps / kept times the intensity; one head per pool keeps its Light at handheldPoolGain
     /// (the other head's lens still lights); the threshold head and the goal head stay as they are; no beam cones;
@@ -265,6 +316,15 @@ public sealed class RunRigLayout
     /// the line, a pair of 1.0 m leaves in a 2.0 x 2.1 m frame held open on magnets). A new structure (rule 5b): empty unless
     /// Corridor is asked for frames, and nothing builds them yet (the frame kit comes with the recede, card 2).</summary>
     public float[] compartmentFrames = new float[0];
+    /// <summary>The receding variant (71 s.4, decision 4; card 2): the line (z) the end stands on before the recede, L0 = 3 x the first
+    /// length's cells, the reserved length running on to <c>length</c>; -1 in a plain room (every Corridor: today's game). With it the
+    /// rig hides the strips beyond L0 until each is revealed (RevealTo), builds the carried goal unit and C42 on GoalMount, and gates
+    /// the room's light at the moving end (SetGoalLine); FrontRoomsRunRecede moves them.</summary>
+    public float recedeLine = -1f;
+    /// <summary>The carried unit's heads (card 2): the goal head's intensity over a flood head's (it floods the end wall from 1.6 m
+    /// where today's goal spot lit it from 6 m, call 4), and the floor head's aim this far before the door. SP, tuned on the stills
+    /// until the door is again the brightest thing (71 s.5.1).</summary>
+    public float carriedGoalGain = .9f, carriedFloorAhead = 4f;
 
     /// <summary>T-B: the unit whose battery feeds the remote heads (RunUnitDef.remote), the self-contained unit nearest the entrance
     /// (lowest z): the rig's RelayPoint and the dress's remote circuit start at its cabinet. -1 when every unit is remote.</summary>
@@ -341,18 +401,56 @@ public sealed class RunRigLayout
             Debug.LogWarning("[RunRig] a Run! corridor of " + cells + " cells is outside " + MinCells + ".." + MaxCells + " (the cap is " + MaxCells + " cells, " + (MaxCells * 3) + " m): built at " + TodayCells + " cells");
             cells = TodayCells;
         }
+        return Make(cells, archWidth, doorWidth, frames, 0);
+    }
+
+    /// <summary>The receding variant's first length (71 s.4.3: the end stands at 27 m, a third of it is FD1) and the lengths it backs
+    /// away to (decision 4: 9 -> 12 from T4 on B2 or deeper, 9 -> 14 at T5 on B3 or deeper).</summary>
+    public const int RecedeFromCells = 9;
+    /// <summary>The carried goal unit's mount plate face, this far before the head's line (Kit_RunRecede_Head's arm, lamp_mount).</summary>
+    public const float CarriedUnitZ = -1.68f;
+
+    /// <summary>
+    /// The receding Run! (71 s.4-s.5, decisions 4 and 5; card 2, head first): the corridor planned at <paramref name="toCells"/> (12 or
+    /// 14) with its end standing on the line of <paramref name="fromCells"/> (9: z 27); anything else is refused with a warning and a
+    /// plain 9-cell corridor is built. A new structure (rule 5b): nothing in today's game asks for it. As Corridor(toCells, frames),
+    /// with the variant's rules:
+    /// - the compartment frames short of the end (FD1 on z 9, the trigger plane; FD2 on z 18); none in the length the end travels;
+    /// - the units of the fixed length only (half a cell past their odd lines, clear of the frames), every one but the entry unit a
+    ///   remote head; the goal unit rides the end (carried, on the head's arm, CarriedUnitZ before its line);
+    /// - no side doors (71 s.4.8 item 9: the way out is never in doubt), the cabinets in the fixed length (10.2, then 24.2: the
+    ///   second's 75 ft reaches the deepest end), an obstacle in every pool of the fixed length but the goal's;
+    /// - the goal point on the end's first line (it moves with the end); the strips, finishes, services and probes over the whole
+    ///   reserved length (the rig hides the strips beyond the end, FrontRoomsRunRecede the props, until each seat).
+    /// </summary>
+    public static RunRigLayout Receding(int fromCells, int toCells, float archWidth = 1.4f, float doorWidth = 1f)
+    {
+        if (fromCells != RecedeFromCells || (toCells != 12 && toCells != 14))
+        {
+            Debug.LogWarning("[RunRig] a receding Run! of " + fromCells + " -> " + toCells + " cells is not one decision 4 builds (" + RecedeFromCells + " -> 12, " + RecedeFromCells + " -> 14): built as a plain corridor of " + TodayCells + " cells");
+            return Corridor(TodayCells, archWidth, doorWidth);
+        }
+        return Make(toCells, archWidth, doorWidth, true, fromCells);
+    }
+
+    static RunRigLayout Make(int cells, float archWidth, float doorWidth, bool frames, int recedeFrom)
+    {
         var n = cells;
         var len = CellLength * n;
+        var receding = recedeFrom > 0;
+        var l0 = receding ? CellLength * recedeFrom : len;
+        var frameLines = frames ? FrameLines(len, l0, receding) : new float[0];
         var w = 1.42f;
         const float wh = .08f;
         var ah = archWidth * .5f;
         var dh = doorWidth * .5f;
         var l = new RunRigLayout
         {
-            name = "Corridor1x" + n,
+            name = receding ? "Corridor1x" + n + "r" + recedeFrom : "Corridor1x" + n,
             halfWidth = w, length = len, height = 2.9f,
-            units = CorridorUnits(n),
-            goalPoint = new Vector3(0f, 1.05f, len),
+            units = CorridorUnits(n, frames, recedeFrom),
+            goalPoint = new Vector3(0f, 1.05f, l0),
+            recedeLine = receding ? l0 : -1f,
             stutterLamp = 4,
             archHalf = ah, archTop = 2.2f, goalHalf = dh, goalTop = 2.1f, goalLiteX = 0f,
             postCentre = new Vector3(0f, 1.45f, len * .5f), postSize = new Vector3(3f, 2.9f, len),
@@ -384,8 +482,15 @@ public sealed class RunRigLayout
         if (staffZ <= stencilZ - CellLength) doors.Add(new RunSideDoor { z = staffZ, side = -1f, face = "staff" });
         doors.Add(new RunSideDoor { z = stencilZ, side = 1f, face = "stencil" });
         l.sideDoors = doors.ToArray();
+        // Receding (71 s.4.8 item 9): no side door, branch or false door inside a receding room.
+        if (receding) l.sideDoors = new RunSideDoor[0];
         var cabinets = new System.Collections.Generic.List<float> { CabinetFirstZ };
         while (cabinets[cabinets.Count - 1] + CabinetReach < len) cabinets.Add(cabinets[cabinets.Count - 1] + CabinetPitch);
+        // Receding: the walls the end travels past carry nothing proud but the rail, so a cabinet due there stands in the fixed length,
+        // 2.8 m short of the end's first line (24.2: its reach covers the deepest end, 42 m).
+        if (receding)
+            for (var i = 1; i < cabinets.Count; i++)
+                if (cabinets[i] > l0 - 2f) cabinets[i] = l0 - 2.8f;
         // Long faces run the full length (their first and last 0.08 m lie inside the end walls). Their gaps: each side door's leaf
         // (+-0.5) plus 45 mm under the F4 casing (+-0.549), so the lower tone tucks under the casing and the rail stops clear, and
         // each cabinet's box on the left.
@@ -397,6 +502,12 @@ public sealed class RunRigLayout
         {
             var d = l.sideDoors[i];
             (d.side > 0f ? rightGaps : leftGaps).Add(new Vector2(d.z - dg, d.z + dg));
+        }
+        // A compartment frame's stub stands on both long walls (0.16 m on its line): the finishes' rail stops clear of it.
+        for (var i = 0; i < frameLines.Length; i++)
+        {
+            leftGaps.Add(new Vector2(frameLines[i] - FrameHalfGap, frameLines[i] + FrameHalfGap));
+            rightGaps.Add(new Vector2(frameLines[i] - FrameHalfGap, frameLines[i] + FrameHalfGap));
         }
         leftGaps.Sort((p, q) => p.x.CompareTo(q.x));
         rightGaps.Sort((p, q) => p.x.CompareTo(q.x));
@@ -423,7 +534,9 @@ public sealed class RunRigLayout
         items.Add(new RunWallItem { kit = "Kit_SafetyPlate_10x7", point = new Vector3(Mathf.Min(ah + .40f, w - .15f), 1.5f, -wh), normal = Vector3.back });
         l.wallItems = items.ToArray();
         // An obstacle in every pool but the goal's, the kits in turn, on alternate walls from the right; mirrored on its other wall.
+        // (A carried goal unit, receding only, is the last unit and makes no pool.)
         var pools = l.units.Length - 1;
+        if (receding) pools = l.units.Length - 2;
         l.obstacles = new RunObstacle[pools];
         for (var p = 0; p < pools; p++)
         {
@@ -437,13 +550,26 @@ public sealed class RunRigLayout
                 yaw = mirror ? -o.yaw : o.yaw,
             };
         }
-        if (frames)
-        {
-            var lines = new System.Collections.Generic.List<float>();
-            for (var line = 3; line < n; line += 3) lines.Add(CellLength * line);
-            l.compartmentFrames = lines.ToArray();
-        }
+        if (frames) l.compartmentFrames = frameLines;
         return l;
+    }
+
+    /// <summary>A compartment frame's half gap in the long walls' finishes (its 0.16 m stub plus 20 mm either side).</summary>
+    const float FrameHalfGap = .10f;
+
+    /// <summary>The compartment frames (71 s.10 SP7: FD1 on z 9, the receding variant's trigger plane at a third of 27 m, and FD2 on
+    /// z 18; 10 RN-2 every three cells): in a receding room the ones short of the end's first line; in a plain room the ones at least
+    /// 3 m from the goal unit and 6 m from the goal wall (a 7- or 8-cell room keeps FD1 only).</summary>
+    static float[] FrameLines(float len, float l0, bool receding)
+    {
+        var list = new System.Collections.Generic.List<float>();
+        for (var k = 1; k <= 2; k++)
+        {
+            var z = CellLength * 3 * k;
+            if (receding) { if (z < l0 - .5f) list.Add(z); continue; }
+            if (Mathf.Abs(z - (len - 2f * CellLength)) >= CellLength - .001f && len - z >= 2f * CellLength - .001f) list.Add(z);
+        }
+        return list.ToArray();
     }
 
     /// <summary>The pool obstacles as the 9-cell preset placed them, relative to their pool's centre, on their own wall's side
@@ -455,8 +581,10 @@ public sealed class RunRigLayout
         new RunObstacle { kit = "Kit_HandTruck_Cartons", position = new Vector3(1.05f, 0f, .2f), yaw = -90f },
     };
 
-    /// <summary>Heads every two cells (Corridor): unit u on cell line 2u + 1, the last, the goal unit, on line cells - 2.</summary>
-    static RunUnitDef[] CorridorUnits(int cells)
+    /// <summary>Heads every two cells (Corridor): unit u on cell line 2u + 1, the last, the goal unit, on line cells - 2. In a framed
+    /// corridor every unit but the goal unit stands half a cell on (z 4.5, 10.5, 16.5 ...): on line 9 it would stand in FD1's stub
+    /// (card 1's flag), and the pools keep their 6 m. Receding: the fixed length's units only, then the carried goal unit.</summary>
+    static RunUnitDef[] CorridorUnits(int cells, bool frames = false, int recedeFrom = 0)
     {
         var count = (cells - 1) / 2;
         var units = new RunUnitDef[count];
@@ -477,7 +605,16 @@ public sealed class RunRigLayout
         // F12 (stage C): the near pool (z 6) read .220 x armed against r8's .169 (+30 %): its two heads x 0.77.
         units[0].trimPlus = -.23f;
         units[1].trimMinus = -.23f;
-        return units;
+        if (!frames && recedeFrom <= 0) return units;
+        for (var u = 0; u < count; u++)
+            if (!units[u].goalPlus) units[u].z += CellLength * .5f;
+        if (recedeFrom <= 0) return units;
+        var l0 = CellLength * recedeFrom;
+        var list = new System.Collections.Generic.List<RunUnitDef>();
+        for (var u = 0; u < count; u++)
+            if (!units[u].goalPlus && units[u].z < l0 - CellLength) list.Add(units[u]);
+        list.Add(new RunUnitDef { z = l0 + CarriedUnitZ, side = 0f, autoAim = true, goalPlus = true, carried = true });
+        return list.ToArray();
     }
 
     /// <summary>Probes by segment (71 s.5.8): (cells + 2) / 3 boxes of 3.16 x 3.22 x 9.6 m (0.16 m over the shell, VL195), the
@@ -582,6 +719,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         public bool relayFired;
         /// <summary>T-B: on a remote mount (its relay is the entry unit's); relayWorld = that relay's cabinet centre.</summary>
         public bool remote;
+        /// <summary>On the receding end's carried unit (RunUnitDef.carried): never culled, as the goal head.</summary>
+        public bool carried;
         public Vector3 relayWorld;
         /// <summary>The intensity the state wants (before the cull's weight) and whether the state has it on.</summary>
         public float drive;
@@ -606,6 +745,12 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         /// <summary>The intensity the state wants (before the cull's weight) and whether the state has it on.</summary>
         public float drive;
         public bool lit;
+        /// <summary>Receding (card 2): a strip in the length the end has not uncovered yet: off, its fixture inactive, until RevealTo.</summary>
+        public bool hidden;
+        public GameObject root;
+        /// <summary>Receding (card 2, 71 s.5.7): an uncovered strip strikes once as its cell seats: -1 waiting for the seat (dark), 0..1 its
+        /// one-way rise (0.4 s; 0.5 s under Reduce Flashing), 1 as the room's state has it (every strip of a plain room).</summary>
+        public float strike = 1f;
     }
 
     struct Emissive
@@ -651,6 +796,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     public int GatedRenderers { get; private set; }
     /// <summary>The goal opening is open (the whole door) rather than shut (its lite only), as the gate last saw it.</summary>
     public bool GoalOpen { get; private set; }
+    /// <summary>Card 4: a Run door entrance's leaf is off the latch (the whole door is the entrance portal) rather than shut (no
+    /// portal), as the gate last saw it. Ignored by an arch entrance (every room today).</summary>
+    public bool EntranceOpen { get; private set; }
     /// <summary>C42: the goal window light (null in the WebGL tier or when the layout has none).</summary>
     public Light GoalWindowLight => goalLight;
     /// <summary>
@@ -662,6 +810,25 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     public Func<float> FarRoomLamp { get; set; }
     /// <summary>The goal window light's weight last Tick (0 off .. 1 full; tests and tools).</summary>
     public float GoalLightWeight { get; private set; }
+
+    /// <summary>Receding (card 2): the transform the receding end moves (along local z, from 0 at the end's first line). The carried goal
+    /// unit and C42 hang under it, so they ride the end; null in a plain room (today's game).</summary>
+    public Transform GoalMount => goalMount;
+    /// <summary>Receding: true while the goal door looks onto the length the end has not uncovered (no lamp beyond it: C42 at full);
+    /// FrontRoomsRunRecede clears it at the final seat, when the door looks onto the release. False in a plain room.</summary>
+    public bool GoalBeyondHidden { get; set; }
+    /// <summary>The far end of the room the light gate uses (rig z): the goal wall's line, or the receding end's (SetGoalLine).</summary>
+    public float GoalLine => goalLine >= 0f ? goalLine : Layout.length;
+    /// <summary>Receding: the strips still hidden beyond the end (tests and tools).</summary>
+    public int HiddenWraps
+    {
+        get
+        {
+            var n = 0;
+            if (wraps != null) for (var k = 0; k < wraps.Length; k++) if (wraps[k].hidden) n++;
+            return n;
+        }
+    }
 
     /// <summary>Raised on every state change, with the room's centre.</summary>
     public event Action<RunRigState, Vector3> StateChanged;
@@ -709,6 +876,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     readonly SphericalHarmonicsL2[] shScratch = new SphericalHarmonicsL2[1];
     float lastAmbientW = -1f, lastAmbientH = -1f;
     float maxHeadZ;
+    Transform goalMount;
+    float goalLine = -1f;
+    bool striking;
     Material beamMaterial, haloMaterial;
     static Mesh floodCone, goalCone, haloQuad;
 
@@ -759,6 +929,14 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             }
         }
         var unitRenderers = new System.Collections.Generic.List<Renderer>();
+        // Receding (card 2, never in today's game): the goal mount the end moves, and the gate's far end on the end's first line.
+        if (Layout.recedeLine >= 0f)
+        {
+            goalMount = new GameObject("Run B / goal mount (rides the receding end)").transform;
+            goalMount.SetParent(transform, false);
+            goalLine = Layout.recedeLine;
+            GoalBeyondHidden = true;
+        }
         BuildUnits(unitRenderers);
         if (Host == RunRigHost.OwnLamps) BuildOwnLamps();
         // Step 9: the handheld tier trims the desktop build here, before anything collects the lights (the only call).
@@ -842,9 +1020,10 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         for (var u = 0; u < Layout.units.Length; u++)
         {
             var def = Layout.units[u];
-            var unitRoot = new GameObject("Run B / twin-head unit " + u + (def.side > 0 ? " R" : " L") + " z " + def.z.ToString("0.0")).transform;
-            unitRoot.SetParent(transform, false);
-            var yaw = def.side > 0 ? -90f : 90f;
+            var unitRoot = new GameObject("Run B / twin-head unit " + u + (def.carried ? " carried" : def.side > 0 ? " R" : " L") + " z " + def.z.ToString("0.0")).transform;
+            unitRoot.SetParent(def.carried && goalMount != null ? goalMount : transform, false);
+            // The carried unit (receding, card 2) hangs on the head's mount plate, its front toward the goal door.
+            var yaw = def.carried ? 0f : def.side > 0 ? -90f : 90f;
             unitRoot.localPosition = new Vector3(def.side * Layout.halfWidth, Layout.unitBoxCentreY - cabinetHalfHeight, def.z);
             unitRoot.localRotation = Quaternion.Euler(0f, yaw, 0f);
             relays[u] = unitRoot.TransformPoint(new Vector3(0f, cabinetHalfHeight, cabinetHalfDepth));
@@ -864,7 +1043,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                 for (var i = 0; i < pr.Length; i++) pilotList.Add(new Emissive { renderer = pr[i], index = pi[i] });
                 // Conduit feed from the knockout up to the soffit (a 1 m EMT tile scaled to the run, 18 mm off the wall).
                 var feedTop = Layout.height - (unitRoot.localPosition.y + feed.y);
-                if (feedTop > .02f)
+                // The carried unit (receding) runs on its own battery: no conduit to the soffit from a moving unit.
+                if (feedTop > .02f && !def.carried)
                     FrontRoomsKitLibrary.Spawn("Kit_ConduitEMT", unitRoot, new Vector3(feed.x, feed.y, feed.z - .0115f), Quaternion.identity, new Vector3(1f, feedTop, 1f), false, "feed EMT", false);
             }
             for (var m = 0; m < 2; m++)
@@ -874,13 +1054,13 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                 var lamp = Kit("Kit_EmergencyTwinHead_Lamp", yoke.transform, trunnion, Quaternion.identity, "lamp head " + m);
                 var pivot = transform.InverseTransformPoint(lamp.transform.position);
                 var plus = pivot.z > def.z;
-                var goal = plus && def.goalPlus;
+                var goal = def.carried ? m == 0 : plus && def.goalPlus;
                 var target = AimTarget(def, pivot, plus, goal);
                 var dir = transform.TransformDirection(target - pivot).normalized;
                 var flat = Vector3.ProjectOnPlane(dir, transform.up);
                 if (flat.sqrMagnitude > 1e-6f) yoke.transform.rotation = Quaternion.LookRotation(flat.normalized, transform.up);
                 lamp.transform.rotation = Quaternion.LookRotation(dir, transform.up);
-                var head = new Head { z = def.z, goal = goal, unit = u, plus = plus, remote = plate != null };
+                var head = new Head { z = def.z, goal = goal, unit = u, plus = plus, remote = plate != null, carried = def.carried };
                 SlotRenderers(lamp, "Run_SealedBeamLens", out head.lens, out head.lensIndex);
                 head.world = lamp.transform.position;
                 var makeLight = !WebGLTier || m == 0;
@@ -907,6 +1087,16 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                         light.range = Mathf.Max(Layout.floodRange, Layout.goalRange);
                         head.baseIntensity = Layout.floodIntensity;
                     }
+                    else if (def.carried)
+                    {
+                        // Receding (card 2): both carried heads flood, from 1.6 m; the goal head at carriedGoalGain (the door again
+                        // the brightest thing, 71 s.5.1), the other on the floor before the door.
+                        light.spotAngle = Layout.floodOuter;
+                        light.innerSpotAngle = Layout.floodInner;
+                        light.range = Layout.floodRange;
+                        light.cookie = cookie;
+                        head.baseIntensity = Layout.floodIntensity * (goal ? Layout.carriedGoalGain : 1f);
+                    }
                     else
                     {
                         light.spotAngle = goal ? Layout.goalOuter : Layout.floodOuter;
@@ -920,7 +1110,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                     head.light = light;
                     head.hasLight = true;
                 }
-                if (!WebGLTier && beamMaterial != null)
+                // The carried unit (receding) has no beam cones: it rides 1.6 m before the door, where the runner arrives under it.
+                if (!WebGLTier && beamMaterial != null && !def.carried)
                 {
                     var beamGo = new GameObject("beam cone");
                     beamGo.transform.SetParent(lamp.transform, false);
@@ -953,6 +1144,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
 
     Vector3 AimTarget(RunUnitDef def, Vector3 pivot, bool plus, bool goal)
     {
+        // Receding (card 2): the carried goal head on the leaf's centre, the other on the floor before the door.
+        if (def.carried)
+            return goal ? Layout.goalPoint : new Vector3(Layout.goalPoint.x, 0f, Layout.goalPoint.z - Layout.carriedFloorAhead);
         if (goal)
         {
             if (!def.autoAim && def.aimPlus != Vector3.zero) return def.aimPlus;
@@ -1062,7 +1256,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         var away = -n;
         var p = new Vector3(Layout.goalPoint.x, Layout.goalLightHeight, Layout.goalPoint.z) + away * (Layout.WallHalf + Layout.goalLightBehind);
         var go = new GameObject("run b goal window light (C42)");
-        go.transform.SetParent(transform, false);
+        // Receding (card 2): in its box on the receding end, so it rides it.
+        go.transform.SetParent(goalMount != null ? goalMount : transform, false);
         go.transform.localPosition = p;
         var aim = Quaternion.AngleAxis(Layout.goalLightPitch, Vector3.Cross(Vector3.up, away).normalized) * away;
         go.transform.localRotation = Quaternion.LookRotation(aim, Vector3.up);
@@ -1090,12 +1285,12 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         {
             var n = Layout.goalNormal.sqrMagnitude > 0f ? Layout.goalNormal.normalized : Vector3.back;
             var local = transform.InverseTransformPoint(viewer.position);
-            var toViewer = local - Layout.goalPoint;
+            var toViewer = local - GoalPointNow;
             var flat = new Vector2(toViewer.x, toViewer.z).magnitude;
             if (Vector3.Dot(toViewer, n) < Layout.WallHalf || flat > Layout.goalLightMaxDistance) w = 0f;
             else
             {
-                var far = FarRoomLamp != null ? FarRoomLamp() : EstimateFarLamp(local);
+                var far = GoalBeyondHidden ? 0f : FarRoomLamp != null ? FarRoomLamp() : EstimateFarLamp(local);
                 if (far >= 0f) w = 1f - Mathf.Clamp01(far);
                 else w = Mathf.Clamp01((flat - Layout.goalLightNearEnd) / Mathf.Max(.01f, Layout.goalLightNearStart - Layout.goalLightNearEnd));
             }
@@ -1106,12 +1301,15 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         if (goalLight.enabled != on) goalLight.enabled = on;
     }
 
+    /// <summary>The goal point now: the layout's, carried along by the receding end (GoalMount) in a receding room.</summary>
+    Vector3 GoalPointNow => goalMount == null ? Layout.goalPoint : Layout.goalPoint + goalMount.localPosition;
+
     /// <summary>The far room's lamp as the map's tick would light it, from the viewer's rig-space position: a lamp at
     /// farLampDistance past the goal wall's centre line, on within farLampRadius, faded over its last farLampFade (XZ).</summary>
     float EstimateFarLamp(Vector3 viewerLocal)
     {
         var n = Layout.goalNormal.sqrMagnitude > 0f ? Layout.goalNormal.normalized : Vector3.back;
-        var lamp = Layout.goalPoint - n * Layout.farLampDistance;
+        var lamp = GoalPointNow - n * Layout.farLampDistance;
         var d = new Vector2(viewerLocal.x - lamp.x, viewerLocal.z - lamp.z).magnitude;
         return Mathf.Clamp01((Layout.farLampRadius - d) / Mathf.Max(.01f, Layout.farLampFade));
     }
@@ -1160,12 +1358,71 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         var o = transform.position;
         gateA = new Vector4(r.x, r.z, f.x, f.z);
         gateB = new Vector4(o.x, o.y, o.z, 1f);
-        gateC = new Vector4(Layout.halfWidth + Layout.WallHalf, Layout.length, Layout.height, 0f);
+        gateC = new Vector4(Layout.halfWidth + Layout.WallHalf, goalLine >= 0f ? goalLine : Layout.length, Layout.height, 0f);
         gateD = new Vector4(0f, Layout.archHalf, Layout.archTop, 0f);
         gateE = GoalOpen
             ? new Vector4(Layout.goalPoint.x, Layout.goalHalf, -1f, Layout.goalTop)
             : new Vector4(Layout.goalLiteX, Layout.goalLiteHalf, Layout.goalLiteBottom, Layout.goalLiteTop);
+        // Card 4: a shut Run door entrance is no portal (its 15 in lite lets in nothing that reads against the strips); open, the
+        // whole door (gateD above). An arch is always open.
+        if (Layout.entranceDoor && !EntranceOpen) gateD = Vector4.zero;
     }
+
+    /// <summary>
+    /// Receding (card 2): the room's far end for the light gate, the line the end is bound for this step (FrontRoomsRunRecede calls it at
+    /// each step's tell and at the glide): the end itself, its arm and its lamp stay inside the room's box while it travels, C42 in its
+    /// box behind the end lights the uncovered length through the lite, and every block is rewritten once a step, not every frame.
+    /// </summary>
+    public void SetGoalLine(float z)
+    {
+        if (goalLine >= 0f && Mathf.Approximately(z, goalLine)) return;
+        goalLine = z;
+        if (!gateOn) return;
+        GateVectors();
+        ApplyAmbient(true);
+    }
+
+    /// <summary>Receding (card 2): switch on every hidden strip short of <paramref name="z"/> (the end is about to uncover its cell): its
+    /// fixture shows, dark, until StrikeRevealed at the seat lets it rise once into the room's state. Returns how many.</summary>
+    public int RevealTo(float z)
+    {
+        if (wraps == null) return 0;
+        var n = 0;
+        for (var k = 0; k < wraps.Length; k++)
+        {
+            var w = wraps[k];
+            if (!w.hidden || w.z >= z) continue;
+            w.hidden = false;
+            w.strike = -1f;
+            if (w.root != null) w.root.SetActive(true);
+            n++;
+        }
+        if (n == 0) return 0;
+        switch (State)
+        {
+            case RunRigState.Resetting: EvaluateReset(Clock); break;
+            case RunRigState.Armed: Evaluate(-1f); break;
+            default: Evaluate(Clock); break;
+        }
+        ApplyAmbient(true);
+        return n;
+    }
+
+    /// <summary>Receding (card 2, 71 s.5.7): the strips uncovered for this seat strike once now, in the room's state as it is (in the
+    /// tripped state their red tube rises on the battery circuit; armed their white tubes): a one-way rise, never a flash.</summary>
+    public void StrikeRevealed()
+    {
+        if (wraps == null) return;
+        for (var k = 0; k < wraps.Length; k++)
+            if (!wraps[k].hidden && wraps[k].strike < 0f)
+            {
+                wraps[k].strike = 0f;
+                striking = true;
+            }
+    }
+
+    /// <summary>A wrap's strike as a level (smoothstep of its rise; 0 while it waits for its seat).</summary>
+    static float StrikeLevel(Wrap w) => w.strike >= 1f ? 1f : w.strike <= 0f ? 0f : w.strike * w.strike * (3f - 2f * w.strike);
 
     /// <summary>The goal leaf is open or broken (the whole door lets the far room's lamps in) or shut (its lite only). The
     /// binder calls it when the map's door changes; every block is rewritten once.</summary>
@@ -1174,6 +1431,17 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         if (open == GoalOpen) return;
         GoalOpen = open;
         if (!gateOn) return;
+        GateVectors();
+        ApplyAmbient(true);
+    }
+
+    /// <summary>Card 4: a Run door entrance's leaf is off the latch or broken (the whole door lets the host's lamps in) or shut (none).
+    /// The binder calls it with the map's entrance door; every block is rewritten once per change. No effect on an arch entrance.</summary>
+    public void SetEntranceOpen(bool open)
+    {
+        if (open == EntranceOpen) return;
+        EntranceOpen = open;
+        if (!gateOn || !Layout.entranceDoor) return;
         GateVectors();
         ApplyAmbient(true);
     }
@@ -1197,7 +1465,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                 if (!h.hasLight || h.light == null) continue;
                 if (h.goal || h.plus || h.unit == 0)
                 {
-                    if (h.plus && !h.goal) h.baseIntensity *= Layout.handheldPoolGain;
+                    if (h.plus && !h.goal && !h.carried) h.baseIntensity *= Layout.handheldPoolGain;
                     if (h.light.shadows != LightShadows.None) h.light.shadows = LightShadows.Hard;
                 }
                 else
@@ -1284,6 +1552,13 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             l.shadowNearPlane = .1f;
             w.light = l;
             w.halo = BuildHalo(frame, new Vector3(0f, -.003f, 0f), haloMaterial);   // 3 mm under the soffit: under the map skin (2 mm) too
+            w.root = frame.gameObject;
+            // Receding (card 2): a strip beyond the end's first line waits, dark and inactive, until the end uncovers its cell.
+            if (Layout.recedeLine >= 0f && p.z > Layout.recedeLine)
+            {
+                w.hidden = true;
+                frame.gameObject.SetActive(false);
+            }
             wraps[k] = w;
         }
         // CR-4: every wrap dips within +-warnJitter of the others (the map's per-lamp cell hash), from its index.
@@ -1587,10 +1862,33 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                 break;
             }
         }
+        if (striking) AdvanceStrikes(dt);
         var m = MainsAt(0f);
         if (!Mathf.Approximately(m, lastMains) || State == RunRigState.Resetting) { MainsDirty = true; lastMains = m; }
         Cull();
         UpdateGoalLight();
+    }
+
+    /// <summary>Receding (card 2): the uncovered strips' one-way rise, re-evaluated in the room's state each frame while one runs.</summary>
+    void AdvanceStrikes(float dt)
+    {
+        var rise = Reduced ? Layout.reducedEnvelope : Layout.resetRise;
+        var any = false;
+        for (var k = 0; k < wraps.Length; k++)
+        {
+            var w = wraps[k];
+            if (w.strike < 0f || w.strike >= 1f) continue;
+            w.strike = Mathf.Min(1f, w.strike + dt / Mathf.Max(.05f, rise));
+            if (w.strike < 1f) any = true;
+        }
+        striking = any;
+        switch (State)
+        {
+            case RunRigState.Resetting: EvaluateReset(Clock); break;
+            case RunRigState.Armed: EvaluateWraps(-1f, 1f); break;
+            default: EvaluateWraps(Clock, WrapLevel(Clock)); break;
+        }
+        ApplyAmbient(false);
     }
 
     void FireRelays(float t)
@@ -1659,7 +1957,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     void ApplyHeadLight(Head h)
     {
         if (h.light == null) return;
-        var k = h.goal ? 1f : CullWeight(h.light.transform.position);
+        var k = h.goal || h.carried ? 1f : CullWeight(h.light.transform.position);
         var v = h.drive * k;
         if (h.light.intensity != v) h.light.intensity = v;
         var on = h.lit && k > 0f;
@@ -1808,6 +2106,13 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         for (var k = 0; k < wraps.Length; k++)
         {
             var wr = wraps[k];
+            if (wr.hidden)
+            {
+                wr.drive = 0f;
+                wr.lit = false;
+                ApplyWrapLight(wr);
+                continue;
+            }
             var level = wr.level;
             if (k == Layout.stutterLamp && t < 0f) level = StutterLevel();
             // A wrap's lens kept its level through the stutter; a bare strip's tubes are the source, so they stutter too.
@@ -1818,8 +2123,20 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             wr.lit = level > .0005f;
             ApplyWrapLight(wr);
             var white = lensLevel * wm * lens;
+            var alarm = t < 0f ? 0f : HeadLevel(t, wr.z);
+            if (wr.strike < 1f)
+            {
+                // Receding (card 2): an uncovered strip waits for its seat, then rises once (StrikeRevealed).
+                var sl = StrikeLevel(wr);
+                level *= sl;
+                white *= sl;
+                alarm *= sl;
+                wr.drive = Layout.wrapIntensity * wrapScale * level;
+                wr.lit = level > .0005f;
+                ApplyWrapLight(wr);
+            }
             SetLens(wr.lens, wr.lensIndex, wr.lensColor * white);
-            if (wr.red != null) SetLens(wr.red, wr.redIndex, RedTube(white, t < 0f ? 0f : HeadLevel(t, wr.z)));
+            if (wr.red != null) SetLens(wr.red, wr.redIndex, RedTube(white, alarm));
             if (wr.halo != null)
             {
                 wr.halo.enabled = level > .0005f;
@@ -1832,6 +2149,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
 
     void SetWrap(Wrap wr, float level)
     {
+        if (wr.hidden) level = 0f;
+        else if (wr.strike < 1f) level *= StrikeLevel(wr);
         wr.drive = Layout.wrapIntensity * wrapScale * wr.level * level;
         wr.lit = level > .0005f;
         ApplyWrapLight(wr);

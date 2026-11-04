@@ -102,6 +102,12 @@ public static class FrontRoomsReflectionCapture
             var picks = new List<Pick>();
             foreach (FrontRoomsLook.ReflectionZone zone in Enum.GetValues(typeof(FrontRoomsLook.ReflectionZone)))
             {
+                // the pool family's cubes come from its own rooms (the pool look tool), never from a Level 0 cell
+                if (zone >= FrontRoomsLook.ReflectionZone.Pool)
+                {
+                    log.AppendLine(zone + ": kept (baked from the pool family's rooms, not from the map)");
+                    continue;
+                }
                 var pick = PickCell(map, zone);
                 log.AppendLine(zone + ": " + (pick.found ? "cell " + pick.cell + " at " + pick.point.ToString("F2") + " - " + pick.note : "NO CELL FOUND"));
                 if (!pick.found) continue;

@@ -54,6 +54,10 @@ Output JSON (OPENING mm: origin = the opening's bottom-left, x to the reader's r
       carries letterShares and lod1), then --set-lod1 DIR/exit_legend_de.json)
   A Latin or Cyrillic legend in this folder (exit_legend_<code>.json) = exit_legend_dieface.py's file + letterShares
   (--set-shares) + lod1 (--set-lod1); nothing else is changed in it.
+  A CJK legend built here (出口: zh-Hans on Noto Sans SC, ja on Noto Sans JP; 2026-11-04) takes its LOD1 the same way from
+  the same word built with --fillet 0 (all else as the hero's: --em, the --width found, --font): its tied holes without
+  the punch fillets (axis strokes, no arc to flatten). E.g. ja: python3 exit_legend.py --word 出口 --font <NotoSansJP-Bold.otf>
+  --em 164.2 --width 0.945 --side-air 1.25 --ink-floor 152.4 --fillet 0 --out DIR/ja_f0.json, then --set-lod1 DIR/ja_f0.json.
 """
 
 import argparse
@@ -1106,19 +1110,42 @@ def set_lod1(coarse_path, out):
     for key in ("word", "ties", "inkBox"):
         if c.get(key) != leg.get(key):
             sys.exit("--set-lod1: %s differs from the hero legend's" % key)
-    if len(c["ink"]) != len(leg["holes"]):
-        sys.exit("--set-lod1: %d loops against the hero's %d holes" % (len(c["ink"]), len(leg["holes"])))
-    tol = c["construction"]["tolMm"]
-    # the generator as the coarse file names its face file: 平面视觉's W set (legend.py + dieface.swift, which the 11-04
-    # 08:53 LOD1 build used) or the set shipped in Tools/lookdev (exit_legend_dieface.py + exit_dieface.swift / _ko.swift)
-    face_file = (c.get("face") or "").rsplit(": ", 1)[-1].strip()
-    builder = "legend.build" if face_file == "dieface.swift" else "exit_legend_dieface.build"
-    leg["lod1"] = {"tolMm": tol, "loops": "ink: the tied holes of the same word before the R 0.5 punch fillets",
-                   "generator": "%s(code, word, tol=%s) with %s %s" % (builder, tol, face_file, c.get("faceSha1", "")[:8]),
-                   "holeVerts": sum(len(h) for h in c["ink"]),
-                   "devFromHeroMm": round(_outline_gap(c["ink"], leg["holes"]), 3),
-                   "use": "the kit's LOD1 plate only (exit_sign_common.build_plate_lod1); LOD0 and the maps keep the hero holes",
-                   "holes": c["ink"]}
+    # A CJK legend constructed by this file (出口, 2026-11-04 jako run): its strokes are axis rectangles, so there is no
+    # arc to flatten; the coarse file is the same word built here with --fillet 0 and its LOD1 loops are that build's
+    # "holes" (the tied holes without the punch fillets; its "ink" is the untied outline with the counter). Face, em,
+    # 长体 and stroke must be the hero's. A die-face legend (Latin, Cyrillic, ko) keeps the branch below as it was.
+    cjk = c.get("build") == "constructed" and "emMm" in c and (c.get("construction") or {}).get("filletMm") == 0
+    if cjk:
+        for key in ("faceSha1", "emMm", "width", "strokes"):
+            if c.get(key) != leg.get(key):
+                sys.exit("--set-lod1: %s differs from the hero legend's (a constructed coarse file is the same build at --fillet 0)" % key)
+        loops = c["holes"]
+    else:
+        loops = c["ink"]
+    if len(loops) != len(leg["holes"]):
+        sys.exit("--set-lod1: %d loops against the hero's %d holes" % (len(loops), len(leg["holes"])))
+    if cjk:
+        tol = c.get("tolMm", 0.0)
+        leg["lod1"] = {"tolMm": tol, "loops": "holes: the tied holes of the same word built with --fillet 0 (no punch fillets; "
+                                              "a constructed legend has axis strokes only, no arc to flatten)",
+                       "generator": "exit_legend.build_constructed(word, em=%s, width=%s, fillet=0) with %s %s" % (
+                           c["emMm"], c["width"], c.get("face", ""), c.get("faceSha1", "")[:8]),
+                       "holeVerts": sum(len(h) for h in loops),
+                       "devFromHeroMm": round(_outline_gap(loops, leg["holes"]), 3),
+                       "use": "the kit's LOD1 plate only (exit_sign_common.build_plate_lod1); LOD0 and the maps keep the hero holes",
+                       "holes": loops}
+    else:
+        tol = c["construction"]["tolMm"]
+        # the generator as the coarse file names its face file: 平面视觉's W set (legend.py + dieface.swift, which the 11-04
+        # 08:53 LOD1 build used) or the set shipped in Tools/lookdev (exit_legend_dieface.py + exit_dieface.swift / _ko.swift)
+        face_file = (c.get("face") or "").rsplit(": ", 1)[-1].strip()
+        builder = "legend.build" if face_file == "dieface.swift" else "exit_legend_dieface.build"
+        leg["lod1"] = {"tolMm": tol, "loops": "ink: the tied holes of the same word before the R 0.5 punch fillets",
+                       "generator": "%s(code, word, tol=%s) with %s %s" % (builder, tol, face_file, c.get("faceSha1", "")[:8]),
+                       "holeVerts": sum(len(h) for h in c["ink"]),
+                       "devFromHeroMm": round(_outline_gap(c["ink"], leg["holes"]), 3),
+                       "use": "the kit's LOD1 plate only (exit_sign_common.build_plate_lod1); LOD0 and the maps keep the hero holes",
+                       "holes": c["ink"]}
     with open(out, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(leg, fh, ensure_ascii=False, indent=1)
         fh.write("\n")
@@ -1160,7 +1187,8 @@ def main():
                          "generator at a coarser arc flattening (a Latin or Cyrillic legend: 平面视觉's exit_legend_dieface.py <code> "
                          "--tol 1.0 --out DIR, never into this folder); "
                          "its 'ink' loops (the tied holes before the punch fillets) become the kit's LOD1 plate (exit_sign_common."
-                         "build_plate_lod1). Refused unless word, ties, ink box and hole count match the hero legend")
+                         "build_plate_lod1); a CJK legend built here: the same build at --fillet 0, whose 'holes' are taken "
+                         "(face, em, 长体 and stroke must match too). Refused unless word, ties, ink box and hole count match the hero legend")
     ap.add_argument("--note", default="")
     ap.add_argument("--out", required=True)
     ap.add_argument("--preview", default=None)

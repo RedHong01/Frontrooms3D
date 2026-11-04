@@ -51,3 +51,34 @@ The core landed 11:38, and your CR-S3 hooks are in main (`FrontRoomsSoundDirecto
 - **Handhelds (step 9).** Phones and tablets keep 5 of the 8 head lights and 5 of the 9 wrap lights. `TransferRelay` still fires **8 times** (once per head, same positions), and the light names are unchanged. So a per-head relay clack sounds the same on every platform.
 
 Nothing here blocks the package. Nothing makes a sound in our clones (rule 24).
+
+## Update 2026-11-04 · the Run! rethink: the receding end and the Run door (READY, not applied yet)
+
+From 游戏视觉 (workflow `visual-run-rethink`, account A, parent session local_be0f3747), for `research/level_space/71_run_room.md` §9: your cards 1-3 and our cards 2 and 4. Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐" (71 §0.1). Packages `W/apply/run_recede_head.sh`, `run_t2_body.sh` and `run_door_tell.sh`; the visual parent lands them in that order. All of it is inert until Red has walked SP7 in scene 4 (rule 5b). We play nothing (rule 24). Full contract: `W/apply/run_rethink_contract/README.md`, section "Final"; build log `60_production_66.md` H, T, D, P.
+
+**The receding end has one event:** `FrontRoomsRunRecede.Cue`, `Action<RunRecedeCue, int, Vector3>` (the cue, an index, the world point). `RunRecedeCue` is append-only. T1's ten come with every step on every tier. T2's six come with the blocks (desktop, iPad) and the strips (phones); WebGL runs T1 alone.
+
+| Cue | When | Index | Point |
+|---|---|---|---|
+| `MagnetRelease` | the tell: the first hold-open magnet lets go; the second at the tell's second clack, or at the travel's start | 0, 1 | that magnet |
+| `Unlatch` | the tell's jolt | the step | the end |
+| `Grit` | the tell (grit from the soffit seam) and the seat | 0 tell, 1 seat | the seam, the end |
+| `TrolleyRoll` | the travel starts | the step | the end at soffit height |
+| `SweepDrag` | the travel starts | the step | the end |
+| `Whump` | the travel starts | the step | the end |
+| `Seat` / `FinalSeat` | the seat; `FinalSeat` on the last step, or where the keep-away glide ends | the step | the end |
+| `StripStrike` | the seat: once for each strip the step uncovered | the cell | the strip |
+| `CellUncovered` | the tell: each cell the step uncovers (never in a restore) | the cell | the end |
+| `MortarCrack` | T2: the tell of every step (the joints let go) | 0 | the wall |
+| `SubframeSlide` | T2: the travel starts, the door's steel rolls back alone | 0 | the sill |
+| `BlockLift` | T2: each course lifts out of its beds, top course first | the course (0 at the floor) | its first piece |
+| `StreamClatter` | T2: the two streams of blocks start along the walls | 0 left, 1 right | each stream |
+| `CourseLand` | T2: each course lands, bottom first, the top course last into the seat | the course | the course |
+| `MortarSift` | T2: grit sifts from that course's joints (drawn on desktop only; the cue on every tier) | the course | the course |
+
+- A one-cell T2 step raises 43 T2 cues besides T1's, in a fixed order from the clips' contact lists: the crack, the lifts from the top course down (the first during the tell), the slide as the travel starts, the streams, the landings from the bottom course up, the top course's last.
+- A room rebuilt after its recede began comes back seated, quietly: no cue replays (as `TripImmediate` above).
+- **Finding it:** today nothing in the game builds a receding room. When the binder does (with 关卡设计's card 4 record, after SP7), the hook that hands you each room's recede comes with those binder lines, as `RigBuilt` hands you the rig.
+- **The Run door** (our card 4) adds no event: it is a normal wooden door (rule 10), and its sounds are the doors'. The trip about 2.5 m inside is 关卡设计's device point (their card 5); its sound is yours (71 §9, 声音设计 3).
+- **Unchanged:** every hook above (`RigBuilt`, `RigDropped`, `StateChanged`, `MainsDropped`, `TransferRelay`, `ResetStarted`) and the re-strike's timing, 0.15 s a cell from the entrance, now over the room's own length (7 to 14 cells).
+- **Waiting with our card 3 (WAIT-RED):** a click per cell as the red trip front passes, and B's pulse.

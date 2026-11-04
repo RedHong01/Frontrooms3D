@@ -1,0 +1,190 @@
+{
+ "channels": "R G B A = the four D of the loop; value / 255 * enc_max = intensity (mean 1)",
+ "enc_max": 6.0,
+ "generator": "Tools/lookdev/pool_water/gen_pool_caustics.py",
+ "lens": "receiver at x + D s(x): D = d (1 - 1/n) under the water, h (n - 1) above it",
+ "loops": [
+  {
+   "bytes": 10556113,
+   "cols": 8,
+   "file": "FR_Caustic_Fine.png",
+   "guid": "92303e6503cf4667a24d1ad9c4915ea7",
+   "lens_D_m": [
+    0.01,
+    0.03,
+    0.1,
+    0.32
+   ],
+   "loop_s": 0.5,
+   "name": "Fine",
+   "patch_m": 1.2,
+   "per_D": [
+    {
+     "clipped_energy": 0.0,
+     "max": 1.225,
+     "min": 0.8174,
+     "p999": 1.126,
+     "std": 0.0393
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 1.783,
+     "min": 0.5399,
+     "p999": 1.409,
+     "std": 0.117
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 3.888,
+     "min": 0.0879,
+     "p999": 2.499,
+     "std": 0.36
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 6.28,
+     "min": 0.0053,
+     "p999": 3.485,
+     "std": 0.5812
+    }
+   ],
+   "resources": "Rendering/Water/FR_Caustic_Fine",
+   "rows": 8,
+   "sha1": "4b26cc4ab10f4482b52345fa70554afb1fa9debf",
+   "size": 256,
+   "size_by_platform": {
+    "Android": 32,
+    "Standalone": 256,
+    "WebGL": 32,
+    "iOS": 32
+   },
+   "slices": 64,
+   "slope_weight": 0.70710678,
+   "source_loop": "FR_Ripple_Fine",
+   "tiers": "desktop (Standalone: Mac, Windows, the editor)",
+   "upsampled_to": 2048
+  },
+  {
+   "bytes": 1159318,
+   "cols": 8,
+   "file": "FR_Caustic_FinePhone.png",
+   "guid": "3a39c89ce96245c98854d38b8f949465",
+   "lens_D_m": [
+    0.01,
+    0.03,
+    0.1,
+    0.32
+   ],
+   "loop_s": 0.32,
+   "name": "FinePhone",
+   "patch_m": 1.2,
+   "per_D": [
+    {
+     "clipped_energy": 0.0,
+     "max": 1.105,
+     "min": 0.8959,
+     "p999": 1.067,
+     "std": 0.0213
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 1.331,
+     "min": 0.7118,
+     "p999": 1.207,
+     "std": 0.0632
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 2.014,
+     "min": 0.3156,
+     "p999": 1.677,
+     "std": 0.1923
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 3.148,
+     "min": 0.055,
+     "p999": 2.19,
+     "std": 0.3256
+    }
+   ],
+   "resources": "Rendering/Water/FR_Caustic_FinePhone",
+   "rows": 4,
+   "sha1": "71fb70336d1514b07cf433129f5c46ee95d8fde1",
+   "size": 128,
+   "size_by_platform": {
+    "Android": 128,
+    "Standalone": 32,
+    "WebGL": 128,
+    "iOS": 128
+   },
+   "slices": 32,
+   "slope_weight": 1.0,
+   "source_loop": "FR_Ripple_FinePhone",
+   "tiers": "phone tier (iOS, Android) and WebGL's scrolled layers (slice 0)",
+   "upsampled_to": 1024
+  },
+  {
+   "bytes": 4534920,
+   "cols": 16,
+   "file": "FR_Caustic_Long.png",
+   "guid": "1e68d9e6da38497fa16930b6e3565fe8",
+   "lens_D_m": [
+    0.06,
+    0.2,
+    0.6,
+    1.8
+   ],
+   "loop_s": 2.56,
+   "name": "Long",
+   "patch_m": 2.4,
+   "per_D": [
+    {
+     "clipped_energy": 0.0,
+     "max": 1.126,
+     "min": 0.8874,
+     "p999": 1.072,
+     "std": 0.0231
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 1.487,
+     "min": 0.6771,
+     "p999": 1.263,
+     "std": 0.0771
+    },
+    {
+     "clipped_energy": 0.0,
+     "max": 2.958,
+     "min": 0.3303,
+     "p999": 1.941,
+     "std": 0.2303
+    },
+    {
+     "clipped_energy": 1e-06,
+     "max": 6.525,
+     "min": 0.0825,
+     "p999": 4.099,
+     "std": 0.6161
+    }
+   ],
+   "resources": "Rendering/Water/FR_Caustic_Long",
+   "rows": 8,
+   "sha1": "abdd3340d2766f9cb04a9051f351882a816f710a",
+   "size": 128,
+   "size_by_platform": {
+    "Android": 128,
+    "Standalone": 128,
+    "WebGL": 64,
+    "iOS": 128
+   },
+   "slices": 128,
+   "slope_weight": 1.0,
+   "source_loop": "FR_Ripple_Long",
+   "tiers": "every tier",
+   "upsampled_to": 1024
+  }
+ ],
+ "n_water": 1.333,
+ "upsample": 8
+}

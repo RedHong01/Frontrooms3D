@@ -1,0 +1,43 @@
+{
+ "name": "Kit_RunRecede_Wall",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_recede",
+  "receding_end"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  0.0
+ ],
+ "runRecede": "card 2 T2 body, 2026-11-04 (71_run_room.md s.5.3): the end's block field at rest; inert until rule 5b",
+ "boundsMin": [
+  -1.2949999570846558,
+  0.05999999865889549,
+  -0.0820000022649765
+ ],
+ "boundsMax": [
+  1.2949999570846558,
+  2.5299999713897705,
+  0.0820000022649765
+ ],
+ "triangles": 120,
+ "slots": [
+  "RunB_BlockUpper_Piece",
+  "RunB_BlockLower_Piece"
+ ],
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  2.5899999141693115,
+  0.164000004529953
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.58
+}

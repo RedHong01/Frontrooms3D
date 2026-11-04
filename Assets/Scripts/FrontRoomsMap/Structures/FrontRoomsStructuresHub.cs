@@ -42,11 +42,12 @@ public sealed class FrontRoomsStructuresHub : FrontRoomsStructuresDistrict
             Troffer(host, root, c, Key, false);
         }
 
-        // The pads: an arc of radius 7 round the spawn, from 70 degrees west to 70 degrees east, in key order.
+        // The pads: an arc of radius 7 round the spawn, from 45 degrees west to 45 degrees east, in key order: inside the
+        // spawn's +-54 degree view (review HUB missed 2: at +-70 SP1 and SP7 stood outside the arrival frame).
         var keys = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         for (var k = 0; k < keys.Length; k++)
         {
-            var a = Mathf.Deg2Rad * (-70f + 140f * k / (keys.Length - 1));
+            var a = Mathf.Deg2Rad * (-45f + 90f * k / (keys.Length - 1));
             var dir = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
             var padLocal = Spawn + dir * 7f;
             var d = host.District(keys[k]);

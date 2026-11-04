@@ -421,7 +421,14 @@ public sealed class FrontRoomsWindowFoil : MonoBehaviour
         FreeMeshes();
     }
 
-    bool Mine(FrontRoomsMapWorld.Window w) => w != null && w.root == transform && Now == Phase.Standing;
+    /// <summary>The event is this foil's. Edit mode never calls OnDestroy (DestroyImmediate on a component without
+    /// ExecuteAlways), so a foil destroyed there is still on the map's events: the first one after that drops its
+    /// handlers instead of reading the dead transform. In play OnDestroy has already unbound it.</summary>
+    bool Mine(FrontRoomsMapWorld.Window w)
+    {
+        if (this == null) { Unbind(); return false; }
+        return w != null && w.root == transform && Now == Phase.Standing;
+    }
 
     void OnPryProgress(FrontRoomsMapWorld.Window w, float progress)
     {

@@ -25,8 +25,11 @@ public static class FrontRoomsLook
     public const float ReflectionIntensity = .3f;
 
     /// <summary>Which reflection cubemap the world uses (glass, VCT, metal): the player's zone,
-    /// or DeadLamp when the lamp of the player's cell is dead or off.</summary>
-    public enum ReflectionZone { Level0, Office, Tall, DeadLamp }
+    /// or DeadLamp when the lamp of the player's cell is dead or off. The pool family's three
+    /// (research/bathroom_rooms/70_look_build.md, "Submerged"; 17_water.md 7 item 11): Pool (the club's
+    /// hall), PoolDead (its dead-lamp twin: the overheads out, the wet niches on) and PoolLevel (a
+    /// pool-level room); appended, so the first four keep their values.</summary>
+    public enum ReflectionZone { Level0, Office, Tall, DeadLamp, Pool, PoolDead, PoolLevel }
 
     /// <summary>
     /// Switch the default reflection to the zone's cubemap, crossfading over blendSeconds.

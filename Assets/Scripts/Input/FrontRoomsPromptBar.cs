@@ -18,8 +18,8 @@ using PadButton = FrontRoomsInput.PadButton;
 /// is held and for at least 0.12 s; the screen acts on the same press as it always has, so nothing waits for the chip. A chip
 /// whose button does nothing here is drawn at 40 % and keeps its place, so the pair never moves. A hold fills a ring round the
 /// glyph (Hold). Over the lit world (Hud) a chip is solid, the bar's third strength: filled paper with ink marks, the accent
-/// while pressed (under Reduce Motion the colour alone shows a press). Geometry is in the parent's units at <c>scale</c> (1 on
-/// the desktop sheet's 1080 canvas).
+/// and a 2 px keyline while pressed (under Reduce Motion the keyline is the cue that is not colour). Geometry is in the
+/// parent's units at <c>scale</c> (1 on the desktop sheet's 1080 canvas).
 /// </summary>
 public sealed class FrontRoomsPromptBar
 {
@@ -82,6 +82,10 @@ public sealed class FrontRoomsPromptBar
     const int TextSize = 13;
     // A press over the world (Hud): the accent #F4DF3B, the yellow of FrontRooms3DGame's hold bar (BuildHud's accent, a local).
     static readonly Color Accent = new Color(244f / 255f, 223f / 255f, 59f / 255f, 1f);
+    // ...and its keyline 2 px wide, not the HUD's 1: the accent is 1.2:1 on the paper, one grey without colour, and Reduce
+    // Motion keeps no drop, so the ring is the press's cue that is not colour (平面视觉 2026-11-04; D1: colour is never the
+    // only cue).
+    const float PressKeyline = 2f;
 
     enum Shape { Keycap, Face, Pill, Trigger, Dpad, Menu, NintendoMenu }
 
@@ -103,6 +107,7 @@ public sealed class FrontRoomsPromptBar
         public RectTransform Rect;
         public RawImage Fill, Edge, Mark;
         public RawImage Keyline;      // the solid chip's ring outside the shape (Hud), made when first needed
+        public RawImage KeylinePressed; // the same ring PressKeyline wide, shown instead while pressed, made with it
         public Text Legend;
         public Image Ring;
         public GlyphSpec Spec;
@@ -174,11 +179,13 @@ public sealed class FrontRoomsPromptBar
     /// <summary>The HUD's USE line over the lit world (游戏视觉's, device_prompts/20_contracts.md G8, with Keyline on): the solid
     /// chip, a third strength after the sheets' and Solid's (平面视觉 2026-11-04 07:3x, "one drawn set with a context rule": on a
     /// white door, L* 76, an unfilled chip's paper edge and legend melt into the paint). At rest the shape is filled paper,
-    /// its own paper edge, and every mark ink (the legend, ✕ ○ □ △, the d-pad's arms in use 1 px inside that edge, MENU's
-    /// lines, an arrow). The keyline is a 1 px ring of its own outside the shape, not an Outline, so nothing lies under the
+    /// its own paper edge, and every mark ink (the legend in Plex Mono Bold, ✕ ○ □ △ at a 2 px stroke, the d-pad's arms in
+    /// use 1 px inside that edge, MENU's lines, an arrow: 平面视觉 2026-11-04, Regular's 1 px stroke read grey beside the
+    /// Bayon verb). The keyline is a 1 px ring of its own outside the shape, not an Outline, so nothing lies under the
     /// paper: at 40 % or in its owner's fade the paper reads as one layer, edge included. A press fills it with the accent,
-    /// the marks still ink, and drops it 1 px (Reduce Motion keeps the fill, so there the colour alone shows a press). The
-    /// words stay paper at full strength. Wins over Solid. A chip whose button does nothing here keeps its 40 %.</summary>
+    /// the marks still ink, widens the keyline to 2 px and drops it 1 px (Reduce Motion keeps the fill and the keyline, not
+    /// the drop, so a press never shows by its colour alone). The words stay paper at full strength. Wins over Solid. A chip
+    /// whose button does nothing here keeps its 40 %.</summary>
     public bool Hud
     {
         get => hud;
@@ -517,10 +524,23 @@ public sealed class FrontRoomsPromptBar
         rt.offsetMin = rt.offsetMax = Vector2.zero;
     }
 
+    // The solid chip's legend face (Hud), IBM Plex Mono Bold, read from Resources once; the bar's mono if it is not there.
+    static Font boldMono;
+    static bool boldMonoRead;
+
+    static Font BoldMono(Font fallback)
+    {
+        if (!boldMonoRead) { boldMono = Resources.Load<Font>("Fonts/IBMPlexMono-Bold"); boldMonoRead = true; }
+        return boldMono != null ? boldMono : fallback;
+    }
+
     // A glyph's size and masks for its shape.
     void Dress(GlyphView g)
     {
         var s = g.Spec;
+        // The solid chip's legend is Plex Mono Bold, at the same 13 px (平面视觉 2026-11-04: Regular's 1 px stroke reads grey
+        // in the paper beside the Bayon verb). Set here, before a keycap's width is read: a pooled glyph follows Hud.
+        g.Legend.font = Hud ? BoldMono(mono) : mono;
         g.Legend.text = s.Legend ?? string.Empty;
         g.Legend.enabled = s.Legend != null;
         Stretch(g.Legend.rectTransform);
@@ -544,32 +564,41 @@ public sealed class FrontRoomsPromptBar
         var inset = (Band - h) * .5f * scale;
         g.Fill.rectTransform.offsetMin = g.Edge.rectTransform.offsetMin = new Vector2(0f, inset);
         g.Fill.rectTransform.offsetMax = g.Edge.rectTransform.offsetMax = new Vector2(0f, -inset);
-        // Marks: ✕ ○ □ △ on a disc, the d-pad's arms in use (the solid chip's 1 px inside the plus, so its paper edge stays
-        // round the ink), MENU's three lines, a Nintendo pad's +.
+        // Marks: ✕ ○ □ △ on a disc (the solid chip's at a 2 px stroke, beside its bold legend), the d-pad's arms in use (the
+        // solid chip's 1 px inside the plus, so its paper edge stays round the ink), MENU's three lines, a Nintendo pad's +.
         Texture2D mark = null;
-        if (s.Shape == Shape.Face && s.Mark >= 0) mark = MarkMask("ps" + s.Mark, s.Mark);
+        if (s.Shape == Shape.Face && s.Mark >= 0) mark = Hud ? MarkMask("solid ps" + s.Mark, 4 + s.Mark) : MarkMask("ps" + s.Mark, s.Mark);
         else if (s.Shape == Shape.Dpad) mark = Hud ? MarkMask("solid arms" + s.Mark, 14 + s.Mark) : MarkMask("arms" + s.Mark, 10 + s.Mark);
         else if (s.Shape == Shape.Menu) mark = MarkMask("menu", 20);
-        else if (s.Shape == Shape.NintendoMenu) mark = MarkMask("plus", 21);
-        else if (s.Shape == Shape.Keycap && s.Mark >= 30) mark = MarkMask("arrow" + s.Mark, s.Mark);
+        // The solid chip's + and arrows at 2 px too, so every mark the HUD can draw sits with the bold legend (平面视觉 11-04);
+        // MENU's three lines stay 1 px (at 2 px their 3 px pitch closes up, and the HUD never draws MENU).
+        else if (s.Shape == Shape.NintendoMenu) mark = Hud ? MarkMask("solid plus", 22) : MarkMask("plus", 21);
+        else if (s.Shape == Shape.Keycap && s.Mark >= 30) mark = Hud ? MarkMask("solid arrow" + s.Mark, s.Mark + 4) : MarkMask("arrow" + s.Mark, s.Mark);
         g.Mark.texture = mark;
         g.Mark.enabled = mark != null;
         // The solid chip (Hud): no part has an Outline. Its keyline is a ring of its own 1 px outside the shape, under the
         // fill: the fill's Outline lays 4 dark copies of the whole shape under the paper, and a chip at 40 % or in its owner's
         // fade shows them through it; a mark's would thicken the ink. Made with the first solid glyph (the sheets have none).
+        // Pressed, a ring PressKeyline wide from the same edge shows instead (PaintGlyph): the press widens it outward.
         var line = Hud && keyline;
         if (line && g.Keyline == null)
         {
             g.Keyline = Raw(g.Rect, "keyline");
             g.Keyline.transform.SetAsFirstSibling();
+            g.KeylinePressed = Raw(g.Rect, "keyline pressed");
+            g.KeylinePressed.transform.SetAsFirstSibling();
         }
-        if (g.Keyline != null) g.Keyline.enabled = line;
+        if (g.Keyline != null) g.Keyline.enabled = g.KeylinePressed.enabled = line;
         if (line)
         {
-            g.Keyline.texture = KeylineMask(key, s.Shape, w, h);
+            g.Keyline.texture = KeylineMask(key, s.Shape, w, h, FrontRoomsHudStyle.KeylineDistance);
             var k = FrontRoomsHudStyle.KeylineDistance * scale;
             g.Keyline.rectTransform.offsetMin = new Vector2(-k, inset - k);
             g.Keyline.rectTransform.offsetMax = new Vector2(k, k - inset);
+            g.KeylinePressed.texture = KeylineMask(key, s.Shape, w, h, PressKeyline);
+            var kp = PressKeyline * scale;
+            g.KeylinePressed.rectTransform.offsetMin = new Vector2(-kp, inset - kp);
+            g.KeylinePressed.rectTransform.offsetMax = new Vector2(kp, kp - inset);
         }
         KeylineOf(g.Fill, !Hud);
         KeylineOf(g.Edge, !Hud);
@@ -595,7 +624,13 @@ public sealed class FrontRoomsPromptBar
             // paper layer on the rim would light a ring round a chip at 40 % or in a fade.
             g.Fill.color = Alpha(pressed ? Accent : paper, dim);
             g.Edge.color = Alpha(paper, 0f);
-            if (g.Keyline != null) g.Keyline.color = Alpha(FrontRoomsHudStyle.KeylineColor, FrontRoomsHudStyle.KeylineAlpha * dim);
+            if (g.Keyline != null)
+            {
+                // Pressed, the 2 px ring in the 1 px ring's place, Reduce Motion or not: a press is never the colour alone.
+                var ring = FrontRoomsHudStyle.KeylineAlpha * dim;
+                g.Keyline.color = Alpha(FrontRoomsHudStyle.KeylineColor, pressed ? 0f : ring);
+                g.KeylinePressed.color = Alpha(FrontRoomsHudStyle.KeylineColor, pressed ? ring : 0f);
+            }
             g.Legend.color = Alpha(ink, dim);
             if (g.Mark.enabled) g.Mark.color = Alpha(ink, dim);
             return;
@@ -781,13 +816,12 @@ public sealed class FrontRoomsPromptBar
         return tex;
     }
 
-    // The solid chip's keyline (Hud): a ring the HUD's KeylineDistance wide OUTSIDE the shape, in a box that much larger on
-    // each side, so none of it lies under the fill.
-    static Texture2D KeylineMask(string key, Shape shape, float w, float h)
+    // The solid chip's keyline (Hud): a ring k px wide OUTSIDE the shape (the HUD's KeylineDistance; PressKeyline while
+    // pressed), in a box that much larger on each side, so none of it lies under the fill.
+    static Texture2D KeylineMask(string key, Shape shape, float w, float h, float k)
     {
-        var name = key + " keyline";
+        var name = key + " keyline " + k;
         if (masks.TryGetValue(name, out var cached) && cached != null) return cached;
-        const float k = FrontRoomsHudStyle.KeylineDistance;
         var tex = Draw(name, w + 2f * k, h + 2f * k, p =>
         {
             var d = ShapeDistance(shape, p - new Vector2(k, k), w, h);
@@ -841,21 +875,25 @@ public sealed class FrontRoomsPromptBar
         return Box(q, b) - r;
     }
 
-    // A mark in a 24 px band: 0-3 ✕ ○ □ △ (10 px, 1.1 px strokes), 11-13 the d-pad's arms in use (1 vertical, 2 horizontal,
-    // 3 all; 15-17 the solid chip's, 1 px inside the plus), 20 MENU's three lines (in the 30 x 18 pill), 21 a Nintendo pad's +
-    // (in the disc), 30-33 an arrow key's arrow.
+    // A mark in a 24 px band: 0-3 ✕ ○ □ △ (10 px, 1.1 px strokes; 4-7 the solid chip's, 2 px), 11-13 the d-pad's arms in
+    // use (1 vertical, 2 horizontal, 3 all; 15-17 the solid chip's, 1 px inside the plus), 20 MENU's three lines (in the
+    // 30 x 18 pill), 21 a Nintendo pad's + (in the disc; 22 the solid chip's, 2 px), 30-33 an arrow key's arrow (34-37 the
+    // solid chip's, 2 px).
     static Texture2D MarkMask(string name, int kind)
     {
         if (masks.TryGetValue(name, out var cached) && cached != null) return cached;
         var w = kind == 20 ? MenuW : Band;
         var h = kind == 20 ? PillH : Band;
         var c = new Vector2(w * .5f, h * .5f);
-        const float stroke = .55f; // half of a 1.1 px stroke
+        var solid = (kind >= 4 && kind <= 7) || kind == 22 || (kind >= 34 && kind <= 37);
+        var stroke = solid ? 1f : .55f; // half of a 1.1 px stroke, or of the solid chip's 2 px
+        // The shape the solid kinds draw: ✕ ○ □ △, the +, an arrow.
+        var shape = kind >= 4 && kind <= 7 ? kind - 4 : kind == 22 ? 21 : kind >= 34 && kind <= 37 ? kind - 4 : kind;
         var tex = Draw(name, w, h, p =>
         {
             float d;
             var q = p - c;
-            switch (kind)
+            switch (shape)
             {
                 case 0: d = Mathf.Min(Segment(q, new Vector2(-4.25f, -4.25f), new Vector2(4.25f, 4.25f)), Segment(q, new Vector2(4.25f, -4.25f), new Vector2(-4.25f, 4.25f))) - stroke; break;
                 case 1: d = Mathf.Abs(q.magnitude - 4.75f) - stroke; break;
@@ -880,7 +918,7 @@ public sealed class FrontRoomsPromptBar
                 case 33:
                 {
                     // An arrow 9 px long with a 3.5 px head each side (y is down: up is -y).
-                    var dir = kind == 30 ? new Vector2(0f, -1f) : kind == 31 ? new Vector2(0f, 1f) : kind == 32 ? new Vector2(-1f, 0f) : new Vector2(1f, 0f);
+                    var dir = shape == 30 ? new Vector2(0f, -1f) : shape == 31 ? new Vector2(0f, 1f) : shape == 32 ? new Vector2(-1f, 0f) : new Vector2(1f, 0f);
                     var side = new Vector2(-dir.y, dir.x);
                     var tip = dir * 4.5f;
                     d = Mathf.Min(Segment(q, -dir * 4.5f, tip), Mathf.Min(Segment(q, tip, tip - dir * 3.5f + side * 3.5f), Segment(q, tip, tip - dir * 3.5f - side * 3.5f))) - stroke;

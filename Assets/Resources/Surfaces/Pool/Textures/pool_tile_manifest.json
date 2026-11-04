@@ -1,0 +1,1274 @@
+{
+ "materials": {
+  "Prop_PoolTile_Cap": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    1
+   ],
+   "guid": "951fe424ed644b1d9406c40534663a92",
+   "mesh_uv": false,
+   "set": "Cap",
+   "sha1": "7db3e8f55f80af09ecccd5c82e9cee8ecea624de",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    0.15
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Cap_Phone": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    1
+   ],
+   "guid": "8c541df688094008a1ff4472cdd75c65",
+   "mesh_uv": false,
+   "set": "Cap",
+   "sha1": "746ae3c927276cf8be34141b034d0d8632d1c04b",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    0.15
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Coping": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    4,
+    1
+   ],
+   "guid": "fd2ebd9ca31b478285bbff79b1f6fded",
+   "mesh_uv": true,
+   "set": "Coping",
+   "sha1": "04e9a326ad0e3661cb055beaaabb0481855265cd",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    0.34
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Coping_Phone": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    4,
+    1
+   ],
+   "guid": "a30c127919154b4db27c508376adeaaa",
+   "mesh_uv": true,
+   "set": "Coping",
+   "sha1": "bbe9a9d6f91662895a93ef788b4e840fff8df804",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    0.34
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Course": {
+   "base": [
+    0.4,
+    0.76,
+    0.77
+   ],
+   "edge": [
+    0.7,
+    0.86,
+    0.86
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "92ac22ca4cb34b41b191b12f94e4ea1d",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "b07b17ea3d7b447da9e85f50eb7f4f9608ae2320",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_CourseClub": {
+   "base": [
+    0.4,
+    0.76,
+    0.77
+   ],
+   "edge": [
+    0.7,
+    0.86,
+    0.86
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "4632069af1674e14b7385cf3f579ea83",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "57b5f2a225351d26d22bf6827016c1f2ca4f98cc",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_CourseClub_Phone": {
+   "base": [
+    0.4,
+    0.76,
+    0.77
+   ],
+   "edge": [
+    0.7,
+    0.86,
+    0.86
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "cb93c70057ce4ae4b749e6cb0bd5ca1a",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "682459acb133f6b330bae1f8052d226202d84e88",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Course_Phone": {
+   "base": [
+    0.4,
+    0.76,
+    0.77
+   ],
+   "edge": [
+    0.7,
+    0.86,
+    0.86
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "3e1e736fdbcb4c6cb7b98f6288921ee5",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "fe6739782662722a7dd7f353befd99b55f7bb0a7",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Deck": {
+   "base": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "edge": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "f9e9a2b4d10047aab0ccd921aa4e8d6b",
+   "mesh_uv": false,
+   "set": "Deck",
+   "sha1": "5f732491ca5885c6129c383f813566b783d6c20f",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Deck_Phone": {
+   "base": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "edge": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "69c76bddecc5481faeb0d31d1d86b4c6",
+   "mesh_uv": false,
+   "set": "Deck",
+   "sha1": "3b96b4bed25adc76097e7dd710a812ca30c1ff00",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Field": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "4bd70ae8d0d44251a31bedc949da8bc7",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "dedb6799fa4b0505364aa62c6b43cc07f584ee46",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_FieldClub": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "0faaae71e5f1493a8ee39ec26fe036e7",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "7f5d3a6fb7b948711139cb274ac5b2c6e149c3f0",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_FieldClub_Phone": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "a2011960b6eb4ec68485ceefae40cabc",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "2ab8047616dd11acccc54c052a1a72c6fd28304c",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 1.0
+  },
+  "Prop_PoolTile_Field_Phone": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "c42437160309450f9f7e05ec33df9a4d",
+   "mesh_uv": false,
+   "set": "Field",
+   "sha1": "98af376589c27dfc74e84d5ead5a496151b932a6",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Lane": {
+   "base": [
+    0.1,
+    0.12,
+    0.16
+   ],
+   "edge": [
+    0.1,
+    0.12,
+    0.16
+   ],
+   "grid": [
+    24,
+    24
+   ],
+   "guid": "e84222d0965f455892259cb1d39c6f0d",
+   "mesh_uv": false,
+   "set": "Mosaic",
+   "sha1": "81a76f0118b4e8ffadcd3185681fb739489ed8ac",
+   "tier": "desktop",
+   "tile_size": [
+    0.6,
+    0.6
+   ],
+   "wear": 0.4
+  },
+  "Prop_PoolTile_Lane_Phone": {
+   "base": [
+    0.1,
+    0.12,
+    0.16
+   ],
+   "edge": [
+    0.1,
+    0.12,
+    0.16
+   ],
+   "grid": [
+    24,
+    24
+   ],
+   "guid": "4250ecd6422d40aba3f9a840c5419f55",
+   "mesh_uv": false,
+   "set": "Mosaic",
+   "sha1": "8d7bf8f45368deff288aef001575297a55cb9241",
+   "tier": "_Phone",
+   "tile_size": [
+    0.6,
+    0.6
+   ],
+   "wear": 0.4
+  },
+  "Prop_PoolTile_Mosaic": {
+   "base": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "edge": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "grid": [
+    24,
+    24
+   ],
+   "guid": "71a24421111747c6a05f43bbd70d47d0",
+   "mesh_uv": false,
+   "set": "Mosaic",
+   "sha1": "68f42e5eecf630f7fe2b4790dc6d16f181a69050",
+   "tier": "desktop",
+   "tile_size": [
+    0.6,
+    0.6
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_MosaicClub": {
+   "base": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "edge": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "grid": [
+    24,
+    24
+   ],
+   "guid": "3ea7bf7a6b1f4ebf8d39c0f33099f55e",
+   "mesh_uv": false,
+   "set": "Mosaic",
+   "sha1": "bd29fe6e3b168280ab5bd35ad902d941ba0f569e",
+   "tier": "desktop",
+   "tile_size": [
+    0.6,
+    0.6
+   ],
+   "wear": 0.6
+  },
+  "Prop_PoolTile_MosaicClub_Phone": {
+   "base": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "edge": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "grid": [
+    24,
+    24
+   ],
+   "guid": "4fc5d809c2f1447892bc8ad5ad0e123f",
+   "mesh_uv": false,
+   "set": "Mosaic",
+   "sha1": "047aef945a4e7ef24df59c799862924ef25505e6",
+   "tier": "_Phone",
+   "tile_size": [
+    0.6,
+    0.6
+   ],
+   "wear": 0.6
+  },
+  "Prop_PoolTile_Mosaic_Phone": {
+   "base": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "edge": [
+    0.92,
+    0.94,
+    0.95
+   ],
+   "grid": [
+    24,
+    24
+   ],
+   "guid": "9c67c64b75d24f4a860b8911cbda66d4",
+   "mesh_uv": false,
+   "set": "Mosaic",
+   "sha1": "0604c2a47745c7dd143786108e42ece5334173e0",
+   "tier": "_Phone",
+   "tile_size": [
+    0.6,
+    0.6
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Nosing": {
+   "base": [
+    0.24,
+    0.27,
+    0.31
+   ],
+   "edge": [
+    0.42,
+    0.45,
+    0.5
+   ],
+   "grid": [
+    8,
+    1
+   ],
+   "guid": "601e9717f33c419a97a9db19b056d0b6",
+   "mesh_uv": true,
+   "set": "Nosing",
+   "sha1": "444c463beb47a2bb937de486d78d01813d19289a",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    0.075
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Nosing_Phone": {
+   "base": [
+    0.24,
+    0.27,
+    0.31
+   ],
+   "edge": [
+    0.42,
+    0.45,
+    0.5
+   ],
+   "grid": [
+    8,
+    1
+   ],
+   "guid": "6a121986ea834f29a70ee66949b94f3b",
+   "mesh_uv": true,
+   "set": "Nosing",
+   "sha1": "b6602be90348d3c0888657a699c70eebd17625a1",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    0.075
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Riser": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "7397b37b24a44779bcf671065cdfca90",
+   "mesh_uv": true,
+   "set": "Field",
+   "sha1": "12f05bec940ad70d110c3949c79a816ad42faa47",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Riser_Phone": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "4f715aa37bc74675a38388e0a5225197",
+   "mesh_uv": true,
+   "set": "Field",
+   "sha1": "651f752241a128eea7d40df204de3f91f014972c",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Tread": {
+   "base": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "edge": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "4596a8a8444543c9bf111d73830ba99c",
+   "mesh_uv": true,
+   "set": "Deck",
+   "sha1": "1832dc33b43090dc22d69943eec6bf417637fa5e",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_Tread_Phone": {
+   "base": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "edge": [
+    0.86,
+    0.88,
+    0.88
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "fd5a55d80e264ccdbb0a757fa732b299",
+   "mesh_uv": true,
+   "set": "Deck",
+   "sha1": "607485b7038c7ec8c1cc4b86c1196507957710bf",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  }
+ },
+ "sets": {
+  "Cap": {
+   "bullnose_r_mm": 9.0,
+   "joint_mm": 3.0,
+   "kind": "trim",
+   "pitch_mm": 150.0,
+   "span_m": [
+    1.2,
+    0.15
+   ],
+   "tiles_u": 8,
+   "tiles_v": 1
+  },
+  "Coping": {
+   "joint_mm": 3.0,
+   "kind": "profile",
+   "nose_r_mm": 15.0,
+   "overhang_mm": 20.0,
+   "profile_mm": {
+    "back": [
+     0,
+     30
+    ],
+    "nose": [
+     285,
+     332.1
+    ],
+    "top": [
+     30,
+     285
+    ],
+    "under": [
+     332.1,
+     337.1
+    ]
+   },
+   "span_m": [
+    1.2,
+    0.34
+   ],
+   "tiles_u": 4,
+   "tiles_v": 1,
+   "unit_mm": 300.0
+  },
+  "Deck": {
+   "edge_r_mm": 1.4,
+   "glaze": "unglazed abrasive (silicon carbide), smoothness 0.31",
+   "joint_mm": 4.0,
+   "kind": "square",
+   "pitch_mm": 150.0,
+   "span_m": [
+    1.2,
+    1.2
+   ],
+   "tiles_u": 8,
+   "tiles_v": 8
+  },
+  "Field": {
+   "edge_r_mm": 1.8,
+   "glaze": "bright glaze, smoothness 0.935",
+   "grout_recess_mm": [
+    0.7,
+    1.3
+   ],
+   "joint_mm": 3.0,
+   "kind": "square",
+   "pitch_mm": 150.0,
+   "span_m": [
+    1.2,
+    1.2
+   ],
+   "tiles_u": 8,
+   "tiles_v": 8
+  },
+  "Mosaic": {
+   "edge_r_mm": 1.0,
+   "glaze": "unglazed porcelain, smoothness 0.47",
+   "joint_mm": 2.0,
+   "kind": "square",
+   "pitch_mm": 25.0,
+   "sheet_mm": 300,
+   "span_m": [
+    0.6,
+    0.6
+   ],
+   "tiles_u": 24,
+   "tiles_v": 24
+  },
+  "Nosing": {
+   "joint_mm": 3.0,
+   "kind": "profile",
+   "profile_mm": {
+    "riser": [
+     54.57,
+     71.57
+    ],
+    "round": [
+     42,
+     54.57
+    ],
+    "tread": [
+     0,
+     42
+    ]
+   },
+   "ribs_mm": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "round_r_mm": 8.0,
+   "seen_mm": {
+    "down_riser": 25,
+    "on_tread": 50
+   },
+   "span_m": [
+    1.2,
+    0.075
+   ],
+   "tiles_u": 8,
+   "tiles_v": 1,
+   "unit_mm": 150.0
+  }
+ },
+ "textures": {
+  "PoolTile_Cap_D.png": {
+   "alpha": false,
+   "bytes": 119532,
+   "guid": "2828cf127100453a9367ffe88dbbe2d1",
+   "linear": true,
+   "normal": false,
+   "sha1": "a90f59b357e429c4ac18d982d1d004ea339c0c83",
+   "size": [
+    2048,
+    256
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Cap_D_Phone.png": {
+   "alpha": false,
+   "bytes": 38573,
+   "guid": "0b072bc87fd14db99039edd31fa37a49",
+   "linear": true,
+   "normal": false,
+   "sha1": "72e8a11efa44ac452ef0bfc2876d04105b608baf",
+   "size": [
+    1024,
+    128
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Cap_N.png": {
+   "alpha": false,
+   "bytes": 454989,
+   "guid": "ce835c3e5db7415aa573e25adc6d3591",
+   "linear": true,
+   "normal": true,
+   "sha1": "4e0f5b3bcea3d6102b3aa723846431d5ef31e8de",
+   "size": [
+    2048,
+    256
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Cap_N_Phone.png": {
+   "alpha": false,
+   "bytes": 102098,
+   "guid": "3e279e3cd8f64de08be78aecf847cc14",
+   "linear": true,
+   "normal": true,
+   "sha1": "03aaa845d65817825039b9683a67bd01e277b799",
+   "size": [
+    1024,
+    128
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Cap_S.png": {
+   "alpha": true,
+   "bytes": 170337,
+   "guid": "4ebd85d09f0347e1a93184cbf2c30f21",
+   "linear": true,
+   "normal": false,
+   "sha1": "ab7987f73ea5027340042a594ef6a9e44dde40f8",
+   "size": [
+    2048,
+    256
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Cap_S_Phone.png": {
+   "alpha": true,
+   "bytes": 56773,
+   "guid": "f156cc12236448df8689bd392010bd6e",
+   "linear": true,
+   "normal": false,
+   "sha1": "294e94fb44f42e92ec19653270ae4fe75919024f",
+   "size": [
+    1024,
+    128
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Coping_D.png": {
+   "alpha": false,
+   "bytes": 202339,
+   "guid": "90432634dfb44e5ab84889c781bd5d07",
+   "linear": true,
+   "normal": false,
+   "sha1": "8a56932c0c4758703b4d9265e768b4d423987762",
+   "size": [
+    2048,
+    512
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Coping_D_Phone.png": {
+   "alpha": false,
+   "bytes": 67562,
+   "guid": "90a9d32dc901495b8b1f0ebbc98db3b7",
+   "linear": true,
+   "normal": false,
+   "sha1": "018998e739029036aad6f4824898370eb1a69930",
+   "size": [
+    1024,
+    256
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Coping_N.png": {
+   "alpha": false,
+   "bytes": 1154881,
+   "guid": "d10cc1896c944a71bc0e754fc155704d",
+   "linear": true,
+   "normal": true,
+   "sha1": "6ca625404bacf10e3c0611beb3269c653ad300a6",
+   "size": [
+    2048,
+    512
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Coping_N_Phone.png": {
+   "alpha": false,
+   "bytes": 187672,
+   "guid": "52f6f9a2bf134da694fd6ab818bb404b",
+   "linear": true,
+   "normal": true,
+   "sha1": "1a307d660472e0cb2a748b8bc173898472c47ca9",
+   "size": [
+    1024,
+    256
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Coping_S.png": {
+   "alpha": true,
+   "bytes": 113211,
+   "guid": "e9bf9abfff564a2b8479e51bb9f15083",
+   "linear": true,
+   "normal": false,
+   "sha1": "99f3645fad952f4896a266a03d9481c408c92c29",
+   "size": [
+    2048,
+    512
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Coping_S_Phone.png": {
+   "alpha": true,
+   "bytes": 37686,
+   "guid": "de1afd23c3c54d2ead3bede14b981f14",
+   "linear": true,
+   "normal": false,
+   "sha1": "edb6411b38e3e16d2cda5c3b7877a735479776d8",
+   "size": [
+    1024,
+    256
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Deck_D.png": {
+   "alpha": false,
+   "bytes": 3377158,
+   "guid": "3a832f33126f4d9ab39ac957d1d67cc1",
+   "linear": true,
+   "normal": false,
+   "sha1": "441eb16894e50311a0aefc3e463bea9a8fc88c7d",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Deck_D_Phone.png": {
+   "alpha": false,
+   "bytes": 885655,
+   "guid": "5e30844ce27e4e02ae4ea1f641d8a517",
+   "linear": true,
+   "normal": false,
+   "sha1": "2bf21733421eadeb64e8f1ef1c1c92317926b21b",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Deck_N.png": {
+   "alpha": false,
+   "bytes": 5555845,
+   "guid": "cf7f94db5be44b04a9d34cea1712ea45",
+   "linear": true,
+   "normal": true,
+   "sha1": "ae36c7e199c6bff4317fa261ab3e90a7f494beb7",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Deck_N_Phone.png": {
+   "alpha": false,
+   "bytes": 977591,
+   "guid": "3f91d1e8c77846e4ba4203d2fc58f32c",
+   "linear": true,
+   "normal": true,
+   "sha1": "6426f66720dc29b2c4d3611e98df7b559d67b61b",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Deck_S.png": {
+   "alpha": true,
+   "bytes": 6916518,
+   "guid": "09414576c9b34b429242fc724b41a431",
+   "linear": true,
+   "normal": false,
+   "sha1": "ebd727d4b7b27c82d0018db7bdeba48c8b84793a",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Deck_S_Phone.png": {
+   "alpha": true,
+   "bytes": 1690585,
+   "guid": "804ea0fd4ae84ff986afe08a44846ac5",
+   "linear": true,
+   "normal": false,
+   "sha1": "e1b2ad974660bfe36085c0c0931d34287d343436",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Field_D.png": {
+   "alpha": false,
+   "bytes": 1020600,
+   "guid": "779c02d1789e4cf49563052668a53785",
+   "linear": true,
+   "normal": false,
+   "sha1": "532c4c8142771e3e80a8fd8b791eb03ad9c7d692",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Field_D_Phone.png": {
+   "alpha": false,
+   "bytes": 333657,
+   "guid": "0c121fe51b0b464b8959ffccef2a44db",
+   "linear": true,
+   "normal": false,
+   "sha1": "14bf5faacf4cb94253025318ecd9fd9873f0f454",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Field_N.png": {
+   "alpha": false,
+   "bytes": 3686804,
+   "guid": "1ab5c45198ba4da6bd0450028a4d811c",
+   "linear": true,
+   "normal": true,
+   "sha1": "33afc7387e70ef6aa8a3cfe61b14bcfef4fc4cd2",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Field_N_Phone.png": {
+   "alpha": false,
+   "bytes": 818322,
+   "guid": "429d92772cc84ad7b8ea4eec9798fbdc",
+   "linear": true,
+   "normal": true,
+   "sha1": "12ae3a25b8610751316093cde1030e198b25f5a6",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Field_S.png": {
+   "alpha": true,
+   "bytes": 1764069,
+   "guid": "d10c6f0d76f44452b38c67490419cea5",
+   "linear": true,
+   "normal": false,
+   "sha1": "30acd5fdc56d4f1dd327282100432f8048fabd2a",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Field_S_Phone.png": {
+   "alpha": true,
+   "bytes": 626472,
+   "guid": "c8077c77214a4537897815a39f37bc58",
+   "linear": true,
+   "normal": false,
+   "sha1": "2bac10561f9483552fb7387a169de55da5b68e77",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Mosaic_D.png": {
+   "alpha": false,
+   "bytes": 2003085,
+   "guid": "f336b02d80f44c758990c5f276f34d69",
+   "linear": true,
+   "normal": false,
+   "sha1": "178413f3bcd0cd1a749e327a87e898197bb1166f",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Mosaic_D_Phone.png": {
+   "alpha": false,
+   "bytes": 630405,
+   "guid": "67f7e1d1f956443d987ccc57abb86efb",
+   "linear": true,
+   "normal": false,
+   "sha1": "39a9f1384ace6fae2d14f9cf19856c2264d9376c",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Mosaic_N.png": {
+   "alpha": false,
+   "bytes": 7005493,
+   "guid": "ee60e2f1bf88497ab723baa8b735f20c",
+   "linear": true,
+   "normal": true,
+   "sha1": "5802d56515c3a1055ca7ca132b119760dbbf8577",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Mosaic_N_Phone.png": {
+   "alpha": false,
+   "bytes": 1314849,
+   "guid": "7b957d71c7c544daa05b331fd9491b23",
+   "linear": true,
+   "normal": true,
+   "sha1": "7942b7ad3f6ef926db37447e9c8c6c7c9ec27900",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Mosaic_S.png": {
+   "alpha": true,
+   "bytes": 3391314,
+   "guid": "0dcff2cf1c6247a795090153e17384eb",
+   "linear": true,
+   "normal": false,
+   "sha1": "46a27105ae7fd87f6f54c06dfda5e170e29c8dc3",
+   "size": [
+    2048,
+    2048
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Mosaic_S_Phone.png": {
+   "alpha": true,
+   "bytes": 998987,
+   "guid": "aea26f60a96246769036acd550ba9919",
+   "linear": true,
+   "normal": false,
+   "sha1": "d56a5bbb1a68134c551465192227546294aa8383",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Nosing_D.png": {
+   "alpha": false,
+   "bytes": 90072,
+   "guid": "b2006da91ead45eda1a9361aaf7235ac",
+   "linear": true,
+   "normal": false,
+   "sha1": "b12aa3cfc6b27234dcfeb65f29fee69c46090699",
+   "size": [
+    2048,
+    128
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Nosing_D_Phone.png": {
+   "alpha": false,
+   "bytes": 28184,
+   "guid": "98d1fd8f57db4cc180067ee27d434914",
+   "linear": true,
+   "normal": false,
+   "sha1": "72bd2c765a567507a88378e0ccd34ae53a59b222",
+   "size": [
+    1024,
+    64
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Nosing_N.png": {
+   "alpha": false,
+   "bytes": 280370,
+   "guid": "db184e957f07432288b30ac8b299944d",
+   "linear": true,
+   "normal": true,
+   "sha1": "39a2a4911246b49e2e90c8e0b47822f6f7d8bd8c",
+   "size": [
+    2048,
+    128
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Nosing_N_Phone.png": {
+   "alpha": false,
+   "bytes": 54929,
+   "guid": "8170d58d87894d3eb633adeca32bd1f5",
+   "linear": true,
+   "normal": true,
+   "sha1": "7125a13bffa23c8c349995cc8f37cb5872779407",
+   "size": [
+    1024,
+    64
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Nosing_S.png": {
+   "alpha": true,
+   "bytes": 51607,
+   "guid": "081841cc4dbe4e1198d967ebdc203fec",
+   "linear": true,
+   "normal": false,
+   "sha1": "30b82094365bbcddbe6bd8829c691285682ec6d0",
+   "size": [
+    2048,
+    128
+   ],
+   "wrapV": "clamp"
+  },
+  "PoolTile_Nosing_S_Phone.png": {
+   "alpha": true,
+   "bytes": 16469,
+   "guid": "fb81b54f95d24ccf94a48ac28b5bb965",
+   "linear": true,
+   "normal": false,
+   "sha1": "ad0e692ad34b61d4e6f9523ee8258f44485e076c",
+   "size": [
+    1024,
+    64
+   ],
+   "wrapV": "clamp"
+  }
+ }
+}

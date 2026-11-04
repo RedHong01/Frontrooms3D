@@ -516,3 +516,5 @@ STICK LEFT	摇杆在左	settings note (叙事设计 signed 2026-11-04, 90 §9); 
 STICK RIGHT	摇杆在右	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 SOUNDS THAT HUNT YOU	追着你的声音	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 STATE · DISTANCE · TIER	状态 · 距离 · 等级	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+How the smaller picture is scaled up to the screen. SHARP restores edges from the last few frames (STP); SOFT is a plain, smooth scale.	较小的画面如何放大到屏幕。锐利：用最近的帧恢复边缘（STP）。柔和：普通的平滑放大。	settings, UPSCALING when SHARP is STP (tech_art 20_ranked_changes §3.13, 2026-11-04; shown once FrontRooms/Surface writes motion vectors); AI draft, 叙事设计 to sign
+STP	STP	settings note, UPSCALING when SHARP is STP (tech_art 20 §3.13, 2026-11-04); AI draft, 叙事设计 to sign

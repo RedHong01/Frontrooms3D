@@ -186,7 +186,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         floorMat = FrontRoomsPoolMaterials.Surface("RunB_Floor", new Color(.62f, .61f, .58f));
         soffitMat = FrontRoomsPoolMaterials.Surface("RunB_Soffit", new Color(.7f, .7f, .68f));
         cove = FrontRoomsPoolMaterials.Surface("RunB_Cove", new Color(.3f, .3f, .3f));
-        frameMat = FrontRoomsPoolMaterials.Surface("Door_Frame", new Color(.18f, .15f, .12f));
+        frameMat = FrontRoomsPoolMaterials.Surface("Prop_SteelBrown", new Color(.16f, .12f, .09f));   // Run! B's dark-bronze casing (review SP7-space-F5)
         leafMat = FrontRoomsPoolMaterials.Surface("Door_Enamel", new Color(.55f, .52f, .45f));
         rubber = FrontRoomsPoolMaterials.Lit("SP7 rubber sweep", new Color(.07f, .07f, .07f), .25f);
         redTube = FrontRoomsPoolMaterials.Emissive("SP7 red tube (greybox)", new Color(.20f, .025f, .02f), .75f);
@@ -207,6 +207,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         kit.Finish();
         kit.Safe("zone volume", () => FrontRoomsPostStack.EnsureZoneVolume(Root, "Run_B", new Bounds(new Vector3(3f, 2.7f, 25.65f), new Vector3(9f, 5.4f, 50.7f)), 1f));
         kit.Safe("signs", BuildSigns);
+        kit.Safe("vestibule ambient", VestibuleAmbient);
 
         Box = new Bounds(Site + new Vector3(3f, 2.5f, 22.5f), new Vector3(16f, 10f, 62f));
         LowestFloor = Site.y;
@@ -218,7 +219,31 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         kit.Stop("尽头前回头看", new Vector3(.5f, 0f, Rest - 2.5f), new Vector3(-.6f, 1.4f, 6f));
         kit.Stop("释放大厅（门的另一边）", new Vector3(3f, 0f, 47.5f), new Vector3(0f, 1.3f, 42f));
         kit.Stop("入口外 5 米（看 Run 门）", new Vector3(0f, 0f, -5f), new Vector3(0f, 1.4f, 0f));
+        // Review SP7-light-F9: the dark red tube read about 3 px from the arrival; review SP7-space-F11: no stop before the head.
+        kit.Stop("红灯管（H）：抬头看", new Vector3(0f, 0f, 3.6f), new Vector3(0f, 2.9f, 4.8f));
+        kit.Stop("端头前 4 米", new Vector3(0f, 0f, Rest - 4f), new Vector3(0f, 2.2f, Rest));
         ResetRoom(false);
+    }
+
+    // Level 0's trilight on the vestibule's own renderers (everything wholly south of z 0.01: its carpet, wallpaper, lid,
+    // troffers, the sign and the plate), as per-renderer SH, so its colours stay Level 0's while the scene's ambient is the
+    // corridor's (review SP7-light-F1).
+    void VestibuleAmbient()
+    {
+        var sh = FrontRoomsStructuresLook.TrilightSH(FrontRoomsLook.AmbientSky, FrontRoomsLook.AmbientEquator, FrontRoomsLook.AmbientGround);
+        var block = new MaterialPropertyBlock();
+        var count = 0;
+        foreach (var r in Root.GetComponentsInChildren<Renderer>(true))
+        {
+            if (r == null || r.bounds.max.z > Site.z + .01f) continue;
+            r.lightProbeUsage = LightProbeUsage.CustomProvided;
+            r.GetPropertyBlock(block);
+            block.CopySHCoefficientArraysFrom(new[] { sh });
+            r.SetPropertyBlock(block);
+            block.Clear();
+            count++;
+        }
+        Debug.Log(FrontRoomsStructures.Log + "SP7 vestibule: Level 0 ambient on " + count + " renderers.");
     }
 
     // The vestibule (70 section 9): two Standard Level 0 cells (the zone that hosts the room; two deep so the Run door reads
@@ -371,29 +396,49 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         kit.Box(x - .56f, 2.1f, z - .1f, x + .56f, 2.16f, z + .1f, frameMat, false);
     }
 
-    // An RN-F leaf hinged at <paramref name="hingeLocal"/> (parent space), swinging toward +z: a 15 x 15 in F5 lite 0.34 m
-    // from the hinge edge at 1.194-1.575 m, a panic bar on the -z face; lit (the goal's C42 box behind it) or glazed.
+    // An RN-F leaf hinged at <paramref name="hingeLocal"/> (parent space), swinging toward +z: the kit's F5 lite (15 x 15 in,
+    // 0.1495-0.5305 from the hinge edge, 1.194-1.575 m up) cut through the slab and glazed, a panic bar on the -z face. Lit
+    // (the goal): a one-sided C42 glow on the lite's corridor face, so from the corridor it shines and from the hall the lite
+    // is a window back onto the corridor (review SP7-space-F2/F3, SP7-light-F3: the slab had no hole and the box covered it).
     Transform Leaf(Transform parent, Vector3 hingeLocal, string name, bool lit, out Collider leafCollider)
     {
         var hinge = new GameObject(name);
         hinge.transform.SetParent(parent, false);
         hinge.transform.localPosition = hingeLocal;
         var slab = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        slab.name = "leaf";
+        slab.name = "leaf (collider)";
         slab.transform.SetParent(hinge.transform, false);
         slab.transform.localPosition = new Vector3(.5f, 1.05f, 0f);
         slab.transform.localScale = new Vector3(.98f, 2.08f, .045f);
-        slab.GetComponent<Renderer>().sharedMaterial = leafMat;
+        slab.GetComponent<Renderer>().enabled = false;
         leafCollider = slab.GetComponent<Collider>();
+        const float lx0 = .1495f, lx1 = .5305f, ly0 = 1.1938f, ly1 = 1.5748f;
+        LeafPiece(hinge.transform, .01f, lx0, .01f, 2.09f);
+        LeafPiece(hinge.transform, lx1, .99f, .01f, 2.09f);
+        LeafPiece(hinge.transform, lx0, lx1, .01f, ly0);
+        LeafPiece(hinge.transform, lx0, lx1, ly1, 2.09f);
         var lite = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        lite.name = "F5 lite";
+        lite.name = "F5 lite (glass)";
         UnityEngine.Object.Destroy(lite.GetComponent<Collider>());
         lite.transform.SetParent(hinge.transform, false);
-        lite.transform.localPosition = new Vector3(.34f + .1905f, 1.3843f, 0f);
-        lite.transform.localScale = new Vector3(.381f, .381f, .05f);
+        lite.transform.localPosition = new Vector3((lx0 + lx1) * .5f, (ly0 + ly1) * .5f, 0f);
+        lite.transform.localScale = new Vector3(lx1 - lx0, ly1 - ly0, .012f);
         var lr = lite.GetComponent<Renderer>();
-        lr.sharedMaterial = lit ? FrontRoomsPoolMaterials.Glow("SP7 goal lite (C42)", C42 * 1.4f) : FrontRoomsStructuresKit.GlassMaterial();
+        lr.sharedMaterial = FrontRoomsStructuresKit.GlassMaterial();
         lr.shadowCastingMode = ShadowCastingMode.Off;
+        if (lit)
+        {
+            // Bright enough to lead the end wall from the arrival (review SP7-space-F6: at x1.4 it tied with the walls).
+            var glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            glow.name = "C42 glow (corridor face, one-sided)";
+            UnityEngine.Object.Destroy(glow.GetComponent<Collider>());
+            glow.transform.SetParent(hinge.transform, false);
+            glow.transform.localPosition = new Vector3((lx0 + lx1) * .5f, (ly0 + ly1) * .5f, -.026f);
+            glow.transform.localScale = new Vector3(lx1 - lx0, ly1 - ly0, 1f);
+            var gr = glow.GetComponent<Renderer>();
+            gr.sharedMaterial = FrontRoomsPoolMaterials.Glow("SP7 goal lite (C42)", C42 * 2.4f);
+            gr.shadowCastingMode = ShadowCastingMode.Off;
+        }
         var bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
         bar.name = "panic bar";
         UnityEngine.Object.Destroy(bar.GetComponent<Collider>());
@@ -403,13 +448,13 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         bar.GetComponent<Renderer>().sharedMaterial = FrontRoomsPoolMaterials.Steel;
         if (lit)
         {
-            // C42's light in a small box behind the lite (greybox): a steel shroud on the leaf's far face round the lite.
+            // C42's driver (greybox): a small steel box on the leaf's hall face above the lite, clear of its view.
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            box.name = "STAND-IN C42 light box";
+            box.name = "STAND-IN C42 driver box";
             UnityEngine.Object.Destroy(box.GetComponent<Collider>());
             box.transform.SetParent(hinge.transform, false);
-            box.transform.localPosition = new Vector3(.34f + .1905f, 1.3843f, .1f);
-            box.transform.localScale = new Vector3(.5f, .5f, .14f);
+            box.transform.localPosition = new Vector3((lx0 + lx1) * .5f, 1.75f, .0725f);
+            box.transform.localScale = new Vector3(.38f, .18f, .10f);
             box.GetComponent<Renderer>().sharedMaterial = FrontRoomsPoolMaterials.Lit("SP7 C42 box", new Color(.25f, .25f, .24f), .3f, .4f);
         }
         else
@@ -423,6 +468,19 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             lever.GetComponent<Renderer>().sharedMaterial = FrontRoomsPoolMaterials.Steel;
         }
         return hinge.transform;
+    }
+
+    // One piece of a leaf round its lite (leaf-local x and y, 45 mm thick), render only.
+    void LeafPiece(Transform hinge, float x0, float x1, float y0, float y1)
+    {
+        if (x1 - x0 < 1e-3f || y1 - y0 < 1e-3f) return;
+        var piece = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        piece.name = "leaf";
+        UnityEngine.Object.Destroy(piece.GetComponent<Collider>());
+        piece.transform.SetParent(hinge, false);
+        piece.transform.localPosition = new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, 0f);
+        piece.transform.localScale = new Vector3(x1 - x0, y1 - y0, .045f);
+        piece.GetComponent<Renderer>().sharedMaterial = leafMat;
     }
 
     // ---------------------------------------------------------------- compartment frames (10 RN-2): FD1 z 9 (the trigger), FD2 z 18
@@ -442,8 +500,11 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             kit.Box(-1.06f, 0f, z - .1f, -1f, 2.16f, z + .1f, frameMat, false);
             kit.Box(1f, 0f, z - .1f, 1.06f, 2.16f, z + .1f, frameMat, false);
             kit.Box(-1.06f, 2.1f, z - .1f, 1.06f, 2.16f, z + .1f, frameMat, false);
+            var castKeep = kit.Mesh.CastShadows;
+            kit.Mesh.CastShadows = false;
             kit.Box(-1.045f, 0f, z - 1.08f, -1.0f, 2.08f, z - .1f, leafMat);
             kit.Box(1.0f, 0f, z - 1.08f, 1.045f, 2.08f, z - .1f, leafMat);
+            kit.Mesh.CastShadows = castKeep;
             foreach (var s in new[] { -1f, 1f })
             {
                 // A wall magnet with its extension arm to the leaf (greybox).
@@ -461,12 +522,13 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         trackPart = kit.BeginPart("SP7 recede track (receding variants)");
         kit.Shell(Ceil, 0f);
         var steel = FrontRoomsPoolMaterials.Steel;
-        // A surface-mounted 100 mm steel track in both soffit corners from the FD1 frame to the end wall, hangers every 1.5 m;
-        // the 20 mm guide slot in the floor from z 27 to 42 (71 section 5.1; in view from the arch: the honest tell).
+        // A surface-mounted 100 mm steel track in both soffit corners from the entrance wall to the end wall, hangers every 1.5 m
+        // (none in a fire-door frame); the 20 mm guide slot in the floor from z 27 to 42 (71 section 5.1; in view from the arch:
+        // the honest tell; from the FD1 frame it hid behind FD1's header from the arrival: review SP7-space-F1).
         foreach (var s in new[] { -1f, 1f })
         {
-            kit.Box(s * 1.30f - .05f, 2.845f, Fd1 + .1f, s * 1.30f + .05f, 2.895f, Length, steel, false);
-            for (var z = Fd1 + .75f; z < Length; z += 1.5f)
+            kit.Box(s * 1.30f - .05f, 2.845f, .16f, s * 1.30f + .05f, 2.895f, Length, steel, false);
+            for (var z = .75f; z < Length; z += 1.5f)
                 kit.Box(s * 1.30f - .02f, 2.895f, z - .02f, s * 1.30f + .02f, Ceil, z + .02f, steel, false);
         }
         kit.Box(.94f, .0006f, 27f, .96f, .0014f, Length, FrontRoomsPoolMaterials.Lit("SP7 guide slot", new Color(.03f, .03f, .03f), .2f), false);
@@ -606,7 +668,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         }
         // The goal head's bracket: an arm from the wall over the door to a plate 1.2 m out, the twin-head unit under it.
         kit.Box(-.025f, 2.6f, -1.18f, .025f, 2.65f, -t, FrontRoomsPoolMaterials.Steel, false);
-        kit.Box(-.2f, 2.30f, -1.2f, .2f, 2.65f, -1.18f, FrontRoomsPoolMaterials.Steel, false);
+        kit.Box(-.05f, 2.30f, -1.2f, .05f, 2.65f, -1.18f, FrontRoomsPoolMaterials.Steel, false);
         // A knee brace from the wall over the door frame to the arm.
         var braceA = new Vector3(0f, 2.26f, -t);
         var braceB = new Vector3(0f, 2.61f, -.82f);
@@ -792,7 +854,9 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             {
                 unit.transform.localPosition = new Vector3(d.side * HalfW, rig.unitBoxCentreY - .0955f, d.z);
                 unit.transform.localRotation = Quaternion.Euler(0f, d.side > 0 ? -90f : 90f, 0f);
-                BuildUnitHeads(unit.transform, false, Vector3.zero, Vector3.zero, d.remote, d.trimMinus, d.trimPlus, cell, d);
+                // The last two units' +z lamps land 1.1 m ahead, short of the 36 and 42 seats: aimed 4.2 m ahead they pooled on the
+                // end wall beside the door and tied with it (review SP7-light-F6).
+                BuildUnitHeads(unit.transform, false, Vector3.zero, Vector3.zero, d.remote, d.trimMinus, d.trimPlus, cell, d, false, u >= UnitZ.Length - 2 ? 1.1f : 0f);
             }
             cellObjects[cell].Add(unit);
         }
@@ -878,6 +942,20 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         l.shadows = LightShadows.None;
         l.shadowStrength = .9f;
         l.shadowNearPlane = .1f;
+        if (name.EndsWith(" 0", StringComparison.Ordinal))
+        {
+            // Strip 0 (beside the entrance): its own bias, so the vestibule's side walls at the corners stop taking the
+            // corridor's light through the 0.08 entrance wall (review SP7-light-F5).
+            try
+            {
+                var ad = lightGo.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalLightData>();
+                if (ad == null) ad = lightGo.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalLightData>();
+                ad.usePipelineSettings = false;
+                l.shadowBias = .15f;
+                l.shadowNormalBias = .25f;
+            }
+            catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP7 strip bias", "SP7: strip 0's bias: " + e.Message); }
+        }
         s.light = l;
         // The rig's soffit halo (3 mm under the soffit), white; the red halo material swaps in under the alarm.
         try { if (haloWhite != null) s.halo = FrontRoomsRunRig.BuildHalo(frame.transform, new Vector3(0f, -.003f, 0f), haloWhite); }
@@ -890,7 +968,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     // wall), as FrontRoomsRunRig.BuildUnits: the cabinet (T-A) or the remote mount (T-B), yokes on mount_l / mount_r, lamps
     // on the trunnion, aimed by Run! B's rule (pitch 30 degrees, at the floor across the axis at 0.55 m) or, for the goal
     // head, at the two given points (unit-parent space). Lights off until the trip; the cabinet's AC ON pilot lit when armed.
-    HeadLamp[] BuildUnitHeads(Transform unit, bool goal, Vector3 aimA, Vector3 aimB, bool remote, float trimMinus, float trimPlus, int cell, RunUnitDef def = default(RunUnitDef), bool explicitAim = false)
+    HeadLamp[] BuildUnitHeads(Transform unit, bool goal, Vector3 aimA, Vector3 aimB, bool remote, float trimMinus, float trimPlus, int cell, RunUnitDef def = default(RunUnitDef), bool explicitAim = false, float plusAhead = 0f)
     {
         var result = new List<HeadLamp>();
         var mountL = Anchor("Kit_EmergencyTwinHead", "mount_l", new Vector3(.112f, .201f, .059f));
@@ -966,6 +1044,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
                 var dh = pivot.y / Mathf.Tan(rig.floodPitch * Mathf.Deg2Rad);
                 var tx = -def.side * rig.aimCross;
                 var along = Mathf.Sqrt(Mathf.Max(.01f, dh * dh - (tx - pivot.x) * (tx - pivot.x)));
+                if (plus && plusAhead > 0f) along = plusAhead;
                 target = new Vector3(tx, 0f, pivot.z + (plus ? along : -along));
             }
             var dir = rigSpace.TransformDirection(target - pivot).normalized;
@@ -1063,7 +1142,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         var font = FrontRoomsStructuresSigns.BodyFontAsset;
         if (font != null) plateText.font = font;
         plateText.fontSize = 48;
-        plateText.characterSize = .028f * 10f / 48f;
+        plateText.characterSize = .032f * 10f / 48f;   // the sign's body type (70 section 9: the same panel and type; review SP7-space-F9)
         plateText.lineSpacing = 1.15f;
         plateText.anchor = TextAnchor.UpperLeft;
         plateText.alignment = TextAlignment.Left;
@@ -1072,7 +1151,8 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         var tr = textGo.GetComponent<MeshRenderer>();
         if (tr != null)
         {
-            if (font != null && font.material != null) tr.sharedMaterial = font.material;
+            var depth = FrontRoomsStructuresSigns.DepthText(font);
+            if (depth != null) tr.sharedMaterial = depth;
             tr.shadowCastingMode = ShadowCastingMode.Off;
         }
         // The Relay stand-in (71 section 10): x -0.6, z 6, facing north.
@@ -1402,6 +1482,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         beatPhase = Beat.Done;
         finalSeatTime = phase == Phase.Tripped ? clock : -1f;
         if (!seatedLines.Contains(headZ)) seatedLines.Add(headZ);
+        if (Stops.Count > 2) Stops[2] = FrontRoomsStructuresStop.Facing("尽头前回头看", Site + new Vector3(.5f, 0f, headZ - 2.5f), Site + new Vector3(-.6f, 1.4f, 6f));
         plateDirty = true;
     }
 
@@ -1771,7 +1852,9 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
                 foreach (var s in strips)
                 {
                     if (s == null || s.light == null || !s.light.enabled || shadowPick.Contains(s.light)) continue;
-                    if (s.cell >= 0 && !float.IsNegativeInfinity(revealAt[s.cell])) continue;   // revealed strips unshadowed (71 5.2)
+                    // Revealed strips unshadowed (71 5.2), except with the walker at the door or in the hall (eye past the rest line
+                    // less 3 m): there the nearest strips take the shadows, so no strip lights the hall through its wall.
+                    if (s.cell >= 0 && !float.IsNegativeInfinity(revealAt[s.cell]) && (eye - Site).z <= Rest - 3f) continue;
                     var d = (s.light.transform.position - eye).sqrMagnitude;
                     if (d < bestD) { bestD = d; best = s.light; }
                 }
@@ -1814,7 +1897,8 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     public override FrontRoomsStructuresLook.Preset PresetAt(Vector3 world)
     {
         var p = world - Site;
-        if (p.z < 0f) return FrontRoomsStructuresLook.Preset.Level0;
+        // No Level 0 look in the vestibule any more: from the arrival the corridor showed in Level 0's trilight and reflection,
+        // and crossing z 0 snapped every colour (review SP7-light-F1); the vestibule's own renderers carry Level 0's ambient.
         if (p.z > HallZ0) return FrontRoomsStructuresLook.Preset.RunB;
         if (phase == Phase.Resetting) return clock < rig.resetRiseStart ? FrontRoomsStructuresLook.Preset.RunBTripped : FrontRoomsStructuresLook.Preset.RunB;
         if (phase != Phase.Tripped) return FrontRoomsStructuresLook.Preset.RunB;
@@ -1847,8 +1931,15 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             {
                 var next = ((pendingLook >= 0 ? pendingLook : look) + 1) % LookNames.Length;
                 if (armed) { look = next; pendingLook = -1; } else pendingLook = next;
+                var tubeOff = !(pendingTube >= 0 ? pendingTube == 1 : tube);
+                var tubeOn = next != 0 && tubeOff;
+                if (tubeOn)
+                {
+                    // A, B and C need the red tube, so choosing one turns it on (70 section 9; review SP7-light-F8).
+                    if (armed) { tube = true; pendingTube = -1; ApplyTube(); } else pendingTube = 1;
+                }
                 plateDirty = true;
-                message = "触发后的灯光：" + LookNames[next] + (!tube && next != 0 ? "（红灯管关着，按 H 打开才有红光）" : "") + later;
+                message = "触发后的灯光：" + LookNames[next] + (tubeOn ? "（红灯管随之打开）" : "") + later;
                 return true;
             }
             case UnityEngine.InputSystem.Key.H:

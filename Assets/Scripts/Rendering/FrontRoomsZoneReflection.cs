@@ -40,12 +40,12 @@ using UnityEngine.SceneManagement;
 public static class FrontRoomsZoneReflection
 {
     public const string ResourceFolder = "Rendering/Reflections/";
-    public static readonly string[] CubeNames = { "Refl_Level0", "Refl_Office", "Refl_Tall", "Refl_DeadLamp" };
+    public static readonly string[] CubeNames = { "Refl_Level0", "Refl_Office", "Refl_Tall", "Refl_DeadLamp", "Refl_Pool", "Refl_PoolDead", "Refl_PoolLevel" };
     /// <summary>Upper bound for the linear zone intensity until per-room probes land (G7).</summary>
     public const float MaxLinear = .5f;
 
     /// <summary>Linear reflection intensity per zone (index = ReflectionZone), each clamped to MaxLinear.</summary>
-    public static readonly float[] ZoneLinear = { .5f, .5f, .45f, .5f };
+    public static readonly float[] ZoneLinear = { .5f, .5f, .45f, .5f, .5f, .5f, .5f };
 
     public static readonly int NominalId = Shader.PropertyToID("_FR_ZoneReflNominal");
 

@@ -62,12 +62,21 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         Stops.Clear();
         kit.Stop("到达点：南边走道的栏板", Arrival, new Vector3(15f, 5f, 13.5f));
         kit.Stop("坑底：隔着隔板看交叉口", new Vector3(4.6f, Pit, 8.15f), new Vector3(10.05f, Pit + 1.5f, 8.15f));
-        kit.Stop("抬高地板", new Vector3(24f, Raised, 4.4f), new Vector3(10f, Pit + .8f, 9.5f));
+        kit.Stop("坑底：隔着 1.35 米隔板看替身", new Vector3(5.0f, Pit, 3.6f), new Vector3(10.05f, Pit + 1.5f, 8.15f));
+        kit.Stop("坑底：隔着 1.52 米隔板看替身", new Vector3(15.1f, Pit, 3.6f), new Vector3(10.05f, Pit + 1.5f, 8.15f));
+        kit.Stop("坑底：隔着 1.65 米隔板看替身", new Vector3(15.1f, Pit, 12.7f), new Vector3(10.05f, Pit + 1.5f, 8.15f));
+        kit.Stop("坑底：隔着 2.16 米隔板看替身", new Vector3(5.8f, Pit, 12.3f), new Vector3(10.05f, Pit + 1.5f, 8.15f));
+        kit.Stop("抬高地板", new Vector3(23.6f, Raised, 9.0f), new Vector3(10.05f, Pit + 1.2f, 8.15f));
         kit.Stop("缓坡起点", new Vector3(18.6f, 0f, 1.5f), new Vector3(29f, 1.62f, 1.5f));
         kit.Stop("二楼：玻璃会议室最高一级", new Vector3(25.6f, S1 + .6f, 10.5f), new Vector3(14f, S1 + 1.2f, 10.5f));
         kit.Stop("二楼：西边画廊", new Vector3(1.5f, S1, 9f), new Vector3(15f, S1 + .8f, 9f));
-        kit.Stop("三楼：北边走廊看隔板阵", new Vector3(19.5f, S2, 16.6f), new Vector3(21f, S2 + 1.2f, 8f));
-        kit.Stop("窄长楼梯厅", new Vector3(1.5f, 0f, 22.4f), new Vector3(15f, 5.6f, 21.5f));
+        kit.Stop("三楼：北边走廊看隔板阵", new Vector3(21f, S2, 17.2f), new Vector3(21f, S2 + 1f, 9f));
+        kit.Stop("窄长楼梯厅", new Vector3(1.5f, 0f, 20.9f), new Vector3(15f, 6f, 20.9f));
+        // Review SP4-F17: the F2 look-down, the B7 ramp, the B1 step and the B3 core (walk tests 70 l.409-411, R6).
+        kit.Stop("三楼：往下看坑底的替身", new Vector3(10.5f, S2, 16.2f), new Vector3(10.05f, Pit, 8.15f), 70f);
+        kit.Stop("B7 缓坡脚下往上看", new Vector3(29.3f, 0f, 14.6f), new Vector3(29.3f, 1.9f, 9.5f));
+        kit.Stop("B1 拱门里的两级台阶", new Vector3(19.5f, 0f, 16.8f), new Vector3(19.5f, 1.4f, 12f));
+        kit.Stop("B3 楼梯间，往上看第一段", new Vector3(18.6f, 0f, 18.7f), new Vector3(22.8f, 2.9f, 18.73f), 45f);
     }
 
     // ---------------------------------------------------------------- F0: walkways, band, pit, raised floor, the slot's floor
@@ -87,6 +96,7 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         p.Fill(6, 0, 9, 0, held, 0f, L0, RoomW);            // B9, built by hand
         p.Fill(0, 6, 5, 7, floor, 0f, L2, RoomSlot);        // the slot stair hall's floor, its lid at +10.7
         p.NoLid(1, 1, 5, 4);
+        p.Dark(0, 6, 5, 7);                                 // the slot hall's lid troffers are hung below (review SP4-F3)
         // The raised floor's walls to the band and the slope (Office_Wall), with their ways on.
         for (var i = 6; i <= 9; i++) { p.ForceWall(i, 4, 'N'); p.ForceWall(i, 0, 'N'); }
         p.Open(6, 4, 'N', .6f, 2.4f, 0f, Raised + 2.2f);    // B1: a STEP through a 1.8 m arch (x 18.6..20.4)
@@ -103,6 +113,10 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         p.NoWall(7, 5, 'N');
         p.NoWall(5, 6, 'E');
         p.Build(kit);
+        // The slot hall's own troffers in its lid at +10.7, strong enough to reach its floor (10 m down), view lamps.
+        for (var i = 0; i <= 5; i++)
+            for (var j = 6; j <= 7; j++)
+                kit.Troffer(new Vector3(3f * i + 1.5f, L2, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true, true, 3f, 20f);
         // B9's lid and lamps (its cells are the slope's).
         kit.Shell(L0, 0f);
         kit.Lid(18f, 0f, 30f, 3f, L0, ceiling);
@@ -115,7 +129,9 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
     FrontRoomsStructuresKit.Plate Plate(float y0) => new FrontRoomsStructuresKit.Plate(0f, 0f, y0, 10, 8)
     {
         WallMat = wall, FloorMat = carpet, FloorThick = .05f, CeilingMat = ceiling, LedgeMat = wall, TreadMat = carpet,
-        Troffers = true, Office = true, VoidGuard = FrontRoomsStructuresKit.GuardStyle.Glass, LedgeGuard = FrontRoomsStructuresKit.GuardStyle.Glass, SectionMat = null,
+        NosingMat = FrontRoomsPoolMaterials.Surface("Stair_Band", new Color(.3f, .3f, .3f)),
+        Troffers = true, Office = true, ViewLamps = true,
+        VoidGuard = FrontRoomsStructuresKit.GuardStyle.Glass, LedgeGuard = FrontRoomsStructuresKit.GuardStyle.Glass, SectionMat = null,
     };
 
     // ---------------------------------------------------------------- F1: west gallery, north band, boardroom, the slot's F1 landing
@@ -284,7 +300,7 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         // A row of 1.52 panels along its south wall shows the slope: 1.38 m to the grid at x 18, 1.08 at x 27.
         for (var k = 0; k < 6; k++)
         {
-            var x = 18.4f + k * 1.524f + .762f;
+            var x = 19.8f + k * 1.524f + .762f;
             kit.Kit("Kit_CubiclePanel", new Vector3(x, Mathf.Clamp01((x - 18f) / 9f) * Raised, .45f), 0f, new Vector3(1.524f, 1.52f, .06f), fabric);
         }
         // Low panels (1.35, greybox) on the raised floor: the prospect field over the pit.
@@ -321,17 +337,19 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
 
     void BuildBlades()
     {
-        // Freestanding panels 1.52 wide on the 1.5 m sub-grid, heights 1.35 / 1.65 / 2.16 (greybox), two thirds facing one axis.
+        // Freestanding panels 1.52 wide on the 1.5 m sub-grid, heights 1.35 / 1.65 / 2.16 (greybox) mixed on both axes; two
+        // rows in three run along x (they face the north band: a wall from there, aisles from across the atrium), each missing
+        // one panel that moves along from row to row; the third row runs along z (review SP4-F9). Column 0 clears the guard.
         float[] heights = { 1.35f, 1.65f, 2.16f };
         var n = 0;
         for (var gx = 0; gx < 4; gx++)
             for (var gz = 0; gz < 8; gz++)
             {
-                var x = 18.75f + gx * 1.5f;
+                var x = 18.92f + gx * 1.5f;
                 var z = 3.75f + gz * 1.5f;
-                if ((gx + gz * 3) % 5 == 4) continue;                 // a few gaps, so rows read as rows
-                var alongX = (gx * 7 + gz * 5) % 3 != 0;             // two thirds face one axis
-                var h = heights[(gx * 5 + gz * 3) % 3];
+                var alongX = gz % 3 != 2;
+                if (alongX && gx == gz % 4) continue;
+                var h = heights[(gx + 2 * gz) % 3];
                 var half = .76f;
                 var a = alongX ? new Vector3(x - half, 0f, z) : new Vector3(x, 0f, z - half);
                 var b = alongX ? new Vector3(x + half, 0f, z) : new Vector3(x, 0f, z + half);
@@ -368,10 +386,11 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         var tbar = FrontRoomsPoolMaterials.Lit("ceiling t-bar white", new Color(.9f, .9f, .88f), .3f);
         for (var x = 3.6f; x < 17.95f; x += .6f) kit.Box(x - .012f, L2 - .03f, 3f, x + .012f, L2, 15f, tbar, false);
         for (var z = 3.6f; z < 14.95f; z += .6f) kit.Box(3f, L2 - .03f, z - .012f, 18f, L2, z + .012f, tbar, false);
-        kit.Box(2.9f, L2, 2.9f, 18.1f, L2 + .2f, 15.1f, wall, false);
+        kit.Box(2.9f, L2 + .05f, 2.9f, 18.1f, L2 + .25f, 15.1f, wall, false);
+        // The laylight's light: 12 view lamps, range 22 and 28 (by eye) so the pit, 11.8 m down, reads lit (70 section 6; review SP4-F2).
         for (var i = 0; i < 4; i++)
             for (var j = 0; j < 3; j++)
-                kit.Lamp("laylight", LightType.Spot, new Vector3(4.875f + i * 3.75f, L2 - .08f, 5f + j * 4f), Vector3.down, 140f, 100f, 9f, 16f, new Color(.95f, .98f, 1f), true, Vector3.zero, null, Color.black);
+                kit.Lamp("laylight", LightType.Spot, new Vector3(4.875f + i * 3.75f, L2 - .08f, 5f + j * 4f), Vector3.down, 140f, 100f, 28f, 22f, new Color(.95f, .98f, 1f), true, Vector3.zero, null, Color.black);
     }
 
     // A fascia box along a..b (plan, on the void edge) from y0 to y1, 0.2 deep on the floor side (away from the void).
@@ -411,7 +430,7 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         SlopedGlass(new Vector3(9.9f, 5.85f, 22.08f), new Vector3(6.0f, S2, 22.08f));
         // A spot over each landing and mid landing (R8); the hall's own troffers are the F0 plate's at +10.7.
         foreach (var l in new[] { new Vector3(1.5f, 2.6f, 19.5f), new Vector3(7.2f, 4.4f, 19.0f), new Vector3(15f, 6.6f, 21f), new Vector3(10.8f, 8.3f, 23f), new Vector3(1.5f, 10.4f, 22f) })
-            kit.Lamp("slot landing", LightType.Spot, l, Vector3.down, 120f, 80f, 2.4f, 7f, new Color(.96f, .97f, 1f), false, new Vector3(.3f, .3f, .08f), metal, new Color(1.5f, 1.5f, 1.5f));
+            kit.Lamp("slot landing", LightType.Spot, l, Vector3.down, 120f, 80f, 2.4f, 7f, new Color(.96f, .97f, 1f), true, new Vector3(.3f, .3f, .08f), metal, new Color(1.5f, 1.5f, 1.5f));
     }
 
     // ---------------------------------------------------------------- the B3 core (x 18..24, z 18..21): the second way
@@ -455,7 +474,7 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
 
     void BuildSigns()
     {
-        kit.Sign(new Vector3(6.9f, 1.5f, 2.55f), Arrival + Vector3.up * 1.5f, "SP4 · 办公层：三层中庭，底下是下沉工位区",
+        kit.Sign(new Vector3(7.2f, 1.5f, 2.0f), Arrival + Vector3.up * 1.5f, "SP4 · 办公层：三层中庭，底下是下沉工位区",
             "办公层，每层 3.9 米。中庭穿过三层，玻璃栏板，顶上一整块发光的采光天花；中庭的地面就是下沉 1.2 米的工位区，过道交叉口站着一个 Relay 替身（2.05 米，不会动）。每层朝中庭的开口都不一样：一楼三边是走道，东边是抬高 0.30 米的机房地板；二楼西、北两边是走廊，东边是玻璃会议室；三楼只有北、东两边开着，东边是一片独立隔板。北边一条 6 米宽的窄长楼梯厅，两段直跑楼梯来回交叉，连通三层；楼梯厅东头还有一部普通楼梯。全区没有螺旋楼梯，每条路 Relay 都能走。游戏里一次只加载一层，这里三层都是真的。\n"
             + "灰盒占位：只有隔板，没有桌椅；1.35 和 2.16 米的隔板和三楼的独立隔板是同色的灰盒板；玻璃、采光天花、楼梯都是灰盒。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
             + "要你决定：1 中庭放进办公层吗？ 2 中庭底下直接做下沉工位区，这样组合可以吗？还是另做一个顶棚不动的下沉区？ 3 窄长楼梯厅放进办公层吗？", 0f);

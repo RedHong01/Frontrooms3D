@@ -41,6 +41,10 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     FrontRoomsRunRules runRules;
     ThemeMaterials runSkin;
     bool runRoomsOpen;
+    // Run! rethink (71 s.9, card 2): the run's deck and the floor its planner plans; both kept through NextFloor, which counts
+    // the floor down (1 = LEVEL 0), as the game does.
+    FrontRoomsRunDeck runDeck;
+    int runFloor = 1;
     readonly HashSet<int> runBuilt = new HashSet<int>();
     readonly List<FrontRoomsRunRoom> runScratch = new List<FrontRoomsRunRoom>();
     Func<Door, FrontRoomsDoorMember?> runMemberHook;
@@ -376,7 +380,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         public byte startGroup;
         // C22: within its light's range of X, the EXIT's stairwell cell (its light would reach through the stairwell's walls): held by ExitLamps.
         public bool exitGroup;
-        // WebGL (TickFixturesNearOnly): the light's position relative to its chunk
+        // The near tick (every tier unless TickFixturesEveryLens): the light's position relative to its chunk
         // root (chunk roots only translate), what this map last set on the Light,
         // and the lens emission factor last written, so a far lamp costs no native
         // call per frame.
@@ -384,6 +388,13 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         public bool lightOn = true;
         public LightShadows shadowMode = LightShadows.None;
         public float emissionWritten = -1f;
+        // The light budget (LightBudget > 0: handheld and WebGL): this tick's distance, rank score and distance fade,
+        // whether the cap chose it, its light's share (0..1, fading over BudgetFadeSeconds; -1 = place at once) and
+        // the tick it was last a candidate.
+        public float budgetDistance, budgetScore, budgetFade;
+        public bool budgetWanted;
+        public float budget;
+        public int budgetTick = -1;
         // The ambient flicker (M2, RELAY §9.5), modes 1-3 only: the dip's gain on the mode's level this frame
         // (1: none); Stutter's episode (2 or 3 dips, 0 = none) and its shape seed; Failing's dropout; Dead's
         // strike (shown, or held dark) and the last one shown; SetAmbientHold; the flash limiter's track.
@@ -962,6 +973,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         // Tools (-autopilotRunRooms): Run! rooms on for this run whatever the profile says; 2 also forces placement.
         if (RunRoomsForTools > 0) runRules = source.RunRules(true);
         if (runRules != null && RunRoomsForTools >= 2) runRules.force = true;
+        // Tools (the Level Designer's Run! card, the interaction tests): every room this card (71 s.9 cards 1, 4, 5).
+        if (runRules != null && !RunCardForTools.IsNothing) runRules.forceCard = RunCardForTools;
 #endif
         foilRules = source.FoilRules();
 #if UNITY_EDITOR
@@ -2147,6 +2160,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     public void NextFloor(int seed, int tier, RectInt startArea, GridCoord startDoorCell)
     {
+        // Run! (71 s.9, card 2): one floor deeper for the deck's floor gates and history (the deck itself is the run's).
+        runFloor++;
         ForgetBodyDoors();
         // A26: the station and its set piece go with the floor (FloorHasStation false); its carve dies with the old cache.
         ForgetStation();
@@ -2765,6 +2780,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             SpawnFloorKey(chunk, floorKeyAt, floorKeyTurn);
         RegisterRelayEntries(chunk, data);
         AddZoneGrades(chunk, data);
+        AddPoolLooks(chunk, data);
         if (!Cache.HasPool || !PoolChunkHasCells(data)) FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, FixtureKeepOut(coord), chunk.meshes);
         Furnish(chunk, data);
         built[coord] = chunk;
@@ -3232,7 +3248,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             root.localPosition = start + along * c;
             var intoB = new Vector3(b.x - a.x, 0f, b.y - a.y);
             root.localRotation = Quaternion.LookRotation(intoB, Vector3.up);
-            var window = new Window { root = root, a = a, b = b, edge = edge, position = openingCenter, foiled = Cache.Foil != null && Cache.Foil.IsFoiled(a, b) };
+            var window = new Window { root = root, a = a, b = b, edge = edge, position = openingCenter, foiled = FoilEdge(a, b) };
             var record = GlassBreakOf(window);
             window.stage = record.stage;
             if (!WindowOpen(edge))
@@ -3442,6 +3458,10 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         // The start area is walled off from the map (its door is the stream's), and so is X (C22, D3: the
         // EXIT door is the player's way into the stairwell, never the Relay's or the autopilot's route).
         if (IsReserved(a) || IsReserved(b)) return Passage.Wall;
+        // Run! (71 s.9, card 4): a receding room's cells past its end's line and its goal door before the last seat are shut
+        // for the passage (the Relay's graph, the autopilot, the path field; nothing with no receding room). The walk side (the
+        // hidden cells' colliders, the blind panel at L_max) waits for the recede rig: the profile cannot switch it on yet.
+        if (Cache.Run != null && Cache.Run.HeldShut(a, b)) return Passage.Wall;
         switch (Cache.Edge(a, b))
         {
             case EdgeKind.Open:
@@ -3687,6 +3707,12 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         // the kits it builds nothing and returns null: the flat lens as before.
         var zone = Cache.ZoneOf(cell);
         var kind = FrontRoomsLampKit.ForCell(zone.theme, zone.height, height, backOfHouse);
+        // O-C's 8 ft pendant (ZL_PEND, ends at +-1.224 m, long side along z) at the troffers' +0.3 m would put its north end
+        // 0.10 m into a north wall's face (1.42 m) and, at the EXIT, through the top of the sign (游戏视觉, 11-04: 26 of 60
+        // Office floors). It keeps the offset only where its north edge is open into a cell of the same height; else it
+        // hangs centred, both ends about 0.20 m clear of the faces.
+        if (kind == FrontRoomsLampKit.MapLamp.Pendant && !PendantNorthClear(cell, zone.height))
+            root.transform.localPosition = localCenter + new Vector3(0f, height, 0f);
         var pr = FrontRoomsLampKit.BuildMapLamp(kind, root.transform, out var glow);
         if (pr != null)
         {
@@ -3753,6 +3779,15 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         fixture.nextEvent = 2f + Rand(ref fixture.rng) * 14f;
         chunk.fixtures.Add(fixture);
         fixtureByCell[cell] = fixture;
+    }
+
+    // The pendant's north end may pass the cell's north edge: only into an open cell of the same ceiling (no wall, door,
+    // arch or window head, no soffit). Read as the lamps' border rule reads edges (BorderThemes): no chunk is generated.
+    bool PendantNorthClear(GridCoord cell, ZoneHeight height)
+    {
+        var north = new GridCoord(cell.x, cell.y + 1);
+        var kind = InStartArea(north) || InStartArea(cell) ? EdgeKind.Wall : ExitKind(cell, north, EdgeNoGenerate(cell, north));
+        return kind == EdgeKind.Open && Cache.ZoneOf(north).height == height;
     }
 
     readonly ZoneTheme[] borderThemes = new ZoneTheme[4];
@@ -3827,10 +3862,17 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// holds its Light off, and rewrites its lens emission only when the glow
     /// moves by more than <see cref="FarEmissionStep"/> (a stutter, a dropout,
     /// a blink), never for the steady 2–3% shimmer. A chunk whose footprint is
-    /// beyond lightRadius skips the distance test altogether. The desktop path
-    /// below is unchanged.
+    /// beyond lightRadius skips the distance test altogether.
     /// </summary>
     public static bool TickFixturesNearOnly { get; set; } = Application.platform == RuntimePlatform.WebGLPlayer;
+
+    /// <summary>
+    /// Desktop and handheld (技术美术调研 row 11, Red 2026-11-04): the WebGL tick, except that an unlit lens (or a zone
+    /// lamp's glow) some camera drew last frame is still written every frame, so every lens on screen is exact and the
+    /// look does not change; a lens no camera drew is rewritten only when its glow moves by more than FarEmissionStep,
+    /// and is exact again the frame after it comes into view. Tools set this for the old path: every lens every frame.
+    /// </summary>
+    public static bool TickFixturesEveryLens { get; set; }
 
     const float FarEmissionStep = .05f;
     static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -3842,7 +3884,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         TickLampOverrides(dt);
         TickLampHolds(dt);
         if (player == null) return;
-        if (TickFixturesNearOnly) { TickFixturesNear(dt); return; }
+        if (TickFixturesNearOnly || !TickFixturesEveryLens) { TickFixturesNear(dt, !TickFixturesNearOnly); return; }
         var p = player.position;
         foreach (var chunk in built.Values)
         foreach (var f in chunk.fixtures)
@@ -3855,21 +3897,46 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             var fade = Mathf.Clamp01((lightRadius - d) / 3f) * held;
             var on = fade > 0f && f.level > .01f;
             if (f.light.enabled != on) f.light.enabled = on;
+            f.lightOn = on;
             if (on) f.light.intensity = f.baseIntensity * f.level * fade;
             var shadows = f.castsShadow && on && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
             if (f.light.shadows != shadows) f.light.shadows = shadows;
-            f.panel.GetPropertyBlock(block);
-            block.SetColor("_EmissionColor", f.emission * Mathf.Max(.04f, f.level * held));
-            block.SetFloat(LampDipId, f.dip);
-            f.panel.SetPropertyBlock(block);
-            if (f.glow != null) f.glow.SetPropertyBlock(block);
+            f.shadowMode = shadows;
+            WriteEmission(f, Mathf.Max(.04f, f.level * held));
         }
     }
 
-    void TickFixturesNear(float dt)
+    /// <summary>
+    /// 技术美术调研 row 12 (Red 2026-11-04): iPhone, iPad and WebGL shade at most 32 additional lights a camera, taken in
+    /// culling order, so overhead lamps could drop out and reshuffle as the player turned. On those tiers the map picks
+    /// its own: of the lamps within lightRadius, the LightBudgetHandheld nearest lit ones keep their light (a lens on
+    /// screen counts BudgetSeenMetres nearer, a lamp already chosen BudgetHoldMetres, so the set holds at its edge); the
+    /// rest fade out over BudgetFadeSeconds and stay glowing lenses, as lamps past lightRadius always are. The rest of the
+    /// 32 is left for the Relay's, the held item's, the doors' and the stairwells' lights. 0 (desktop): no budget, the
+    /// tick as before. Tools set LightBudgetForTools (-1: from the platform).
+    /// </summary>
+    public static int LightBudgetForTools { get; set; } = -1;
+    public const int LightBudgetHandheld = 22;
+    // Lamps past the budget still fading out; one more is cut at once (the list's worst first).
+    const int BudgetFadeSlack = 4;
+    const float BudgetFadeSeconds = .5f, BudgetSeenMetres = 2f, BudgetHoldMetres = 1.5f;
+
+    static int LightBudget => LightBudgetForTools >= 0 ? LightBudgetForTools
+        : Application.platform == RuntimePlatform.WebGLPlayer || FrontRoomsHandheld.Active ? LightBudgetHandheld : 0;
+
+    readonly List<Fixture> budgetLit = new List<Fixture>();
+    int budgetTick;
+    static readonly Comparison<Fixture> ByBudgetScore = (a, b) =>
+        a.budgetScore != b.budgetScore ? a.budgetScore.CompareTo(b.budgetScore)
+        : a.cell.x != b.cell.x ? a.cell.x.CompareTo(b.cell.x) : a.cell.y.CompareTo(b.cell.y);
+
+    // seen: an unlit lens a camera drew last frame is written every frame too (desktop and handheld); off on WebGL.
+    void TickFixturesNear(float dt, bool seen)
     {
         var p = player.position;
         var r2 = lightRadius * lightRadius;
+        var cap = LightBudget;
+        if (cap > 0) { budgetTick++; budgetLit.Clear(); }
         foreach (var chunk in built.Values)
         {
             if (chunk.fixtures.Count == 0) continue;
@@ -3886,22 +3953,66 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
                 var d = lightRadius;
                 if (!chunkFar) d = Vector2.Distance(new Vector2(root.x + f.offset.x, root.z + f.offset.z), new Vector2(p.x, p.z));
                 var fade = Mathf.Clamp01((lightRadius - d) / 3f) * held;
+                var factor = Mathf.Max(.04f, f.level * held);
+                if (cap > 0 && fade > 0f)
+                {
+                    // Within reach on a budget tier: the lens now, the light once BudgetLights has ranked every lamp.
+                    // A lamp that was not a candidate last tick takes its place at once (no fade in from a spawn).
+                    if (f.budgetTick != budgetTick - 1) f.budget = -1f;
+                    f.budgetTick = budgetTick;
+                    f.budgetDistance = d;
+                    f.budgetFade = fade;
+                    budgetLit.Add(f);
+                    WriteEmission(f, factor);
+                    continue;
+                }
                 var on = fade > 0f && f.level > .01f;
                 if (f.lightOn != on) { f.light.enabled = on; f.lightOn = on; }
-                var factor = Mathf.Max(.04f, f.level * held);
                 if (on)
                 {
-                    // Lit: the same per-frame updates as the desktop path.
+                    // Lit: the same per-frame updates as the every-lens path.
                     f.light.intensity = f.baseIntensity * f.level * fade;
                     var shadows = f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
                     if (f.shadowMode != shadows) { f.light.shadows = shadows; f.shadowMode = shadows; }
                     WriteEmission(f, factor);
                     continue;
                 }
-                // Off: only a real change of glow reaches the renderer.
+                // Off: only a real change of glow reaches the renderer, or a lens on screen.
                 if (f.shadowMode != LightShadows.None) { f.light.shadows = LightShadows.None; f.shadowMode = LightShadows.None; }
-                if (Mathf.Abs(factor - f.emissionWritten) > FarEmissionStep) WriteEmission(f, factor);
+                if (seen && (f.panel.isVisible || f.glow != null && f.glow.isVisible) || Mathf.Abs(factor - f.emissionWritten) > FarEmissionStep) WriteEmission(f, factor);
             }
+        }
+        if (cap > 0) BudgetLights(cap, dt);
+    }
+
+    // Row 12's choice: rank the lamps within reach, light the best cap of the lit ones, fade the rest.
+    void BudgetLights(int cap, float dt)
+    {
+        foreach (var f in budgetLit)
+        {
+            // The bonuses only reorder lamps a few metres apart.
+            f.budgetScore = f.budgetDistance;
+            if (f.panel.isVisible || f.glow != null && f.glow.isVisible) f.budgetScore -= BudgetSeenMetres;
+            if (f.budgetWanted && f.budget >= 0f) f.budgetScore -= BudgetHoldMetres;
+        }
+        budgetLit.Sort(ByBudgetScore);
+        var step = dt / BudgetFadeSeconds;
+        int chosen = 0, lit = 0;
+        foreach (var f in budgetLit)
+        {
+            var bright = f.level > .01f;
+            // A dark lamp (Dead, a dropout) keeps its place without a slot, so its strike still lights the floor.
+            f.budgetWanted = !bright || chosen < cap;
+            if (bright && f.budgetWanted) chosen++;
+            var target = f.budgetWanted ? 1f : 0f;
+            f.budget = f.budget < 0f ? target : Mathf.MoveTowards(f.budget, target, step);
+            var on = bright && f.budget > 0f && lit < cap + BudgetFadeSlack;
+            if (bright && f.budget > 0f && !on) f.budget = 0f;
+            if (on) lit++;
+            if (f.lightOn != on) { f.light.enabled = on; f.lightOn = on; }
+            var shadows = on && f.castsShadow && f.budgetDistance < shadowRadius ? LightShadows.Soft : LightShadows.None;
+            if (f.shadowMode != shadows) { f.light.shadows = shadows; f.shadowMode = shadows; }
+            if (on) f.light.intensity = f.baseIntensity * f.level * f.budgetFade * f.budget;
         }
     }
 
@@ -3946,6 +4057,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var mismatches = 0;
         var p = player.position;
         var read = new MaterialPropertyBlock();
+        // On a budget tier (row 12) the light's share is the budget's (BudgetStateForTools checks the choice itself).
+        var cap = TickFixturesEveryLens && !TickFixturesNearOnly ? 0 : LightBudget;
         foreach (var chunk in built.Values)
         foreach (var f in chunk.fixtures)
         {
@@ -3953,7 +4066,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             var lp = f.light.transform.position;
             var d = Vector2.Distance(new Vector2(lp.x, lp.z), new Vector2(p.x, p.z));
             var held = Held(f);
-            var fade = Mathf.Clamp01((lightRadius - d) / 3f) * held;
+            var fade = Mathf.Clamp01((lightRadius - d) / 3f) * held * (cap > 0 ? Mathf.Max(f.budget, 0f) : 1f);
             var on = fade > 0f && f.level > .01f;
             var factor = Mathf.Max(.04f, f.level * held);
             f.panel.GetPropertyBlock(read);
@@ -3974,6 +4087,31 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         }
         return mismatches;
     }
+
+    /// <summary>
+    /// Tools and tests (row 12), after a tick on a budget tier: the map lights lit, the lamps within reach, the farthest
+    /// lit one and the nearest lit-level lamp left dark (real distances, metres; NaN when there is none).
+    /// </summary>
+    public int BudgetStateForTools(out int candidates, out float farthestLit, out float nearestDark)
+    {
+        candidates = budgetLit.Count;
+        farthestLit = float.NaN;
+        nearestDark = float.NaN;
+        var lit = 0;
+        foreach (var f in budgetLit)
+        {
+            if (f.lightOn)
+            {
+                lit++;
+                if (float.IsNaN(farthestLit) || f.budgetDistance > farthestLit) farthestLit = f.budgetDistance;
+            }
+            else if (f.level > .01f && (float.IsNaN(nearestDark) || f.budgetDistance < nearestDark)) nearestDark = f.budgetDistance;
+        }
+        return lit;
+    }
+
+    /// <summary>Row 12's hysteresis: a dark lamp may stand this much nearer than the farthest lit one (no lens is seen in a batch).</summary>
+    public const float BudgetHoldForTools = BudgetHoldMetres;
 
     // ---------- Ambient flicker and its limits (M2: RELAY_PURSUIT_REDESIGN.md §9.5; lamp check 10_lamp_look_check.md) ----------
     // The measured problem (2026-10-22): a Stutter lamp ran a PerlinNoise(t·23) strobe between 0.95 and 0.05,
@@ -4655,6 +4793,71 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     bool OfficeGraded(GridCoord cell) =>
         !(hasStartArea && cell.x >= startArea.xMin - 1 && cell.x <= startArea.xMax && cell.y >= startArea.yMin - 1 && cell.y <= startArea.yMax)
         && !InExitArea(cell) && Cache.ZoneOf(cell).theme == ZoneTheme.Office;
+
+    /// <summary>
+    /// The pool family's zone look (contract pool_zone_look from 游戏视觉, research/bathroom_rooms/70_look_build.md "Zone
+    /// look"): one FrontRoomsZoneLook volume per rectangle of cells of one pool look zone (the zone's own ambient, haze,
+    /// height fog and FrontRoomsPost_&lt;zone&gt; grade, blended over 2.5 m as the Office grade), under the chunk's root, so it
+    /// lives and dies with the chunk. Pool cells exist only while a pool plan is held (the structures scene's pool route,
+    /// profile poolFamily on): with no plan nothing is placed. The box spans the sunk dark zone below and the tallest
+    /// ceiling above. The height fog sits on C2's water (WaterAt) when the rectangle's water cells share one height (else NaN:
+    /// ambient, haze and grade only).
+    /// </summary>
+    void AddPoolLooks(BuiltChunk chunk, MapChunk data)
+    {
+        if (Cache == null || !Cache.HasPool) return;
+        const int n = MapGrid.ChunkCells;
+        var cs = MapGrid.CellSize;
+        var used = new bool[n * n];
+        var k = 0;
+        for (var j = 0; j < n; j++)
+            for (var i = 0; i < n; i++)
+            {
+                if (used[j * n + i]) continue;
+                var zone = PoolLookZone(data.Cell(i, j));
+                if (zone == null) continue;
+                // grow along the row, then down the rows while the whole run is the same look zone
+                var i1 = i + 1;
+                while (i1 < n && !used[j * n + i1] && PoolLookZone(data.Cell(i1, j)) == zone) i1++;
+                var j1 = j + 1;
+                for (var whole = true; j1 < n && whole; )
+                {
+                    for (var x = i; x < i1 && whole; x++) whole = !used[j1 * n + x] && PoolLookZone(data.Cell(x, j1)) == zone;
+                    if (whole) j1++;
+                }
+                var waterY = float.NaN;
+                var mixed = false;
+                for (var y = j; y < j1; y++)
+                    for (var x = i; x < i1; x++)
+                    {
+                        used[y * n + x] = true;
+                        var w = WaterAt(data.Cell(x, y));
+                        if (w.water != CellWater.Ankle && w.water != CellWater.Wade) continue;
+                        if (float.IsNaN(waterY)) waterY = w.waterY;
+                        else if (Mathf.Abs(w.waterY - waterY) > .001f) mixed = true;
+                    }
+                if (mixed) waterY = float.NaN;
+                const float below = 3f;
+                var top = ModuleUnits.TallCeiling + .2f;
+                var size = new Vector3((i1 - i) * cs, top + below, (j1 - j) * cs);
+                var center = new Vector3(i * cs + size.x * .5f, top - size.y * .5f, j * cs + size.z * .5f);
+                var holder = new GameObject("Pool look " + k++).transform;
+                holder.SetParent(chunk.root.transform, false);
+                FrontRoomsZoneLook.AddMapZone(holder, zone, new Bounds(center, size), 2.5f, waterY);
+            }
+    }
+
+    /// <summary>The pool look zone of a cell (16 section 3) by its C1 theme: PoolClub's Tall hall (PC_Hall) is PoolHall; null
+    /// outside the pool family and for every cell with no pool plan.</summary>
+    string PoolLookZone(GridCoord cell)
+    {
+        if (InExitArea(cell) || !IsPoolCell(cell)) return null;
+        var info = Cache.ZoneOf(cell);
+        if (info.theme == ZoneTheme.PoolClub) return info.height == ZoneHeight.Tall ? "PoolHall" : "PoolClub";
+        if (info.theme == ZoneTheme.PoolLevel) return "PoolLevel";
+        if (info.theme == ZoneTheme.PoolDark) return "PoolDark";
+        return null;
+    }
 
     /// <summary>Footprints of the columns inside a room, in chunk-local metres.</summary>
     List<Rect> Columns(MapChunk data, CellRect room)
@@ -6673,7 +6876,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         }
         // C13 / V7a (RELAY 6): with foil on, the auto entries too (at least 2 per zone, 10 cells apart; FrontRoomsAutoEntries).
         if (Cache != null && Cache.Foil != null) AddAutoEntries(into);
-        // Run! (CR-5): no Relay entry within minEntryCells (9) of a Run! room (nothing with runRooms off or no room placed).
+        // Run! (CR-5; F4 of 71 s.7.6, card 3): no Relay entry within minEntryCells (9) of a Run! room's cells or of the cell
+        // beyond its goal door, so the Relay never appears inside one or just beyond it (nothing with runRooms off or no room).
         if (Cache != null && Cache.Run != null && Cache.Run.Placed > 0)
             for (var i = into.Count - 1; i >= 0; i--)
                 if (NearRunRoom(CellOf(into[i].pos), Cache.Run.Rules.minEntryCells)) into.RemoveAt(i);
@@ -6864,7 +7068,10 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     public FrontRoomsFoil Foil => Cache != null ? Cache.Foil : null;
 
     /// <summary>The edge a-b is a foiled window (always false with foil off).</summary>
-    public bool IsFoiledWindow(GridCoord a, GridCoord b) => Cache != null && Cache.Foil != null && Cache.Foil.IsFoiled(a, b);
+    public bool IsFoiledWindow(GridCoord a, GridCoord b) => Cache != null && FoilEdge(a, b);
+
+    // The planner's foiled window, unless a Run! room's calm zone took it (71 s.9 card 3: a Run! planned later wins, the slot spent).
+    bool FoilEdge(GridCoord a, GridCoord b) => Cache.Foil != null && Cache.Foil.IsFoiled(a, b) && !(Cache.Run != null && Cache.Run.CalmTouches(a, b));
 
     /// <summary>This foiled window's device has tripped this floor.</summary>
     public bool IsFoilTripped(long edge) => trippedFoils.Contains(edge);
@@ -6994,6 +7201,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         if (!marked && (Cache == null || Cache.AlarmDoors == null)) return false;
         if (IsExitEdge(a, b)) return false;
         if (Cache != null && Cache.Run != null && (Cache.Run.IsGoalEdge(a, b) || Cache.Run.RoomAt(a) != null || Cache.Run.RoomAt(b) != null)) return false;
+        // Run! (71 s.9 card 3): no alarm door in a Run! room's host zone or the zone beyond its goal door (a room planned later
+        // wins an alarm door decided before it; the slot stays spent). A tools mark is the tools'.
+        if (!marked && Cache.Run != null && Cache.Run.CalmTouches(a, b)) return false;
         return marked || Cache.AlarmDoors.IsAlarm(a, b);
     }
 
@@ -7023,10 +7233,34 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// tier 2+ after the first send, and the budget roll passes), so a short run meets a Run! room. 0: the profile decides.
     /// </summary>
     public static int RunRoomsForTools;
+
+    /// <summary>
+    /// Tools (the Level Designer's Run! card, the interaction tests; editor only): every Run! room of the maps made from now on
+    /// is this card (71 s.9: plain 7 / 9 / 12 / 14, a Run door 9, a receding 9 -> 12 or 9 -> 14), with RunRoomsForTools 2 per
+    /// zone. Nothing: the planner's own card. Set it back after the map is made.
+    /// </summary>
+    public static RunCard RunCardForTools;
 #endif
 
     /// <summary>Run! rooms are on for this map (the profile's runRooms, or tools): the planner exists.</summary>
     public bool RunRoomsOn => Cache != null && Cache.Run != null;
+
+    /// <summary>
+    /// The Run! rethink (71 s.9, card 2): the floor the planner deals for (1 = LEVEL 0, 2 = B1, 3 = B2 ...). NextFloor counts
+    /// one floor down, as the game's floor; tools may set it before Begin (the next NextFloor counts on from it).
+    /// </summary>
+    public int RunFloor
+    {
+        get => runFloor;
+        set
+        {
+            runFloor = Mathf.Max(1, value);
+            if (Cache != null && Cache.Run != null) Cache.Run.Floor = runFloor;
+        }
+    }
+
+    /// <summary>Card 2: the run's Run! deck (made with the first floor's planner, on its seed; kept through NextFloor), or null before.</summary>
+    public FrontRoomsRunDeck RunDeck => runDeck;
 
     /// <summary>The floor's Run! planner (rooms, cells, edges), or null with runRooms off.</summary>
     public FrontRoomsRunRooms RunRooms => Cache != null ? Cache.Run : null;
@@ -7058,11 +7292,22 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     public event Action<FrontRoomsRunRoom> RoomReset;
     /// <summary>CR-4: the warning lamps played a burst on a Run! room's cells (no map fixture there): the rig plays it on its own (stage 1 or 2).</summary>
     public event Action<FrontRoomsRunRoom, int> RunRoomWarned;
+    /// <summary>Card 2: the floor's Run! card was dealt (a room, or nothing), as the deck's history keeps it.</summary>
+    public event Action<RunDeal> RunRoomDealt;
+    /// <summary>Card 2: the player met a Run! room (stood in it or at one of its openings) for the first time this floor: the
+    /// run flag (plain first) is raised.</summary>
+    public event Action<FrontRoomsRunRoom> RunRoomMet;
+    /// <summary>Card 4: a receding room's end seated on a later line (RunSeated): its cells up to it are open (passage); at the
+    /// last seat its goal door is real.</summary>
+    public event Action<FrontRoomsRunRoom> RunRoomSeated;
 
     void AttachRunRooms()
     {
-        var run = new FrontRoomsRunRooms(runRules) { Open = runRoomsOpen, Blocked = RunBlocked };
+        // Card 2: the run's deck, made once on the first floor's seed (the run seed) and kept through NextFloor.
+        if (runDeck == null) runDeck = new FrontRoomsRunDeck(Seed);
+        var run = new FrontRoomsRunRooms(runRules) { Open = runRoomsOpen, Blocked = RunBlocked, Floor = runFloor, Deck = runDeck };
         run.Planned += room => RunRoomPlanned?.Invoke(room);
+        run.Dealt += deal => RunRoomDealt?.Invoke(deal);
         Cache.SetRunRooms(run);
         // M8: the kit's member hook (Run on a Run! goal door; the theme rule elsewhere), set by the map that owns Run! rooms.
         if (runMemberHook == null) runMemberHook = DoorMemberFor;
@@ -7089,8 +7334,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         return hasStation && (station.Protected(cell) || FrontRoomsExitPlanner.InAreaOrRing(station.station, cell));
     }
 
-    /// <summary>M8: a Run! room's goal door (RN-F with set A's F5 window, in the steel DA frame, never locked: LockedByRule).</summary>
-    public bool IsRunDoor(Door door) => door != null && Cache != null && Cache.Run != null && Cache.Run.IsGoalEdge(door.a, door.b);
+    /// <summary>M8: a Run! room's goal door, and (card 5) a Run door room's entrance door: RN-F with set A's F5 window, in the
+    /// steel DA frame, never locked (LockedByRule).</summary>
+    public bool IsRunDoor(Door door) => door != null && Cache != null && Cache.Run != null && Cache.Run.IsRunDoorEdge(door.a, door.b);
 
     /// <summary>M8 (DoorMemberFor, the D1.6 contract): Run on a Run! goal door; null elsewhere (the kit's theme rule).</summary>
     public FrontRoomsDoorMember? DoorMemberFor(Door door) => IsRunDoor(door) ? FrontRoomsDoorMember.Run : (FrontRoomsDoorMember?)null;
@@ -7110,17 +7356,40 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>
     /// The shared tell's anchor (RELAY 6; 系统设计 2026-10-31): an entrance's opening centre on its wall line at floor level, and
-    /// the normal out of the room (world). The arch (goal false) at local z 0, the goal door (true) at z 27. 游戏视觉 hangs the
-    /// red-banded detector base and the ALARM ZONE card from it on RunRoomBuilt.
+    /// the normal out of the room (world). The entrance (goal false: the arch, or card 5's Run door) at local z 0, the goal
+    /// door (true) at z = 3 m x the room's cells (27 for 9). 游戏视觉 hangs the red-banded detector base and the ALARM ZONE card
+    /// from it on RunRoomBuilt. Card 4: a receding room's goal point is its end's line now (OpenMetres), seat by seat.
     /// </summary>
     public void RunEntrance(FrontRoomsRunRoom room, bool goal, out Vector3 point, out Vector3 outward)
     {
-        point = RunRoomPoint(room, new Vector3(0f, 0f, goal ? room.LengthMetres : 0f));
+        point = RunRoomPoint(room, new Vector3(0f, 0f, goal ? room.OpenMetres : 0f));
         outward = RunRoomRotation(room) * (goal ? Vector3.forward : Vector3.back);
     }
 
-    /// <summary>CR-2: the device a trip calls to (the director's estimate, error 0): on the axis at the trip line, floor level.</summary>
-    public Vector3 RunDevicePoint(FrontRoomsRunRoom room) => RunRoomPoint(room, new Vector3(0f, 0f, FrontRoomsRunRooms.ArmDepth));
+    /// <summary>CR-2: the device a trip calls to (the director's estimate, error 0): on the axis at the entrance's trip line
+    /// (1.5 m under the arch, the Run door's depth, a receding room's FD1 at 9 m), floor level.</summary>
+    public Vector3 RunDevicePoint(FrontRoomsRunRoom room) => RunRoomPoint(room, new Vector3(0f, 0f, room.EntranceTrip));
+
+    /// <summary>
+    /// Card 4: a receding room's end seated on <paramref name="lineCells"/> (one of room.SeatCells past the current one), as
+    /// 游戏视觉's recede reports it (FrontRoomsRunRecede.SeatReached: its line in metres / 3). The cells up to it open (the
+    /// passage, every path cache stale), RunEntrance moves to it, at the last seat the goal door is real; RunRoomSeated.
+    /// The room keeps its seat through drops and rebuilds. The binder's two calls: on each SeatReached, RunSeated(room, line /
+    /// 3); after FrontRoomsRunRecede.Restore of a record whose recede had begun (RunRecedeRecord.Started: the rig rebuilds it
+    /// seated at L_max with no event), RunSeated(room, room.LengthCells), so the map seats it too (the map never reads the
+    /// rig's record). False (nothing changed) for a room that does not recede, a line that is not a later seat, or a room
+    /// already seated.
+    /// </summary>
+    public bool RunSeated(FrontRoomsRunRoom room, int lineCells)
+    {
+        if (Cache == null || Cache.Run == null || !Cache.Run.Seat(room, lineCells)) return false;
+        TouchPassageRevision();
+        RunRoomSeated?.Invoke(room);
+        return true;
+    }
+
+    /// <summary>Card 3: a Run! room's host zone or the zone beyond its goal door (no other trigger kind there); false with runRooms off.</summary>
+    public bool IsRunCalmZone(GridCoord zoneId) => Cache != null && Cache.Run != null && Cache.Run.IsCalmZone(zoneId);
 
     // The trip test, each frame (CR-2): the player's cell in an armed, built Run! room and 1.5 m in from either opening.
     void TickRunRooms()
@@ -7132,9 +7401,20 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var rooms = run.Rooms;
         for (var i = 0; i < rooms.Count; i++)
             if (rooms[i].WaitForExit && !rooms[i].Contains(cell)) rooms[i].WaitForExit = false;
+        // Card 2: a room is met when the player stands in it or at one of its openings (the run flag: plain first).
+        for (var i = 0; i < rooms.Count; i++)
+        {
+            var r = rooms[i];
+            if (r.Met || !runBuilt.Contains(r.Id) || (cell != r.Outside && cell != r.Beyond && !r.Contains(cell))) continue;
+            run.MarkMet(r);
+            RunRoomMet?.Invoke(r);
+        }
         var here = run.RoomAt(cell);
         if (here == null || here.State != RunRoomState.Armed || here.WaitForExit || !runBuilt.Contains(here.Id)) return;
-        if (here.InArmedZone(local.x, local.z)) TripRunRoom(here);
+        if (!here.InArmedZone(local.x, local.z)) return;
+        here.ToLocal(local.x, local.z, out _, out var z);
+        here.TrippedFromGoal = z > here.OpenMetres * .5f;
+        TripRunRoom(here);
     }
 
     /// <summary>CR-2: trip a room (the trip test, or tools): Tripped once until a reset, RoomTriggered(Alarm, room, "run").</summary>
@@ -7219,13 +7499,18 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         runScratch.Clear();
     }
 
-    // CR-5: a cell within <paramref name="cells"/> (Manhattan) of any Run! room's cell.
+    // CR-5 and F4 (71 s.7.6: no Relay entry inside a Run! room or just beyond its goal door): a cell within
+    // <paramref name="cells"/> (Manhattan) of any Run! room's cell or of the cell beyond its goal door.
     bool NearRunRoom(GridCoord cell, int cells)
     {
         var rooms = Cache.Run.Rooms;
         for (var i = 0; i < rooms.Count; i++)
+        {
+            var beyond = rooms[i].Beyond;
+            if (Mathf.Abs(beyond.x - cell.x) + Mathf.Abs(beyond.y - cell.y) < cells) return true;
             foreach (var c in rooms[i].Cells)
                 if (Mathf.Abs(c.x - cell.x) + Mathf.Abs(c.y - cell.y) < cells) return true;
+        }
         return false;
     }
 

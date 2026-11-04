@@ -516,3 +516,5 @@ STICK LEFT	STICK LINKS	settings note (叙事设计 signed 2026-11-04, 90 §9); A
 STICK RIGHT	STICK RECHTS	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 SOUNDS THAT HUNT YOU	GERÄUSCHE, DIE SIE JAGEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 STATE · DISTANCE · TIER	ZUSTAND · ENTFERNUNG · STUFE	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+How the smaller picture is scaled up to the screen. SHARP restores edges from the last few frames (STP); SOFT is a plain, smooth scale.	Wie das kleinere Bild auf den Bildschirm skaliert wird. SCHARF stellt Kanten aus den letzten Bildern wieder her (STP); WEICH skaliert einfach und glatt.	settings, UPSCALING when SHARP is STP (tech_art 20_ranked_changes §3.13, 2026-11-04; shown once FrontRooms/Surface writes motion vectors); AI draft, 叙事设计 to sign
+STP	STP	settings note, UPSCALING when SHARP is STP (tech_art 20 §3.13, 2026-11-04); AI draft, 叙事设计 to sign

@@ -126,13 +126,18 @@
   },
   "legend": "\u51fa\u53e3",
   "legendMode": "stencil",
-  "legendFace": "NotoSansSC-VariableFont_wght.ttf wght 700",
-  "legendEmM": 0.1626,
-  "legendWidth": 0.949,
+  "legendFace": "NotoSansJP-Bold.otf wght 700",
+  "legendEmM": 0.1642,
+  "legendWidth": 0.945,
   "letterShares": {
-   "A": 0.5515,
-   "B": 0.4485,
-   "DC": 0.9257
+   "A": 0.5493,
+   "B": 0.4507,
+   "DC": 0.9395
+  },
+  "legendLod1": {
+   "tolMm": 0.0,
+   "holeVerts": 48,
+   "plate": "tied holes without the punch fillets, one wall band"
   }
  },
  "lodDistances": [
@@ -146,8 +151,8 @@
   300
  ],
  "dropM": 0.025,
- "budgetNote": "legend \u51fa\u53e3: 6586 tris against 5800 +/- 15% (+14%)",
- "trianglesCheck": 6586,
+ "budgetNote": "legend \u51fa\u53e3: 6642 tris against 5800 +/- 15% (+15%)",
+ "trianglesCheck": 6642,
  "boundsMin": [
   -0.17299999296665192,
   -0.2370000034570694,
@@ -158,14 +163,15 @@
   0.0,
   0.03943542763590813
  ],
- "triangles": 6586,
+ "triangles": 6642,
  "slots": [
   "ExitSign_Housing",
   "ExitSign_Face",
   "ExitSign_Diffuser",
   "Prop_Chrome"
  ],
- "trianglesLod1": 2042,
+ "trianglesLod1": 1440,
+ "budgetNoteLod1": "legend \u51fa\u53e3 LOD1: 1440 tris (rest 1112 as English's 1941 less its plate 828; LOD1 plates 328) against 1800 (-20%)",
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

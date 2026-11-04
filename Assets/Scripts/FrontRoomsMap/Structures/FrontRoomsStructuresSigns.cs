@@ -25,10 +25,12 @@ public static class FrontRoomsStructuresSigns
     static readonly Color Accent = new Color(.957f, .875f, .231f);
     public const int WrapChars = 33;
     // TextMesh: a line of fontSize F at characterSize C is about F x C / 10 m tall (the em). One TextMesh a line, so the
-    // pitch is exact.
-    const int FontPx = 64;
+    // pitch is exact. TextMesh rasters each glyph at fontSize px per em and the font atlas has no mipmaps, so each line takes
+    // its own raster: rho = 2 x 691.2 / (1000 d) px per mm at the distance d it must read at, fontSize = round(em x rho)
+    // (平面视觉, research/showcase_scenes/20_placard_type.md v2.2: chip and title at FAR 2.5 m, the rest at sqrt(2.5 x 1.41)).
+    const int FarPx = 32, NearPx = 24;
     const float PanelWidth = 1.2f, PanelMinHeight = .8f, Margin = .06f, TopEdge = 2.05f;
-    const float TitleEm = .056f, TitlePitch = .07f, BodyEm = .032f, Pitch = .043f, ChipCap = .040f, ChipEm = .0573f;
+    const float TitleEm = .058f, TitlePitch = .0725f, BodyEm = .033f, Pitch = .044f, ChipCap = .040f, ChipEm = .0573f, BarWidth = .006f;
     const float ChipPad = .009f, Keyline = .0012f, TitleGap = .06f, SectionGap = .03f, LabelColumn = .16f, NumberColumn = .036f;
 
     static Font bold, regular, mono;
@@ -47,37 +49,122 @@ public static class FrontRoomsStructuresSigns
         if (mono == null) mono = bold;
     }
 
+    static readonly Dictionary<Font, Material> depthText = new Dictionary<Font, Material>();
+    static bool rebuildHooked;
+
+    /// <summary>
+    /// The font's material with the depth test on. A font's own material is GUI/Text Shader, whose ZTest comes from
+    /// unity_GUIZTestMode, which no one sets in a 3D scene, so placard and mark text drew through walls and from behind its own
+    /// panel (scene 4 review SP3-F1, SP4-F4, SP1-F12). One runtime copy per font at LessEqual (the text stands 7 mm in front of
+    /// its panel); it follows the font's texture when a dynamic font rebuilds it.
+    /// </summary>
+    public static Material DepthText(Font font)
+    {
+        if (font == null || font.material == null) return null;
+        if (!rebuildHooked)
+        {
+            rebuildHooked = true;
+            Font.textureRebuilt += f =>
+            {
+                if (f != null && f.material != null && depthText.TryGetValue(f, out var copy) && copy != null) copy.mainTexture = f.material.mainTexture;
+            };
+        }
+        if (!depthText.TryGetValue(font, out var m) || m == null)
+        {
+            m = new Material(font.material) { name = font.material.name + " (depth-tested, scene 4)" };
+            m.SetFloat("unity_GUIZTestMode", (float)CompareFunction.LessEqual);
+            depthText[font] = m;
+        }
+        m.mainTexture = font.material.mainTexture;
+        return m;
+    }
+
     /// <summary>The body font (for the guide panel's IMGUI style); may be null.</summary>
     public static Font BodyFontAsset { get { Fonts(); return regular; } }
     public static Font TitleFontAsset { get { Fonts(); return bold; } }
 
-    /// <summary>Wrap text at <paramref name="chars"/> ems (CJK one, Latin about half), keeping given line breaks; a full-width
-    /// mark never starts a line.</summary>
+    const string Closers = "，。、；：！？）」』)";
+    const string Openers = "（「『(";
+    const string Units = "米级层度格秒次倍";
+
+    /// <summary>Wrap text at <paramref name="chars"/> ems (CJK one, Latin about half), keeping given line breaks. Words never
+    /// split: a Latin or number run (with a unit right after a number) is one word, a closing mark stays with what precedes it
+    /// and an opening mark with what follows; a last line of two ems or less takes the word before it along (review SP1-F17,
+    /// SP2-F10, SP4 and SP5-F10: "Rela / y", "Run / !", "6 / 米", "A）" alone).</summary>
     public static string Wrap(string text, int chars = WrapChars)
     {
         if (string.IsNullOrEmpty(text)) return "";
         var sb = new StringBuilder();
         foreach (var para in text.Split('\n'))
         {
+            var lines = new List<List<string>>();
+            var line = new List<string>();
             var width = 0f;
-            var line = new StringBuilder();
-            foreach (var ch in para)
+            foreach (var t in Words(para))
             {
-                var w = ch < 0x2E80 ? .55f : 1f;
-                if (width + w > chars && line.Length > 0)
+                var w = Ems(t);
+                if (t == " " && (line.Count == 0 || width + w > chars)) continue;
+                if (width + w > chars && line.Count > 0)
                 {
-                    if ("，。、；：！？）」』".IndexOf(ch) >= 0) { line.Append(ch); width += w; continue; }
-                    sb.Append(line.ToString().TrimEnd()).Append('\n');
-                    line.Length = 0;
+                    lines.Add(line);
+                    line = new List<string>();
                     width = 0f;
-                    if (ch == ' ') continue;
                 }
-                line.Append(ch);
+                line.Add(t);
                 width += w;
             }
-            sb.Append(line.ToString().TrimEnd()).Append('\n');
+            lines.Add(line);
+            if (lines.Count >= 2)
+            {
+                var last = lines[lines.Count - 1];
+                var prev = lines[lines.Count - 2];
+                while (prev.Count > 0 && prev[prev.Count - 1] == " ") prev.RemoveAt(prev.Count - 1);
+                var lastW = 0f;
+                foreach (var t in last) lastW += Ems(t);
+                if (lastW <= 2.01f && prev.Count > 1 && lastW + Ems(prev[prev.Count - 1]) <= chars)
+                {
+                    last.Insert(0, prev[prev.Count - 1]);
+                    prev.RemoveAt(prev.Count - 1);
+                }
+            }
+            foreach (var l in lines) sb.Append(string.Concat(l).Trim()).Append('\n');
         }
         return sb.ToString().TrimEnd('\n');
+    }
+
+    static float Ems(string t)
+    {
+        var w = 0f;
+        foreach (var ch in t) w += ch < 0x2E80 ? .55f : 1f;
+        return w;
+    }
+
+    static bool WordChar(char c) => c < 0x2E80 && c != ' ' && Closers.IndexOf(c) < 0 && Openers.IndexOf(c) < 0;
+
+    // The unbreakable pieces of a paragraph: openers + (a Latin or number run [+ a unit] | one character) + closers; spaces alone.
+    static List<string> Words(string para)
+    {
+        var list = new List<string>();
+        var i = 0;
+        while (i < para.Length)
+        {
+            var start = i;
+            if (para[i] == ' ') { list.Add(" "); i++; continue; }
+            while (i < para.Length && Openers.IndexOf(para[i]) >= 0) i++;
+            if (i < para.Length)
+            {
+                if (WordChar(para[i]))
+                {
+                    while (i < para.Length && WordChar(para[i])) i++;
+                    if (i < para.Length && Units.IndexOf(para[i]) >= 0 && char.IsDigit(para[i - 1])) i++;
+                }
+                else if (para[i] != ' ') i++;
+            }
+            while (i < para.Length && Closers.IndexOf(para[i]) >= 0) i++;
+            if (i == start) i++;
+            list.Add(para.Substring(start, i - start));
+        }
+        return list;
     }
 
     static string[] Lines(string text, float widthMetres, float em)
@@ -121,18 +208,27 @@ public static class FrontRoomsStructuresSigns
             var chipH = ChipCap + 2f * (ChipPad + Keyline);
             var cy = y - chipH * .5f - (TitlePitch - chipH) * .5f;
             Keyline4(root, new Vector3(x + chipW * .5f, cy, -.001f), chipW, chipH);
-            Line(root, "Code", code, mono, ChipEm, TextColor, new Vector3(x + ChipPad + Keyline, cy + ChipCap * .5f + ChipEm * .30f, -.002f));
+            Line(root, "Code", code, mono, ChipEm, FarPx, TextColor, new Vector3(x + ChipPad + Keyline, cy + ChipCap * .5f + ChipEm * .30f, -.002f));
             x += chipW + .016f;
             rowHeight = Mathf.Max(rowHeight, chipH);
         }
         var titleLines = Lines(name, right - x, TitleEm);
         for (var i = 0; i < titleLines.Length; i++)
-            Line(root, "Title", titleLines[i], bold, TitleEm, TextColor, new Vector3(x, y - i * TitlePitch, -.002f));
+            Line(root, "Title", titleLines[i], bold, TitleEm, FarPx, TextColor, new Vector3(x, y - i * TitlePitch, -.002f));
         y -= Mathf.Max(rowHeight, titleLines.Length * TitlePitch) + TitleGap;
 
-        // The body: paragraphs, the greybox row, the questions row.
-        var first = true;
+        // The body: paragraphs, the greybox row, the questions row. A paragraph that carries the Red-decides label after its start
+        // splits there (70's words unchanged), so its question row forms as on every placard (review SP3-F7, SP4-F13).
+        var paragraphs = new List<string>();
         foreach (var raw in (body ?? "").Split('\n'))
+        {
+            var p = raw.Trim();
+            var q = p.IndexOf("要你决定：", System.StringComparison.Ordinal);
+            if (q > 0) { paragraphs.Add(p.Substring(0, q).Trim()); paragraphs.Add(p.Substring(q)); }
+            else paragraphs.Add(p);
+        }
+        var first = true;
+        foreach (var raw in paragraphs)
         {
             var para = raw.Trim();
             if (para.Length == 0) continue;
@@ -140,9 +236,9 @@ public static class FrontRoomsStructuresSigns
             first = false;
             if (para.StartsWith("灰盒占位：", System.StringComparison.Ordinal))
             {
-                Line(root, "Label", "灰盒占位", bold, BodyEm, Grey, new Vector3(left, y, -.002f));
+                Line(root, "Label", "灰盒占位", bold, BodyEm, NearPx, Grey, new Vector3(left, y, -.002f));
                 var list = Lines(para.Substring(5), right - left - LabelColumn, BodyEm);
-                for (var i = 0; i < list.Length; i++) Line(root, "Greybox", list[i], regular, BodyEm, LightGrey, new Vector3(left + LabelColumn, y - i * Pitch, -.002f));
+                for (var i = 0; i < list.Length; i++) Line(root, "Greybox", list[i], regular, BodyEm, NearPx, LightGrey, new Vector3(left + LabelColumn, y - i * Pitch, -.002f));
                 y -= Mathf.Max(1, list.Length) * Pitch;
                 continue;
             }
@@ -150,29 +246,29 @@ public static class FrontRoomsStructuresSigns
             {
                 var top = y;
                 var qx = left + LabelColumn;
-                if (label.Length <= 4) Line(root, "Label", label, bold, BodyEm, Accent, new Vector3(left, y, -.002f));
+                if (label.Length <= 4) Line(root, "Label", label, bold, BodyEm, NearPx, Accent, new Vector3(left, y, -.002f));
                 else
                 {
                     var head = Lines(label, right - left, BodyEm);
-                    for (var i = 0; i < head.Length; i++) Line(root, "Label", head[i], bold, BodyEm, Accent, new Vector3(left, y - i * Pitch, -.002f));
+                    for (var i = 0; i < head.Length; i++) Line(root, "Label", head[i], bold, BodyEm, NearPx, Accent, new Vector3(left, y - i * Pitch, -.002f));
                     y -= head.Length * Pitch;
                 }
                 var questions = Numbered(rest);
                 foreach (var q in questions)
                 {
                     var hasNumber = q.Key.Length > 0;
-                    if (hasNumber) Line(root, "Number", q.Key, bold, BodyEm, Accent, new Vector3(qx, y, -.002f));
+                    if (hasNumber) Line(root, "Number", q.Key, bold, BodyEm, NearPx, Accent, new Vector3(qx, y, -.002f));
                     var tx = hasNumber ? qx + NumberColumn : qx;
                     var ql = Lines(q.Value, right - tx, BodyEm);
-                    for (var i = 0; i < ql.Length; i++) Line(root, "Question", ql[i], bold, BodyEm, TextColor, new Vector3(tx, y - i * Pitch, -.002f));
+                    for (var i = 0; i < ql.Length; i++) Line(root, "Question", ql[i], bold, BodyEm, NearPx, TextColor, new Vector3(tx, y - i * Pitch, -.002f));
                     y -= Mathf.Max(1, ql.Length) * Pitch;
                 }
                 // The accent bar beside the whole row.
-                Quad(root, "Accent bar", new Vector3(left - .021f, (top + y) * .5f + .004f, -.001f), new Vector2(.004f, top - y - .008f), Accent);
+                Quad(root, "Accent bar", new Vector3(left - .021f, (top + y) * .5f + .004f, -.001f), new Vector2(BarWidth, top - y - .008f), Accent);
                 continue;
             }
             var lines = Lines(para, right - left, BodyEm);
-            for (var i = 0; i < lines.Length; i++) Line(root, "Body", lines[i], regular, BodyEm, TextColor, new Vector3(left, y - i * Pitch, -.002f));
+            for (var i = 0; i < lines.Length; i++) Line(root, "Body", lines[i], regular, BodyEm, NearPx, TextColor, new Vector3(left, y - i * Pitch, -.002f));
             y -= lines.Length * Pitch;
         }
 
@@ -256,7 +352,7 @@ public static class FrontRoomsStructuresSigns
         return list;
     }
 
-    static void Line(Transform parent, string name, string text, Font font, float em, Color colour, Vector3 local)
+    static void Line(Transform parent, string name, string text, Font font, float em, int fontPx, Color colour, Vector3 local)
     {
         if (string.IsNullOrEmpty(text)) return;
         var go = new GameObject(name);
@@ -265,8 +361,8 @@ public static class FrontRoomsStructuresSigns
         go.transform.localRotation = Quaternion.identity;
         var tm = go.AddComponent<TextMesh>();
         if (font != null) tm.font = font;
-        tm.fontSize = FontPx;
-        tm.characterSize = em * 10f / FontPx;
+        tm.fontSize = fontPx;
+        tm.characterSize = em * 10f / fontPx;
         tm.anchor = TextAnchor.UpperLeft;
         tm.alignment = TextAlignment.Left;
         tm.richText = false;
@@ -275,7 +371,8 @@ public static class FrontRoomsStructuresSigns
         var r = go.GetComponent<MeshRenderer>();
         if (r != null)
         {
-            if (font != null && font.material != null) r.sharedMaterial = font.material;
+            var depth = DepthText(font);
+            if (depth != null) r.sharedMaterial = depth;
             r.shadowCastingMode = ShadowCastingMode.Off;
             r.receiveShadows = false;
         }

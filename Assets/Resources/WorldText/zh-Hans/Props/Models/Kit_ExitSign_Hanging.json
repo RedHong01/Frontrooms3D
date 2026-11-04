@@ -133,6 +133,11 @@
    "A": 0.5515,
    "B": 0.4485,
    "DC": 0.9257
+  },
+  "legendLod1": {
+   "tolMm": 0.0,
+   "holeVerts": 46,
+   "plate": "tied holes without the punch fillets, one wall band"
   }
  },
  "lodDistances": [
@@ -165,7 +170,8 @@
   "ExitSign_Diffuser",
   "Prop_Chrome"
  ],
- "trianglesLod1": 2101,
+ "trianglesLod1": 1487,
+ "budgetNoteLod1": "legend \u51fa\u53e3 LOD1: 1487 tris (rest 1171 as English's 2001 less its plate 828; LOD1 plates 316) against 2000 (-26%)",
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,

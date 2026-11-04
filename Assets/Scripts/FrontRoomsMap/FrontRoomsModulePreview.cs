@@ -35,6 +35,29 @@ public sealed class FrontRoomsModulePreview : MonoBehaviour
     /// <summary>What the preview shows: a room module, or one of the game's rooms that is no module.</summary>
     public enum RoomView { Module, Stairwell, RunRoom }
 
+    /// <summary>
+    /// The Run Room view's card (71 s.9, Red 11-03 23:18 "全部按推荐"): as the tools force it (today's plain 9), a plain room of
+    /// 7 (the run's first), 9, 12 (tier 4) or 14 cells (tier 5), a Run door entrance (9, card 5), or the receding end 9 -> 12 or
+    /// 9 -> 14 (card 4: the map's side, its reserved cells, seats and the trip at the 9 m frame). Append only.
+    /// </summary>
+    public enum RunCardView { Tools, Plain7, Plain9, Plain12, Plain14, RunDoor9, Recede9To12, Recede9To14 }
+
+    /// <summary>The planner's card for a view (Nothing: the tools' own, today's plain 9).</summary>
+    public static RunCard CardOf(RunCardView view)
+    {
+        switch (view)
+        {
+            case RunCardView.Plain7: return RunCard.Plain(7);
+            case RunCardView.Plain9: return RunCard.Plain(9);
+            case RunCardView.Plain12: return RunCard.Plain(12);
+            case RunCardView.Plain14: return RunCard.Plain(14);
+            case RunCardView.RunDoor9: return RunCard.Door(9);
+            case RunCardView.Recede9To12: return RunCard.Recede(9, 12);
+            case RunCardView.Recede9To14: return RunCard.Recede(9, 14);
+            default: return RunCard.Nothing;
+        }
+    }
+
     [Tooltip("The room module to preview. Edit it in the Inspector; the preview follows.")]
     public FrontRoomsRoomModule module;
     [Tooltip("Generation and look. Empty: the project's level profile. With the Same surroundings the preview overrides zone heights and theme to match the module.")]
@@ -61,6 +84,8 @@ public sealed class FrontRoomsModulePreview : MonoBehaviour
     public bool eyeInStairwell;
     [Tooltip("Run Room: the corridor opens off an Office zone (C39) instead of a Level 0 one.")]
     public bool runInOffice;
+    [Tooltip("Run Room: the card it is built as (71 s.9): plain 7 (the run's first Run!), 9, 12 (tier 4) or 14 (tier 5, where it fits); a Run door entrance (9 cells, arming 2.5 m in); the receding end 9 -> 12 or 9 -> 14 (the map's side: the reserved cells, the end on 9 cells, arming at the 9 m frame; the visual line's recede shows the moving end once it is in main). Tools: today's plain 9.")]
+    public RunCardView runCard = RunCardView.Tools;
 
     const string MapName = "PREVIEW / map", GameRootName = "PREVIEW / game root";
     /// <summary>Seeds tried from Seed: mixed surroundings, then the station, stairwell and Run! plans (each a cache or a map).</summary>
@@ -686,9 +711,15 @@ public sealed class FrontRoomsModulePreview : MonoBehaviour
             previewProfile.runInOffice = runInOffice;
             var go = NewMap();
             var keep = FrontRoomsMapWorld.RunRoomsForTools;
+            var keepCard = FrontRoomsMapWorld.RunCardForTools;
             FrontRoomsMapWorld.RunRoomsForTools = 2;
+            FrontRoomsMapWorld.RunCardForTools = CardOf(runCard);
             try { StartMap(go); }
-            finally { FrontRoomsMapWorld.RunRoomsForTools = keep; }
+            finally
+            {
+                FrontRoomsMapWorld.RunRoomsForTools = keep;
+                FrontRoomsMapWorld.RunCardForTools = keepCard;
+            }
             var room = NearestRunRoom();
             if (room == null) continue;
             BuiltSeed = g.seed;
@@ -701,11 +732,13 @@ public sealed class FrontRoomsModulePreview : MonoBehaviour
             MarkDontSave();
             PlaceEye(from, look);
             SetFocus(world.RunRoomPoint(room, new Vector3(0f, 1f, room.LengthMetres * .5f)), room.LengthMetres);
-            Status = "Run! corridor " + room.Id + " (27 m) off a" + (runInOffice ? "n Office" : " Level 0") + " zone: seed " + g.seed + (g.seed != seed ? " (searched from " + seed + ")" : "")
-                + (world.IsRunRoomBuilt(room) ? "" : ", not all of it built") + ". Placement forced; Run! rooms are off in the game's profile.";
+            Status = "Run! corridor " + room.Id + " (" + room.VariantText + ", " + room.LengthMetres.ToString("0") + " m" + (room.EntranceDoor ? ", a Run door at the entrance arming " + room.EntranceTrip.ToString("0.0") + " m in" : "")
+                + (room.Receding ? ", " + room.SeatCells.Length + " seats, arming at the 9 m frame; map side only: the cells past 27 m are shut for the Relay's graph, not yet for a walker, and the rig shows its own plain layout until the visual line's recede is in main" : "") + ") off a" + (runInOffice ? "n Office" : " Level 0")
+                + " zone: seed " + g.seed + (g.seed != seed ? " (searched from " + seed + ")" : "") + (world.IsRunRoomBuilt(room) ? "" : ", not all of it built")
+                + ". Placement forced; Run! rooms are off in the game's profile (71 s.9: the deck deals 7 for the run's first, then 9, 12 from tier 4, 14 at tier 5).";
             return;
         }
-        Status = "No Run! corridor planned in " + RunTries + " seeds from " + seed + ".";
+        Status = "No Run! corridor (" + (runCard == RunCardView.Tools ? "plain 9" : CardOf(runCard).ToString()) + ") planned in " + RunTries + " seeds from " + seed + ".";
 #else
         Status = "Run! rooms are previewed in the editor only.";
 #endif

@@ -386,7 +386,7 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
         EditorGUILayout.LabelField(stair ? "Stairwell (C22, look A)" : "Run! room (L7, Run! B)", EditorStyles.boldLabel);
         EditorGUILayout.LabelField(stair
             ? "Floor 1's EXIT, planned by FrontRoomsExitPlanner from a start cell, and the one-cell stairwell X behind it (FrontRoomsStairwell), with the EXIT sign, the floor key's A13 chain and look A as the game attaches them. Map side: FrontRoomsStairwell.cs, FrontRoomsExitPlanner.cs (关卡设计); look: FrontRoomsStairwellDresser.cs, FrontRoomsExitChain.cs (游戏视觉). A change to them shows here once the scripts compile."
-            : "A 27 m alarm corridor (FrontRoomsRunRooms) in a Standard zone, with its rig, ALARM ZONE tell and goal door, placement forced as -autopilotRunRooms 2 forces it. Map side: FrontRoomsRunRooms.cs (关卡设计); look: FrontRoomsRunRig.cs, FrontRoomsRunRigBinder.cs (游戏视觉). A change to them shows here once the scripts compile.",
+            : "A 27 m alarm corridor (FrontRoomsRunRooms) in a Standard zone, with its rig, ALARM ZONE tell and goal door, placement forced as -autopilotRunRooms 2 forces it. Map side: FrontRoomsRunRooms.cs (关卡设计); look: FrontRoomsRunRig.cs, FrontRoomsRunRigBinder.cs (游戏视觉). A change to them shows here once the scripts compile. Card: any length or twist of the Run! rethink (71 s.9): plain 7 / 9 / 12 / 14, a Run door entrance, the receding end (map side).",
             EditorStyles.wordWrappedMiniLabel);
         var playing = EditorApplication.isPlayingOrWillChangePlaymode;
         // ScenePreview() is null in Play: the running preview's status still shows.
@@ -406,13 +406,18 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
             var seed = EditorGUILayout.DelayedIntField(new GUIContent("Seed", "Searched on from here until the room plans"), preview != null ? preview.seed : 0);
             int floor = preview != null ? preview.stairFloor : 1;
             bool locked = preview != null && preview.exitLocked, inside = preview != null && preview.eyeInStairwell, office = preview != null && preview.runInOffice;
+            var card = preview != null ? preview.runCard : FrontRoomsModulePreview.RunCardView.Tools;
             if (stair)
             {
                 floor = EditorGUILayout.IntSlider(new GUIContent("Floor", "The floor whose EXIT it is (1 = LEVEL 0, its stair down to B1): the plates and signs follow it"), floor, 1, 9);
                 locked = EditorGUILayout.Toggle(new GUIContent("EXIT locked", "Locked by the floor key, A13's chain and padlock on it, as the player first finds it"), locked);
                 inside = EditorGUILayout.Toggle(new GUIContent("Eye inside", "The Game view's eye inside the stairwell, facing the EXIT door's stair side"), inside);
             }
-            else office = EditorGUILayout.Toggle(new GUIContent("Off an Office zone", "C39: the corridor opens off an Office zone instead of a Level 0 one"), office);
+            else
+            {
+                office = EditorGUILayout.Toggle(new GUIContent("Off an Office zone", "C39: the corridor opens off an Office zone instead of a Level 0 one"), office);
+                card = (FrontRoomsModulePreview.RunCardView)EditorGUILayout.EnumPopup(new GUIContent("Card", "71 s.9: Tools (today's plain 9), plain 7 (the run's first Run!), 9, 12 (tier 4), 14 (tier 5, where it fits), a Run door entrance (9 cells, arming 2.5 m in), the receding end 9 -> 12 or 9 -> 14 (the map's side: reserved cells, the end on 9, arming at the 9 m frame)"), card);
+            }
             var dress = EditorGUILayout.Toggle(new GUIContent("Game dressing", "The visual line's dressers, attached as the game attaches them; their per-frame parts run in Play only"), preview != null && preview.gameDressing);
             if (EditorGUI.EndChangeCheck() && preview != null)
             {
@@ -422,6 +427,7 @@ public sealed class FrontRoomsLevelDesignerWindow : EditorWindow
                 preview.exitLocked = locked;
                 preview.eyeInStairwell = inside;
                 preview.runInOffice = office;
+                preview.runCard = card;
                 preview.gameDressing = dress;
                 EditorUtility.SetDirty(preview);
                 preview.Rebuild();

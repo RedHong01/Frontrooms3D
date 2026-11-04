@@ -557,7 +557,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var fill = new GameObject("Soft ambient direction").AddComponent<Light>();
         fill.transform.SetParent(parent);
         fill.type = LightType.Directional; fill.intensity = .22f; fill.color = C("D6D3B4");
-        fill.shadows = LightShadows.Soft;
+        // No shadow (技术美术调研 row 2, Red 2026-11-04): its 0.18 shadow falls under ceilings that already block the light,
+        // yet as URP's main light it drew every caster into a 2048 map (-12..-16 % draws, no pixel over 8/255). Values kept.
+        fill.shadows = LightShadows.None;
         fill.shadowStrength = .18f;
         fill.shadowBias = .045f;
         fill.shadowNormalBias = .28f;
@@ -2433,6 +2435,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         else playerBody.Move((wish * (sprinting ? Run : Walk) + glide + stepVelocity + Vector3.up * fallSpeed) * dt);
         glide = Vector3.MoveTowards(glide, Vector3.zero, FrontRoomsRoomStream.TitleSpeed / GlideSeconds * dt);
         playerPos = Flat(playerRoot.position);
+        // Pool water (contract pool_water): the player's feet for the rings and wakes; it returns at once where no water
+        // is registered under the feet, so every floor without water runs as before.
+        FrontRoomsWaterRings.ReportBody(FrontRoomsWaterRings.Body.Player, playerRoot.position, ModuleUnits.PlayerRadius);
         if (Vector2.Distance(before, playerPos) > .001f)
         {
             stepTime += dt;
@@ -2678,6 +2683,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             else if (info.theme == ZoneTheme.Office) zone = FrontRoomsLook.ReflectionZone.Office;
             else if (info.height == ZoneHeight.Tall) zone = FrontRoomsLook.ReflectionZone.Tall;
             else zone = FrontRoomsLook.ReflectionZone.Level0;
+            // The pool family's own cubes inside its look zones (game visual, 70_look_build.md "Submerged"; 17 7 item 11):
+            // the club and its hall Pool, the pool level PoolLevel, the dark zone and any dead or dimmed lamp PoolDead.
+            // No pool zone exists until the look volumes are placed (C1): weight 0 keeps the choice above.
+            float poolWeight;
+            var pool = FrontRoomsZoneLook.ZoneAt(playerRoot.position, out poolWeight);
+            if (poolWeight > .5f && !string.IsNullOrEmpty(pool))
+            {
+                var dark = pool == "PoolDark" || lamp == ModuleLamp.Dead || lamp == ModuleLamp.Dim || lamp == ModuleLamp.Off;
+                zone = dark ? FrontRoomsLook.ReflectionZone.PoolDead
+                    : (pool == "PoolLevel" ? FrontRoomsLook.ReflectionZone.PoolLevel : FrontRoomsLook.ReflectionZone.Pool);
+            }
         }
         if (!force && reflectionSet && zone == reflectionZone) return;
         reflectionZone = zone;

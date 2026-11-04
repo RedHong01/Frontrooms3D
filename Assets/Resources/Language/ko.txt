@@ -516,3 +516,5 @@ STICK LEFT	스틱 왼쪽	settings note (叙事设计 signed 2026-11-04, 90 §9);
 STICK RIGHT	스틱 오른쪽	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 SOUNDS THAT HUNT YOU	당신을 쫓는 소리	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 STATE · DISTANCE · TIER	상태 · 거리 · 티어	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+How the smaller picture is scaled up to the screen. SHARP restores edges from the last few frames (STP); SOFT is a plain, smooth scale.	작은 그림을 어떻게 확대할지 정합니다. 선명은 최근 프레임으로 윤곽을 되살리고(STP), 부드럽게는 단순하고 매끈하게 확대합니다.	settings, UPSCALING when SHARP is STP (tech_art 20_ranked_changes §3.13, 2026-11-04; shown once FrontRooms/Surface writes motion vectors); AI draft, 叙事设计 to sign
+STP	STP	settings note, UPSCALING when SHARP is STP (tech_art 20 §3.13, 2026-11-04); AI draft, 叙事设计 to sign

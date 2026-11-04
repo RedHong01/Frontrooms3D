@@ -294,6 +294,10 @@ using UnityEngine;
 ///   kept through a rebuild, a drop and a shift, the player's opening trips it once before DoorOpenBegan from either face and
 ///   never again, the Relay's OPEN, push and break never, a tripped one rebuilt, keys on, NextFloor), AlarmDoorGame (v1's
 ///   Noise(45) at the door; under the define one DeviceTrigger per trip, none for later openings).
+/// - The Run! rethink (71 s.9, the level-design cards 1-6): RunCards (the length table, the fit order and seats; the deck's rounds, plain
+///   first, the switches and floor gates, no twist twice running; candidates of every length crossing one chunk border; the
+///   validator's lengths and deck checks on three seeds; a Run door room and a receding room in the world; the deck through NextFloor;
+///   card 3 with the zone beyond walked first, devices forced: refusals, every built device as built; F4: no Relay entry near a room).
 /// - B-floor stations (BS1-BS3, s58_bs): FloorStations (the contract with the visual line: StationArch, edge records and
 ///   archWidth, the floor station branch of ValidateStation; BS1's rules on floors 2-5 of 16 runs with the stand-ins; BS2 on
 ///   a map for Station Waiting and Station Desk, a floor change with the key held; BS3's walk gap on the first send; a no-fit
@@ -399,6 +403,7 @@ public static class FrontRoomsMapInteractionTests
             FoilGame(roots, profiles);
             AlarmDoor(roots, profiles);
             AlarmDoorGame(roots, profiles);
+            RunCards(roots, profiles);
             FloorStations(roots);
         }
         catch (Exception e)
@@ -10891,9 +10896,10 @@ public static class FrontRoomsMapInteractionTests
             label + "before Ready nothing is decided or kept (Plan null, IsAlarm false, no slot taken)");
 
         // The validator's alarm-door check (the 100-seed rows) on three seeds, foil forced and Run! rooms on: fresh caches, revisit shifts, the ledger, the other planners unchanged.
-        var alarmReport = FrontRoomsMapValidator.RunAlarmDoors(bSettings, AlarmSeed, 3, 3, modules, forced, foilForced, runRules, 2);
+        // Radius 4 as the batch's: at 3 the only zones wholly inside are the four round the start, whose doors RELAY 6 excludes (0 alarm doors).
+        var alarmReport = FrontRoomsMapValidator.RunAlarmDoors(bSettings, AlarmSeed, 3, 4, modules, forced, foilForced, runRules, 2);
         Check(alarmReport.failed == 0 && alarmReport.seeds.Count == 3 && alarmReport.zones > 0 && alarmReport.alarmed > 0,
-            label + "FrontRoomsMapValidator.RunAlarmDoors, 3 seeds, 6 x 6 chunks, forced, foil and Run! on: " + alarmReport.passed + "/3, " + alarmReport.zones + " zones, " + alarmReport.alarmed + " alarm doors, "
+            label + "FrontRoomsMapValidator.RunAlarmDoors, 3 seeds, 8 x 8 chunks, forced, foil and Run! on: " + alarmReport.passed + "/3, " + alarmReport.zones + " zones, " + alarmReport.alarmed + " alarm doors, "
             + alarmReport.singleBorders + " single-door borders, ledger " + alarmReport.ledgerAlarm + " AlarmDoor / " + alarmReport.ledgerFoil + " Foil / " + alarmReport.ledgerRun + " Run"
             + (alarmReport.failed > 0 ? "; " + string.Join(" | ", alarmReport.seeds.Where(x => !x.passed).SelectMany(x => x.errors).Take(4).ToArray()) : ""));
     }
@@ -11045,7 +11051,8 @@ public static class FrontRoomsMapInteractionTests
         Check(trippedBack != null && trippedBack.alarm && trippedBack.open && world.IsAlarmTripped(trippedBack.edge) && trips.Count == 3,
             label + "a tripped alarm door rebuilt: an alarm door, open, still tripped, nothing re-trips");
 
-        // Keys on (doorsNeedKeys): a locked alarm door keeps the key's kinds and words; the unlock's open trips it.
+        // Keys on (doorsNeedKeys): a locked alarm door keeps the key's kinds and words; the unlock's open trips it. TryOpenDoor
+        // stands in for the player's E: it unlocks and opens in one go as Tools (UnlockAtOnce's tools open, the body doors of 10-31).
         var door1 = world.DoorBetween(a1, b1);
         world.ResetDoorForTools(door1);
         var keep = world.DoorsNeedKeysForTools;
@@ -11058,7 +11065,7 @@ public static class FrontRoomsMapInteractionTests
             order.Clear();
             var unlocked = world.TryOpenDoor(a1, b1);
             Check((lockedKind == FrontRoomsMapWorld.AimKind.Locked || lockedKind == FrontRoomsMapWorld.AimKind.LockedHaveKey) && lockedWords != FrontRoomsMapWorld.AlarmDoorPrompt && unlocked && trips.Count == 4
-                  && order.Count >= 2 && order[0].StartsWith("device ") && order[1].StartsWith("began Unlock "),
+                  && order.Count >= 2 && order[0].StartsWith("device ") && order[1].StartsWith("began Tools "),
                 label + "keys on: a locked alarm door aims " + lockedKind + " (\"" + lockedWords + "\"); the key's unlock opens it and trips it (" + string.Join(", ", order.ToArray()) + ")");
         }
         finally { world.DoorsNeedKeysForTools = keep; }
@@ -11215,6 +11222,609 @@ public static class FrontRoomsMapInteractionTests
     /// parked as the seal parks it; the same Relay then serves the next floor of the same map (NextFloor).
     /// </summary>
     // ---------- C22: the Relay parked for a floor change (FrontRoomsMapHunter.Park), plan v2 D12 ----------
+
+    // ---------- The Run! rethink (71 s.9, the level-design cards 1-6; Red 11-03 23:18, "all as recommended") ----------
+
+    const int RunCardSeed = 20263113;
+
+    /// <summary>A world on its own copy of the level profile with Run! rooms on (foil and alarm doors off), placed per zone as the
+    /// tools force them (RunRoomsForTools 2) with every room <paramref name="card"/> (RunCardForTools); both are put back after.</summary>
+    static FrontRoomsMapWorld RunCardWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, RunCard card, bool forced, int seed, float period, string name)
+    {
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.runRooms = true;
+        profile.foil = false;
+        profile.alarmDoor = false;
+        profile.generation = profile.Generation(seed);
+        profiles.Add(profile);
+        var world = World(roots, profile, period, name);
+        var keep = FrontRoomsMapWorld.RunRoomsForTools;
+        var keepCard = FrontRoomsMapWorld.RunCardForTools;
+        FrontRoomsMapWorld.RunRoomsForTools = forced ? 2 : 1;
+        FrontRoomsMapWorld.RunCardForTools = card;
+        try { world.BuildForCapture(); }
+        finally
+        {
+            FrontRoomsMapWorld.RunRoomsForTools = keep;
+            FrontRoomsMapWorld.RunCardForTools = keepCard;
+        }
+        return world;
+    }
+
+    // The built Run! room nearest the spawn whose card is the one asked (null: none).
+    static FrontRoomsRunRoom BuiltRunRoom(FrontRoomsMapWorld world, RunVariant variant)
+    {
+        if (world == null || world.RunRooms == null) return null;
+        FrontRoomsRunRoom best = null;
+        var bestD = float.MaxValue;
+        foreach (var room in world.RunRooms.Rooms)
+        {
+            if (!world.IsRunRoomBuilt(room) || room.Variant != variant) continue;
+            var d = (world.RunRoomPoint(room, Vector3.zero) - world.SpawnWorldPosition).sqrMagnitude;
+            if (d < bestD) { bestD = d; best = room; }
+        }
+        return best;
+    }
+
+    // A corridor-local point (x 0, z) as map metres for InArmedZone.
+    static bool ArmedAt(FrontRoomsRunRoom room, float z)
+    {
+        float x, y;
+        room.ToMap(0f, z, out x, out y);
+        return room.InArmedZone(x, y);
+    }
+
+    /// <summary>
+    /// 71 s.9 cards 1-6 (data and world): the length table, the fit order and the seats; the deck (each tier's cards once a round,
+    /// no round opening on the last card, plain first, the structure and floor gates, no twist on two floors running); the
+    /// candidates of every length (exactly one chunk border crossed, the 9-cell pick unchanged); the validator's lengths and
+    /// deck checks on three seeds; a Run door room in the world (the door built, Run, never locked, arming 2.5 m in); a receding
+    /// room in the world (the hidden length shut, FD1, seats only forward, the goal point per seat, the goal door at the last
+    /// seat, kept through a rebuild); the deck and the floor through NextFloor; card 3 in a world whose zones beyond are walked
+    /// before the host zones (the order made on purpose: a device built armed beside an unmet host zone, whose room is refused;
+    /// every built door and window as it was built); F4 (RelayEntries offers no entry within 9 cells of a room or the cell beyond
+    /// its goal door, read after every stream step).
+    /// </summary>
+    static void RunCards(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles)
+    {
+        const string label = "Run! cards: ";
+        // Card 1: the table.
+        Check(FrontRoomsRunRooms.PlainCellsAt(2) == 9 && FrontRoomsRunRooms.PlainCellsAt(3) == 9 && FrontRoomsRunRooms.PlainCellsAt(4) == 12 && FrontRoomsRunRooms.PlainCellsAt(5) == 14
+              && FrontRoomsRunRooms.FirstCells == 7 && FrontRoomsRunRooms.CapCells == 14 && FrontRoomsRunRooms.Length == 9,
+            label + "lengths by tier 9 / 9 / 12 / 14, the run's first 7, cap 14 (decision 3)");
+        var f14 = FrontRoomsRunRooms.FitOrder(RunCard.Plain(14));
+        var fr14 = FrontRoomsRunRooms.FitOrder(RunCard.Recede(9, 14));
+        var s12 = FrontRoomsRunRooms.SeatsOf(9, 12);
+        var s14 = FrontRoomsRunRooms.SeatsOf(9, 14);
+        var single = true;
+        foreach (var c in new[] { RunCard.Plain(7), RunCard.Plain(9), RunCard.Plain(12), RunCard.Door(9), RunCard.Ramp(9), RunCard.Recede(9, 12) })
+        {
+            var fits = FrontRoomsRunRooms.FitOrder(c);
+            single &= fits.Length == 1 && fits[0] == c;
+        }
+        Check(f14.Length == 2 && f14[0] == RunCard.Plain(14) && f14[1] == RunCard.Plain(12) && fr14.Length == 2 && fr14[1] == RunCard.Recede(9, 12) && single
+              && FrontRoomsRunRooms.FitOrder(RunCard.Nothing).Length == 0 && string.Join(",", System.Array.ConvertAll(s12, c => c.ToString())) == "9,11,12"
+              && string.Join(",", System.Array.ConvertAll(s14, c => c.ToString())) == "9,11,12,13,14" && FrontRoomsRunRooms.SeatsOf(9, 9) == null,
+            label + "the fit order (decision 3's \"where it fits\" only: plain 14 -> 12, recede 9->14 -> 9->12; plain 7, 9, 12, a Run door or ramp 9 and recede 9->12 never shorten) and the seats (9, 11, 12; 9, 11, 12, 13, 14)");
+
+        // Card 2: the deck.
+        var problems = new List<string>();
+        var deck = new FrontRoomsRunDeck(RunCardSeed);
+        var rules = new FrontRoomsRunRules { doorEntrance = true, recede = true, ramps = true };
+        for (var t = 2; t <= 5; t++)
+        {
+            var cards = FrontRoomsRunDeck.DeckAt(t);
+            var hasNothing = false;
+            foreach (var c in cards) hasNothing |= c.IsNothing;
+            if (!hasNothing) problems.Add("T" + t + " holds no nothing");
+            var last = RunCard.Nothing;
+            for (var round = 0; round < 4; round++)
+            {
+                var seen = new List<RunCard>();
+                for (var k = 0; k < cards.Count; k++)
+                {
+                    var top = deck.Top(t);
+                    if (round > 0 && k == 0 && top == last) problems.Add("T" + t + " round " + round + " opens on " + top + ", the card the last round closed on");
+                    seen.Add(top);
+                    deck.Commit(100 + t * 10 + round, t, top, top, top, null, null, 0);
+                    last = top;
+                }
+                foreach (var c in cards) if (!seen.Contains(c)) problems.Add("T" + t + " round " + round + " never dealt " + c);
+            }
+        }
+        string why;
+        var fresh = new FrontRoomsRunDeck(RunCardSeed);
+        var firstPlayed = fresh.Play(RunCard.Recede(9, 14), 5, 5, rules, out why);
+        fresh.MarkMet();
+        var offRules = new FrontRoomsRunRules();
+        // Play(card, floor, tier, rules): a twist that cannot be dealt is the tier's plain room (decision 3), never a plain 9 at T4-T5.
+        var rampOffT3 = fresh.Play(RunCard.Ramp(9), 3, 3, offRules, out why);
+        var rampOff = fresh.Play(RunCard.Ramp(9), 4, 4, offRules, out why);
+        var doorOff = fresh.Play(RunCard.Door(9), 4, 4, offRules, out why);
+        var doorOffT5 = fresh.Play(RunCard.Door(9), 4, 5, offRules, out why);
+        var recedeOff = fresh.Play(RunCard.Recede(9, 14), 5, 5, offRules, out why);
+        var recedeB1 = fresh.Play(RunCard.Recede(9, 12), 2, 4, rules, out why);
+        var recedeB2 = fresh.Play(RunCard.Recede(9, 14), 3, 5, rules, out why);
+        var recedeB3 = fresh.Play(RunCard.Recede(9, 14), 4, 5, rules, out why);
+        fresh.Commit(4, 5, RunCard.Recede(9, 14), RunCard.Recede(9, 14), RunCard.Recede(9, 14), null, null, 1);
+        var recedeAgain = fresh.Play(RunCard.Recede(9, 12), 5, 4, rules, out why);
+        var doorAfter = fresh.Play(RunCard.Door(9), 5, 5, rules, out why);
+        fresh.Commit(5, 5, RunCard.Door(9), RunCard.Door(9), RunCard.Door(9), null, null, 1);
+        var doorAgain = fresh.Play(RunCard.Door(9), 6, 5, rules, out why);
+        if (firstPlayed != RunCard.Plain(7)) problems.Add("before a Run! is met a receding card played " + firstPlayed + ", not plain 7");
+        if (rampOffT3 != RunCard.Plain(9) || rampOff != RunCard.Plain(12) || doorOff != RunCard.Plain(12) || doorOffT5 != RunCard.Plain(14) || recedeOff != RunCard.Plain(14))
+            problems.Add("switches off: ramp T3 " + rampOffT3 + ", ramp T4 " + rampOff + ", door T4 " + doorOff + ", door T5 " + doorOffT5 + ", recede T5 " + recedeOff);
+        if (recedeB1 != RunCard.Plain(12) || recedeB2 != RunCard.Recede(9, 12) || recedeB3 != RunCard.Recede(9, 14)) problems.Add("floor gates: B1 " + recedeB1 + ", B2 " + recedeB2 + ", B3 " + recedeB3);
+        if (recedeAgain != RunCard.Plain(12) || doorAfter != RunCard.Door(9) || doorAgain != RunCard.Plain(14)) problems.Add("after a receding floor: recede " + recedeAgain + ", door " + doorAfter + "; a door again at T5 " + doorAgain);
+        if (!fresh.Dealt(4) || !fresh.Dealt(5) || fresh.Dealt(6) || fresh.Rooms != 2 || fresh.DealOn(4).Built != RunCard.Recede(9, 14)) problems.Add("the history after two commits");
+        Check(problems.Count == 0, label + "the deck: every tier holds nothing, each round deals its cards once and never opens on the card the last closed on; plain 7 until a Run! is met; the ramp, the Run door and the receding end, while off, the tier's plain room (9 at T3, 12 at T4, 14 at T5); the receding end from B2, 9 -> 14 from B3; never the same twist on two floors running (the tier's plain room instead)"
+            + (problems.Count > 0 ? "; " + string.Join(" | ", problems.Take(6).ToArray()) : ""));
+
+        // Card 1: candidates of every length cross exactly one chunk border; the 9-cell pick is the one before the rethink.
+        problems.Clear();
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        var lengthsSeen = new int[15];
+        for (var k = 0; k < 3; k++)
+        {
+            var s = profile.Generation(RunCardSeed + 7919 * k);
+            var cache = FrontRoomsMapValidator.RunCache(s, modules, profile.RunRules(true));
+            var run = cache.Run;
+            var zonesDone = new HashSet<GridCoord>();
+            for (var y = -24; y < 24; y++)
+            for (var x = -24; x < 24; x++)
+            {
+                var id = cache.Generator.ZoneOf(new GridCoord(x, y)).id;
+                if (!zonesDone.Add(id) || !run.CompetesForTools(id)) continue;
+                if (!ReferenceEquals(run.Candidate(id), run.Candidate(id, 9))) problems.Add("zone " + id + ": Candidate(9) is not the 9-cell candidate");
+                for (var cells = 7; cells <= 14; cells++)
+                {
+                    var c = run.Candidate(id, cells);
+                    if (c == null) continue;
+                    lengthsSeen[cells]++;
+                    var crossings = 0;
+                    for (var i = 0; i + 1 < c.Cells.Length; i++) if (MapGrid.ChunkOf(c.Cells[i]) != MapGrid.ChunkOf(c.Cells[i + 1])) crossings++;
+                    if (c.Cells.Length != cells || crossings != 1 || c.IndexOf(c.Cells[cells - 1]) != cells - 1 || c.IndexOf(c.Beyond) != -1)
+                        problems.Add("zone " + id + " " + cells + " cells: " + c.Cells.Length + " long, " + crossings + " borders");
+                }
+                if (run.Candidate(id, 6) != null || run.Candidate(id, 15) != null) problems.Add("zone " + id + ": a candidate outside 7 .. 14");
+            }
+        }
+        Check(problems.Count == 0 && lengthsSeen[7] > 0 && lengthsSeen[9] > 0 && lengthsSeen[12] > 0,
+            label + "candidates on 3 seeds by length (7: " + lengthsSeen[7] + ", 9: " + lengthsSeen[9] + ", 12: " + lengthsSeen[12] + ", 14: " + lengthsSeen[14] + "): each crosses exactly one chunk border, none outside 7 .. 14, the 9-cell pick unchanged"
+            + (problems.Count > 0 ? "; " + string.Join(" | ", problems.Take(6).ToArray()) : ""));
+
+        // The validator's checks on three seeds (the 100-seed rows of FrontRoomsMapVerification.RunCards).
+        var checkRules = profile.RunRules(true);
+        checkRules.doorEntrance = true;
+        checkRules.recede = true;
+        var lines = new List<string>();
+        var allPassed = true;
+        foreach (var card in new[] { RunCard.Plain(12), RunCard.Door(9), RunCard.Recede(9, 14) })
+        {
+            var r = checkRules.Clone();
+            r.forceCard = card;
+            var rep = FrontRoomsMapValidator.RunRunRooms(profile.generation, RunCardSeed, 3, 3, modules, r);
+            allPassed &= rep.failed == 0;
+            lines.Add(card + " " + rep.passed + "/3 (" + rep.placed + " rooms, fit " + rep.fit + "/" + rep.competing + ")" + (rep.failed > 0 ? ": " + string.Join(" | ", rep.seeds.First(x => !x.passed).errors.Take(3).ToArray()) : ""));
+        }
+        var deckReport = FrontRoomsMapValidator.RunRunDeck(profile.generation, RunCardSeed, 3, 3, modules, checkRules);
+        allPassed &= deckReport.failed == 0;
+        lines.Add("deck " + deckReport.passed + "/3 (" + deckReport.rooms + " rooms, " + deckReport.nothing + " nothing, " + deckReport.twists + " twists, " + deckReport.calmExcluded + " kept out of calm zones)"
+            + (deckReport.failed > 0 ? ": " + string.Join(" | ", deckReport.seeds.First(x => !x.passed).errors.Take(3).ToArray()) : ""));
+        Check(allPassed, label + "the validator on 3 seeds, 6 x 6 chunks: " + string.Join("; ", lines.ToArray()));
+
+        // Card 5 in the world: the Run door entrance.
+        var doorWorld = RunCardWorld(roots, profiles, RunCard.Door(9), true, RunCardSeed, 61f, "Run cards door");
+        var doorRoom = BuiltRunRoom(doorWorld, RunVariant.Door);
+        var entranceDoor = doorRoom != null ? doorWorld.DoorBetween(doorRoom.Outside, doorRoom.Cells[0]) : null;
+        var goalDoor = doorRoom != null ? doorWorld.DoorBetween(doorRoom.GoalCell, doorRoom.Beyond) : null;
+        var devicePoint = doorRoom != null ? doorWorld.RunDevicePoint(doorRoom) : Vector3.zero;
+        var deviceDepth = doorRoom != null ? Vector3.Dot(devicePoint - doorWorld.RunRoomPoint(doorRoom, Vector3.zero), doorWorld.RunRoomRotation(doorRoom) * Vector3.forward) : 0f;
+        Check(doorRoom != null && entranceDoor != null && doorWorld.IsRunDoor(entranceDoor) && !doorWorld.LockedByRule(entranceDoor) && doorWorld.DoorMemberFor(entranceDoor) == FrontRoomsDoorMember.Run
+              && goalDoor != null && doorWorld.IsRunDoor(goalDoor) && doorWorld.PassageBetween(doorRoom.Outside, doorRoom.Cells[0]) == FrontRoomsMapWorld.Passage.ClosedDoor
+              && !doorWorld.RunRooms.TryArch(doorRoom.Outside, doorRoom.Cells[0], out _, out _) && !ArmedAt(doorRoom, 2.4f) && ArmedAt(doorRoom, 2.6f)
+              && !ArmedAt(doorRoom, doorRoom.LengthMetres - 2.4f) && ArmedAt(doorRoom, doorRoom.LengthMetres - 2.6f) && Mathf.Abs(deviceDepth - 2.5f) < .01f,
+            label + "a Run door room (card 5): " + (doorRoom != null ? doorRoom.ToString() : "NONE BUILT") + "; the entrance door " + (entranceDoor != null ? "built, " + (doorWorld.IsRunDoor(entranceDoor) ? "Run" : "theme") + (doorWorld.LockedByRule(entranceDoor) ? ", LOCKED" : ", never locked") : "NOT BUILT")
+            + ", no arch; it arms 2.5 m in from either door; the device " + deviceDepth.ToString("0.00") + " m in");
+
+        // Card 4 in the world: the receding end (the map's side).
+        var recedeWorld = RunCardWorld(roots, profiles, RunCard.Recede(9, 12), true, RunCardSeed + 1, 62f, "Run cards recede");
+        var room4 = BuiltRunRoom(recedeWorld, RunVariant.Recede);
+        problems.Clear();
+        if (room4 == null) problems.Add("no receding room built");
+        else
+        {
+            var w = recedeWorld;
+            var seatedEvents = 0;
+            w.RunRoomSeated += r => { if (r == room4) seatedEvents++; };
+            Vector3 goal0, normal0, goal1, normal1;
+            w.RunEntrance(room4, true, out goal0, out normal0);
+            var depth0 = Vector3.Dot(goal0 - w.RunRoomPoint(room4, Vector3.zero), w.RunRoomRotation(room4) * Vector3.forward);
+            if (room4.LengthCells != 12 || room4.OpenCells != 9 || room4.Seated) problems.Add("new: " + room4.VariantText);
+            if (w.PassageBetween(room4.Cells[7], room4.Cells[8]) != FrontRoomsMapWorld.Passage.Open || w.PassageBetween(room4.Cells[8], room4.Cells[9]) != FrontRoomsMapWorld.Passage.Wall
+                || w.PassageBetween(room4.GoalCell, room4.Beyond) != FrontRoomsMapWorld.Passage.Wall) problems.Add("the hidden length is not shut past 9 cells");
+            if (ArmedAt(room4, 8.9f) || !ArmedAt(room4, 9.1f) || !ArmedAt(room4, 26.9f) || ArmedAt(room4, 27.5f) || ArmedAt(room4, 1.6f)) problems.Add("it does not arm at FD1 (9 m) only");
+            if (Mathf.Abs(depth0 - 27f) > .01f) problems.Add("the goal point at " + depth0 + " m, not 27");
+            if (w.RunSeated(room4, 9) || w.RunSeated(room4, 10)) problems.Add("a seat on its first line or off its seats was taken");
+            if (!w.RunSeated(room4, 11) || room4.OpenCells != 11 || w.PassageBetween(room4.Cells[9], room4.Cells[10]) != FrontRoomsMapWorld.Passage.Open
+                || w.PassageBetween(room4.Cells[10], room4.Cells[11]) != FrontRoomsMapWorld.Passage.Wall) problems.Add("the seat at 11 did not open cells 9-10 only");
+            w.RunEntrance(room4, true, out goal1, out normal1);
+            var depth1 = Vector3.Dot(goal1 - w.RunRoomPoint(room4, Vector3.zero), w.RunRoomRotation(room4) * Vector3.forward);
+            if (Mathf.Abs(depth1 - 33f) > .01f) problems.Add("the goal point at " + depth1 + " m after the seat at 11, not 33");
+            if (w.RunSeated(room4, 11) || w.RunSeated(room4, 9)) problems.Add("a seat went back");
+            w.RebuildChunk(room4.ChunkB);
+            if (room4.SeatIndex != 1 || w.PassageBetween(room4.Cells[9], room4.Cells[10]) != FrontRoomsMapWorld.Passage.Open) problems.Add("the seat was lost in a rebuild");
+            if (!w.RunSeated(room4, 12) || !room4.Seated || w.RunRooms.HeldShut(room4.GoalCell, room4.Beyond) || w.PassageBetween(room4.GoalCell, room4.Beyond) == FrontRoomsMapWorld.Passage.Wall)
+                problems.Add("the last seat did not make the goal door real (" + w.PassageBetween(room4.GoalCell, room4.Beyond) + ")");
+            if (!ArmedAt(room4, 1.6f) || ArmedAt(room4, 1.4f)) problems.Add("seated, it does not arm 1.5 m in as a plain room");
+            if (seatedEvents != 2) problems.Add(seatedEvents + " RunRoomSeated events, not 2");
+        }
+        Check(problems.Count == 0, label + "a receding room 9 -> 12 (card 4, the map's side): " + (room4 != null ? room4.ToString() : "none")
+            + "; the cells past the end and the goal door shut, arming at FD1, seats only forward (11 opens two cells, the goal point to 33 m), kept through a rebuild, the last seat makes the goal door real and the room a plain one"
+            + (problems.Count > 0 ? "; " + string.Join(" | ", problems.Take(6).ToArray()) : ""));
+
+        // Card 2 in the world: the deck and the floor through NextFloor (the deck is the run's, the floor counts down).
+        var floorWorld = RunCardWorld(roots, profiles, RunCard.Nothing, false, RunCardSeed + 2, 63f, "Run cards floors");
+        var deck1 = floorWorld.RunDeck;
+        var floor1 = floorWorld.RunFloor;
+        var plannerFloor1 = floorWorld.RunRooms != null ? floorWorld.RunRooms.Floor : -1;
+        floorWorld.NextFloor(FrontRoomsExitPlanner.FloorSeed(RunCardSeed + 2, 2, 0), 2, new RectInt(0, 0, 0, 0), default(GridCoord));
+        var deck2 = floorWorld.RunDeck;
+        Check(deck1 != null && floor1 == 1 && plannerFloor1 == 1 && ReferenceEquals(deck1, deck2) && floorWorld.RunFloor == 2 && floorWorld.RunRooms != null && floorWorld.RunRooms.Floor == 2
+              && ReferenceEquals(floorWorld.RunRooms.Deck, deck1) && floorWorld.RunRooms.DeckMode,
+            label + "the run's deck through NextFloor: made on floor 1, the same object on floor 2, the planner's floor 1 then 2, dealing one a floor (DeckMode)");
+
+        // Card 3 in the world, the order the review found: a zone beyond a goal door walked (its devices built) before the room's
+        // host zone is met. Foil and alarm doors forced; the map built round the spawn with Run! rooms on but none placed (no
+        // first send: every zone met so far is decided "none"), then a room per zone where it fits (force, as scene 3 sets it)
+        // while the map streams two chunks out eight ways and back, so new host zones are met beside zones built earlier. After
+        // every step each built door and window must keep the device it was built with (its built flag = the map's answer now),
+        // and F4 is read on the map as built. Once, the order is made on purpose (CalmOrder): a decided alarm door or foiled
+        // window whose edge is not built yet, touching a zone Z; an unmet host zone H whose 9-cell straight would open its goal
+        // door into Z and which nothing but card 3 would stop; the chunk that builds the device's edge (its west or south cell's:
+        // a chunk builds its own east and north borders) is built first (before the first send, the transition kits off), meeting
+        // no cell of H, so the device stands armed; then H is met as a chunk build meets it. The room must be refused
+        // (CalmRefused + 1, no room) and the device still armed.
+        // Without the refusal the room is placed, Z turns calm and the built device's flag disagrees with the map (the review's
+        // case), which this row reports.
+        problems.Clear();
+        var calmWindows = new Dictionary<long, FrontRoomsMapWorld.Window>();
+        var calmWorld = RunCalmWorld(roots, profiles, RunCardSeed + 3, 85f, "Run cards calm", calmWindows);
+        var calmRun = calmWorld.RunRooms;
+        if (calmRun != null) calmRun.Rules.force = true;
+        var calmGen = calmWorld.Cache.Generator;
+        int doorsSeen = 0, alarmSeen = 0, windowsSeen = 0, foiledSeen = 0;
+        int offeredAll = 0, nearOffered = 0, autoSeen = 0, nearAuto = 0;
+        int orderTried = 0, orderNotArmed = 0, orderSpoiled = 0;
+        int funnelHosts = 0, funnelStraight = 0, funnelInto = 0, funnelMet = 0, funnelFree = 0, funnelMetHere = 0, funnelDevices = 0, funnelUnbuilt = 0;
+        string notArmedWhy = null, spoiledWhy = null;
+        var minEntry = calmRun != null ? calmRun.Rules.minEntryCells : 9;
+        var spawn = calmWorld.SpawnWorldPosition;
+        var span = MapGrid.ChunkCells * MapGrid.CellSize * 2f;
+        string orderText = null;
+        var entries = new List<ValueTuple<Vector3, string>>();
+        var autoEntries = new List<FrontRoomsAutoEntries.Entry>();
+
+        // F4's measure (71 s.7.6): within minEntryCells (Manhattan) of a placed room's cells or of the cell beyond its goal door.
+        bool NearRun(GridCoord cell)
+        {
+            if (calmRun == null) return false;
+            foreach (var room in calmRun.Rooms)
+            {
+                if (Mathf.Abs(room.Beyond.x - cell.x) + Mathf.Abs(room.Beyond.y - cell.y) < minEntry) return true;
+                foreach (var c in room.Cells)
+                    if (Mathf.Abs(c.x - cell.x) + Mathf.Abs(c.y - cell.y) < minEntry) return true;
+            }
+            return false;
+        }
+
+        // Every built door round <mid> and every built window against the map's answer now: a device is never disarmed under
+        // its look (RELAY 6: no harmless detector props), nor armed under a plain one.
+        void SweepCalm(GridCoord mid)
+        {
+            for (var y = mid.y - 32; y <= mid.y + 32; y++)
+            for (var x = mid.x - 32; x <= mid.x + 32; x++)
+            {
+                var cell = new GridCoord(x, y);
+                foreach (var next in new[] { new GridCoord(x + 1, y), new GridCoord(x, y + 1) })
+                {
+                    var door = calmWorld.DoorBetween(cell, next);
+                    if (door == null) continue;
+                    doorsSeen++;
+                    if (door.alarm) alarmSeen++;
+                    if (door.alarm != calmWorld.IsAlarmDoor(cell, next))
+                        problems.Add("door " + cell + "-" + next + " built " + (door.alarm ? "alarmed" : "plain") + ", the map now says " + (door.alarm ? "plain" : "alarmed") + (calmRun != null && calmRun.CalmTouches(cell, next) ? " (a calm zone)" : ""));
+                }
+            }
+            foreach (var window in calmWindows.Values)
+            {
+                if (window == null || window.root == null || (!calmWorld.IsBuilt(window.a) && !calmWorld.IsBuilt(window.b))) continue;
+                windowsSeen++;
+                if (window.foiled) foiledSeen++;
+                if (window.foiled != calmWorld.IsFoiledWindow(window.a, window.b))
+                    problems.Add("window " + window.a + "-" + window.b + " built " + (window.foiled ? "foiled" : "plain") + ", the map now says " + (window.foiled ? "plain" : "foiled") + (calmRun != null && calmRun.CalmTouches(window.a, window.b) ? " (a calm zone)" : ""));
+            }
+        }
+
+        // F4 on the map as built now: no offered entry near a room (the world's filter), and the auto entries the rule hid.
+        void ReadF4()
+        {
+            calmWorld.RelayEntries(entries);
+            offeredAll += entries.Count;
+            foreach (var e in entries) if (NearRun(calmWorld.CellOf(e.Item1))) nearOffered++;
+            calmWorld.AutoEntriesForTools(autoEntries);
+            autoSeen += autoEntries.Count;
+            foreach (var e in autoEntries) if (NearRun(e.cell)) nearAuto++;
+        }
+
+        // Nothing but card 3 would stop the host's room (FrontRoomsRunRooms.PerZone): not the arrival zone, each other zone of
+        // its cells unmet or met after the first send (ZonesStillOk), no higher-priority straight of its length on its chunks
+        // (SuppressedBy).
+        bool CalmFree(GridCoord host, FrontRoomsRunRoom cand)
+        {
+            if (calmRun.HasStart && System.Array.IndexOf(cand.Zones, calmRun.ArrivalZone) >= 0) return false;
+            foreach (var z in cand.Zones)
+                if (z != host && calmRun.MetAt(z, out _, out var open) && !open) return false;
+            var mine = calmRun.Priority(host);
+            foreach (var ch in new[] { cand.ChunkA, cand.ChunkB })
+            {
+                var o = MapGrid.ChunkOrigin(ch);
+                for (var idx = 0; idx < MapGrid.ChunkCells * MapGrid.ChunkCells; idx++)
+                {
+                    var other = calmGen.ZoneOf(new GridCoord(o.x + idx % MapGrid.ChunkCells, o.y + idx / MapGrid.ChunkCells)).id;
+                    if (other == host) continue;
+                    var oc = calmRun.Candidate(other, cand.LengthCells);
+                    if (oc == null || (oc.ChunkA != cand.ChunkA && oc.ChunkA != cand.ChunkB && oc.ChunkB != cand.ChunkA && oc.ChunkB != cand.ChunkB)) continue;
+                    var theirs = calmRun.Priority(other);
+                    if (theirs < mine || (theirs == mine && (other.x < host.x || (other.x == host.x && other.y < host.y)))) return false;
+                }
+            }
+            return true;
+        }
+
+        // Building chunk <chunkK> with the transition kits off meets its own zone (FrontRoomsMapCache.Get), every zone of its cells
+        // and of the cells one step past them (its east and north edges, BuildInto; the dressing's border themes on every side).
+        // It is built before the run's first send (below), so none of those may be the host zone, nor a zone of its straight
+        // not met yet (met then, it would close the straight). (A build that meets the host some other way is caught after it:
+        // "host met early".)
+        bool ChunkMeets(GridCoord chunkK, GridCoord host, FrontRoomsRunRoom cand)
+        {
+            if (chunkK == host) return true;
+            var o = MapGrid.ChunkOrigin(chunkK);
+            for (var y = o.y - 1; y <= o.y + MapGrid.ChunkCells; y++)
+            for (var x = o.x - 1; x <= o.x + MapGrid.ChunkCells; x++)
+            {
+                var z = calmGen.ZoneOf(new GridCoord(x, y)).id;
+                if (z == host || (System.Array.IndexOf(cand.Zones, z) >= 0 && !calmRun.MetAt(z, out _, out _))) return true;
+            }
+            return false;
+        }
+
+        // A zone met as the map meets one before the run's first send (decided "none": no room of its own), unless it is met.
+        void MeetClosed(GridCoord zone)
+        {
+            if (calmRun.MetAt(zone, out _, out _)) return;
+            calmRun.Rules.force = false;
+            calmWorld.Cache.ZoneTier(zone);
+            calmRun.Rules.force = true;
+            funnelMetHere++;
+        }
+
+        // A zone met as streaming meets one now (a room per zone where it fits), unless it is met.
+        void MeetOpen(GridCoord zone)
+        {
+            if (calmRun.MetAt(zone, out _, out _)) return;
+            calmWorld.Cache.ZoneTier(zone);
+            funnelMetHere++;
+        }
+
+        // The made order (see above), host first: an unmet host zone H round <mid> whose 9-cell straight opens its goal door into
+        // another zone Z, not calm, and which nothing but card 3 would stop; Z walked first (met before, or met here as a zone
+        // met before the run's first send is: no room of its own); a device touching Z, decided (Z's own alarm door is decided
+        // here when it was not yet), armed by the map now, its edge not built yet, in a chunk whose build meets no cell of H.
+        // Null when the map as built now offers none (the funnel counts why).
+        string CalmOrder(int stepIndex, GridCoord mid)
+        {
+            if (calmRun == null) return null;
+            var calmCache = calmWorld.Cache;
+            var midChunk = MapGrid.ChunkOf(mid);
+            var reach = calmWorld.BuildRadius + 4;
+            for (var hy = midChunk.y - reach; hy <= midChunk.y + reach; hy++)
+            for (var hx = midChunk.x - reach; hx <= midChunk.x + reach; hx++)
+            {
+                var host = new GridCoord(hx, hy);
+                if (calmRun.MetAt(host, out _, out _) || !calmRun.CompetesForTools(host)) continue;
+                funnelHosts++;
+                var cand = calmRun.Candidate(host, FrontRoomsRunRooms.Length);
+                if (cand == null) continue;
+                funnelStraight++;
+                var into = calmGen.ZoneOf(cand.Beyond).id;
+                if (into == host || calmGen.Zone(into).height == ZoneHeight.Tall) continue;
+                funnelInto++;
+                // Z walked first: met before (and not calm), or met here: as the map meets a zone before the run's first send
+                // (decided "none": no room of its own), or, when the straight runs through it, after it (it may take a room of
+                // its own, and is then calm and of no use here).
+                var intoMet = calmRun.MetAt(into, out _, out _);
+                if (calmRun.IsCalmZone(into)) continue;
+                if (!CalmFree(host, cand)) continue;
+                funnelFree++;
+                if (System.Array.IndexOf(cand.Zones, into) >= 0) MeetOpen(into); else MeetClosed(into);
+                if (calmRun.IsCalmZone(into)) continue;
+                funnelMet++;
+                // The devices touching Z: its own alarm door, its neighbours' alarm doors on its border, a Tall neighbour's foiled
+                // window onto it. Each of those zones is decided here when it was not yet (met first as Z is), but never H, nor a
+                // zone of the straight not met yet (met here it would close the straight).
+                if (calmCache.AlarmDoors != null)
+                {
+                    calmCache.AlarmDoors.Plan(into);
+                    foreach (var d in calmCache.AlarmDoors.Candidates(into))
+                    {
+                        if (d.owned || d.neighbour == host || (System.Array.IndexOf(cand.Zones, d.neighbour) >= 0 && !calmRun.MetAt(d.neighbour, out _, out _))) continue;
+                        MeetClosed(d.neighbour);
+                        calmCache.AlarmDoors.Plan(d.neighbour);
+                    }
+                }
+                if (calmCache.Foil != null)
+                    for (var ty = into.y - 2; ty <= into.y + 2; ty++)
+                    for (var tx = into.x - 2; tx <= into.x + 2; tx++)
+                    {
+                        var tall = new GridCoord(tx, ty);
+                        if (calmGen.Zone(tall).height != ZoneHeight.Tall) continue;
+                        var ontoZ = false;
+                        foreach (var fw in calmCache.Foil.Candidates(tall)) ontoZ |= fw.neighbour == into;
+                        if (!ontoZ) continue;
+                        MeetClosed(tall);
+                        calmCache.Foil.Plan(tall);
+                    }
+                // Every decided device touching Z (copied first: building a chunk decides more).
+                var devA = new List<GridCoord>();
+                var devB = new List<GridCoord>();
+                var devDoor = new List<bool>();
+                if (calmCache.AlarmDoors != null)
+                {
+                    foreach (var plan in calmCache.AlarmDoors.Decided)
+                    {
+                        if (!plan.HasAlarm || (plan.Zone != into && plan.AlarmedDoor.neighbour != into)) continue;
+                        devA.Add(plan.AlarmedDoor.near);
+                        devB.Add(plan.AlarmedDoor.far);
+                        devDoor.Add(true);
+                    }
+                }
+                if (calmCache.Foil != null)
+                    foreach (var plan in calmCache.Foil.Decided)
+                    {
+                        if (!plan.HasFoil || plan.FoiledWindow.neighbour != into) continue;
+                        devA.Add(plan.FoiledWindow.tall);
+                        devB.Add(plan.FoiledWindow.other);
+                        devDoor.Add(false);
+                    }
+                funnelDevices += devA.Count;
+                for (var i = 0; i < devA.Count; i++)
+                {
+                    GridCoord a = devA[i], b = devB[i];
+                    var isDoor = devDoor[i];
+                    // A chunk builds its own east and north borders: the edge stands with its west or south cell's chunk.
+                    var lo = b.x < a.x || b.y < a.y ? b : a;
+                    var chunkK = MapGrid.ChunkOf(lo);
+                    if (calmWorld.IsBuilt(lo) || !(isDoor ? calmWorld.IsAlarmDoor(a, b) : calmWorld.IsFoiledWindow(a, b))) continue;
+                    funnelUnbuilt++;
+                    if (ChunkMeets(chunkK, host, cand)) continue;
+                    // The device's chunk first, walked before the run's first send (no room placed while it is built, so none
+                    // makes Z calm under it): the device stands armed and the host zone is still unmet.
+                    orderTried++;
+                    // The transition kits read the edges across a chunk's borders while it is built, which generates its
+                    // neighbours' data and meets their zones (FrontRoomsMapCache.Edge, Get): with them on, a device can stand
+                    // armed beside an unmet host only in a zone that reaches more than a chunk past its device (none on this
+                    // seed). They are off for this one chunk; the door, the window and the planners are built as in play.
+                    var kits = FrontRoomsTransitionKit.Kits;
+                    calmRun.Rules.force = false;
+                    FrontRoomsTransitionKit.Kits = false;
+                    try { calmWorld.RebuildChunk(chunkK); }
+                    finally
+                    {
+                        FrontRoomsTransitionKit.Kits = kits;
+                        calmRun.Rules.force = true;
+                    }
+                    if (spoiledWhy == null && calmRun.MetAt(host, out _, out _)) spoiledWhy = "host " + host + " met by the build of chunk " + chunkK;
+                    var door = isDoor ? calmWorld.DoorBetween(a, b) : null;
+                    FrontRoomsMapWorld.Window window = null;
+                    if (!isDoor) calmWindows.TryGetValue(MapGrid.EdgeId(a, b), out window);
+                    var armed = isDoor ? door != null && calmWorld.IsAlarmArmed(door) : window != null && window.root != null && window.foiled && !calmWorld.IsFoilTripped(window.edge);
+                    if (!armed)
+                    {
+                        orderNotArmed++;
+                        if (notArmedWhy == null)
+                            notArmedWhy = (isDoor ? "alarm door " : "foiled window ") + a + "-" + b + " in chunk " + chunkK + ": "
+                                + (isDoor ? (door == null ? "no door built" : "built " + (door.alarm ? "alarmed" : "plain") + ", the map says " + (calmWorld.IsAlarmDoor(a, b) ? "alarmed" : "plain"))
+                                    : (window == null || window.root == null ? "no window built" : "built " + (window.foiled ? "foiled" : "plain") + ", the map says " + (calmWorld.IsFoiledWindow(a, b) ? "foiled" : "plain")))
+                                + (calmRun.CalmTouches(a, b) ? ", calm" : "");
+                        continue;
+                    }
+                    if (calmRun.MetAt(host, out _, out _)) { orderSpoiled++; break; }
+                    // Then the host zone, met as a chunk build meets it.
+                    var refusedBefore = calmRun.CalmRefused;
+                    var placedBefore = calmRun.Placed;
+                    calmWorld.Cache.ZoneOf(cand.Outside);
+                    calmRun.Decided(host, out var placedRoom);
+                    var refused = placedRoom == null && calmRun.CalmRefused == refusedBefore + 1 && calmRun.Placed == placedBefore;
+                    var stillArmed = isDoor ? door.alarm && calmWorld.IsAlarmDoor(a, b) && calmWorld.IsAlarmArmed(door)
+                        : window.foiled && calmWorld.IsFoiledWindow(a, b) && !calmWorld.IsFoilTripped(window.edge);
+                    var text = "zone " + host + " met after chunk " + chunkK + " was built with the " + (isDoor ? "alarm door " : "foiled window ") + a + "-" + b
+                        + " armed, touching its zone beyond " + into + (intoMet ? "" : " (met before the first send)") + " (step " + stepIndex + ", try " + orderTried + "): "
+                        + (refused ? "refused" : "NOT refused (" + (placedRoom != null ? placedRoom.ToString() : "no room, but not by card 3") + ")")
+                        + (stillArmed ? ", the device still armed" : ", the device LOST (built " + (isDoor ? "alarmed" : "foiled") + ", the map now says plain)");
+                    if (!refused || !stillArmed) problems.Add(text);
+                    return text;
+                }
+            }
+            return null;
+        }
+
+        var steps = new[] { Vector3.zero, new Vector3(span, 0f, 0f), new Vector3(0f, 0f, span), new Vector3(-span, 0f, 0f), new Vector3(0f, 0f, -span),
+            new Vector3(span, 0f, span), new Vector3(-span, 0f, span), new Vector3(-span, 0f, -span), new Vector3(span, 0f, -span), Vector3.zero };
+        for (var stepIndex = 0; stepIndex < steps.Length; stepIndex++)
+        {
+            var step = steps[stepIndex];
+            if (stepIndex > 0) calmWorld.StreamForTools(spawn + step, 0f);
+            if (orderText == null) orderText = CalmOrder(stepIndex, calmWorld.CellOf(spawn + step));
+            SweepCalm(calmWorld.CellOf(spawn + step));
+            ReadF4();
+        }
+        Check(problems.Count == 0 && calmRun != null && calmRun.Placed > 0 && orderText != null && alarmSeen > 0 && foiledSeen > 0,
+            label + "card 3 when the zone beyond is walked first (foil and alarm doors forced and built first, then a Run! room per zone; the map streamed two chunks out eight ways and back): "
+            + (calmRun != null ? calmRun.Placed + " rooms placed, " + calmRun.CalmRefused + " refused (a goal door into a zone with a decided device)" : "no planner") + "; the made order: "
+            + (orderText ?? "NOT FOUND (unmet host zones " + funnelHosts + ", with a straight " + funnelStraight + ", into another zone " + funnelInto + ", nothing else stops it " + funnelFree
+                + ", that zone walked first and not calm " + funnelMet + " (" + funnelMetHere + " zones met here); devices touching it " + funnelDevices + ", armed with the edge unbuilt " + funnelUnbuilt + "; chunks built " + orderTried + ", not armed then " + orderNotArmed + (notArmedWhy != null ? " (" + notArmedWhy + ")" : "") + ", host met early " + orderSpoiled + (spoiledWhy != null ? " (" + spoiledWhy + ")" : "") + ")") + "; "
+            + doorsSeen + " doors seen (" + alarmSeen + " alarmed), " + windowsSeen + " windows (" + foiledSeen + " foiled): each keeps the device it was built with"
+            + (problems.Count > 0 ? "; " + string.Join(" | ", problems.Take(6).ToArray()) : ""));
+
+        // F4 (71 s.7.6, card 3): no Relay entry inside a Run! room or just beyond its goal door, as the world offers them (module
+        // markers and, with foil on, the auto entries), read on the same map after every step above.
+        Check(calmRun != null && calmRun.Placed > 0 && offeredAll > 0 && nearOffered == 0 && nearAuto > 0,
+            label + "F4 (card 3), read after every step: " + offeredAll + " Relay entries offered, " + nearOffered + " within " + minEntry + " cells of a Run! room's cells or the cell beyond its goal door; the rule hid "
+            + nearAuto + " of " + autoSeen + " auto entries (the route half, the goal door never on the Relay's route, waits for the systems line's rule: open)");
+    }
+
+    /// <summary>
+    /// Card 3's world: its own copy of the level profile with Run! rooms, foil and alarm doors on, Tall zones fairly common (both
+    /// devices find edges); Run! rooms on but not forced for the build (RunRoomsForTools 1: no first send, so no room yet), the
+    /// devices forced (FoilForTools 2, AlarmDoorForTools 2: every zone's slot), each put back after. Every window built is kept
+    /// by edge (the newest object).
+    /// </summary>
+    static FrontRoomsMapWorld RunCalmWorld(List<GameObject> roots, List<FrontRoomsLevelProfile> profiles, int seed, float period, string name, Dictionary<long, FrontRoomsMapWorld.Window> windows)
+    {
+        var profile = UnityEngine.Object.Instantiate(FrontRoomsLevelProfiles.Resolve());
+        profile.hideFlags = HideFlags.DontSave;
+        profile.runRooms = true;
+        profile.foil = true;
+        profile.alarmDoor = true;
+        var s = profile.Generation(seed);
+        s.tallShare = .25f;
+        s.borderOpening = .45f;
+        profile.generation = s;
+        profiles.Add(profile);
+        var world = World(roots, profile, period, name);
+        world.WindowBuilt += (w, r) => windows[w.edge] = w;
+        var keepRun = FrontRoomsMapWorld.RunRoomsForTools;
+        var keepCard = FrontRoomsMapWorld.RunCardForTools;
+        var keepFoil = FrontRoomsMapWorld.FoilForTools;
+        var keepAlarm = FrontRoomsMapWorld.AlarmDoorForTools;
+        FrontRoomsMapWorld.RunRoomsForTools = 1;
+        FrontRoomsMapWorld.RunCardForTools = RunCard.Nothing;
+        FrontRoomsMapWorld.FoilForTools = 2;
+        FrontRoomsMapWorld.AlarmDoorForTools = 2;
+        try { world.BuildForCapture(); }
+        finally
+        {
+            FrontRoomsMapWorld.RunRoomsForTools = keepRun;
+            FrontRoomsMapWorld.RunCardForTools = keepCard;
+            FrontRoomsMapWorld.FoilForTools = keepFoil;
+            FrontRoomsMapWorld.AlarmDoorForTools = keepAlarm;
+        }
+        return world;
+    }
 
     // ---------- V5's tools: DebugPlaceOnMap (the sound design line's clone checks) and Disturb's source ----------
 

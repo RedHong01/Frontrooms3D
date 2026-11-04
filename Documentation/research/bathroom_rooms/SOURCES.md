@@ -134,3 +134,7 @@ COMMON; DOCS_INDEX; `RELAY_PURSUIT_REDESIGN.md` §1, §3–§12; `MAP_GENERATION
 ## 2e. The Backrooms pool level: canon and origin (K session, 2026-10-31)
 
 PR1–PR8 (Wikidot and Fandom Level 37, Wikipedia "The Poolrooms", Northeastern Global News on Jared Pike, Pike's *Dream Pools* page, LIMap, FeelsWrong, WIRED) are listed with URLs, dates and status in `15_poolrooms.md` §1. All read as text; no image of Pike's or u/AnarkyMusic's work was opened.
+
+## 2f. Water: POOLS, Tensori and a real indoor pool (line 水体仿真调研, 2026-11-04)
+
+W36–W41 (POOLS on Steam, frames seen in the browser pane; Tensori's itch.io profile; Wikipedia "Pools (video game)"; the Game Developer App Store press release; Red's screenshot of store frame 2; Fish74's Rheinhessen-Bad photo on Wikimedia Commons, CC BY-SA 4.0) are listed with URLs, dates and status in `17_water.md` §1 and used in its §10. Nothing was downloaded; no media played.

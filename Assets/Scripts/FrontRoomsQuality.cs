@@ -14,6 +14,12 @@ using UnityEngine.Rendering.Universal;
 /// play stops (the Editor keeps the asset file as it was). RESOLUTION AUTO gives every handheld screen the same
 /// rendered-pixel budget, recomputed on every fold, unfold and rotation: the iPhone Duo's inner display (5.0 Mpx)
 /// renders at 80 %, which brings it back to about the outer display's cost (probe v3, 2026-10-24).
+///
+/// iPhone and iPad draw with their own URP pair, FrontRooms_URP_Handheld (技术美术调研 20_ranked_changes §3.13, Red
+/// 2026-11-04 "全部按推荐"): SSAO from depth after the opaques, so URP needs no depth prepass there; Medium samples; bloom
+/// from a quarter of the resolution; STP instead of FSR 1 below 100 % once FrontRooms/Surface writes motion vectors.
+/// It is the iPhone's quality level (Handheld, excluded on desktop and WebGL); the Editor's handheld preview switches to
+/// it at boot and back when play stops. Writes for a handheld go to that asset only.
 /// </summary>
 public static class FrontRoomsQuality
 {
@@ -62,6 +68,11 @@ public static class FrontRoomsQuality
     public static bool LowPowerActive { get; private set; }
     /// <summary>SSAO's half-resolution switch could be reached (else AMBIENT OCCLUSION is hidden).</summary>
     public static bool AmbientOcclusionAvailable => SsaoDownsampleField() != null;
+    /// <summary>UPSCALING SHARP means STP (temporal) here, not FSR 1: a handheld below 100 % under RESOLUTION AUTO, outside
+    /// Low Power Mode, once FrontRooms/Surface writes motion vectors. Never on desktop.</summary>
+    public static bool SharpIsTemporal { get; private set; }
+    /// <summary>STP draws the picture now (SharpIsTemporal and SHARP picked); MSAA is off, since STP does not run with it.</summary>
+    public static bool TemporalUpscaling { get; private set; }
 
     public static event Action Changed;
 
@@ -194,11 +205,54 @@ public static class FrontRoomsQuality
         public int VSync;
         public ScriptableRendererFeature Ssao;
         public bool SsaoDownsample;
+        /// <summary>The asset carries STP (only the handheld one), so the build kept STP's compute shaders, and this
+        /// device can run it.</summary>
+        public bool StpBuilt;
     }
 
     static Originals orig;
     static GameObject bloomVolumeObject;
     static VolumeProfile bloomProfile;
+    static UnityEngine.Rendering.Universal.Bloom bloomOverride;
+
+    const string HandheldPipelineName = "FrontRooms_URP_Handheld";
+    static RenderPipelineAsset bootPipeline;
+    static bool pipelineSwapped;
+
+    /// <summary>Picks the handheld URP asset before the first scene loads. A device already boots on it (the iPhone's
+    /// quality level); the Editor's handheld preview swaps it into the current level and RestoreRenderer swaps back.</summary>
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void ChooseRenderer()
+    {
+        if (!Handheld) return;
+        var current = QualitySettings.renderPipeline;
+        if (current == null || current.name != HandheldPipelineName)
+        {
+            for (var i = 0; i < QualitySettings.count; i++)
+            {
+                var candidate = QualitySettings.GetRenderPipelineAssetAt(i);
+                if (candidate == null || candidate.name != HandheldPipelineName) continue;
+                bootPipeline = current;
+                QualitySettings.renderPipeline = candidate;
+                pipelineSwapped = true;
+                Application.quitting -= RestoreRenderer;
+                Application.quitting += RestoreRenderer;
+                break;
+            }
+        }
+        // Its STP is there for the build only: until Apply runs, full resolution draws without an upscaling pass.
+        var urp = Asset;
+        if (urp == null || urp.name != HandheldPipelineName) return;
+        if (orig == null || orig.Asset != urp) Capture(urp);
+        if (urp.upscalingFilter == UpscalingFilterSelection.STP) urp.upscalingFilter = UpscalingFilterSelection.Auto;
+    }
+
+    static void RestoreRenderer()
+    {
+        if (!pipelineSwapped) return;
+        pipelineSwapped = false;
+        QualitySettings.renderPipeline = bootPipeline;
+    }
 
     static UniversalRenderPipelineAsset Asset => GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
 
@@ -224,10 +278,15 @@ public static class FrontRoomsQuality
 
         EffectiveRenderScale = ResolveScale(useLow);
         Write(urp.renderScale, EffectiveRenderScale, v => urp.renderScale = v);
-        var filter = EffectiveRenderScale < .999f ? (Upscaling == 0 ? UpscalingFilterSelection.FSR : UpscalingFilterSelection.Linear) : orig.Upscaling;
+        // URP runs STP (and FSR) even at 100 %, so the handheld asset's STP becomes Auto there: full resolution keeps MSAA.
+        SharpIsTemporal = Handheld && !useLow && Resolution == 0 && EffectiveRenderScale < .999f && orig.StpBuilt && SurfaceWritesMotionVectors();
+        TemporalUpscaling = SharpIsTemporal && Upscaling == 0;
+        var filter = TemporalUpscaling ? UpscalingFilterSelection.STP
+            : EffectiveRenderScale < .999f ? (Upscaling == 0 ? UpscalingFilterSelection.FSR : UpscalingFilterSelection.Linear)
+            : orig.Upscaling == UpscalingFilterSelection.STP ? UpscalingFilterSelection.Auto : orig.Upscaling;
         if (urp.upscalingFilter != filter) urp.upscalingFilter = filter;
 
-        var msaa = aa == 0 ? 1 : aa == 1 ? 2 : orig.Msaa;
+        var msaa = TemporalUpscaling || aa == 0 ? 1 : aa == 1 ? 2 : orig.Msaa;
         if (urp.msaaSampleCount != msaa) urp.msaaSampleCount = msaa;
 
         var distance = sh == 0 ? 25f : orig.ShadowDistance;
@@ -240,7 +299,7 @@ public static class FrontRoomsQuality
         if (urp.additionalLightsShadowmapResolution != addRes) urp.additionalLightsShadowmapResolution = addRes;
 
         SetSsaoDownsample(ao == 0 ? true : orig.SsaoDownsample);
-        SetBloomLow(bl == 0);
+        SetBloomOverride(bl == 0, Handheld);
         ApplyFrameRate(useLow);
     }
 
@@ -312,6 +371,7 @@ public static class FrontRoomsQuality
             if (orig.Ssao != null) break;
         }
         orig.SsaoDownsample = GetSsaoDownsample();
+        orig.StpBuilt = orig.Upscaling == UpscalingFilterSelection.STP && STP.IsSupported();
         Application.quitting -= Restore;
         Application.quitting += Restore;
     }
@@ -364,10 +424,25 @@ public static class FrontRoomsQuality
         downsampleField.SetValue(s, on);
     }
 
-    // BLOOM LOW: a global override volume above the film look and the zone grades, overriding one parameter only.
-    static void SetBloomLow(bool low)
+    // Motion vectors come from the surface shader's MotionVectors pass (游戏视觉's); without it STP would smear every moving
+    // door and prop, so FSR 1 stays.
+    static bool SurfaceWritesMotionVectors()
     {
-        if (!low)
+        var shader = Shader.Find("FrontRooms/Surface");
+        if (shader == null) return false;
+        var lightMode = new ShaderTagId("LightMode");
+        var motionVectors = new ShaderTagId("MotionVectors");
+        for (var i = 0; i < shader.passCount; i++)
+            if (shader.FindPassTagValue(i, lightMode) == motionVectors) return true;
+        return false;
+    }
+
+    // A global override volume above the film look and the zone grades. BLOOM LOW overrides one parameter only. A handheld
+    // also starts bloom at a quarter of the resolution with one step fewer: about 75 % fewer bloom pixels, and the smallest
+    // step stays the same size (1/64 of the frame), so the glow reaches as far (技术美术调研 20 §3.13).
+    static void SetBloomOverride(bool low, bool quarter)
+    {
+        if (!low && !quarter)
         {
             if (bloomVolumeObject != null) bloomVolumeObject.SetActive(false);
             return;
@@ -381,10 +456,15 @@ public static class FrontRoomsQuality
             volume.priority = 100f;
             bloomProfile = ScriptableObject.CreateInstance<VolumeProfile>();
             bloomProfile.name = "Quality override (runtime)";
-            var bloom = bloomProfile.Add<UnityEngine.Rendering.Universal.Bloom>(false);
-            bloom.highQualityFiltering.Override(false);
+            bloomOverride = bloomProfile.Add<UnityEngine.Rendering.Universal.Bloom>(false);
             volume.sharedProfile = bloomProfile;
         }
+        bloomOverride.highQualityFiltering.Override(false);
+        bloomOverride.highQualityFiltering.overrideState = low;
+        bloomOverride.downscale.Override(BloomDownscaleMode.Quarter);
+        bloomOverride.downscale.overrideState = quarter;
+        bloomOverride.maxIterations.Override(5);
+        bloomOverride.maxIterations.overrideState = quarter;
         bloomVolumeObject.SetActive(true);
     }
 

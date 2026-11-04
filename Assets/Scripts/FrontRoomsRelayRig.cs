@@ -317,6 +317,9 @@ public sealed class FrontRoomsRelayRig : MonoBehaviour
         EnsureRig();
         currentState = state;
         animationTime += Mathf.Max(0f, deltaTime) * Mathf.Max(.1f, speedScale);
+        // the pool family's water rings (research/bathroom_rooms/70_look_build.md 6.10): the Relay leaves footsteps and a
+        // wake in registered water; away from water (no FrontRoomsWaterSurface) it only notes the position
+        if (Application.isPlaying) FrontRoomsWaterRings.ReportBody(FrontRoomsWaterRings.Body.Relay, transform.position, .3f);
         if (productionBody != null)
         {
 #if FRONTROOMS_RELAY_V2

@@ -42,6 +42,8 @@ public sealed partial class FrontRoomsKeyMapView
     {
         public KeyDef Def;
         public Rect Home;
+        // The centre it is drawn about on touch: its cluster's (the d-pad's), so a cluster stays even at any scale (Snap).
+        public Vector2 Axis;
         public Image Fill;
         public readonly Image[] Edges = new Image[4];
         public Text Legend;
@@ -226,7 +228,7 @@ public sealed partial class FrontRoomsKeyMapView
     {
         foreach (var k in Layout())
         {
-            var v = new KeyView { Def = k, Home = KeyRect(k) };
+            var v = new KeyView { Def = k, Home = KeyRect(k), Axis = KeyRect(k).center };
             v.Fill = Img(root, paper, 0f);
             for (var e = 0; e < 4; e++) v.Edges[e] = Img(root, paper, .25f);
             if (k.Label.Length > 0) v.Legend = Txt(root, LegendFor(k), mono, 13, paper, TextAnchor.MiddleCenter);
@@ -249,11 +251,12 @@ public sealed partial class FrontRoomsKeyMapView
             var c = r.center;
             r = new Rect(c.x - r.width * scale * .5f, c.y - r.height * scale * .5f, r.width * scale, r.height * scale);
         }
-        // Whole px, so every key's keyline is 1 px whatever the scale.
+        // Whole px, so every key's keyline is 1 px whatever the scale; on touch about its cluster's centre (Snap).
         var x0 = Mathf.Round(r.x * k);
         var y0 = Mathf.Round(r.y * k);
         var w = Mathf.Round(r.xMax * k) - x0;
         var h = Mathf.Round(r.yMax * k) - y0;
+        if (ts < 1f) { var s = Snap(r, v.Axis); x0 = s.x; y0 = s.y; w = s.width; h = s.height; }
         Place(v.Fill.rectTransform, x0, y0, w, h);
         Place(v.Edges[0].rectTransform, x0, y0, w, 1f);
         Place(v.Edges[1].rectTransform, x0, y0 + h - 1f, w, 1f);
@@ -269,6 +272,31 @@ public sealed partial class FrontRoomsKeyMapView
         var y0 = Mathf.Round(r.y * k);
         Place(rt, x0, y0, Mathf.Round(r.xMax * k) - x0, Mathf.Round(r.yMax * k) - y0);
     }
+
+    /// <summary>As PlaceUnits; on touch about <paramref name="axis"/> (Snap).</summary>
+    void PlaceUnits(RectTransform rt, Rect r, Vector2 axis)
+    {
+        if (ts >= 1f) { PlaceUnits(rt, r); return; }
+        var s = Snap(r, axis);
+        Place(rt, s.x, s.y, s.width, s.height);
+    }
+
+    /// <summary>
+    /// Touch: a rect of map units in whole px, its size rounded on its own and its centre's offset from <paramref name="axis"/> (its
+    /// cluster's centre: the d-pad's, the face buttons', the pad's middle) rounded from an axis on a px's middle for an odd size and on
+    /// a px's edge for an even one, so parts of one size are one size and a cluster stays even at any scale (11-04 r0: rounding each
+    /// edge at k .35 drew the d-pad's gutters 2 and 1 px, the face buttons' 4 and 5, LB 38 px and RB 39, the left stick 19 × 20).
+    /// </summary>
+    Rect Snap(Rect r, Vector2 axis)
+    {
+        var w = Mathf.Max(1f, Mathf.Round(r.width * k));
+        var h = Mathf.Max(1f, Mathf.Round(r.height * k));
+        var x = About(axis.x, w) + Mathf.Round((r.center.x - axis.x) * k) - w * .5f;
+        var y = About(axis.y, h) + Mathf.Round((r.center.y - axis.y) * k) - h * .5f;
+        return new Rect(x, y, w, h);
+    }
+
+    float About(float axis, float size) => Mathf.RoundToInt(size) % 2 == 1 ? Mathf.Floor(axis * k) + .5f : Mathf.Round(axis * k);
 
     void BuildMouse()
     {
@@ -387,9 +415,10 @@ public sealed partial class FrontRoomsKeyMapView
         var ax = c.OnRight ? x : x - aw;
         Place(c.ActionText.rectTransform, ax, y, aw, 26f * ts);
         Place(c.NoteText.rectTransform, c.OnRight ? x : x - nw, y + 25f * ts, nw, 18f * ts);
-        // The bar: 14 px past the words at each side, 6 over and 8 under them (the mock's pads, around Bayon's own leading).
+        // The bar: 14 px past the words at each side, 6 over and 8 under them (the mock's pads, around Bayon's own leading); on
+        // touch with the action word alone, even about its caps (BarTop).
         var left = c.OnRight ? x : x - w;
-        var bar = new Rect(left - 14f * ts, y - 4f * ts, w + 28f * ts, BarHeight);
+        var bar = new Rect(left - 14f * ts, BarTop(y), w + 28f * ts, BarHeight);
         Place(c.Under.rectTransform, bar.x, bar.y, bar.width, bar.height);
         c.Hit = new Rect(bar.x / k, bar.y / k, bar.width / k, bar.height / k);
         // The changed dot (settings' rule: a changed row shows a dot before its control) and the padlock sit before the action word.
@@ -471,10 +500,11 @@ public sealed partial class FrontRoomsKeyMapView
         k = scale;
         root.sizeDelta = new Vector2(Width * k, Height * k);
         foreach (var m in mouse) PlaceUnits(m.Image.rectTransform, m.Rect);
-        foreach (var part in padParts) if (part.Decoration) PlaceUnits(part.Edge.rectTransform, part.Home);
+        foreach (var part in padParts) if (part.Decoration) PlaceUnits(part.Edge.rectTransform, part.Home, part.Axis);
         foreach (var c in callouts) LayoutLabel(c);
-        // Touch: where the smaller drawing makes labels meet they go down, and their leaders are routed again (Declutter).
-        if (ts < 1f) { Refresh(false); return; }
+        // Touch: where the smaller drawing makes labels meet they go down, and their leaders are routed again (Declutter); the
+        // legends take the size their caps hold (FitLegends).
+        if (ts < 1f) { FitLegends(); Refresh(false); return; }
         Animate();
     }
 
@@ -602,7 +632,9 @@ public sealed partial class FrontRoomsKeyMapView
             grow.Add(!reread && c.RoutedTo != null && c.RoutedTo != routeTo);
             c.SegRects.Clear();
         }
-        // Straight leaders (a key in its own slot) first, then the routed ones around them.
+        // Straight leaders (a key in its own slot) first, then the routed ones around them; on touch the level ones before the
+        // bent ones, the least bend first, so a bend keeps off every leader already drawn (LeaderTo).
+        if (ts < 1f) ByBend(pending, grow);
         for (var pass = 0; pass < 2; pass++)
             for (var i = 0; i < pending.Count; i++)
             {
@@ -658,42 +690,286 @@ public sealed partial class FrontRoomsKeyMapView
     // A label's bar, 6 over and 8 under its words: two lines (the action, its note) or the action alone.
     float BarHeight => (showNotes ? 53f : 36f) * ts;
 
+    // Touch: where the action word's caps' middle sits under its words' top, in em of its size (Bayon's caps run from .509 to
+    // 1.215 em: 8.65 to 20.65 pt at the touch 17 pt, measured on the 11-04 frames). A leader meets its label there, and the bar
+    // of the action word alone is even about its caps.
+    const float CapMiddle = .862f;
+    float CapMiddlePx => ActionSize * ts * CapMiddle;
+
+    /// <summary>Touch: the leader's row under its label's words' top, in whole px: the 1 px line on the caps' middle.</summary>
+    float LeaderEntry => Mathf.Round(CapMiddlePx - .5f);
+
+    // Touch: where a control's edge is not square on its label's own row (a pill's round end), a label within this many px of the
+    // control's middle row keeps a level leader on that row, which still meets its caps (12 pt tall); further, the leader bends
+    // (LeaderTo).
+    const float LeaderSlack = 3f;
+
+    /// <summary>A label's bar top, its words' top at px <paramref name="y"/>: 4·ts over the words, or on touch with the action word
+    /// alone (the phone, VL498) even about its caps, 7.9 pt over and under them (11-04 r0: 11.8 over and 4.4 under).</summary>
+    float BarTop(float y) => ts < 1f && !showNotes ? y + CapMiddlePx - BarHeight * .5f : y - 4f * ts;
+
     /// <summary>
-    /// Touch (ts < 1, 平面视觉 VL498): the words keep their size while the drawing shrinks, so labels one above the other on a
-    /// side can meet (BACK's note sat on USE's bar). Each side's labels (one column, one alignment), top to bottom, go down to at
-    /// least the label above's bar foot + 4·ts, the start of their leader with them; the type stays its size. From the slots'
-    /// own places (AssignSlots), at the drawing's scale now. True when a label moved.
+    /// Touch (ts < 1, 平面视觉 VL498 and 11-04): the words keep their size while the drawing shrinks, so labels can meet. From the
+    /// slots' own places (AssignSlots), at the drawing's scale now: a label on a level leader first sits with its caps' middle on
+    /// that leader's row (11-04 r0: on the phone the leaders met the labels 4-5 pt over their caps, SETTINGS' 6 pt). Then every
+    /// label, top to bottom, goes down to at least the bar foot + 4·ts of each label above it whose bar shares some of its width
+    /// (Stack: a side's column, and SETTINGS over the pad against ZOOM once the words sit on their leaders at a small scale); a
+    /// label against a drawn part goes off it (OffParts) and the labels are stacked again: four stackings at most, and a stacking
+    /// always last. The type stays its size. Each leader's label end (From) then sits on its words' caps' middle, and the leaders
+    /// are routed after this, from there to their own parts (LeaderTo). Every label stays in Bounds, which the touch sheet fits to
+    /// its list (the whole map, no scroll). True when a label is not at its slot's own place.
     /// </summary>
     bool Declutter()
     {
+        foreach (var c in callouts)
+            if (Level(c.Slot)) c.LabelY = (PartRow(c.Slot.DefaultTarget, c.From.y) - LeaderEntry) / Mathf.Max(.01f, k);
+        for (var round = 0; ; round++)
+        {
+            Stack();
+            if (round == 3 || !OffParts()) break;
+        }
         var moved = false;
-        var columns = new Dictionary<string, List<Callout>>();
         foreach (var c in callouts)
         {
-            var key = (c.OnRight ? "R" : "L") + Mathf.RoundToInt(c.LabelX);
-            if (!columns.TryGetValue(key, out var column)) columns[key] = column = new List<Callout>();
-            column.Add(c);
+            c.From = new Vector2(c.From.x, (Mathf.Round(c.LabelY * k) + LeaderEntry) / Mathf.Max(.01f, k));
+            if (!Mathf.Approximately(c.LabelY, c.Slot.OwnY) || c.From != c.Slot.OwnFrom) moved = true;
         }
-        foreach (var column in columns.Values)
+        return moved;
+    }
+
+    // A slot whose own leader is level (a side's label to its control; not SETTINGS' from above).
+    static bool Level(Callout slot) => Mathf.Abs(slot.OwnFrom.y - slot.OwnTo.y) < .01f;
+
+    // Every label, top to bottom: at least the bar foot + 4·ts of each label above it whose bar shares some of its width, in whole
+    // px, its leader's label end with it. True when one moved.
+    bool Stack()
+    {
+        var moved = false;
+        foreach (var c in callouts) LayoutLabel(c);
+        var order = new List<Callout>(callouts);
+        order.Sort((a, b) =>
         {
-            column.Sort((a, b) => a.LabelY.CompareTo(b.LabelY));
-            var foot = float.NegativeInfinity;
-            foreach (var c in column)
+            var by = Mathf.Round(a.LabelY * k).CompareTo(Mathf.Round(b.LabelY * k));
+            return by != 0 ? by : callouts.IndexOf(a).CompareTo(callouts.IndexOf(b));
+        });
+        for (var i = 0; i < order.Count; i++)
+        {
+            var c = order[i];
+            var y = Mathf.Round(c.LabelY * k);
+            var need = 0f;
+            for (var j = 0; j < i; j++)
+                if (Shares(c, order[j])) need = Mathf.Max(need, BarTop(Mathf.Round(order[j].LabelY * k)) + BarHeight + 4f * ts - BarTop(y));
+            if (need <= .001f) continue;
+            var to = (y + Mathf.Ceil(need - .001f)) / Mathf.Max(.01f, k);
+            c.From = new Vector2(c.From.x, c.From.y + to - c.LabelY);
+            c.LabelY = to;
+            moved = true;
+        }
+        return moved;
+    }
+
+    // Two labels' bars share some width (as last laid out).
+    static bool Shares(Callout a, Callout b) => a.Hit.xMin < b.Hit.xMax && b.Hit.xMin < a.Hit.xMax;
+
+    /// <summary>
+    /// Touch (平面视觉 VL498: on the phone SETTINGS' foot sat under RT's paper): a label whose bar meets a drawn part, or comes
+    /// within 4·ts of it above or below, goes off it. Up when its bar's middle is above the part's, its foot 4·ts over the part, if
+    /// it stays off every part there and 4·ts clear of every label whose bar shares its width; else down, its top 4·ts under the
+    /// part. In whole px, its leader's label end with it. True when one moved.
+    /// </summary>
+    bool OffParts()
+    {
+        var moved = false;
+        foreach (var c in callouts)
+        {
+            // Its bar's width as it will be drawn: a slot or a note may have changed since it was last laid out.
+            LayoutLabel(c);
+            var y = Mathf.Round(c.LabelY * k);
+            for (var tries = 0; tries < 8; tries++)
             {
-                var y = Mathf.Round(c.LabelY * k);
-                var need = foot + 4f * ts - (y - 4f * ts);
-                if (need > 0f)
-                {
-                    var d = need / Mathf.Max(.01f, k);
-                    c.LabelY += d;
-                    c.From = new Vector2(c.From.x, c.From.y + d);
-                    y += need;
-                    moved = true;
-                }
-                foot = y - 4f * ts + BarHeight;
+                if (!PartAt(c, y, out var part)) break;
+                // Its words' top where the bar's top is 4·ts under the part, or its foot 4·ts over it.
+                var ny = Mathf.Ceil(part.yMax + 4f * ts - BarTop(0f));
+                var up = Mathf.Floor(part.yMin - 4f * ts - BarTop(0f) - BarHeight);
+                if (BarTop(y) + BarHeight * .5f < part.center.y && !PartAt(c, up, out _) && ClearOfLabels(c, up)) ny = up;
+                var to = ny / Mathf.Max(.01f, k);
+                c.From = new Vector2(c.From.x, c.From.y + to - c.LabelY);
+                c.LabelY = to;
+                y = ny;
+                moved = true;
             }
         }
         return moved;
+    }
+
+    // The label's bar, its words' top at px y, 4·ts clear of the bar of every other label that shares its width.
+    bool ClearOfLabels(Callout c, float y)
+    {
+        var top = BarTop(y);
+        foreach (var o in callouts)
+        {
+            if (o == c || !Shares(c, o)) continue;
+            var other = BarTop(Mathf.Round(o.LabelY * k));
+            if (other < top + BarHeight + 4f * ts - .01f && top < other + BarHeight + 4f * ts - .01f) return false;
+        }
+        return true;
+    }
+
+    // The first drawn part the label's bar meets, its words' top at px y, or comes within 4·ts of above or below: in whole px
+    // as drawn, sharing some of the bar's width.
+    bool PartAt(Callout c, float y, out Rect part)
+    {
+        var top = BarTop(y);
+        var foot = top + BarHeight;
+        var x0 = c.Hit.x * k;
+        var x1 = c.Hit.xMax * k;
+        foreach (var r in DrawnParts())
+        {
+            part = r;
+            if (x1 > part.xMin && x0 < part.xMax && foot + 4f * ts > part.yMin + .01f && top - 4f * ts < part.yMax - .01f) return true;
+        }
+        part = default;
+        return false;
+    }
+
+    // What a label and a leader stay off on touch, in whole px as drawn: the pad's controls and the keycaps (the d-pad's, the
+    // keyboard's keys), the mouse's buttons and body; never a decoration (the pad's body and stick wells, a 25 % keyline under it
+    // all) or the wheel's ring.
+    IEnumerable<Rect> DrawnParts()
+    {
+        foreach (var v in keys) yield return Snap(v.Home, v.Axis);
+        foreach (var m in mouse) if (m.Path != "ring") yield return Whole(m.Rect);
+        foreach (var part in padParts) if (!part.Decoration) yield return Snap(part.Home, part.Axis);
+    }
+
+    // A rect of map units in whole px, each edge rounded (as PlaceUnits draws it).
+    Rect Whole(Rect r) => Rect.MinMaxRect(Mathf.Round(r.x * k), Mathf.Round(r.y * k), Mathf.Round(r.xMax * k), Mathf.Round(r.yMax * k));
+
+    /// <summary>Touch: a target's control in whole px as drawn (its keycap, mouse part or pad control), with the well round it for
+    /// a stick (<paramref name="ring"/>: a bend keeps outside it) and its corners' <paramref name="radius"/> in px (a keycap's none,
+    /// a mouse part's taken as round); false for none.</summary>
+    bool DrawnAt(string path, out Rect drawn, out Rect ring, out float radius)
+    {
+        foreach (var v in keys) if (FrontRoomsInput.Normalise(v.Def.Path) == path) { drawn = ring = Snap(v.Home, v.Axis); radius = 0f; return true; }
+        foreach (var m in mouse)
+            if (m.Path != "ring" && FrontRoomsInput.Normalise(m.Path) == path) { drawn = ring = Whole(m.Rect); radius = Mathf.Min(drawn.width, drawn.height) * .5f; return true; }
+        foreach (var part in padParts)
+        {
+            if (part.Decoration || !part.Has(path)) continue;
+            drawn = ring = Snap(part.Home, part.Axis);
+            radius = part.Radius * k;
+            foreach (var d in padParts)
+            {
+                if (!d.Decoration || !d.Home.Contains(part.Home.center) || d.Home.width * d.Home.height >= 4f * part.Home.width * part.Home.height) continue;
+                var well = Snap(d.Home, d.Axis);
+                ring = Rect.MinMaxRect(Mathf.Min(ring.xMin, well.xMin), Mathf.Min(ring.yMin, well.yMin), Mathf.Max(ring.xMax, well.xMax), Mathf.Max(ring.yMax, well.yMax));
+            }
+            return true;
+        }
+        drawn = ring = default;
+        radius = 0f;
+        return false;
+    }
+
+    // Touch: the middle row (px) of a target's control as drawn, where its label's caps sit (Declutter); else the row of map units y.
+    float PartRow(string target, float y) =>
+        DrawnAt(FrontRoomsInput.Normalise(target), out var r, out _, out _) ? r.y + Mathf.Floor((r.height - 1f) * .5f) : Mathf.Round(y * k);
+
+    /// <summary>Touch: how far inside its drawn rect (whole px, corners of <paramref name="radius"/> px) a control's edge stands on
+    /// px row <paramref name="y"/>, at the row's middle: 0 where the edge runs straight, MaxValue on a row outside it.</summary>
+    static float EdgeInset(Rect part, float radius, float y)
+    {
+        var t = Mathf.Min(y + .5f - part.yMin, part.yMax - (y + .5f));
+        if (t <= 0f) return float.MaxValue;
+        var r = Mathf.Min(radius, Mathf.Min(part.width, part.height) * .5f);
+        if (t >= r) return 0f;
+        var d = r - t;
+        return r - Mathf.Sqrt(r * r - d * d);
+    }
+
+    /// <summary>
+    /// Touch (ts < 1, 平面视觉 VL498 and 11-04: a legend fits its part at any scale, and one under a 5 pt cap height is not drawn):
+    /// the legends keep one size across the board, as the desktop's Plex Mono 13 do, never more than a drawn one's cap holds: the
+    /// largest whole size, at most 13, at which each legend shown fits its cap as drawn (LegendFit). A legend whose cap cannot hold a
+    /// legible size drops out and binds no other (the shoulders' 23-unit pills go first: 8 pt at the phone's k ≈ .35, out below
+    /// k ≈ .32). A PlayStation pad's ✕ ○ □ △ are its face buttons' legends: drawn at the same size (PlacePad; the ✕ stands .69 of
+    /// its box, as the caps .698 em), in the same fit, dropping out the same way (11-04 fix1: drawn with the drawing, 13 units, at
+    /// the phone's k ≈ .35 the ✕ stood 3.5 pt). Again at each scale, and whenever the pad's names change.
+    /// </summary>
+    void FitLegends()
+    {
+        var size = 13;
+        foreach (var v in keys)
+            if (v.Legend != null) { var fit = LegendFit(v.Legend.text, Snap(v.Home, v.Axis), 0f); if (Legible(fit)) size = Mathf.Min(size, fit); }
+        foreach (var part in padParts)
+        {
+            if (part.Legend != null && LegendShown(part)) { var fit = LegendFit(part.Legend.text, Snap(part.Home, part.Axis), part.Radius); if (Legible(fit)) size = Mathf.Min(size, fit); }
+            if (part.Glyph != null && legendsPlayStation) { var fit = GlyphFit(Snap(part.Home, part.Axis)); if (Legible(fit)) size = Mathf.Min(size, fit); }
+        }
+        legendSize = size;
+        foreach (var v in keys)
+        {
+            if (v.Legend == null) continue;
+            v.Legend.fontSize = size;
+            v.Legend.enabled = Legible(LegendFit(v.Legend.text, Snap(v.Home, v.Axis), 0f));
+        }
+        foreach (var part in padParts)
+        {
+            if (part.Legend != null)
+            {
+                part.Legend.fontSize = size;
+                part.Legend.enabled = LegendShown(part) && Legible(LegendFit(part.Legend.text, Snap(part.Home, part.Axis), part.Radius));
+            }
+            if (part.Glyph != null) part.Glyph.enabled = legendsPlayStation && Legible(GlyphFit(Snap(part.Home, part.Axis)));
+        }
+    }
+
+    // Touch: the legends' one size (FitLegends), a PlayStation pad's marks' too (PlacePad).
+    int legendSize = 13;
+
+    // The least legend (平面视觉 11-04): a cap height under 5 pt (15 px at @3, 10 at @2), rounded down, is not drawn. Plex Mono's
+    // caps are .698 em, so 8 pt is the least size drawn (7 pt's caps are 4.9 pt); a PlayStation mark's ✕ (9 of its 13 units) is
+    // as tall to within .006 em, so the same size holds for the marks.
+    const float LegendCaps = 5f, PlexCaps = .698f;
+    static bool Legible(int size) => size * PlexCaps >= LegendCaps;
+
+    // A PlayStation mark's farthest ink from its middle, in its box's size: the triangle's lower corners, with the half-unit stroke
+    // and the anti-aliased edge (GlyphMask: 7.07 of 13 units).
+    const float GlyphReach = 7.07f / 13f;
+
+    /// <summary>The largest whole size, at most 13, at which a PlayStation mark drawn about the middle of the button at
+    /// <paramref name="px"/> (whole px; half a px off it where their sizes' parities differ) keeps 1 px inside its edge (a keyline
+    /// lies in that px); 0 when none does.</summary>
+    static int GlyphFit(Rect px)
+    {
+        var room = Mathf.Min(px.width, px.height) * .5f - 1f;
+        for (var size = 13; size > 0; size--)
+        {
+            var off = (Mathf.RoundToInt(px.width) - size) % 2 != 0 || (Mathf.RoundToInt(px.height) - size) % 2 != 0 ? .5f : 0f;
+            if (size * GlyphReach + off <= room) return size;
+        }
+        return 0;
+    }
+
+    /// <summary>The largest whole size, at most 13, at which a Plex Mono legend's glyph box (0.6 em a character, its advance; 0.71 em
+    /// tall, the caps' 0.698 and the round letters' and arrows' 0.012 overshoot) sits centred in the cap drawn at <paramref name="px"/>
+    /// (whole px, with corners of <paramref name="radius"/> map units) 1 px inside its edge and clear of its rounded corners (a
+    /// keyline lies in that px); 0 when none does. Rounded down: never a size that would not fit.</summary>
+    int LegendFit(string text, Rect px, float radius)
+    {
+        var w = px.width - 2f;
+        var h = px.height - 2f;
+        var r = Mathf.Clamp(radius * k - 1f, 0f, Mathf.Max(0f, Mathf.Min(w, h) * .5f));
+        for (var size = 13; size > 0; size--)
+        {
+            // Half the glyph box, and how far it reaches into a corner's square.
+            var bw = text.Length * .6f * size * .5f;
+            var bh = .71f * size * .5f;
+            var ex = bw - (w * .5f - r);
+            var ey = bh - (h * .5f - r);
+            if (bw <= w * .5f && bh <= h * .5f && (ex <= 0f || ey <= 0f || ex * ex + ey * ey <= r * r)) return size;
+        }
+        return 0;
     }
 
     static bool Changed(Callout c)
@@ -1046,8 +1322,9 @@ public sealed partial class FrontRoomsKeyMapView
     {
         c.RoutedTo = target;
         c.SegRects.Clear();
-        // A key with its own slot's default: the drawn straight leader of that slot.
-        if (target == FrontRoomsInput.Normalise(c.Slot.DefaultTarget)) Seg(c, c.From, c.To);
+        // A key with its own slot's default: the drawn straight leader of that slot; on touch from wherever Declutter put its label
+        // (LeaderTo).
+        if (target == FrontRoomsInput.Normalise(c.Slot.DefaultTarget)) { if (ts < 1f) LeaderTo(c, target); else Seg(c, c.From, c.To); }
         else
         {
             var path = FindRoute(c, target) ?? Orthogonal(new List<Vector2> { c.From, Centre(target) });
@@ -1063,6 +1340,151 @@ public sealed partial class FrontRoomsKeyMapView
 
     static void Seg(Callout c, Vector2 a, Vector2 b) =>
         c.SegRects.Add(new Rect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(1f, Mathf.Abs(b.x - a.x)), Mathf.Max(1f, Mathf.Abs(b.y - a.y))));
+
+    /// <summary>
+    /// Touch (平面视觉 11-04: every leader starts at its own part and ends at its own label, re-routed after Declutter's pushes, and
+    /// no label or its bar crosses another label's leader; 11-04 r0: on the phone USE's and LOOK's leaders stayed on their buttons'
+    /// rows, so A's ended by BACK and the right stick's ran into USE's bar): a slot's leader in whole px, from its label end (From,
+    /// the words' caps middle) to its control's edge, or to its middle column for one from above (SETTINGS to MENU). Level on the
+    /// label's own row where the control's edge stands square to it there (within a px of the drawn rect's: a keycap's whole
+    /// height, a button's middle; 11-04 fix1: ZOOM STEP, moved 2 px down, kept its leader on the d-pad's middle row, over its
+    /// caps' middle); else on the control's middle row, within LeaderSlack of the label's; else bent near the control: out of it
+    /// along its row, past its well, down (or up) to the label's row and across into the label, at the first column from the
+    /// control out where no run meets another control, another label's bar or another leader, nor the bend or the stub its own bar.
+    /// With no such column, the A* route (FindRoute), as a moved key's.
+    /// </summary>
+    void LeaderTo(Callout c, string target)
+    {
+        if (!DrawnAt(target, out var part, out var ring, out var radius)) { Seg(c, c.From, c.To); return; }
+        var q = new Vector2(Mathf.Round(c.From.x * k), Mathf.Round(c.From.y * k));
+        if (Mathf.Abs(c.From.x - c.To.x) < .01f)
+        {
+            var col = part.x + Mathf.Floor((part.width - 1f) * .5f);
+            var edge = q.y < part.y ? part.y : part.yMax;
+            AddRun(c, new Rect(col, Mathf.Min(q.y, edge), 1f, Mathf.Max(1f, Mathf.Abs(q.y - edge))));
+            return;
+        }
+        var right = q.x > part.center.x;
+        var px = right ? part.xMax : part.x;
+        var row = part.y + Mathf.Floor((part.height - 1f) * .5f);
+        // On its own row the run reaches into the px the edge stands in, so it meets the control's ink.
+        var inset = EdgeInset(part, radius, q.y);
+        if (inset <= 1f && LevelRun(c, part, q, right ? px - Mathf.Round(inset) : px + Mathf.Round(inset), q.y)) return;
+        if (Mathf.Abs(q.y - row) <= LeaderSlack && LevelRun(c, part, q, px, row)) return;
+        var bar = new Rect(c.Hit.x * k, c.Hit.y * k, c.Hit.width * k, c.Hit.height * k);
+        // The stub out of the control: as many px clear of it (and of a stick's well) before the bend, and the bend as many px
+        // short of its own bar.
+        var stub = Mathf.Max(3f, Mathf.Round(6f * ts));
+        var first = right ? Mathf.Max(px, ring.xMax) + stub : Mathf.Min(px, ring.x) - 1f - stub;
+        var last = right ? Mathf.Floor(bar.x) - 1f - stub : Mathf.Ceil(bar.xMax) + stub;
+        for (var e = first; right ? e <= last : e >= last; e += right ? 1f : -1f)
+        {
+            var runs = Bent(q, px, row, e, right);
+            if (!RunsClear(c, part, runs, true)) continue;
+            foreach (var r in runs) AddRun(c, r);
+            return;
+        }
+        var path = FindRoute(c, target) ?? Orthogonal(new List<Vector2> { c.From, Centre(target) });
+        for (var i = 1; i < path.Count; i++) Seg(c, path[i - 1], path[i]);
+    }
+
+    // A level leader in whole px from the label end q to the control's edge at x, on row y: drawn when it runs clear (RunsClear).
+    bool LevelRun(Callout c, Rect part, Vector2 q, float x, float y)
+    {
+        var run = new[] { new Rect(Mathf.Min(x, q.x), y, Mathf.Abs(q.x - x), 1f) };
+        if (!RunsClear(c, part, run, false)) return false;
+        AddRun(c, run[0]);
+        return true;
+    }
+
+    /// <summary>An elbow in whole px from the label end <paramref name="q"/> to the control's edge <paramref name="px"/> on its
+    /// <paramref name="row"/>, bent at column <paramref name="e"/>: the run from the label, the bend, the stub out of the control.
+    /// Every px once (the line is drawn at .6: a px drawn twice would show as a dot), the corners included.</summary>
+    static Rect[] Bent(Vector2 q, float px, float row, float e, bool right)
+    {
+        var down = q.y > row;
+        if (right)
+            return new[]
+            {
+                // The corner on the label's row is the run's (from e), the one on the control's row the bend's.
+                new Rect(e, q.y, q.x - e, 1f),
+                down ? new Rect(e, row, 1f, q.y - row) : new Rect(e, q.y + 1f, 1f, row - q.y),
+                new Rect(px, row, e - px, 1f),
+            };
+        return new[]
+        {
+            // The corner on the label's row is the bend's, the one on the control's row the stub's (from e).
+            new Rect(q.x, q.y, e - q.x, 1f),
+            down ? new Rect(e, row + 1f, 1f, q.y - row) : new Rect(e, q.y, 1f, row - q.y),
+            new Rect(e, row, px - e, 1f),
+        };
+    }
+
+    // A run of whole px into the leader's segments, in map units as Seg's (DrawLeader draws it back at these px): a horizontal one
+    // 1 px tall, a vertical one 1 px wide.
+    void AddRun(Callout c, Rect px) =>
+        c.SegRects.Add(px.width >= px.height ? new Rect(px.x / k, px.y / k, px.width / k, 1f) : new Rect(px.x / k, px.y / k, 1f, px.height / k));
+
+    // True when no run (px) of a leader meets another control (a bend 2 px clear of it; its own control only where the last run
+    // starts at its edge), another label's bar (1 px clear) or another leader (2 px clear), and, bent, its bend and stub keep out
+    // of its own bar.
+    bool RunsClear(Callout c, Rect own, Rect[] runs, bool bent)
+    {
+        for (var i = 0; i < runs.Length; i++)
+        {
+            var run = runs[i];
+            var bend = bent && i == 1;
+            foreach (var p in DrawnParts())
+                if (!(i == runs.Length - 1 && p == own) && Meets(run, p, bend ? 2f : 0f)) return false;
+            foreach (var o in callouts)
+            {
+                var bar = new Rect(o.Hit.x * k, o.Hit.y * k, o.Hit.width * k, o.Hit.height * k);
+                if (o == c) { if (bent && i > 0 && Meets(run, bar, 1f)) return false; continue; }
+                if (Meets(run, bar, 1f)) return false;
+                foreach (var s in o.SegRects) if (Meets(run, Drawn(s), 2f)) return false;
+            }
+        }
+        return true;
+    }
+
+    // Two px rects overlap, or come within clear px of each other.
+    static bool Meets(Rect a, Rect b, float clear) =>
+        a.xMin < b.xMax + clear && b.xMin - clear < a.xMax && a.yMin < b.yMax + clear && b.yMin - clear < a.yMax;
+
+    // A leader segment in px as DrawLeader draws it at full length.
+    Rect Drawn(Rect r)
+    {
+        var x = Mathf.Round(r.x * k);
+        var y = Mathf.Round(r.y * k);
+        return r.width > r.height ? new Rect(x, y, Mathf.Max(1f, Mathf.Round(r.xMax * k) - x), 1f) : new Rect(x, y, 1f, Mathf.Max(1f, Mathf.Round(r.yMax * k) - y));
+    }
+
+    // Touch: the pending leaders, level ones first, then by how far each label's row is from its control's (Refresh).
+    void ByBend(List<Callout> pending, List<bool> grow)
+    {
+        var order = new List<int>();
+        for (var i = 0; i < pending.Count; i++) order.Add(i);
+        order.Sort((a, b) =>
+        {
+            var by = Bend(pending[a]).CompareTo(Bend(pending[b]));
+            return by != 0 ? by : a.CompareTo(b);
+        });
+        var callout = new List<Callout>();
+        var grows = new List<bool>();
+        foreach (var i in order) { callout.Add(pending[i]); grows.Add(grow[i]); }
+        pending.Clear(); pending.AddRange(callout);
+        grow.Clear(); grow.AddRange(grows);
+    }
+
+    float Bend(Callout c)
+    {
+        if (!Level(c.Slot)) return 0f;
+        var y = Mathf.Round(c.From.y * k);
+        // Level on its label's own row (LeaderTo): no bend.
+        if (DrawnAt(FrontRoomsInput.Normalise(c.Slot.DefaultTarget), out var part, out _, out var radius) && EdgeInset(part, radius, y) <= 1f) return 0f;
+        var gap = Mathf.Abs(y - PartRow(c.Slot.DefaultTarget, c.Slot.OwnFrom.y));
+        return gap <= LeaderSlack ? 0f : gap;
+    }
 
     void DrawLeader(Callout c)
     {

@@ -80,12 +80,15 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         Far = 80f;
         Stops.Clear();
         kit.Stop("F3 · Level 0 玻璃栏板后（到达点）", Arrival, new Vector3(10.5f, F3 + 1.62f, 21f));
+        kit.Stop("F3 · 玻璃栏板前，往下看", new Vector3(9.75f, F3, 8.55f), new Vector3(9.75f, 0f, 16.0f), 70f);
         kit.Stop("F2 · 办公层西边栏杆（对面是 Relay 替身）", new Vector3(4.6f, F2, 10.5f), new Vector3(16.2f, F1 + 1.6f, 10.5f));
         kit.Stop("F2 · 桥上", new Vector3(7.5f, F2, 13.5f), new Vector3(15f, F2 + 1.2f, 13.5f));
         kit.Stop("F1 · Run! 设备层东边", new Vector3(19.5f, F1, 13.5f), new Vector3(10.5f, F1 + .3f, 9.2f));
-        kit.Stop("F0 · 画廊 +4.5", new Vector3(18.5f, Gal, 15f), new Vector3(9f, 0f, 13f));
-        kit.Stop("F0 · 大圆楼梯顶", new Vector3(16.6f, Gal, 8.2f), new Vector3(20f, 1f, 2f));
-        kit.Stop("F0 · 池边，抬头看井", new Vector3(10.5f, 0f, 19.6f), new Vector3(10.5f, 16f, 13.5f));
+        kit.Stop("F0 · 画廊 +4.5", new Vector3(15.6f, Gal, 13.5f), new Vector3(8.0f, 0f, 13.5f), 70f);
+        kit.Stop("F0 · 大圆楼梯顶", new Vector3(19.2f, Gal, 8.3f), new Vector3(22.6f, 2.0f, 4.5f), 45f);
+        kit.Stop("F0 · 大圆楼梯底，抬头看天窗", new Vector3(18.6f, 0f, .9f), new Vector3(19.5f, Lid0, 4.5f), 70f);
+        kit.Stop("F0 · 池边，抬头看井", new Vector3(10.5f, 0f, 19.6f), new Vector3(10.5f, F3Ceil, 12.0f), 70f);
+        kit.Stop("F1 · 楼梯核（Relay 的路），往上看", new Vector3(21.8f, F1, 10.4f), new Vector3(21.8f, F1 + 2.4f, 16.5f), 45f);
 
         try { host.Look.Probe(Root, new Bounds(Site + new Vector3(12f, Lid0 * .5f, 10.5f), new Vector3(24f, Lid0, 21f)), 1024); }
         catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP2 probe", "SP2 probe: " + e.Message); }
@@ -125,10 +128,13 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         kit.Water(6f, 9f, 15f, 18f, -.05f);
         // Steps into the water at the north-east corner (C7): the way out for anyone in it, 7 risers of 0.16, a nosing on each.
         kit.Flight(new Vector3(13.5f, -1.12f, 16.2f), Vector3.forward, 2.0f, 7, .16f, .3f, tile, nosing, true);
+        // A second way out (R6; review SP2-F12): steps rising west into the arcade's middle arch (z 12.6..14.4), their last
+        // riser on the basin edge at x 6, clear of the underwater lamps at z 11.5 and 15.5; the arch's coping is cut there.
+        kit.Flight(new Vector3(7.8f, -1.12f, 13.5f), Vector3.left, 1.8f, 7, .16f, .3f, tile, nosing, true);
         kit.Shell(Lid0, 0f);
         kit.Coping(new Vector3(6f, 0f, 18f), new Vector3(12.5f, 0f, 18f), 0f, tile);
         kit.Coping(new Vector3(14.5f, 0f, 18f), new Vector3(15f, 0f, 18f), 0f, tile);
-        kit.Coping(new Vector3(15f, 0f, 9.15f), new Vector3(15f, 0f, 18f), 0f, tile);
+        kit.Coping(new Vector3(15f, 0f, 9.0f), new Vector3(15f, 0f, 18f), 0f, tile);
 
         // The arcade (D2) on the west side only, under the void's edge: three round arches 2.4 wide on 0.6 piers, springing
         // 4.5 (crown 5.7), the wall above carrying F1's west block wall. The arches open from the aisle onto the coping.
@@ -138,10 +144,19 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
             new FrontRoomsStructuresKit.Opening(12.3f, 14.7f, 0f, 4.5f, true),
             new FrontRoomsStructuresKit.Opening(15.3f, 17.7f, 0f, 4.5f, true),
         };
-        kit.WallZ(6f, 8.85f, 18.3f, 0f, top, tile, arches, .6f);
-        foreach (var a in arches) kit.Coping(new Vector3(6f, 0f, a.from), new Vector3(6f, 0f, a.to), 0f, tile);
+        // The arcade's east face on the basin edge (x 5.4..6.0): its piers stood 0.3 m in the water (review SP2-F13).
+        kit.WallZ(5.7f, 8.85f, 18.3f, 0f, top, tile, arches, .6f);
+        foreach (var a in arches)
+        {
+            if (a.from < 13.5f && a.to > 13.5f)
+            {
+                kit.Coping(new Vector3(6f, 0f, a.from), new Vector3(6f, 0f, 12.6f), 0f, tile);
+                kit.Coping(new Vector3(6f, 0f, 14.4f), new Vector3(6f, 0f, a.to), 0f, tile);
+            }
+            else kit.Coping(new Vector3(6f, 0f, a.from), new Vector3(6f, 0f, a.to), 0f, tile);
+        }
         // The cascade wall on the void's south edge, deck to the lid: F1's water runs down its north face (70 F26).
-        kit.WallX(9f, 6f, 15f, 0f, top, tile, null, .3f);
+        kit.WallX(8.85f, 6f, 15f, 0f, top, tile, null, .3f);   // z 8.7..9.0: its north face on the basin edge (review SP2-F13)
     }
 
     // ---------------------------------------------------------------- the B4-L and its laylight (60 section 2)
@@ -257,6 +272,17 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         // A lamp over every landing (R8), each storey's colour: pool cool, Run! fluorescent, office cool, Level 0 warm.
         Color[] tint = { new Color(.90f, .97f, 1f), new Color(.90f, .97f, 1f), new Color(.93f, .97f, 1f), new Color(.96f, .97f, 1f), new Color(1f, .93f, .80f) };
         float[] halves = { 2.25f, 2.25f, 1.95f, 1.95f };
+        // One wall lamp a flight at mid-run on the scissor wall (review SP2-F20: mid-flight treads sat 4.7-5.3 m from both
+        // landing lamps, past the stair finishes' own-light range), range 5.
+        for (var k = 0; k < halves.Length; k++)
+        {
+            var run = halves[k] / .15f * .3f - .3f;
+            var midZ = 11.9f + run * .5f;
+            kit.Lamp("core flight", LightType.Spot, new Vector3(22.42f, levels[k] + halves[k] * .5f + 2.0f, midZ), new Vector3(-1f, -1.6f, 0f), 120f, 80f, 1.2f, 5f, tint[k], false,
+                new Vector3(.22f, .1f, .06f), FrontRoomsPoolMaterials.Steel, new Color(1.4f, 1.45f, 1.45f));
+            kit.Lamp("core flight", LightType.Spot, new Vector3(22.58f, levels[k] + halves[k] * 1.5f + 2.0f, midZ), new Vector3(1f, -1.6f, 0f), 120f, 80f, 1.2f, 5f, tint[k], false,
+                new Vector3(.22f, .1f, .06f), FrontRoomsPoolMaterials.Steel, new Color(1.4f, 1.45f, 1.45f));
+        }
         for (var k = 0; k < levels.Length; k++)
         {
             kit.Lamp("core landing", LightType.Spot, new Vector3(22.5f, levels[k] + 2.45f, 9.25f), Vector3.down, 150f, 110f, 1.6f, 5f, tint[k], false,
@@ -277,9 +303,11 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
             Troffers = false, VoidGuard = FrontRoomsStructuresKit.GuardStyle.None, SectionMat = null,
         };
         var floor = FrontRoomsStructuresKit.Plate.Kind.Floor;
-        p.Fill(5, 2, 6, 5, floor, 0f, 2.9f, 1);        // the service bay on the void's east side
+        // The service bay beside the void stops at the B4-L's module row (j 2 is the B4-L's, open to its laylight: 60 section 2;
+        // scene 4 walk and look review SP2-X1, SP2-F2); the narrow room runs on south to j 2 and gives the water room its door.
+        p.Fill(5, 3, 6, 5, floor, 0f, 2.9f, 1);        // the service bay on the void's east side
         p.Fill(0, 6, 7, 6, floor, 0f, 2.9f, 1);        // the service corridor along the north
-        p.Fill(1, 3, 1, 5, floor, 0f, 2.9f, 2);        // a narrow room behind the west block wall
+        p.Fill(1, 2, 1, 5, floor, 0f, 2.9f, 2);        // a narrow room behind the west block wall
         p.Fill(2, 2, 4, 2, floor, 0f, 2.9f, 3);        // the water room behind the south wall
         p.Fill(2, 3, 4, 5, FrontRoomsStructuresKit.Plate.Kind.Void, 0f, 0f, -1);
         for (var j = 3; j <= 5; j++) p.NoWall(6, j, 'E');
@@ -292,13 +320,22 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         p.Open(3, 6, 'S', 0f, 3f, 1.0f, 2.1f);
         p.Open(4, 6, 'S', 0f, 1.5f, 1.0f, 2.1f);
         p.Open(1, 5, 'N', 1f, 2f, 0f, 2.1f);
-        p.Open(4, 2, 'E', 1f, 2f, 0f, 2.1f);
+        p.Open(2, 2, 'W', 1f, 2f, 0f, 2.1f);                                   // the water room's door, from the narrow room
         p.Build(kit);
         kit.Shell(F1Ceil, F1);
         kit.Prism(new Vector3(7.5f, 0f, 18f), new Vector3(13.5f, 0f, 18f), F1 + 1.0f, F1 + 2.1f, .012f, glass, true);
         // Run! B's two tones: the lower tone to 1.2 m along the corridor's long wall and the bay's east wall.
         kit.Prism(new Vector3(0f, 0f, 20.91f), new Vector3(24f, 0f, 20.91f), F1, F1 + 1.2f, .012f, runLower, false);
-        kit.Prism(new Vector3(20.91f, 0f, 6f), new Vector3(20.91f, 0f, 9f), F1, F1 + 1.2f, .012f, runLower, false);
+        // ... and on the block walls' void faces (west x 6, south z 9 but its slot, north z 18 under the long window) and the
+        // service bay's south wall, as Run! B lays it on every face (review SP2-F15).
+        kit.Prism(new Vector3(6.09f, 0f, 9.08f), new Vector3(6.09f, 0f, 17.92f), F1, F1 + 1.2f, .012f, runLower, false);
+        kit.Prism(new Vector3(6.08f, 0f, 9.09f), new Vector3(9f, 0f, 9.09f), F1, F1 + 1.2f, .012f, runLower, false);
+        kit.Prism(new Vector3(9f, 0f, 9.09f), new Vector3(12f, 0f, 9.09f), F1 + .3f, F1 + 1.2f, .012f, runLower, false);
+        kit.Prism(new Vector3(12f, 0f, 9.09f), new Vector3(15f, 0f, 9.09f), F1, F1 + 1.2f, .012f, runLower, false);
+        kit.Prism(new Vector3(6.08f, 0f, 17.91f), new Vector3(7.5f, 0f, 17.91f), F1, F1 + 1.2f, .012f, runLower, false);
+        kit.Prism(new Vector3(7.5f, 0f, 17.91f), new Vector3(13.5f, 0f, 17.91f), F1, F1 + 1.0f, .012f, runLower, false);
+        kit.Prism(new Vector3(13.5f, 0f, 17.91f), new Vector3(15f, 0f, 17.91f), F1, F1 + 1.2f, .012f, runLower, false);
+        kit.Prism(new Vector3(15.3f, 0f, 9.09f), new Vector3(20.92f, 0f, 9.09f), F1, F1 + 1.2f, .012f, runLower, false);
         // The east rim: a 0.6 m block upstand and a galvanised chain-link guard on it (E8).
         kit.Box(15f, F1, 9f, 15.3f, F1 + .6f, 18f, runLower);
         kit.Guard(new Vector3(15.15f, 0f, 9f), new Vector3(15.15f, 0f, 18f), F1 + .6f, FrontRoomsStructuresKit.GuardStyle.Mesh, null, null, 1.2f);
@@ -427,19 +464,20 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         for (var j = 3; j <= 5; j++) kit.Prism(new Vector3(6f, 0f, 3f * j + .6f), new Vector3(6f, 0f, 3f * j + 2.4f), F3 + 1.0f, F3 + 2.1f, .012f, glass, true);
         kit.Guard(new Vector3(9.95f, 0f, 18f), new Vector3(11.05f, 0f, 18f), F3, FrontRoomsStructuresKit.GuardStyle.Rail);
         // The glass-block floor light (E7), 1 x 2 cells in the east gallery, lit from the office below; a steel grid on it.
-        kit.Box(15f, F3 - .08f, 12f, 18f, F3, 18f, glassBlock);
+        kit.Box(15.2f, F3 - .08f, 12f, 18f, F3, 18f, glassBlock);
+        kit.Box(15f, F3 - .08f, 12f, 15.2f, F3, 18f, l0Carpet);
         for (var g = 1; g < 5; g++) kit.Box(15f + g * .6f - .01f, F3, 12f, 15f + g * .6f + .01f, F3 + .004f, 18f, FrontRoomsPoolMaterials.Steel, false);
-        for (var g = 1; g < 10; g++) kit.Box(15f, F3, 12f + g * .6f - .01f, 18f, F3 + .004f, 12f + g * .6f + .01f, FrontRoomsPoolMaterials.Steel, false);
+        for (var g = 1; g < 10; g++) kit.Box(15.2f, F3, 12f + g * .6f - .01f, 18f, F3 + .004f, 12f + g * .6f + .01f, FrontRoomsPoolMaterials.Steel, false);
         kit.Lid(15f, 12f, 18f, 18f, F3Ceil, l0Ceil);
-        kit.Troffer(new Vector3(16.5f, F3Ceil, 13.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
-        kit.Troffer(new Vector3(16.5f, F3Ceil, 16.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
+        kit.Troffer(new Vector3(16.5f, F3Ceil, 13.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
+        kit.Troffer(new Vector3(16.5f, F3Ceil, 16.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
         // Level 0's ceiling grid runs on over the well, lamps and all: the void is cut out of the floors only.
         kit.Lid(6f, 9f, 15f, 18f, F3Ceil, l0Ceil);
         kit.Lid(12f, 6f, 15f, 9f, F3Ceil, l0Ceil);
         for (var i = 2; i <= 4; i++)
             for (var j = 3; j <= 5; j++)
-                kit.Troffer(new Vector3(3f * i + 1.5f, F3Ceil, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
-        kit.Troffer(new Vector3(13.5f, F3Ceil, 7.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
+                kit.Troffer(new Vector3(3f * i + 1.5f, F3Ceil, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
+        kit.Troffer(new Vector3(13.5f, F3Ceil, 7.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
     }
 
     // ---------------------------------------------------------------- the rims' sections (V1: the cut shows the floor)
@@ -483,13 +521,26 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
     void RimEdge(Vector3 lo, Vector3 hi, Vector3 toVoid, float bottom, float top, Material ceilingBelow)
     {
         kit.Shell(top, bottom);
-        kit.Box(new Vector3(lo.x, top - .2f, lo.z), new Vector3(hi.x, top, hi.z), concrete, true);
+        kit.Box(new Vector3(lo.x, top - .2f, lo.z), new Vector3(hi.x, top, hi.z), SectionSlab(), true);
         var pl = lo;
         var ph = hi;
         if (toVoid.x > .5f) ph.x -= .08f; else if (toVoid.x < -.5f) pl.x += .08f;
         if (toVoid.z > .5f) ph.z -= .08f; else if (toVoid.z < -.5f) pl.z += .08f;
         kit.Box(new Vector3(pl.x, bottom + .04f, pl.z), new Vector3(ph.x, top - .2f, ph.z), plenum, false);
         kit.Box(new Vector3(lo.x, bottom, lo.z), new Vector3(hi.x, bottom + .04f, hi.z), ceilingBelow, false);
+    }
+
+    Material sectionSlab;
+
+    // Stair_Slab carries _FR_OWN_LIGHTS (lamps over 6 m away are skipped: right in a core, black on a rim lit from 8-10 m), so
+    // the rims take a runtime copy without it (review SP2-F3); the asset stays as it is.
+    Material SectionSlab()
+    {
+        if (sectionSlab != null) return sectionSlab;
+        if (concrete == null) return null;
+        sectionSlab = new Material(concrete) { name = "SP2 rim section slab (Stair_Slab, all lamps)" };
+        sectionSlab.DisableKeyword("_FR_OWN_LIGHTS");
+        return sectionSlab;
     }
 
     // ---------------------------------------------------------------- the cascade (C5): F1's slot, 9 m down F0's wall
@@ -502,19 +553,19 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         kit.Box(8.85f, F1, 6.15f, 9f, F1 + .15f, 8.92f, tile);
         kit.Box(12f, F1, 6.15f, 12.15f, F1 + .15f, 8.92f, tile);
         kit.Box(8.85f, F1, 6.0f, 12.15f, F1 + .45f, 6.3f, tile);
-        kit.Box(9f, F1 - .1f, 9.08f, 12f, F1 + .02f, 9.3f, tile);
-        kit.Water(9f, 6.3f, 12f, 9.3f, F1 + .07f);
+        kit.Box(9f, F1 - .1f, 8.93f, 12f, F1 + .02f, 9.15f, tile);
+        kit.Water(9f, 6.3f, 12f, 9.15f, F1 + .07f);
         Sheet(new Vector3(9.05f, 0f, 6.31f), new Vector3(11.95f, 0f, 6.31f), F1 + .45f, F1 + .07f);
         // The fall: from the lip down F0's tiled cascade wall to the splash trough at its foot.
-        Sheet(new Vector3(9.05f, 0f, 9.22f), new Vector3(11.95f, 0f, 9.22f), F1 - .05f, .08f);
+        Sheet(new Vector3(9.05f, 0f, 9.07f), new Vector3(11.95f, 0f, 9.07f), F1 - .05f, .08f);
         // The splash trough inside the basin, its front lip spilling into the basin.
         kit.Shell(Lid0, -1.12f);
-        kit.Box(8.7f, -1.12f, 9.15f, 8.85f, .1f, 10.0f, tile);
-        kit.Box(12.15f, -1.12f, 9.15f, 12.3f, .1f, 10.0f, tile);
-        kit.Box(8.85f, -1.12f, 9.85f, 12.15f, .1f, 10.0f, tile);
-        kit.Box(8.85f, -1.12f, 9.15f, 12.15f, -.2f, 9.85f, tile);
-        kit.Water(8.85f, 9.15f, 12.15f, 9.85f, .07f);
-        Sheet(new Vector3(8.85f, 0f, 10.01f), new Vector3(12.15f, 0f, 10.01f), .1f, -.05f);
+        kit.Box(8.7f, -1.12f, 9.0f, 8.85f, .1f, 9.85f, tile);
+        kit.Box(12.15f, -1.12f, 9.0f, 12.3f, .1f, 9.85f, tile);
+        kit.Box(8.85f, -1.12f, 9.7f, 12.15f, .1f, 9.85f, tile);
+        kit.Box(8.85f, -1.12f, 9.0f, 12.15f, -.2f, 9.7f, tile);
+        kit.Water(8.85f, 9.0f, 12.15f, 9.7f, .07f);
+        Sheet(new Vector3(8.85f, 0f, 9.86f), new Vector3(12.15f, 0f, 9.86f), .1f, -.05f);
         kit.Shell(Lid0, 0f);
     }
 
@@ -535,32 +586,86 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
     void BuildLamps()
     {
         // F0: metal-halide wall boxes throwing up so the tiled lid is the brightest surface, 5.4 m up in the 8.7 m hall.
-        foreach (var z in new[] { 4.5f, 10.5f, 16.5f }) kit.WallBox(new Vector3(0f, 5.4f, z), Vector3.right);
-        foreach (var x in new[] { 4.5f, 10.5f, 16.5f, 22.5f }) kit.WallBox(new Vector3(x, 5.4f, 21f), Vector3.back);
-        foreach (var x in new[] { 4.5f, 10.5f }) kit.WallBox(new Vector3(x, 5.4f, 0f), Vector3.forward);
-        foreach (var x in new[] { 7.5f, 13.5f }) kit.WallBox(new Vector3(x, 5.4f, 8.85f), Vector3.back);
+        // 10 / range 14 (was 7 / 11): thrown 30 degrees into the hall, they light the lid 3.3 m over them (review SP2-F17).
+        foreach (var z in new[] { 4.5f, 10.5f, 16.5f }) kit.WallBox(new Vector3(0f, 5.4f, z), Vector3.right, 10f, 14f);
+        foreach (var x in new[] { 4.5f, 10.5f, 16.5f, 22.5f }) kit.WallBox(new Vector3(x, 5.4f, 21f), Vector3.back, 10f, 14f);
+        foreach (var x in new[] { 4.5f, 10.5f }) kit.WallBox(new Vector3(x, 5.4f, 0f), Vector3.forward, 10f, 14f);
+        foreach (var x in new[] { 7.5f, 13.5f }) kit.WallBox(new Vector3(x, 5.4f, 8.7f), Vector3.back, 10f, 14f);
         kit.WallBox(new Vector3(20.9f, 6.8f, 13.5f), Vector3.left, 5f, 9f);
         // A soft down-fill grid at about 6 m.
         foreach (var d in new[] { new Vector2(3f, 4.5f), new Vector2(3f, 16.5f), new Vector2(10.5f, 4.5f), new Vector2(10.5f, 19.5f), new Vector2(18f, 13.5f), new Vector2(18f, 19.5f), new Vector2(17.2f, 8.3f) })
             kit.DownFill(new Vector3(d.x, Lid0 - .07f, d.y), 2.2f, 11f);
         // The basin lit from below: the glow that rises through the well (view lamps, F44).
-        kit.Underwater(new Vector3(6.02f, -.6f, 11.5f), Vector3.right, 2.6f, 7f);
-        kit.Underwater(new Vector3(6.02f, -.6f, 15.5f), Vector3.right, 2.6f, 7f);
-        kit.Underwater(new Vector3(14.98f, -.6f, 12.5f), Vector3.left, 2.6f, 7f);
-        kit.Underwater(new Vector3(10.5f, -.6f, 17.98f), Vector3.back, 2.6f, 7f);
+        // Two per wall at the thirds, clear of the NE steps and the splash trough, each aimed 30 degrees down onto the porcelain
+        // floor so the whole basin reads lit from F3 (review SP2-F5; by eye: 3.5, range 9).
+        BasinLamp(new Vector3(6.02f, -.45f, 12f), Vector3.right);
+        BasinLamp(new Vector3(6.02f, -.45f, 15f), Vector3.right);
+        BasinLamp(new Vector3(14.98f, -.45f, 12f), Vector3.left);
+        BasinLamp(new Vector3(14.98f, -.45f, 15f), Vector3.left);
+        BasinLamp(new Vector3(8.5f, -.45f, 17.98f), Vector3.back);
+        BasinLamp(new Vector3(11f, -.45f, 17.98f), Vector3.back);
+        BasinLamp(new Vector3(7.5f, -.45f, 9.02f), Vector3.forward);
+        BasinLamp(new Vector3(13.5f, -.45f, 9.02f), Vector3.forward);
+        foreach (var z in new[] { 11.5f, 15.5f }) kit.DownFill(new Vector3(18f, Gal - .37f, z), 1.8f, 7f);
         // F1: Run!'s wrap fluorescents (1.22 m, in the soffit).
         foreach (var x in new[] { 1.5f, 7.5f, 13.5f, 19.5f }) Wrap(new Vector3(x, F1Ceil - .05f, 19.5f), true);
         Wrap(new Vector3(16.5f, F1Ceil - .05f, 10.5f), false);
         Wrap(new Vector3(16.5f, F1Ceil - .05f, 16.5f), false);
-        Wrap(new Vector3(19.5f, F1Ceil - .05f, 7.5f), false);
+        Wrap(new Vector3(4.5f, F1Ceil - .05f, 7.5f), false);
         Wrap(new Vector3(10.5f, F1Ceil - .05f, 7.5f), true);
         Wrap(new Vector3(4.5f, F1Ceil - .05f, 13.5f), false);
     }
 
+    void BasinLamp(Vector3 at, Vector3 into)
+    {
+        var l = kit.Underwater(at, into, 3.5f, 9f);
+        if (l != null) l.transform.rotation = (Root != null ? Root.rotation : Quaternion.identity) * Quaternion.LookRotation((into.normalized * Mathf.Cos(30f * Mathf.Deg2Rad) + Vector3.down * Mathf.Sin(30f * Mathf.Deg2Rad)).normalized, Vector3.up);
+    }
+
+    // F1's lamps: the game's Run! B strip (FrontRoomsLampKit, as SP5's) with the rig's wrap light (5.5, range 10, 172 / 124;
+    // FrontRoomsRunRig), its red-coated middle tube at the armed bounce (review SP2-F15, missed 3: a box-and-lens stand-in
+    // at 2.4 / 8 / 150 / 110). The old box lamp stands in when the kit is missing.
     void Wrap(Vector3 at, bool alongX)
     {
-        kit.Lamp("Run! wrap fluorescent", LightType.Spot, at, Vector3.down, 150f, 110f, 2.4f, 8f, new Color(.93f, .97f, 1f), false,
-            alongX ? new Vector3(1.22f, .18f, .1f) : new Vector3(.18f, 1.22f, .1f), FrontRoomsPoolMaterials.Surface("Painted_Metal", new Color(.85f, .85f, .82f)), new Color(1.5f, 1.6f, 1.6f));
+        var tint = new Color(.93f, .97f, 1f);
+        MeshRenderer lens = null, redTube = null;
+        var frame = new GameObject("F1 Run! B strip");
+        frame.transform.SetParent(Root, false);
+        frame.transform.localPosition = at;
+        frame.transform.localRotation = alongX ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
+        try
+        {
+            if (FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.Strip))
+                lens = FrontRoomsLampKit.Build(FrontRoomsLampKit.Family.Strip, frame.transform, Vector3.zero, Quaternion.identity, "SP2 F1 strip tubes", false, out redTube);
+        }
+        catch (System.Exception e) { FrontRoomsPoolMaterials.LogOnce("SP2 strip", "SP2: the R-B strip kit failed: " + e.Message); lens = null; redTube = null; }
+        if (lens == null)
+        {
+            UnityEngine.Object.Destroy(frame);
+            kit.Lamp("Run! wrap fluorescent", LightType.Spot, at, Vector3.down, 172f, 124f, 5.5f, 10f, tint, false,
+                alongX ? new Vector3(1.22f, .18f, .1f) : new Vector3(.18f, 1.22f, .1f), FrontRoomsPoolMaterials.Surface("Painted_Metal", new Color(.85f, .85f, .82f)), new Color(1.5f, 1.6f, 1.6f));
+            return;
+        }
+        if (redTube != null)
+        {
+            var mpb = new MaterialPropertyBlock();
+            redTube.GetPropertyBlock(mpb);
+            mpb.SetColor("_EmissionColor", new RunRigLayout().redTubeBounce);
+            redTube.SetPropertyBlock(mpb);
+        }
+        var lightGo = new GameObject("light");
+        lightGo.transform.SetParent(frame.transform, false);
+        lightGo.transform.localPosition = new Vector3(0f, -.092f, 0f);
+        lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        var l = lightGo.AddComponent<Light>();
+        l.type = LightType.Spot;
+        l.spotAngle = 172f;
+        l.innerSpotAngle = 124f;
+        l.color = tint;
+        l.intensity = 5.5f;
+        l.range = 10f;
+        l.shadows = LightShadows.None;
+        if (kit.Host != null && kit.Host.Look != null) kit.Host.Look.AddLamp(Key, l, lens, tint * 2.6f, false);
     }
 
     // ---------------------------------------------------------------- the offices' furniture (the game's own dresser)
@@ -592,7 +697,7 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
     void BuildSigns()
     {
         // The arrival point stands over the void's edge: the sign goes on clear floor to the right, out of the main view.
-        kit.Sign(new Vector3(11.55f, F3 + 1.5f, 8.2f), new Vector3(10.5f, F3 + 1.5f, 7.6f), "SP2 · 井：穿过整栋楼的一口竖井",
+        kit.Sign(new Vector3(11.55f, F3 + 1.5f, 7.3f), new Vector3(10.5f, F3 + 1.5f, 8.0f), "SP2 · 井：穿过整栋楼的一口竖井",
             "从 Level 0 的玻璃栏板往下看，经过办公层、Run! 设备层，约 17 米下面是泳池的青绿色水面。每层井口的形状都不一样，只有办公层有桥，Run! 设备层有水顺着井的南墙流进泳池。东边的楼梯连通四层，也是 Relay 的路；泳池层另有一部大圆楼梯。游戏里一次只加载一层，往下看到的会是替身竖井；这里把四层都真的叠起来，让你判断深度。\n"
             + "灰盒占位：四层的栏杆、桥、楼梯细部、玻璃砖地灯、大圆楼梯顶上的天窗、流水和泳池水；泳池层的瓷砖贴图只在这个场景里，其他三层的墙面、地毯、吊顶和灯是游戏自己的。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
             + "要你决定：1 用这口井做全楼的地标吗？ 2 井口用 3×3 格的方井，还是 2×5 格的窄槽（31 §3.5，这里没有做）？ 3 Level 0 这一格换成玻璃栏板才看得到水面（实心半墙会挡住），可以吗？ 4 大圆楼梯顶上用方形天窗，还是换成穹顶（60 Q2）？", F3);

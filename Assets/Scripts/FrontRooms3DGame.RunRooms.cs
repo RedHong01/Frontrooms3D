@@ -14,7 +14,10 @@ using UnityEngine;
 // - The reset (CR-2): v2, the director's Away (the Relay's WITHDRAW ends off the map); v1 has no WITHDRAW, so the zone
 //   resets once the Relay has been calm (Dormant, Listen or Wander) RunResetCalmSecondsV1 since the last trip (SP).
 // - CR-4: each warning burst on a Run! room is forwarded to the rig (map.RunRoomWarned) with the Relay's stage.
-// - Logs: RUN lines for every room planned, built, tripped and reset (the tester's report fields).
+// - The Run! rethink (71 s.9, cards 1-6): the map deals one Run! a floor from the run's deck (map.RunRoomDealt: a room of its
+//   length and twist, or nothing), marks the first room the player meets (map.RunRoomMet: plain first) and seats a receding
+//   end (map.RunRoomSeated); the game only logs them.
+// - Logs: RUN lines for every room planned, dealt, met, built, tripped, seated and reset (the tester's report fields).
 public sealed partial class FrontRooms3DGame
 {
     /// <summary>v1's stand-in for the zone reset (v2's WITHDRAW): seconds of a calm Relay since the last trip (SP).</summary>
@@ -34,8 +37,17 @@ public sealed partial class FrontRooms3DGame
         runLastTripAt = -1f;
         var rules = map.RunRooms.Rules;
         Log("RUN · Run! rooms ON · call 2 (forced goal door) " + (rules.goalDoorForced ? "on" : "off") + ", call 5 (Office zones) " + (rules.office ? "on" : "off")
-            + (rules.force ? ", placement FORCED (tools)" : "") + " · tier " + rules.minTier + "+, after the run's first send, " + rules.minStartCells + "+ cells from the start door, not the arrival zone");
+            + (rules.force ? ", placement FORCED (tools)" : "") + " · tier " + rules.minTier + "+, after the run's first send, " + rules.minStartCells + "+ cells from the start door, not the arrival zone"
+            + " · " + (map.RunRooms.DeckMode ? "one a floor from the deck" : "per zone") + ", calm " + (rules.calm ? "on" : "off") + ", Run door " + (rules.doorEntrance ? "on" : "off")
+            + ", receding " + (rules.recede ? "on" : "off") + ", ramp " + (rules.ramps ? "on" : "off") + (rules.forceCard.IsNothing ? "" : ", every room " + rules.forceCard + " (tools)"));
         map.RunRoomPlanned += room => Log("RUN · planned " + RunRoomText(room) + " · floor " + floor + ", zone tier " + room.Tier);
+        map.RunRoomDealt += deal => Log("RUN · deck · " + deal + " · map floor " + map.RunFloor + (map.RunDeck != null ? ", met " + map.RunDeck.Met : ""));
+        map.RunRoomMet += room =>
+        {
+            Event("run", "met " + room.Id);
+            Log("RUN · met " + RunRoomText(room) + " at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s (the run flag: twists may come from now on)");
+        };
+        map.RunRoomSeated += room => Log("RUN · seated room " + room.Id + " at " + room.OpenCells + " cells (" + room.VariantText + ")" + (room.Seated ? ", its last seat: the goal door is real" : ""));
         map.RunRoomBuilt += OnRunRoomBuilt;
         map.RunRoomDropped += room => Event("run", "dropped " + room.Id);
         map.RoomTriggered += OnRunRoomTriggered;
@@ -86,7 +98,13 @@ public sealed partial class FrontRooms3DGame
         var door = map.DoorBetween(room.GoalCell, room.Beyond);
         Log("RUN · built " + RunRoomText(room) + " · " + room.State + " · map lamps in it " + lamps + " · goal door " + (door == null ? "NOT BUILT"
             : "member " + (map.DoorMemberFor(door)?.ToString() ?? "theme") + ", locked by rule " + map.LockedByRule(door) + (door.rig != null ? ", dressed" : ", cube"))
-            + " · Run finish on its cells, arch " + FrontRoomsRunRooms.ArchWidth.ToString("0.0", CultureInfo.InvariantCulture) + " m centred");
+            + " · Run finish on its cells, " + (room.EntranceDoor ? "entrance Run door " + RunDoorText(map.DoorBetween(room.Outside, room.Cells[0])) : "arch " + FrontRoomsRunRooms.ArchWidth.ToString("0.0", CultureInfo.InvariantCulture) + " m centred"));
+    }
+
+    // Card 5: the entrance Run door as built (its member, the lock rule, dressed or a cube), as the goal door's text says it.
+    string RunDoorText(FrontRoomsMapWorld.Door door)
+    {
+        return door == null ? "NOT BUILT" : "member " + (map.DoorMemberFor(door)?.ToString() ?? "theme") + ", locked by rule " + map.LockedByRule(door) + (door.rig != null ? ", dressed" : ", cube");
     }
 
     void OnRunRoomTriggered(ModuleTrigger trigger, FrontRoomsRunRoom room, string tag)
@@ -97,7 +115,8 @@ public sealed partial class FrontRooms3DGame
         runCalmFor = 0f;
 #endif
         Event("run", "tripped " + room.Id);
-        Log("RUN · tripped " + RunRoomText(room) + " · " + trigger + " \"" + tag + "\" at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s (trip " + room.Trips + "), device "
+        Log("RUN · tripped " + RunRoomText(room) + " · " + trigger + " \"" + tag + "\" at " + elapsed.ToString("0.0", CultureInfo.InvariantCulture) + " s (trip " + room.Trips + ", from the "
+            + (room.TrippedFromGoal ? "goal" : "entrance") + " end, arming " + (room.TrippedFromGoal ? room.GoalTrip : room.EntranceTrip).ToString("0.0", CultureInfo.InvariantCulture) + " m in), device "
             + Flat(p) + " · the Relay " + (relay != null ? relay.State.ToString() : "none"));
 #if FRONTROOMS_RELAY_V2
         // RELAY 6 (ModuleTrigger.Alarm -> DeviceTrigger): a device call to the device, sharing the trigger budget; the on-map ears hear it.
@@ -112,6 +131,7 @@ public sealed partial class FrontRooms3DGame
     }
 
     static string RunRoomText(FrontRoomsRunRoom room) =>
-        "Run! room " + room.Id + " (zone " + room.Zone + " " + room.Theme + ", cells " + room.Cells[0] + " -> " + room.GoalCell + ", arch from " + room.Outside
+        "Run! room " + room.Id + " (" + room.VariantText + (room.Card != default(RunCard) && room.Card.cells != room.LengthCells ? ", dealt " + room.Card : "") + ", zone " + room.Zone + " " + room.Theme
+        + ", cells " + room.Cells[0] + " -> " + room.GoalCell + ", " + (room.EntranceDoor ? "Run door" : "arch") + " from " + room.Outside
         + ", goal door to " + room.Beyond + " " + room.BeyondHeight + ", yaw " + room.Yaw.ToString("0", CultureInfo.InvariantCulture) + ")";
 }

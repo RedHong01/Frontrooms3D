@@ -1,0 +1,53 @@
+{
+ "name": "Kit_RunRecede_TrackStop",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_recede",
+  "ceiling"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  30.0
+ ],
+ "lodBudget": [
+  300,
+  80,
+  12
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.05400000140070915,
+  -0.0689999982714653,
+  -0.008999999612569809
+ ],
+ "boundsMax": [
+  0.05400000140070915,
+  0.0,
+  0.041999999433755875
+ ],
+ "triangles": 268,
+ "slots": [
+  "Prop_SteelAlmond",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 116,
+ "trianglesLod2": 12,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.016499999910593033
+ ],
+ "footprintSize": [
+  0.1080000028014183,
+  0.050999999046325684
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

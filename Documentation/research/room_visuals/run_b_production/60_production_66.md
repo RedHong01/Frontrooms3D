@@ -509,7 +509,7 @@ The video below is a look for Red, not one of these gates.
 
 Card 3 (the red looks) waits for Red's yes on 灯具适配 1's still, so nothing red was built. Rule 5b holds: frames, the receding end and the Run door enter the game only after Red has walked SP7 in scene 4. What was not done: no render, nothing on main, one EditMode batch in `C`, nothing heard.
 
-### R.1 What changed (3 files; `W/apply/run_rig_cells.sh`, DRY RUN OK, not applied)
+### R.1 What changed (3 files; `W/apply/run_rig_cells.sh`, landed 2026-11-04 06:40)
 
 | File (base → payload) | Change |
 |---|---|
@@ -579,3 +579,299 @@ The README says what the rig reads, and `CONTRACT_map.diff` is an inert diff of 
 3. **Light budget at long lengths.** At 14 cells the room carries 14 shadowed strips armed (today 9) and 12 shadowed heads tripped (today 8). Every strip stays shadowed (F7: no light through the long walls). The shadow atlas is 设置菜单's call; check it in the combined test.
 4. **Two choices Red can see in SP7:** the 9 m last interval at even counts, and a 7-cell room without STAFF ONLY. Either is a small change in `CorridorUnits` or `Corridor`.
 5. Everything stays inert until 关卡设计 sends other lengths, and Run! itself until `runRooms` is on.
+
+## Run! rethink · card 2: the recede, head first (2026-11-04)
+
+游戏视觉, account G, workflow `visual-run-rethink` (parent session local_1fc9f09c), stage "Recede head". The card is 71 §9, 游戏视觉 2 (`research/level_space/71_run_room.md`, level_space's page, read only), head first. Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐" (71 §0.1). It rests on:
+- **decision 4:** the stretch, deep floors only (9 → 12 from T4 on B2 or deeper, 9 → 14 at T5 on B3 or deeper), stepped (a two-cell flinch, one-cell steps, a heavy final seat, the 6 m/s keep-away glide), tripping at the 9 m frame (FD1);
+- **decision 5:** the T1 后退 head on every tier and platform, carrying T2 重组 on desktop and iPad (T3 not built now; T4 held for a pattern capture).
+
+Not built by this stage: T2's block pieces and bakes (the next stage), card 3's red looks, the Run door (card 4). The red tube in the R-B strip (灯具适配, landed 11-04 06:33 on Red's "加，用更亮档") is used as landed: the uncovered strips strike once in the room's state, so tripped their red tube rises. Rule 5b holds: nothing in today's game builds a receding room; it enters with Red's walk of SP7 in scene 4. Not done: nothing on main, no download, nothing heard; Unity only in `W/proj_runb66` (one batch at a time, edit mode, no Play mode).
+
+### H.1 What changed (`W/apply/run_recede_head.sh`, DRY RUN OK, not applied)
+
+| Path (base → payload) | Change |
+|---|---|
+| `Scripts/Rendering/FrontRoomsRunRecede.cs` (new) | The recede: `RunRecedeSchedule` (one timeline from one trigger time, pure arithmetic), `FrontRoomsRunRecede` (builds the end and its hardware, the gaze gate, the keep-away glide, the events, the 8-byte record and `Restore`), `RunRecedeCue` (the event list for 声音设计) |
+| `Scripts/Rendering/FrontRoomsRunRig.cs` 97727e79 → f56090ab | `RunRigLayout.Receding(9, 12 | 14)`; `RunUnitDef.carried` (the goal unit on the end); `recedeLine`, `carriedGoalGain`, `carriedFloorAhead`; the rig's `GoalMount`, `SetGoalLine` (the light gate's far end per step), `RevealTo` / `StrikeRevealed` (hidden strips, a one-way strike at the seat), `GoalBeyondHidden` (C42 at full while the door looks onto the hidden length). In a framed corridor (`Corridor(n, frames: true)`) the frames are FD1 z 9 and FD2 z 18 (71 §10) and every unit but the goal unit stands half a cell on: card 1's flag (the unit on line 9 stood in FD1's stub) |
+| `Scripts/Rendering/FrontRoomsRunDress.cs` 20c6da54 → 57e08a4f | `CompartmentFrames`: `Kit_RunCompartmentFrame`, two `Kit_DoorLeaf_SteelRun_DA` leaves at 115° on `Kit_RunMagnetHolder`s; only for a layout that lists frames |
+| `Editor/Rendering/FrontRoomsRunRigTests.cs` 69cac3c5 → ccbf4803 | R20 (the recede); R19's frame rule |
+| `Resources/Props/Models/Kit_RunRecede_{Head, HeadGear, SweepSeated, SweepMoving, Track_3m, TrackStop, FloorSlot_3m}`, `Kit_RunMagnetHolder`, `Kit_RunCompartmentFrame` (.fbx + .json + metas, new) | the kits, hand-built LOD0/1/2 |
+| `Resources/Surfaces/RunB_{BlockLower, BlockUpper, Soffit, Floor, FloorLane, FloorAccent, FloorWax}_Ghost.mat` (new) | the ghost bands' finishes |
+| `Tools/Blender/frontrooms_kit/assets/_run_recede_common.py`, `_run_recede_sweep.py`, `run_recede_*.py`, `run_magnet_holder.py`, `run_compartment_frame.py`; `Tools/lookdev/gen_run_ghost_surfaces.py` (new) | the generators |
+
+### H.2 The schedule (71 §4.5, `motion.txt` R5)
+
+- R = 3k m in whole cells: k = 1 the final step alone; k = 2 the flinch alone, seated heavily; k ≥ 3 a two-cell flinch, k − 3 one-cell steps, a one-cell final step.
+- T2 timings (the default on desktop, iPhone and iPad, so the three keep one timing; WebGL runs T1's): tells 0.25 (first, final) / 0.15; travels 1.1 (flinch) / 0.8 / 1.0 (final); seats 0.2 / 0.35 (final); dwell 0.2. R 9 seats at 1.55 and 3.35 s; R 15 at 1.55, 2.90, 4.25 and 6.05 s. T1: R 15 at 1.15, 2.15, 3.15 and 4.85 s.
+- Travel: accelerate 0.20 s, cruise, decelerate 0.15 s (the flinch peaks at 6.49 m/s). The tell is the magnets' two clacks 30 ms apart and a 15 mm jolt toward the player; a seat overshoots 30 mm (35 mm on the final seat) and settles.
+- The gaze gate: the first step waits until the camera faces the goal within 35°, or the player passes two thirds of the first length (18 m).
+- The keep-away: between steps (and at the gate), a player within 12 m of the end turns the rest into one glide to the final line, 6 m/s peak after a 0.1 s tell, then the heavy seat. A full-bar sprinter in a 9 → 12 room never triggers it: 15.5 m from the end at the flinch's seat, 8.6 m at the final seat (71 §4.5).
+- The schedule reads the player's position and gaze only, never the Relay (rule 11). Each step: the magnets let go, the sweeps relax, the cells it uncovers come on behind the end (props here, strips in the rig), the light gate moves to the step's line, the line it leaves shows its ghost band; at the seat the sweeps press and the uncovered strips rise once.
+- Events for 声音设计 (C# only, nothing played, rule 24): MagnetRelease ×2, Unlatch, TrolleyRoll, SweepDrag, Whump, Seat, FinalSeat, Grit, CellUncovered, StripStrike.
+
+### H.3 The end (71 §5.1), at hero spec
+
+- **Why its shape:** it travels through the reserved length past everything mounted there, so its sides stand 85 mm off the walls (the bumper rail, the EMT and its boxes and the holders pass), and over 2.53 m the corridor's services pass through it: brush-lined slots in its header for the strip lamp, the sprinkler main (and its coupling at a cell line), the ladder tray, and notches for the two tracks. Load path: trolleys in the tracks (x ±1.25) → corner hangers → a girder inside the wall's top.
+- **The parts:** the block-faced wall (the corridor's two-tone finish on both faces, world-projected across the axis, so moving it does not swim), brown hollow-metal edge channels, sill, caps and slot linings (the door frame's paint); two four-wheel trolleys with 16 mm hangers, nuts and washers; nylon strip brushes trimmed to the services that sit in the slots at a seat; rubber sweeps in two poses (seated: bowed on the walls and the floor; moving: swung back 40°, as a period automatic door bottom), swapped on the beat; two bottom guides in 20 mm floor slots (x ±0.95); armature brackets for the hold-open magnets (wall holders at every line it can seat on, 70 mm proud at 1.95 m); a 1.6 m braced arm whose mount plate carries the T-A twin-head (灯具适配's unit as landed: the goal head floods the leaf at 0.9 × a flood head, the other the floor 4 m before the door; on its battery, no feed); C42 in a louvred box behind the wall over the door.
+- **The door:** the map's RN-F as dressed today (Steel DA frame, Ward DA leaf with its F5 lite, the lever set) hangs on `DoorMount` and moves with the end. 71 §5.1 names a panic bar: that is the retired RN-X's (A54 a); RN-F keeps the lever (Q-RN); a crossbar would be a door-set change (`Kit_ExitDevice_Crossbar` exists).
+- **The honest tell:** the tracks run in both soffit corners from the entrance wall to the deepest line. 71 §5.1 starts them at FD1, but FD1's header (2.1 m) hides the soffit beyond 9 m from the arch (still `s11`), so they start at the entrance to be read before commit. In the maker's almond enamel: a galvanized track (metallic 0.75) read black on the dark soffit, the corridor having no reflection probes.
+- **Ghost bands:** a 0.2 m band of the corridor's own finish in its `_Ghost` twin (macro dirt × 0.25, grime × 0.3, the base 4 % lighter; the wax unworn: smoothness + 0.12) on both walls, the soffit and the floor at every line it leaves.
+- **Compartment frames** FD1 and FD2: a 0.16 m block cross wall with a 2.0 × 2.1 m steel pair frame; the leaves swung 115° until their edges meet the side walls, held there on magnets (叙事设计 P1: the frames behind the runner stay open at the trip).
+
+### H.4 The receding layout (`RunRigLayout.Receding(9, 12 | 14)`)
+
+The reserved length laid out by card 1's rules with the variant's: FD1 and FD2 only; the fixed length's units half a cell past their odd lines (4.5 R, 10.5 L, 16.5 R, 22.5 L; T-A at the entry, T-B after) and the carried goal unit; no side doors (71 §4.8 item 9); cabinets at 10.2 and 24.2 (the second's 75 ft reaches the deepest end); obstacles only in the fixed length's pools; the goal point on the end's first line (it moves with the end). Nothing is mounted on the walls the end travels past but the finishes, the rail and the magnets, so in the tripped light that length is lit by the carried unit alone (the honest flaw on the sheet).
+
+### H.5 Today unchanged, and the recede: the proof (Unity in `C`, `FrontRoomsRunRigTests.RunBatch`, 22 passed, 0 failed)
+
+- R18: `Corridor(9)` = today's preset, 2898 values in 7 builds, 0 differences; 1352 / 1363 pieces identical (look-dev shell / map skin).
+- R20: the seats above; the flinch's peak 6.49 m/s, the glide's 6.00; `Receding(9, 12 | 14)` by rule, 9 → 13 refused; a built 9 → 12 room: 3 hidden strips and 3 cells off, the walker's seats at 33 and 36 m (final), 24 events in order, the strips struck at their seats, the record 8 bytes, `Restore` seated with no event; a walker 5 m from the end at the gate glides the whole way (seated 2.15 s); the gaze gate shut facing away, open at 30°; a plain 9-cell room has no goal mount, no hidden strip, its gate on z 27.
+
+### H.6 Images and film
+
+- Sheet `images/run_recede_head.jpg` (+ `_fit.txt`, ALL LABELS FIT): TODAY first; arch, the tell, the lite, 9 m (the trip: flinch, seated), the seat, phone tier, hero 0.35 m (door, lite, magnet, trolley, sweep seated and moving), COST. Hero rows in the armed light after the reset with a camera fill (look-dev, the same for TODAY and HEAD).
+- Film `video/run_recede_head.mp4` (10 s, 30 fps, H.264, no audio stream) + `images/run_recede_head_contact.jpg`: walk in at 3.2 m/s, the trip at FD1, sprint at 5.5 m/s; the end flinches two cells and seats at 36 m with the runner 8.6 m short of it; the door, lit by the carried unit, the lite onto the release.
+
+### H.7 Cost (desktop, Editor, measured in Unity)
+
+| Kit (new) | Tris LOD0 / LOD1 / LOD2 | Slots | Switch (m) |
+|---|---|---|---|
+| `Kit_RunRecede_Head` (the wall, edges, arm) | 3,796 / 1,876 / 360 | 3 | 10 / 28 / never |
+| `Kit_RunRecede_HeadGear` (trolleys, brushes, C42 box, guides) | 5,744 / 1,420 / 284 | 2 | 10 / 28 / never |
+| `Kit_RunRecede_SweepSeated`, `_SweepMoving` (one shows) | 768 / 224 / 96 each | 1 | 10 / 28 / never |
+| `Kit_RunRecede_Track_3m` | 532 / 84 / 12 | 1 | 6 / 18 / 46 |
+| `Kit_RunRecede_TrackStop` | 268 / 116 / 12 | 2 | 4 / 12 / 30 |
+| `Kit_RunRecede_FloorSlot_3m` | 340 / 36 / 12 | 2 | 4 / 12 / 30 |
+| `Kit_RunMagnetHolder` | 896 / 176 / 24 | 3 | 3 / 9 / 25 |
+| `Kit_RunCompartmentFrame` | 2,292 / 564 / 96 | 4 | 6 / 20 / never |
+
+- **The end's own parts:** 10,308 tris LOD0 (3,520 from 10 m). 71 §5.1 estimated 8-10k with the door and the unit; at hero spec the end alone is 10.3k. With the map's RN-F door kits as today: 36 renderers, 66 renderer slots (every LOD level counted, before batching), 32,788 tris at LOD0. The carried T-A unit: 15 renderers, 40 slots, 10,128 tris (it was the goal unit on the wall today).
+- **The room:** today's 9 cells 1,017 renderers / 1,480 slots / 335,529 tris (LOD0, all); the 9 → 12 receding room 1,464 / 2,083 / 415,235 (the reserved length's props are built and off until each seat).
+- **Memory:** 3.40 MiB of new meshes; no new texture (the kits take the corridor's own materials; the seven `_Ghost` twins reuse their textures).
+- **CPU (Editor, batch):** the rig and the recede tick 0.19 ms on average, 3.73 ms at worst (the trip's frame); the light gate's block rewrite 1.2 ms, once a step (at most four per recede). GPU frame time: not measured.
+- **Lights:** the seated room tripped: 10 on, 10 shadowed (23 built). Armed, the 12-cell room's 13 shadowed spots made URP reduce the shadow atlas's resolution (the harness's log); 设置菜单's call, in the combined test.
+
+### H.8 Gate
+
+- Roslyn macOS and iOS on main with the four code files of the payload as overrides (zsh array, read back from the `.rsp`): 0 errors; warnings 43 / 38, main's, none in our files (`W/run_rethink/logs/gate_recede_head/`).
+- Unity in `C` (the clone resynced from main at 07:2x over the red tube and the structures): import and compile 0 `error CS`; the kits import with their LOD groups; EditMode 22 of 22 (R1-R20, W1, W2).
+- Package: `W/apply/run_recede_head.sh`, 67 paths (64 new; 3 replaced, their metas kept): DRY RUN OK on main; a rehearsal `--apply` on a scratch copy gave MANIFEST OK, then ALREADY APPLIED. Not applied.
+
+### H.9 What the next stage must know
+
+1. **T2's body** (the next stage): about 90 block pieces with object-space UVs on this head (the end wall is `Kit_RunRecede_Head`'s skins; its girder and edges stay), two Blender rigid bakes (one cell, the flinch) with contact lists, phones half-course strips, WebGL T1 alone; grit by `54`'s GPU path. The schedule's T2 timings already run: T2 adds visuals only.
+2. **The map's side** is the contract's card 2 section (`W/apply/run_rethink_contract/README.md`): the record, the trip at FD1, colliders and graph per seat, `DoorMount`, the release swap. The binder's ~15 lines wait for the record.
+3. **Lighting the travelled length:** no wall unit can stand where the end travels; if the combined test or SP7 finds the extension too dark in the tripped light, the carried unit's floor head can aim farther, or a soffit unit be designed to pass the slots (a decision, not built).
+4. **Combined test items:** T9 on a capture of the recede (the strips' one-way strikes, no flash); the gate rewrite (1.2 ms once a step) on a phone; the shadow atlas (the 12-cell room armed carries 13 shadowed spots: the atlas already reduced resolution in the harness); `Kit_*` LOD switches at 10 / 28 m on the end.
+
+## Run! rethink · card 2: the T2 body (2026-11-04)
+
+游戏视觉, account G, workflow `visual-run-rethink` (parent session local_1fc9f09c), stage "T2 body". The card is 71 §9, 游戏视觉 2 (`research/level_space/71_run_room.md`, level_space's page, read only), its T2 part: "then T2's block pieces and two baked clips with contact lists (phones: half-course strips, no grit; WebGL: T1 alone); grit by `54`'s GPU path; the hidden cells' strips (with 灯具适配) striking once as each cell seats". Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐" (71 §0.1), so decision 5 stands: the T1 head on every tier and platform, carrying **T2 重组** on desktop and iPad. 71 §5.3 is the brief: the end wall comes apart course by course from the top, streams back along the side walls and the soffit, the door on its steel rolls back alone, lit and untouched, and the blocks drop back into courses from the bottom up round it.
+
+Not built: card 3's red looks (the parent's, after this workflow); T3 (not built now) and T4 (held for a pattern capture). Rule 5b holds: no game code builds a receding room; it enters with Red's walk of SP7 in scene 4. Not done: nothing on main, no download, nothing heard (rule 24); Unity only in `W/proj_runb66`, one batch at a time, edit mode.
+
+### T.1 What changed (`W/apply/run_t2_body.sh`, stacked on the head since P.1, not applied)
+
+Built at 10:01 as a cumulative package that carried the unapplied `run_recede_head` (113 paths). **The Package stage rebuilt it stacked on `run_recede_head` (P.1): 52 paths (45 new; 7 replaced, 4 metas kept), its bases the head's payload**, so the head lands first and this after it. The table below is the change against today's main, the head's part included.
+
+| Path (main base → payload) | Change |
+|---|---|
+| `Scripts/Rendering/FrontRoomsRunRestack.cs` (new, e2e71f90) | the T2 body: the pieces of a level merged once a session into one skinned mesh (a bone per piece), LOD0/1/2 (blocks) or one level (strips), its two clips warped onto the schedule's phases, the contacts as cues, the grit on desktop |
+| `Scripts/Rendering/FrontRoomsRunGrit.cs` (new, 1c2f0733), `Resources/Rendering/FrontRoomsRunGrit.shader` (new, 377e2022) | the mortar grit: grains written once per course landing, moved analytically in the vertex stage (54's grain look); desktop only |
+| `Scripts/Rendering/FrontRoomsRunRecede.cs` (new, 1380c669; the head's 5b97a6f5 + T2) | the end's block field is its own static kit (`Kit_RunRecede_Wall`); `DriveRestack` (the body from a step's tell to the end of its seat, never in the glide or a restore); six cues appended; the grit's clock past the final seat |
+| `Scripts/Rendering/FrontRoomsRunRig.cs` 97727e79 → f56090ab, `FrontRoomsRunDress.cs` 20c6da54 → 57e08a4f | the head's (H.1), unchanged by T2 |
+| `Editor/Rendering/FrontRoomsRunRigTests.cs` 69cac3c5 → 5d9ef898 | R20 (the head's) and R21 (T2) |
+| `Editor/Rendering/FrontRoomsKitImporter.cs` 4faea6aa → 5714cf2b | `Kit_RunRestack_*` imported readable (the body is merged from them at run time, as the door break's debris) |
+| `Resources/Props/Models/Kit_RunRestack_{Blocks, Strips}` (.fbx + .json), `Kit_RunRestack_{Blocks, Strips}_{flinch, step}.json`, `Kit_RunRecede_Wall` (new); `Kit_RunRecede_Head` (the head's, now steel only) | the pieces, the clips, the static wall; the end's steel with a 51 mm lintel and the carried unit's arm cantilevered from the header |
+| `Resources/Surfaces/RunB_Block{Upper, Lower}_Piece.mat`, `RunB_BlockCore.mat`, `RunB_BlockMortar.mat`, `Textures/Run_BlockCore_{A, N, S}.png` (new) | the corridor's two paints in mesh UVs (the end's own bond, locked to it), the raw block and the mortar |
+| `Tools/Blender/frontrooms_kit/{run_restack_bake.py, assets/_run_restack_common.py, run_restack_blocks.py, run_recede_wall.py}`, `Tools/lookdev/gen_run_block_core.py` (new); `run_recede_head.py` (the head's, changed) | the generators |
+
+### T.2 The pieces (71 §5.3 asked for about 90 "until the real Run_Block layout is counted")
+
+- **Counted on the real bond: 69.** `Run_Block_A` is a 0.4 × 0.2 m running bond; the end carries it on both faces in mesh UVs locked to the end (front u = −x + 0.1, back u = x + 0.3, v = y), so the bed joints run on with the corridor's walls. 13 courses: c0 cut on the steel sill (0.06-0.20), c1-c11, c12 cut under the girder (2.40-2.53); c0-c10 stand in the two bays beside the RN-F frame (|x| 0.551-1.295), c11 and c12 run the full width over a new 51 mm steel lintel on the frame's head.
+- **Hero LOD0:** a 1990 6-in CMU (ASTM C90): two 32 mm face shells with 3 mm painted arrises, 26 mm webs, one or two hollow cores cast round-cornered (20 mm fillets), torn mortar on the beds and heads (irregular six-sided mounds); LOD1 the shells and webs as boxes (the cores still read from 10 to 28 m); LOD2 one box. **33,396 / 3,852 / 828 tris** (424-516 a piece at LOD0). 71 estimated 5.4k at 60 tris a piece: the hero level is six times that and shows only within 10 m; a walker meets the re-stack at 13-20 m, on LOD1.
+- **The swap is exact:** the at-rest wall (`Kit_RunRecede_Wall`, 120 tris, its bays running on under the frame's trim) and the pieces wear the same bond in the same UVs (`RunB_Block*_Piece`, the corridor's paints with `_FR_MESH_UV`; the wear stays world-space, as on every wall). The sheet's seat and jamb rows: T1 and T2 at rest are the same wall.
+- **Raw faces and mortar:** `Run_BlockCore_{A,N,S}` (1024², tile 0.4 m: cement paste, sand, small stones, pores; generated, `Tools/lookdev/gen_run_block_core.py`); the mortar takes the same maps at a 0.2 m tile, lighter and warmer.
+- **Phones:** 28 half-course strips (each bay course one strip a side; over the lintel two half courses and the middle block alone), a 3 mm chamfered box each, 1,232 tris.
+- **The end's steel** (`Kit_RunRecede_Head`, now 4,044 / 1,780 / 264): the block field left it for `Kit_RunRecede_Wall`; it gained the lintel and a girder soffit plate, and the carried unit's arm is cantilevered from the header (the head stage's brace stood on courses that now come apart).
+
+### T.3 The motion: two baked clips (the door break's method)
+
+- **Clips:** `_flinch` (tell 0.25, travel 1.1, seat 0.2 s, 6 m) and `_step` (0.15 / 0.8 / 0.2 s, 3 m), 30 Hz keys in the end's frame plus a contact list; the final step (0.25 / 1.0 / 0.35 s) and the flinch alone play them warped per phase. The seat is each clip's end pose. Baked by `Tools/Blender/frontrooms_kit/run_restack_bake.py` as analytic choreography (the door break's prototype found Blender's rigid-body bake failing its own gates; `51_prototype.md` 3).
+- **What the player sees:** the magnets let go and the mortar cracks; the courses come out from the top, the outer piece first, each lifting out of its bed and turning a few degrees; **they hold where they were while the door, its frame, the lintel and the end's steel roll back alone, lit**; then they come back to the door, the inner pieces first, sliding into lanes along the walls (the top course rises into the soffit corners, past the main and the tray), and land from the bottom up, the inner piece of a course first, the top course last into the seat with a 2 mm knock home.
+- **The lit door never dips** (71 §5.7): the middle pieces over the door ride with it, and the carried lamp's flood onto the leaf is an obstacle the bake checks (the first build shadowed the leaf; fixed).
+- **Gates** (the bake fails loudly): both ends exactly at rest; no two pieces interpenetrate (oriented boxes, worst 0.7 mm: touching faces); clear of the door's path, its frame and lintel, the main, the tray and its rods, the strip lamps, the tracks and trolleys, the header, sill and edge channels, the walls' rail and holders, the carried lamp's arm and cabinet, and its flood onto the leaf; along the corridor a piece never moves toward the player after its peel (worst 1.2 mm, the top course's knock home) and never stands more than 0.25 m in front of the line it left.
+
+### T.4 Run time
+
+- **One skinned body per room** (`FrontRoomsRunRestack`): one renderer per level, 4 / 3 / 3 material slots on desktop and iPad, 3 on phones; built with the end before the rig, so it is in the room's ambient and light gate like the end's other parts. Shown from a step's tell to the end of its seat (`FrontRoomsRunRecede.DriveRestack`); the static wall otherwise. **The keep-away glide and a restore keep the wall whole.**
+- **Grit** (`FrontRoomsRunGrit`, `FrontRooms/RunGrit`), desktop only: each course's landing writes about 200 grains once into a 4,096-grain ring (2,570 a step); the vertex stage moves them (gravity, drag to each size's settling speed, at rest where they meet the floor), streaked and at least 1 px wide with the opacity as coverage, lit by the Forward+ lights (the carried goal lamp), gone by 2.6 s. One procedural draw per camera while any grain lives. No per-frame C# particles (71 §5.8).
+- **Tiers:** desktop blocks and grit; iPad blocks, no grit; phones the strips, no grit; WebGL builds nothing (its schedule is T1).
+- **Events for 声音设计:** MortarCrack, SubframeSlide, BlockLift (per course), StreamClatter (each stream), CourseLand and MortarSift (per course), from the clips' contacts; nothing is played (the contract, `W/apply/run_rethink_contract/README.md`, "Card 2, T2").
+- **The uncovered cells' strips** (灯具适配's kit) are unchanged: the rig still strikes each once at its seat, after the body has landed (71 §5.7).
+
+### T.5 Today unchanged, and the body: the proof (Unity in `C`, `FrontRoomsRunRigTests.RunBatch`, 23 passed, 0 failed)
+
+- R18 (today's room) and R20 (the head) pass with the body in place; 0 `error CS`.
+- **R21:** the four clips (69 / 28 pieces, T2's phases, rest at both ends, courses landing 0 → 12); a built 9 → 12 room on desktop: three levels 33,396 / 3,852 / 828, its materials gated, the static wall shown at rest; a walker's recede: the body flew 190 frames, pieces hung back up to 3.08 m, the wall whole in every dwell and after the final seat, 26 course landings bottom up, 5,140 grit grains; the glide and a restore ride whole and quiet; iPad blocks without grit, phones 28 strips without grit; a plain 9-cell room builds none of it.
+
+### T.6 Images and film
+
+- Sheet `images/run_t2_body.jpg` (+ `_fit.txt`, ALL LABELS FIT): TODAY, T1 (the wall riding whole, T2's timings), T2, T2 phone; the trip point (9 m) and the arch at the flinch's and the final step's mid-travel, the 9 m frames also cropped 4.4× at the end; the seat; the jamb at 0.35 m; a block and a strip in flight at 0.35 m (LOD0, a camera fill); COST.
+- Film `video/run_t2_body.mp4` (10 s, 30 fps, H.264, no audio stream) + `images/run_t2_body_contact.jpg`: walk in at 3.2 m/s, the trip at FD1, walk on; the flinch and the final step re-stack round the lit door, the grit sifts in the goal lamp.
+
+### T.7 Cost (desktop, Editor, measured in Unity)
+
+| Item | Number |
+|---|---|
+| Blocks (69) | 33,396 / 3,852 / 828 tris; in flight 1 renderer, 4 / 3 / 3 slots |
+| Strips (28, phones) | 1,232 tris; 1 renderer, 3 slots |
+| Static wall at rest | 120 tris, 2 slots (the head stage's skins, now their own kit) |
+| End steel | 4,044 / 1,780 / 264 tris |
+| Kit meshes | 7.83 MiB (readable: merged at run time) |
+| Skinned body | 10.32 MiB desktop and iPad, 0.44 MiB phones (made once a session) |
+| Clips | 333 KB of JSON (four) |
+| Textures | `Run_BlockCore_A/N/S`, 1024² each |
+| Grit | one draw while alive, 4,096 grains × 32 B (128 KB), 2,570 grains a step |
+| CPU | posing 69 bones 0.012 ms a frame; rig + recede tick 0.36 ms mean while apart, 3.97 ms worst (the trip's frame; Editor, batch) |
+| GPU | not measured |
+
+### T.8 The pattern (card 5) as numbers here
+
+A proxy, not a Harding FPA or PEAT result: the harness films the T2 room and a T1 room on the same walker's path in the same light, so their difference is what the re-stack adds. **T2 differs from T1 on at most 5.25 % of the frame (0.55 % on average while apart), the largest luminance difference 0.186, and adds no frame with flash pairs** (the trip's own light change, 43.8 % of the frame, is the rig's, in both films). The Harding FPA or PEAT capture of the recede at T5 stays a combined-test row (card 5).
+
+### T.9 Gate, and what the next stage must know
+
+- Roslyn macOS and iOS on main with the package's seven code files as overrides (zsh array, read back from the `.rsp`): 0 errors; warnings 43 / 38, main's, none in our files (`W/run_rethink/logs/gate_t2_body/`). Unity in `C`: import and compile 0 `error CS` (three runs), EditMode 23 of 23.
+- Package `W/apply/run_t2_body.sh` as built at 10:01: 113 paths (109 new, 4 replaced, 4 metas kept), DRY RUN OK on main; a rehearsal `--apply` on a scratch copy gave MANIFEST OK, then ALREADY APPLIED. Not applied. Since the Package stage it is stacked on the head (52 paths; P.1, P.2).
+- **Honest flaws:** from the arch the re-stack is a few pixels, and at the trip point it covers at most 5 % of the frame (the end is 20 m away); the readable kit meshes and the skinned body hold about 18 MiB on desktop and iPad (`BoneWeight1` would trim the body); the mortar mounds are regular in size; the phone strips read as louvres, not blocks; the grit's size and density are set by eye.
+- **Combined test items:** T9 and the pattern capture on the recede with T2; the body's GPU cost on an iPad (the hero LOD within 10 m); the grit on desktop at 1080p and with MSAA off.
+
+## Run! rethink · card 4: the Run door's tell (2026-11-04)
+
+游戏视觉, workflow `visual-run-rethink` (relayed from account G to B to A; parent session local_be0f3747 on A), stage "Run door tell". The card is 71 §9, 游戏视觉 4 (`research/level_space/71_run_room.md`, level_space's page, read only): "For the door entrance: the ALARM ZONE card and the red-banded detector base at the door (`AlarmTell/FrontRoomsAlarmTell.cs`), the corridor's armed light in the 15 x 15 in lite and under the door, readable from at least 5 m (with 关卡设计 5)." Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐" (71 §0.1), so decision 8c stands: reading one, D1, an honest Run door that fools a habit (71 §7.2), from T3 after one plain Run!; the changed door (D4) is not built. The signals it must carry are 71 §7.5's S1 (approach, 5-15 m: the square window, the light in it and under the door) and S2 (threshold, 2 m: the red-banded detector base and the ALARM ZONE card).
+
+Not built: card 3's red looks (WAIT-RED in this workflow; nothing red is added: the tripped colours below are the rig's as built). Rule 5b holds: the map deals a Run door only with `rules.doorEntrance`, off until Red has walked SP7 in scene 4. Not done: nothing on main, no download, nothing heard (rule 24); Unity only in `W/proj_runb66`, one batch at a time, edit mode.
+
+### D.1 What changed (`W/apply/run_door_tell.sh`, stacked on T2 since P.1, not applied)
+
+8 paths, our files only (4 new, 4 replaced, their metas kept). Built at 13:00 on main; the Package stage rebuilt it stacked on `run_t2_body` (P.1): the rig, the dress and the tests go from the T2 payload to the clone's tested files (rig c0c64842, dress b94ade20, tests d4f2ec43: the 3-way merge of the two main-based payloads), the binder from main's.
+
+| Path (base once T2 is in → payload) | Change |
+|---|---|
+| `Scripts/Rendering/FrontRoomsRunRig.cs` f56090ab → c0c64842 | `RunRigLayout.UseEntranceDoor(1.0, hinge)`: the entrance face's opening becomes the door's (1.0 × 2.1), the NOTICE plate moves to the hinge side; `FrontRoomsRunRig.SetEntranceOpen`: the light gate's entrance portal is none while the leaf is shut and the whole door once it is off the latch (an arch ignores it) |
+| `Scripts/Rendering/FrontRoomsRunDress.cs` 57e08a4f → b94ade20 | no arch reveal at a Run door entrance (the DA frame sleeves its own, as at the goal) |
+| `Scripts/Rendering/FrontRoomsRunRigBinder.cs` 969fef2e → 2e707ee0 | a door on the entrance edge (`DoorBetween(Outside, Cells[0])`) makes it a Run door entrance; `DressEntranceTell`: the card on the door's latch side, the red-banded detector on the ceiling at the door head's sight depth (3.69 m, past the 2.5 m trip, clear of the strips); the arch's tell exactly as landed; the light under the door each frame |
+| `Scripts/Rendering/FrontRoomsRunDoorGap.cs` (new, 971446a3), `Resources/Rendering/RunDoorGap.shader` (new, 67a19202) | the light under the shut door (D.3) |
+| `Editor/Rendering/FrontRoomsRunRigTests.cs` 5d9ef898 → d4f2ec43 | R22 |
+
+The map side is 关卡设计's card 5, landed in main at 12:46 (`RunVariant.Door`, `EntranceDoor`, `IsEntranceDoorEdge` / `IsRunDoorEdge`, `DoorTrip` 2.5 m, the device point at the trip, the validator's checks, the Level Designer's Run card `RunDoor9`). The door is the map's RN-F as at the goal: the Steel DA frame with its fluted saddle, the Ward DA leaf with set A's F5 lite (15 × 15 in, polished wired glass), the lever set, never locked. This stage's own stand-in for that side (`CONTRACT_door.diff`, 12:0x) is superseded and does not ship; the contract section (`W/apply/run_rethink_contract/README.md`, "Card 4") says what our package reads.
+
+### D.2 What the player sees, and where each signal is
+
+- **5 m (S1):** a walnut door with a stainless kick plate and a square wired window where today's arch opens on the white corridor; the red ALARM ZONE card on its latch side, the NOTICE plate on its hinge side. Through the window, the far corridor: cool grey, the goal door small at its end.
+- **3 m:** the line under the door: the saddle catches the corridor's cool white light where the leaf meets it.
+- **0.35 m (hero, LOD0):** the window shows the lit corridor through the wire mesh (the strips, the sprinkler main, the far door); the card's final face (`CardFaceIsStandIn` false, wording signed 11-01).
+- **2 m, the door pushed open (S2):** the red-banded detector on the ceiling 3.69 m in, seen under the 2.1 m head, past the trip line: opening and looking costs nothing, as 71 §7.2 asks.
+- **Tripped:** the window and the line follow the corridor's light as the rig drives it (the mains out, the threshold head's warm pool, the reset's re-strike); nothing on the approach side reacts to the hunter (S1-S2 are part of the place, 71 §7.5).
+
+### D.3 The light under the door (`FrontRoomsRunDoorGap`)
+
+The RN-F leaf hangs 3 mm over the saddle's 12 mm flat. Light from the lit corridor floor leaves that slot almost level, lands on the saddle's outer flat, catches its bevel and dies over a hand's width of carpet. A 3 mm slot is far under a shadow texel, so no Light can draw it: it is one additive strip draped 0.4 mm over the saddle's outer half and the floor in front (17 × 13 vertices, the profile in vertex alpha), its level **read, never typed**: each frame it sums the rig's own Lights at the corridor floor just inside the door, attenuated as URP attenuates them, times the floor's albedo. So armed it is the strips' cool white (0.227 / 0.256 / 0.288 linear), black in the trip's gap, the threshold head's warm pool after the trip (0.227 / 0.153 / 0.083), back with the reset; it fades as the leaf leaves its latch, when the corridor's real light comes through. One draw, no Light, no texture, every tier; no allocation per frame. (Run 4 found the level set as sRGB through `MaterialPropertyBlock.SetColor`, five times too dark in the linear project; fixed with `SetVector`.)
+
+### D.4 Today unchanged: the proof (Unity in `C`, `FrontRoomsRunRigTests.RunBatch`, 24 passed, 0 failed)
+
+- R18 (today's preset, field for field) and the rest pass with the door code in place; 0 `error CS`.
+- **R22:** every `Corridor(7..14)` keeps today's arch (0.7 half, 2.2 head; its NOTICE plate at x 1.1, the card at x −0.994, the detector at 2.71 m); `UseEntranceDoor` with either hand gives the 1.0 × 2.1 opening, no reveal, the header from 2.1 m, the plate on the hinge side; the gate's entrance portal is none shut and the whole door open; the card at x −0.794 (latch side), the detector at 3.69 m; the strip one draw, zero Lights, cool white armed, black in the trip's gap, the warm pool tripped, 17 Lights read, no allocation.
+- In the game today the map deals no Run door (the switch is off), so the binder finds no door and builds every room as before.
+
+### D.5 Images
+
+Sheet `images/run_door_tell.jpg` (+ `_fit.txt`, ALL LABELS FIT): TODAY (the arch), RUN DOOR, both again on the phone tier; rows 5 m, the 5 m frames enlarged 3× round the door, 3 m, the lite at 0.35 m, the card at 0.35 m, the sill at 0.6 m, pushed open from 2 m, 3 m tripped; a row on the line under the door (3 m enlarged 4× and the sill, the strip off as a debug frame beside the armed frame); COST. Made in `C` by the clone-only harness `FrontRoomsRunDoorTellHarness` through the Level Designer's RunRoom view (the game's own map builder, lamps, kits and film look; the doors dressed as in Play), seed 3, 1920 × 1080, vertical FOV 76, eye 1.62 m.
+
+### D.6 The read, as numbers (on the tonemapped 1080p frames, relative luminance)
+
+| Frame | The lite against the leaf beside it | The line under the door | The card |
+|---|---|---|---|
+| 5 m, desktop | 0.043 against 0.093 (0.46×); the same pixels through today's open arch 0.046 | 3 px tall: 0.139 against the carpet's 0.184; not read | 36 × 22 px, red (0.43), legible at 1080p |
+| 5 m, phone tier | 0.043 against 0.093 (0.46×) | 3 px: 0.187 against 0.151 (the phone tier's contact shadow darkens the carpet); not read | the same |
+| 3 m, desktop | 0.074 against 0.103 (0.72×); the arch 0.086 | 6.5 px: 0.125 with the light, 0.050 with the strip off (2.5×): a cool grey line on the dark saddle | 63 × 37 px |
+| 3 m, phone tier | 0.056 against 0.098 (0.57×) | 0.171 against the carpet's 0.141 | the same |
+| 3 m, tripped | 0.062 against 0.097 | 0.077 (the threshold head's warm pool) | the same |
+| the lite at 0.35 m | 0.153 (phone tier 0.114): the lit corridor fills it; the open arch from the same eye 0.187 | | |
+
+So at 5 m the red card and the square lite carry the read; the lite is a cool square **darker** than the leaf (from 5 m a standing eye looks down through a window at 1.19-1.57 m onto the far corridor's lower walls and floor, as dark through today's open arch), and the line under the door is about 3 px tall, below a read; it reads from about 3 m. This is the card's open flaw: brighter would need glass that scatters the corridor's light (it would hide the corridor that 8e lets the player watch through the lite) or a lamp aimed at what the lite sees; neither is built. Red judges it in SP7.
+
+### D.7 Cost (Editor, batch, one Unity; GPU not measured)
+
+| Item | Number |
+|---|---|
+| The tell's kits, as landed | card 734 / 46 / 14; detector 8,590 / 1,210 / 314; RN-F frame (Steel DA, saddle) 2,030 / 724 / 276; leaf (Ward DA, F5 lite) 4,720 / 1,316 / 212 (tris LOD0 / LOD1 / LOD2); the door is the map's RN-F, as at the goal |
+| New | the strip: 221 vertices, 384 tris, 1 draw, 0 Lights, no texture; one shader; no new shadow map |
+| The room with the Run door | 996 renderers, 1,461 draws, 330,073 tris LOD0 (the arch room 1,002 / 1,467 / 329,773: the arch's reveal pieces go) |
+| Rig lights | 18, armed 10 on, 9 shadowed: the same as the arch room |
+| CPU | the strip's tick 3.7 µs (17 Lights read); the light gate's rewrite 0.89 ms once per change of the door (Editor, batch) |
+| GPU | not measured |
+
+### D.8 Gate, and what the next stage must know
+
+- Roslyn macOS and iOS on main as of 13:08 (关卡设计's 12:46 card 5 and 13:04 lamp tick files in it) and the package's 5 code files as overrides (zsh array, read back from the `.rsp`): 0 errors; warnings 45 / 38, main's, none in our files (`W/run_rethink/logs/gate_door_tell/gate8_*`). Unity in `C`: import and compile 0 `error CS`; EditMode 24 passed, 0 failed.
+- Package `W/apply/run_door_tell.sh`: 8 paths (4 new, 4 replaced, 4 metas kept), with three read-only API rows (`DoorBetween`, the card face final, `IsEntranceDoorEdge`). Built main-based at 13:00 (DRY RUN OK on main, rehearsal MANIFEST OK, then ALREADY APPLIED); since the Package stage stacked on T2, rehearsed in the landing order (P.2). Not applied.
+- **Honest flaws:** the 5 m light read (D.6); the line under the door is drawn, not lit (a 3 mm slot has no shadow-map answer), at a level summed from the rig's Lights; the detector cannot be seen with the leaf shut (S2 holds at the threshold once the door is open, as at the arch).
+- **Combined test items:** a Run door room in Play (the preview's `RunDoor9`, or the deck with `doorEntrance` on in a tools run): the card, the lite and the line at 5, 3 and 2 m at a walk and a sprint on desktop and a phone; the strip's level through the trip and the reset; the gate's portal as the leaf swings; the room met from its goal end (with 关卡设计).
+
+## Run! rethink · landing: the order, the contracts and the combined test (2026-11-04)
+
+游戏视觉, workflow `visual-run-rethink` (relayed from account G to B to A; parent session local_be0f3747 on A), stage "Package". The cards are 71 §9 游戏视觉 1, 2, 4 and 5 (`research/level_space/71_run_room.md`, level_space's page, read only); Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐" (71 §0.1). This stage applied nothing: the parent lands. Rule 5b holds: the receding end and the Run door entrance enter the game only after Red has walked SP7 in scene 4. Card 3 (the red looks) is WAIT-RED in this workflow (灯具适配 1) and was not built. Not done: nothing on main, no Unity run (the clone's run 7 stands, P.2), nothing heard.
+
+### P.1 The order (`W/apply/`, apply convention v2)
+
+| Order | Package | Paths | Bases | Main as of 13:27 |
+|---|---|---|---|---|
+| 1 | `run_rig_cells` (card 1, R) | 3 | main | landed 06:40: ALREADY APPLIED |
+| 2 | `run_recede_head` (card 2, the head, H) | 67: 64 new, 3 replaced, 3 metas kept | main | DRY RUN OK |
+| 3 | `run_t2_body` (card 2, T2, T) | 52: 45 new, 7 replaced, 4 metas kept | main + 2 | refuses until 2 is in (by design) |
+| 4 | `run_door_tell` (card 4, D) | 8: 4 new, 4 replaced, 4 metas kept | main + 2 + 3 | refuses until 3 is in (by design) |
+
+- **Why stacked.** All of them replace some of the same three files (the rig, the dress, the tests), so this stage rebuilt 3 over 2 and 4 over 2 and 3 (`W/run_rethink/tmp/pkg/mkapply_stacked.py`, the pool look's helper with its own view folder). Each then lands by its own dry run and `--apply`, with no rebase at landing.
+  - 3 holds only T2's delta: `FrontRoomsRunRecede.cs` 5b97a6f5 → 1380c669, the tests ccbf4803 → 5d9ef898, `FrontRoomsKitImporter.cs` 4faea6aa → 5714cf2b, `Kit_RunRecede_Head` (fbx, json, fbx.meta: the T2 piece material remapped) and `run_recede_head.py`, and T.1's 45 new paths.
+  - 4 takes the rig f56090ab → c0c64842, the dress 57e08a4f → b94ade20 and the tests 5d9ef898 → d4f2ec43 (the 3-way stack the clone tested), the binder 969fef2e → 2e707ee0, and adds `FrontRoomsRunDoorGap.cs` and `RunDoorGap.shader` with their metas.
+  - The main-based builds they replace (T2 cumulative, 113 paths; the door, 8) are kept in `W/run_rethink/tmp/pkg/mainbased_1315`.
+- **If main moves under a base** before the parent lands, the first package that refuses goes through `W/tools/rebase_apply.sh` (rule 2), then the next one is dry-run again.
+- **Docs** land with them, in our folder, as replacements (P.5).
+
+### P.2 Rehearsal and gate
+
+- **Rehearsal** (`W/run_rethink/tmp/pkg/rehearsal/`): a scratch copy of main holding its `ProjectVersion.txt`, all 3,776 of its Assets metas (so the GUID checks are main's), the bases and the three read-only API files. In P.1's order each package gave DRY RUN OK, then `--apply` MANIFEST OK, then ALREADY APPLIED: 26, 20 and 2 new GUIDs, none used in main; T2's one replaced `.meta` keeps its GUID; the door's API rows (`DoorBetween`, the card face final, `IsEntranceDoorEdge`) found. **The end state equals the clone on all 118 paths**, so what lands is what Unity run 7 tested (EditMode 24 of 24, 0 `error CS`; D.4).
+- **Gate** (rule 25; `W/run_rethink/tmp/pkg/gate_stack.sh`, logs `W/run_rethink/logs/gate_package/`): Roslyn macOS and iOS on main at each landing state, main + the head (4 code overrides), + T2 (7), + the door (9), every override read back from the `.rsp`: COMPILE OK, 0 errors; warnings 45 / 38, main's, none in our files. Run at 13:16-13:20 and again at 13:27-13:29, after 设置菜单's `FrontRoomsRenderSetup` (13:23) and 水体仿真调研's landings: the same. The two shaders (`FrontRoomsRunGrit`, `RunDoorGap`) compiled in Unity in the clone; Roslyn cannot read them.
+- On main as it is, the two stacked packages refuse with nothing written (their bases are the earlier payloads), as designed.
+
+### P.3 The contracts (`W/apply/run_rethink_contract/README.md`, section "Final")
+
+- **关卡设计.** The cell count: the rig reads `room.Cells.Length` (7 to 14; anything else builds 9 with a warning); their 08:09 landing of card 1's diff is all the record needs. The receding variant (their card 4, after SP7): the record (L_max cells, `RecedeFrom = 9`, the 8-byte `recede.Record`), the seats (`SeatReached`: the goal point and normal, colliders, walk volume and graph edges up to each line, the release swap at the final seat), the movable GoalHead (their RN-F on `recede.DoorMount`; the end's collider theirs), the trip at the FD1 frame (`recede.TripLine`, 9 m). Our binder's ~15 lines for it wait for their record fields. The Run door entrance: their card 5, in main since 12:46; nothing more is asked; open on their side: a room met from its goal end.
+- **声音设计.** 16 `RunRecedeCue` events on `FrontRoomsRunRecede.Cue` (T1's ten on every tier, T2's six with the blocks and strips), the rig's Run! B events unchanged, nothing new for the Run door (a normal wooden door, rule 10). Also written into `61_for_sound.md`, its update of 11-04, where the sound line reads Run! hooks.
+- **灯具适配.** The carried twin-head (their `Kit_EmergencyTwinHead` on `Kit_RunRecede_Head`'s `lamp_mount`, arm from the end's header, head 0 on the leaf, head 1 on the floor 4 m ahead); the hidden strips' one strike at each seat in the room's state, their kit untouched; card 3's red waits for their card 1's still. Their `zone_lamps_redtube` landed at 06:33 and its MERGED row records Red's yes at the brightest level: whether that starts card 3 is the parent's call.
+
+### P.4 The combined test (rule 25: one run, silent; paste into `handoff/visual_combined_test.md` when the packages land)
+
+```
+## run_recede_head + run_t2_body + run_door_tell (Run! rethink cards 2 and 4, account A; inert until SP7, rule 5b; detail research/room_visuals/run_b_production/60_production_66.md P.4)
+- [ ] Run A (import + EditMode): 0 console errors; the new kits import with their LOD groups (Kit_RunRecede_{Head, HeadGear, SweepSeated, SweepMoving, Track_3m, TrackStop, FloorSlot_3m, Wall}, Kit_RunMagnetHolder, Kit_RunCompartmentFrame, Kit_RunRestack_{Blocks, Strips}), Kit_RunRestack_* readable; the FrontRoomsRunGrit and RunDoorGap shaders compile for every build target; FrontRoomsRunRigTests 24/24 (R18 Corridor(9) = Corridor1x9, R20 the recede, R21 T2, R22 the Run door).
+- [ ] Run C (forced Run! room): today's plain 9-cell room with its arch looks and behaves exactly as before (the tell: card x -0.994, detector 2.71 m in; the trip; the RESET re-strike); no end, wall kit, body, grit or door strip is built.
+- [ ] The recede (desktop; a receding layout through the clone harnesses FrontRoomsRunRecedeHarness / FrontRoomsRunT2Harness, or SP7 once scene 4 drives FrontRoomsRunRecede): 9 -> 12 and 9 -> 14 trip at FD1 (9 m); a two-cell flinch, one-cell steps, the heavy final seat (seats at 1.55 / 3.35 s for R 9, 1.55 / 2.90 / 4.25 / 6.05 s for R 15); the keep-away glide 6 m/s within 12 m; the gaze gate 35 deg (fallback 18 m); the lit door never dips; the light gate's far end follows each step; a ghost band at each line it left.
+- [ ] T2: the wall comes apart from the top course, the door rolls back alone, the courses land bottom up round it; nothing crosses the door, its frame, the main, the tray or the strips; the wall whole at rest, in the glide and after a restore; iPad blocks without grit, phones 28 strips, WebGL T1 alone.
+- [ ] The hidden strips: dark behind the end, one strike at each seat in the room's state (tripped: 灯具适配's red tube on the battery circuit, as landed); no flash pair.
+- [ ] Card 5, not red: T9 over the trip, the recede and the reset in today's light; Harding FPA or PEAT on that capture at T5 (the clone's proxy: T2 at most 5.25 % of the frame, no added flash pair); the T2 pattern.
+- [ ] Cost on device: the gate rewrite (1.2 ms once a step) on a phone; the T2 body's GPU cost on an iPad with the hero LOD within 10 m; the grit at 1080p with MSAA off; the shadow atlas with a 12-cell armed room's 13 shadowed spots; memory (readable kit meshes + skinned body about 18 MiB on desktop and iPad); the end's LOD switches at 10 / 28 m.
+- [ ] Events: the 16 RunRecedeCue cues per step in the contract's order (a one-cell T2 step: 43 T2 cues besides T1's); nothing audible from our code (rule 24). The record: a receding room dropped and rebuilt 48 m or more away after its recede began comes back seated at its deepest line, quietly.
+- [ ] The Run door (关卡设计's rules.doorEntrance on in a tools run, or the Level Designer's RunDoor9): the card (latch side), the square lite and the line under the door at 5, 3 and 2 m, at a walk and a sprint, desktop and a phone (PARTIAL: at 5 m the card and the lite carry it, the lite darker than the leaf, 0.043 against 0.093; the line from about 3 m; Red judges in SP7); the line armed cool white, black in the trip's gap, the warm pool tripped, back with the reset, fading as the leaf leaves the latch; the gate's entrance portal none while shut, the whole door open; the detector 3.69 m in, seen under the head once open; a room met from its goal end (with 关卡设计).
+- [ ] WAIT-RED (灯具适配 1; card 3 not built): the Relay read at 2.05 m under red with protan (at least 4 : 1); T9 over the red trip front and B's pulse train; Harding FPA or PEAT on that capture; the dark reds on the phone tier; one sheet per look along the film's camera path.
+```
+
+### P.5 What lands besides the packages (our folder, docs only)
+
+- This file, as a replacement while main's copy is a2516eef: main's text plus sections H, T, D and P (R.1's header now says landed; T.1, T.9, D.1 and D.8 say stacked).
+- `images/run_recede_head.jpg` (+ `_fit.txt`, `_contact.jpg`), `images/run_t2_body.jpg` (+ `_fit.txt`, `_contact.jpg`), `images/run_door_tell.jpg` (+ `_fit.txt`); `video/run_recede_head.mp4` and `video/run_t2_body.mp4` (H.264, no audio stream). Every sheet is in Shot format with chip PARTIAL and ALL LABELS FIT.
+- `61_for_sound.md`, as a replacement while main's copy is adcd8f07: main's text plus its update of 11-04 (the 16 cues).
+- VL: three rows in the day's batch after landing; the spec and the frames the combined test takes are in `W/vl_pending/run_rethink.md`.

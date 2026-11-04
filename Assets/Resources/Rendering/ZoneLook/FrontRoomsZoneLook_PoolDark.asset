@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f2a7b9a3c3f45b6b2be9f98d3890216, type: 3}
+  m_Name: FrontRoomsZoneLook_PoolDark
+  m_EditorClassIdentifier: Assembly-CSharp::FrontRoomsZoneLookProfile
+  zone: PoolDark
+  ambientSky: {r: 0.075, g: 0.083, b: 0.045, a: 1}
+  ambientEquator: {r: 0.08, g: 0.088, b: 0.048, a: 1}
+  ambientGround: {r: 0.095, g: 0.105, b: 0.058, a: 1}
+  fogColor: {r: 0.065, g: 0.07, b: 0.032, a: 1}
+  fogDensity: 0.014
+  fillScale: 0.2
+  heightFog: 1
+  heightFogDensity: 0.03
+  heightFogScale: 0.5
+  heightFogColor: {r: 0.13, g: 0.155, b: 0.1, a: 1}
+  lampLight: {r: 0.9, g: 0.97, b: 1, a: 1}
+  lampIntensity: 0
+  lampLens: {r: 0.9, g: 0.97, b: 1, a: 1}
+  nicheLens: {r: 1, g: 0.8, b: 0.58, a: 1}
+  nicheLight: {r: 1, g: 0.8, b: 0.58, a: 1}
+  nicheIntensity: 3
+  waterAbsorbScale: 3
+  thrownLight: 2.5

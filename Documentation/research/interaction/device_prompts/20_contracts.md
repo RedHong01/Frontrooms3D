@@ -28,8 +28,9 @@ Nothing here is urgent for the playtest: every screen still works and names its 
   legend, ✕ ○ □ △, a d-pad's arms in use 1 px inside that edge, MENU's lines, an arrow). The 1 px keyline is a ring of
   its own outside the whole shape, not an Outline (the marks have none either), so on a white door it draws the paper
   fill and the ink marks read on anything. Pressed: the accent #F4DF3B fill (the HUD's hold bar yellow) with the marks
-  still ink, and the 1 px drop. Reduce Motion keeps the fill, not the drop, as asked, so there the colour alone shows a
-  press (the one exception to D1's "colour is never the only cue"). The words beside the chip stay paper at full
+  still ink, the 1 px drop, and the keyline ring at 2 px instead of 1 (平面视觉 11-04: the ring is the cue that is not
+  colour, so a press reads in greyscale too). Reduce Motion keeps the fill and the 2 px ring, not the drop. The HUD legend
+  is IBM Plex Mono Bold (Resources/Fonts) and the ✕ ○ □ △ marks are 2 px strokes, so they sit with the Bayon verb. The words beside the chip stay paper at full
   strength with the keyline. Wins over `Solid`. A `live` false chip still draws at 40 %: its button does nothing here.
   Nothing lies under the chip's paper, so at 40 %, as in the HUD's fades of its line, the paper reads as one layer, edge
   included.

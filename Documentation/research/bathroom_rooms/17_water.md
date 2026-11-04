@@ -6,7 +6,7 @@ Red, 2026-10-31 (K chat): "我需要你开一个新的子对话，专门用于�
 
 **Reads with.** "10", "15", "16", "30" are the files with those numbers in this folder: 10 §3 (water logic and the technique survey; not redone here), 15 §2 and §4 (the canon and its 1990 grammar), 16 (the palette, written in parallel), 30 §2 (P0, P4, P4b). Also `research/zone_lamps/20_design.md` §3 and `10_pool.md` §5 (the stand-in pool and how light behaves in a pool hall), and the G14 glass-RT documents under `research/glass/`. All paths are under `Frontrooms3D/Documentation/`.
 
-**Labels.** [EST] marks my estimate or my own computation. A number without it comes from the cited source. Sources W1–W35 are in §1.
+**Labels.** [EST] marks my estimate or my own computation. A number without it comes from the cited source. Sources W1–W41 are in §1 (W36–W41 added 2026-11-04 for §10).
 
 **How the colour numbers were made [EST].**
 - Pope & Fry's pure-water absorption (W27) is multiplied by blackbody lamp spectra: 2800 K for the wet-niche lamps, 4200 K for metal halide, 6500 K for daylight fluorescent.
@@ -99,6 +99,12 @@ All read as text on 2026-10-31. Nothing was played. One data file was downloaded
 | W33 | Forza Support, "NVIDIA DLSS, AMD FSR and DirectX Ray Tracing Improvements in Forza Horizon 5", https://support.forza.net/hc/en-us/articles/10944080013843 | 2022-11-09 | Ray-traced reflections on the player car only (Ultra, Extreme), half or full resolution by preset; nothing on water | EXCERPT |
 | W34 | POOLS: Tensori (Antti Järvinen) on Steam, https://steamcommunity.com/app/2663530/discussions/0/6361972321502338713/ ; EntreMandos interview, https://entremandos.com/entrevistamos-a-antti-jarvinen-desarrollador-de-pools-y-ceo-de-tensori/ ; PlayStation Blog, https://blog.playstation.com/2025/11/21/pools-brings-liminal-terror-to-ps5-and-ps-vr2-on-nov-25/ | 2024-04-12; n.d.; 2025-11-21 | Unity, baked lighting, precomputed reflections, SSGI, no real-time RT. Players asked for water "perfectly still to begin with" that answers the player; the developer kept the motion because "moving water looks better". A custom water renderer for PS VR2 | READ (Steam); EXCERPT (others) |
 | W35 | Unity Manual 6000.0, "Render pipeline feature comparison", https://docs.unity.com/en-us/engine/6000.0/manual/render-pipelines/choose-a-render-pipeline/feature-comparison ; roadmap card "Volumetric Fog" (URP, Under Consideration), https://unity.com/19-volumetric-fog ; Unity Discussions, "URP 6.3 still has no native volumetric fog", https://discussions.unity.com/t/urp-6-3-still-has-no-native-volumetric-fog/1735239 ; community URP volumetric light (Render Graph, no WebGL), https://github.com/fantastic-jam/Unity-URP-Volumetric-Light | read 2026-10-31; card 2025-04-02; 2026-08-31 | URP has only linear, exponential and exp² fog; volumetrics are HDRP only; community Render Graph passes exist | EXCERPT |
+| W36 | POOLS on Steam (store page and its screenshots), https://store.steampowered.com/app/2663530/POOLS/ | looked at 2026-11-04 | 13 store frames: green-black body, sharp HDR mirror of windows and lamps broken into glint columns, a medium ripple that keeps moving, a found-footage camera (bloom, chromatic aberration, grain) | SEEN (browser pane, nothing downloaded) |
+| W37 | Tensori, itch.io profile, https://itch.io/profile/tensori | comment "1 year ago" as read 2026-11-04 | "near photorealistic lighting and reflections in Unity, both in URP and HDRP", no Asset Store plugins, Unity 2021 to 6; keywords: baked lighting, light probes and adaptive probe volumes, reflection probes, post-processing | READ |
+| W38 | Wikipedia, "Pools (video game)", https://en.wikipedia.org/wiki/Pools_(video_game) | read 2026-11-04 | Tensori, Unity; Windows and Linux 2024-04-26 (Bleeding Cool), App Store 2025-11-05/06 (Games Press), PS5 with PS VR2 2025-11-24 (PS Store), Switch 2026-02-26 (Nintendo Life) | READ |
+| W39 | Game Developer (press release), "POOLS arriving on the App Store", https://www.gamedeveloper.com/press-release/pools-arriving-on-the-app-store | 2025-10-08 (Helsinki) | App Store and Mac App Store from 2025-11-06: iPhone, iPad (also Vision Pro), Mac; minimums iOS 13.0, macOS 13.4.1; nothing on rendering | READ |
+| W40 | Red's screenshot of POOLS' store frame 2, sent with Red's message of 2026-11-04 (夸张结构调研与设计 chat) | 2026-11-04 | The reference for the glazed walls' shimmer and the water's mirror | SEEN |
+| W41 | Wikimedia Commons, Fish74, "Innenansicht des Rheinhessen-Bades", https://commons.wikimedia.org/wiki/File:Innenansicht_des_Rheinhessen-Bades.jpg ; category "Interiors of indoor swimming pools in Germany" | photo 2006-07-10; CC BY-SA 4.0 | Still indoor water: a near-perfect mirror from about 2 m, objects meet their reflections at the line, only the first metre or two shows the tile | SEEN (browser pane, nothing downloaded) |
 
 **Project documents used, not redone:**
 - 10 §3.1, §3.3, §3.6–§3.8: rules, the reflection leak, other games, wave speeds, Fresnel, the starting absorption, tiers, the four spikes.
@@ -585,3 +591,122 @@ Where the budgets come from:
 9. 焦散需要"集中的光源"，漫射天花板几乎不产生焦散。桌面端从真实水面算焦散，手机用序列帧。
 10. 光追：Unity 在 Mac 上没有硬件光追（6.7 也没有），只能扩展现有的 GlassRT 插件，约 +3–5 毫秒，只给 16 核以上 GPU 的 Mac，建议作为后续一步（Q3），v1 先用平面反射。
 11. 工作量：v1 水体约增加 21–33 PAH，其中新增桌面包 P4c 12–18（Q2 决定放 v1 还是 v1.1）；光追水体以后另计 16–26。
+12. （2026-11-04 补充，§10）开光追后画质"掉一截"的原因：GlassRT 只追玻璃，水既不接收光追反射，也不在光追看到的场景里。开光追后玻璃变成精确的镜子，水还是一张探针图加冻结的 13° 大波纹，同一帧里差距就显出来了；光追本身没有降低任何东西。真实的水靠四样：水面上方有暗部、灯的倒影比瓷砖亮得多、约 2° 的细小波纹一直在动、远处是锐利的镜面而近处有折射。第 4 个结构 scene 里按 K 换水面方案、J 切换光追，左下角看数据。推荐：关卡的水用"亮青绿"，会所用真实清水，暗色镜面留给本来就暗的房间；游戏视觉的 pool_water 落地后做第二步。
+
+---
+
+## 10. Water that reads real at first-person scale, and what the ray tracing does to it (line water, 2026-11-04)
+
+Line 水体仿真调研 (ledger key `water`): account G, session local_0d9085f6, started by 夸张结构调研与设计 on Red's words of 2026-11-04; continued on account B, session local_15593e17, after G's plan limit. Stage: research, code reading and a live preview in scene 4; options are described, not yet rendered. Main was read only except the preview landing (§10.4); no Unity ran on main; nothing was downloaded (POOLS' store frames were looked at in the browser pane, Red's own screenshot came with Red's message); no render was made (no workstation was free, and Red chose the live scene, §10.4). Reused, not redone: §1-§7 of this file (physics, colour, ripple scales, reflection stack, tiers, costs), `70_look_build.md` §5-§6 (游戏视觉's ripples and water surface, staged, not landed), `research/glass/rt/*` (GlassRT).
+
+### 10.1 What the eye uses first
+
+Ranked by what a standing or wading player reads first. "TODAY" is the structures scene's stand-in (`FrontRoomsPoolMaterials.WaterOf`); "pool_water" is 游戏视觉's water surface (`70` §6, with the Submerged stage still running).
+
+| # | Cue | Why it says "water" | TODAY | pool_water |
+|---|---|---|---|---|
+| 1 | **Two images at once that move differently** | The floor (at ¾ of its depth, §2.1) and the mirrored room (at mirrored depth) slide against each other when the head moves. Nothing else in a room does that | No: one blurred probe image, no refraction | Yes on desktop High/Ultra (mirror + refraction); probe + lamps on phones, WebGL, Medium/Low |
+| 2 | **A sharp mirror at grazing angles** | Calm water's roughness is about that of glass (α 0.012, `70` §6.3): the far water is the sharpest mirror in the room, sharper than any polished floor | Sharp probe, but box-projected from one point and broken by a 13° (mean) normal into blobs (§10.3) | Exact for the plane (planar ½ res on Ultra) |
+| 3 | **Glints much brighter than what surrounds them** | A lamp's reflection keeps the lamp's radiance (§2.1); a real troffer lens is 10-40× its floor (`70` §6.8), so its streaks are the brightest thing in view and bloom. "Sparkling" (波光粼粼) is these glints moving | Lens drive 1.8 ≈ 1.25× its floor: glints are dull | Same lenses: correct, but dull (`70` §6.8) |
+| 4 | **A body darker than the room** | Reflections read only against a darker body. In POOLS the body is near-black green (§10.2). In real white-tiled pools the body is pale under bright light and the reflections carry the far water | Constant teal veil at alpha 0.36 over the floor: neither dark nor clear | Physical: in the white, high-key level the floor through the water (171-209 on screen) outshines the reflection (23-150), so the water nearly vanishes (`70` §6.8) |
+| 5 | **Motion that never stops** | Filters, return jets and people keep indoor water moving a little; POOLS' developer kept the motion because "moving water looks better" (W34). Frozen water reads as glass | Frozen: a static normal | Baked dispersive ripple loop, rings for the player and the Relay (`70` §5) |
+| 6 | **Wobble of the floor's lines** | Lane lines and joints bend and swim with the ripple; the strongest near-field cue (§2.1) | None (alpha blend, no refraction) | Yes, with apparent depth (`70` §6.4) |
+| 7 | **Contact at every waterline** | A pillar meets its reflection at the line; a wet band and a meniscus sit above it; under the line the pillar is tinted. Probes cannot do the first, so pillars float (§2.1) | None | Mirror contact on High/Ultra; wet band and meniscus in the Surface shader (Submerged stage) |
+| 8 | **Colour that grows with depth** | Turquoise saturates with depth (§4.2); a step or a deep end shows depth by colour | One constant colour at every depth | Submerged stage: absorption with the trapping term, `absorbScale` per body (Q1) |
+| 9 | **Light thrown by the water** | Caustic nets on the floor under compact lamps; moving light on walls and ceiling near the water (the glaze line's 波光粼粼 on tile lives here too) | A greybox cell texture scrolled on ceilings | Submerged stage: floor caustics from up to two compact sources, the niches' thrown light |
+| 10 | **A camera that records it** | Bloom on glints, a little grain and chromatic aberration make the glints photographic (POOLS' found-footage look, §10.2) | The film look (post stack) | Same |
+
+Under the water (Snell's window, total internal reflection, blue-green fog) stays out of scope as in §8.
+
+**The water shows what is above it.** A real indoor pool photographed with the water still (W41, Rheinhessen-Bad, 2006) is a near-perfect mirror from about 2 m on: windows, columns, ducts and baffles reflect crisply and meet their objects at the waterline; only the first metre or two shows the tile, faintly teal. Where it mirrors the dark roof structure the water looks dark; where it mirrors windows, bright. So beyond a few metres the water's colour is the colour of the ceiling and the upper walls, and its sparkle is the lamps (cues 2-4). Two consequences for us:
+- A uniformly bright white room above the water (white tile walls, a white ceiling lit by an indirect wash such as zone_lamps' P1-A, "水里没有灯的倒影") gives a uniform pale mirror: the water vanishes against white tile, however exact the mirror. Darks above the water (a darker ceiling, shadowed upper walls, unlit openings) and compact bright sources are what make it read.
+- Under the water, a dark floor or lane (POOLS' teal-black mosaic) or more absorption gives the near field the contrast the mirror gives the far field.
+Real daylight pools with white basins (W41's sister frames in the same Commons category) read the other way: bright turquoise bodies with sun glints. Both are real; they are two looks, not one right answer (§10.5).
+
+### 10.2 POOLS (Red's reference)
+
+**What it is.** Tensori (Finland), Unity, released 2024-04-26 on Steam; on the App Store for iPhone, iPad and Mac since 2025-11-06, PS5 / PS VR2 2025-11-24, Switch 2026-02-26 (W38, W39). The developer: near-photorealistic lighting and reflections "in Unity, both in URP and HDRP", no Asset Store plugins, and the keywords baked lighting, light probes and adaptive probe volumes, reflection probes, post-processing (W37); baked lighting and SSGI on PC, SSGI the most demanding setting; the water's motion kept on purpose and "really easy to adjust" (W34). No real-time ray tracing (W34). So the look is reachable on phones: it rests on art direction and baked light, not on RT.
+
+**What its frames show** (13 store frames looked at 2026-11-04 in the browser pane, W36; Red's screenshot is frame 2, W40):
+- **The body is dark.** Green-black water over a dark teal mosaic; the floor shows only within about a metre of the eye, already darkened. Against it, every reflection reads.
+- **The mirror is sharp and HDR.** Arched windows and lamps reflect as white shapes broken into columns of glints (frames 3, 5, 7, 13); white walls reflect as soft bright bands; dark objects (the slide's pipe, pillars) reflect as dark masses that meet the object at the waterline (frame 7).
+- **The ripple is medium-scale and always moving.** Highlight contours a few tens of centimetres across, irregular, never a visible repeat; near the camera the floor's mosaic wobbles under it.
+- **The camera is a found-footage camera.** Strong bloom on glints, chromatic aberration at the frame's edge, grain, a warm green grade.
+- **Players' complaints point the other way too:** "We're indoors, yet the water moves as if we were outdoors" (W34): the motion must stay small and directionless (§3, isotropic, no wind).
+
+**Lesson.** POOLS reads real because of contrast (dark body, HDR glints), sharpness and motion, then the camera. Two of those are lighting and art direction, not water technique: the glints need lamps far brighter than their walls, and the dark body is a choice of floor, absorption and light under the water.
+
+### 10.3 Today's water in the structures scene, from the code
+
+- **Material:** URP Lit, transparent premultiplied, `_BaseColor` (0.16, 0.60, 0.62, 0.36) level / (0.30, 0.68, 0.70, 0.22) club / (0.10, 0.45, 0.50, 0.36) dark, smoothness 0.95, `_BumpScale` 0.5 / 0.35 (`FrontRoomsPoolMaterials.cs` WaterOf).
+- **The ripple is frozen and about ten times too steep.** The runtime normal is a sum of four sines, one repeat per 2 m (wavelengths 0.63, 0.45, 0.34, 0.28 m), never animated. Its slopes, computed from the generator's constants (8-bit packing and `_BumpScale` included): level and dark water mean 13.4°, p95 23.4°, max 28.6°; club mean 9.6°, p95 16.9°, max 20.9°. Calm indoor water: 1-3° (§3.1, §7 item 3). So the lamps and the probe image break into oval blobs on a regular 2 m lattice (review frames SP1_s02, SP1_ride_end, SP6_s06): "hammered glass", not water.
+- **What it reflects:** each pool hall's box-projected realtime probe, 1024², rendered once after the district is built (`FrontRoomsStructuresLook.Probe`), plus the lamps' specular; elsewhere the game's default cube. No Relay, no contact, no parallax beyond the box projection.
+- **What shows through:** the floor at alpha 0.64 under a constant teal veil: no refraction, no depth.
+- **Not measured in a render at first** (rendered since: §10.7). The slopes are computed; the frame share of the water, its luminance with and without the water and the reflection-only view wait for a workstation (harness ready in `W/water/harness`: stops in P, SP1, SP6, SP2 x RT off / reflection / dry / High / Ultra).
+
+### 10.4 GlassRT and the water
+
+**Read from the code (main, 2026-11-04), path by path.** GlassRT (desktop Macs with 16 or more GPU cores at quality level 3 and up, D1 (c); `FrontRoomsGlassRT.cs`) fires one mirror ray per pixel of a *receiver*, shades the hits with lamps and lenses and falls back to the zone cube on a miss (`research/glass/rt/`).
+- **The water is not a receiver.** Receivers are FrontRooms/Glass materials with `_RTReceive = 1` (prepass bit 30) or renderers given bit 29 through the API (`FrontRoomsMetalGlassRTRendererFeature.cs`, the prepass). The water's URP Lit material is neither, so no ray ever leaves the water: its reflection stays the probe's, whatever RT does.
+- **The water is not in the scene the rays see.** `RegisterRenderer` keeps a transparent material only when it is glass; "other transparents (beams, decals): not traced" (`FrontRoomsGlassRTSystem.cs` line 1229). So a ray from a window passes through the water to the basin floor: **in a traced glass reflection the pool is dry.**
+- **Nothing in the water's shader reads RT.** Only `FrontRoomsGlass.shader` uses `_FR_GLASS_RT` / `_FR_GlassRTReflection`; the keyword is switched off again after the transparents.
+- **RT needs the game's map.** Registration walks the chunks of a `FrontRoomsMapWorld`. In scene 4 only district P (the pool route, the game's own map code) has one; SP1-SP7, the hub and the kit row have none, so RT registers nothing there and the glass guards keep their zone cube. The 11-04 look review (`W/level_space/renders/scene4/review1/`) ran at Ultra with RT's default High but never visited P.
+- **SSR, planar, probes:** URP 17.6 has no SSR (§2.3); today's water has no planar camera; it reflects the hall's box-projected realtime probe, rendered once after the district's build (`FrontRoomsStructuresLook.Probe`, 1024², box projection on).
+
+**So why the image "drops a big notch" with RT.** RT sharpens what it touches and leaves the water exactly as it was: with RT on, the glass becomes a live, exact mirror (lamps, the Relay, contact), while beside it the water stays a probe image broken by a frozen 13° ripple and a teal veil (§10.3). The gap between the two surfaces in one frame is what reads as lower quality; RT itself lowers nothing (its own cost is +3.2-5.0 ms at 1440p High where it traces, `glass/rt/40_for_red.md`). In P, where it traces, the glass's reflections also show the pool without water. **RT will not fix the water by being on; the water has to become good on its own (pool_water, 游戏视觉) and, on the Mac, a receiver (P4d).**
+
+**Live check in scene 4 (Red's choice of where to look, 2026-11-04: "不需要写在克隆里，坐在结构scene里这样我就能预览了").** Landed 2026-11-04 10:17 (LANDINGS): `Assets/Scripts/FrontRoomsMap/Structures/FrontRoomsStructuresWater.cs`, Editor only, added at Play beside scene 4's bootstrap; the game scene, the Level Designer and every build never create it, and no existing file changed. In any water district (SP1, SP2, SP6, P):
+- **K** cycles the water's look on the shared stand-in materials (`WaterOf`): today; calm (a moving isotropic ripple of about 2° RMS in two layers, 1.6 m tiles of 0.12-0.8 m waves drifting 6 cm/s and 0.7 m tiles of 2.5-12 cm waves drifting 4 cm/s across them, everything else as today); dark glass (the calm ripple on a near-black green body, alpha 0.84, smoothness 0.985: the POOLS direction). Shift K goes back. These are stand-in materials, not 游戏视觉's water surface: they show the effect of slope, motion and body darkness alone.
+- **J** cycles GlassRT Off / High / Ultra (restored when the scene ends); the bottom-left panel shows GlassRT's own numbers for the frame: visible receivers, glass pixels, instances in the traced scene, its GPU time.
+What the code predicts the panel will show, not yet seen by anyone: 0 receivers in SP1, SP2 and SP6 (nothing traced, the frame does not change), the traced windows counted in P, and the water unchanged between Off and High everywhere. Red's walk gives the first live numbers.
+A note for anyone driving URP Lit's detail layer from code: URP samples it at the base UV times `_DetailAlbedoMap_ST` (`LitInput.hlsl`, `InitializeStandardLitSurfaceData`), so the calm look sets the detail scale to 1.6 / 0.7 and takes the large layer's drift out of the detail offset; the compiler cannot catch a mistake here (the first version gave a 1.12 m detail tile riding on the large layer).
+
+**What would change it (asks, §10.6):**
+1. P4d (Red's Q3 "v1", 10-31; nobody builds it yet, 游戏视觉's queue after the pool packages): water as a receiver, one mirror ray per water pixel from the rippled normal, any number of water heights, the Relay and contact without a planar camera; +3-5 ms at 1440p [EST, §5.3].
+2. Water in the traced scene: a ray that meets a water plane takes its Fresnel mirror (one more ray, or the planar image where it exists) and its tint, so glass sees the pool wet. Small in rays; needs a water instance type in the plugin's hit shading.
+3. Scene 4's districts without a map: either they register through `FrontRoomsGlassRT.Register` (the API the destruction track uses) or the scene accepts that RT runs only in P.
+
+### 10.5 Options for Red
+
+Two steps. Step 1 is live in scene 4 now (K, §10.4) on the stand-in materials. Step 2 puts the same looks on 游戏视觉's water surface (`pool_water`: planar mirror, refraction, Fresnel, rings, absorption) when it and its Submerged stage land; the pick follows step 2. Rendered since on `sheets/water_looks.jpg` with a film (§10.7, run s10b); the cost column is from `70` §6 and §5 of this file.
+
+| Look | What the player sees | Where it fits | Cost | Honest flaw |
+|---|---|---|---|---|
+| TODAY | A teal veil over the floor; frozen 13° bumps break lamps and the probe image into blobs on a 2 m lattice | Nowhere, as is | Probe + lamp specular only | Reads as hammered glass (§10.3) |
+| Calm (step 1) | The same veil, but the surface moves and the reflections hold together: lamp streaks and the hall's probe image wobble a little instead of breaking | Shows what slope and motion alone do | One more normal sample; two 256² half-float textures | Still no mirror of what is near, no refraction, no depth |
+| Dark glass (step 1) | A near-black green body; every lamp and bright wall reflects, and the floor shows only near the feet | POOLS' reading; dark or night rooms | As calm | In our white rooms the body is darker than anything real under white tile; it reads as a different liquid |
+| Clear, physical (step 2) | Water as Red's Q1 asked for the club: nearly colourless near, turquoise with depth, a sharp mirror far | The club, daylight rooms | pool_water: planar ½ res on Ultra, refraction from the opaque texture | In white high-key rooms the floor outshines the mirror and the water nearly vanishes (`70` §6.8) unless the room above the water has darks |
+| Lit turquoise (step 2) **REC for level water** | Red's Q1 "wrong" turquoise (absorption x3-5): a saturated body that gives the reflections something to read against, with the mirror and the moving glints of clear water | The level's pools (Q1) | As clear, plus absorption per body | A look, not physics; it needs bright compact sources (glints 10-40x their floor, `70` §6.8) or it turns flat |
+
+**Recommendation and why.** Lit turquoise for the level's pools, clear for the club, dark glass kept for rooms that are dark by design. All three water looks fail in a uniformly white, evenly lit room, because the water shows what is above it (§10.1): the step that makes any of them read real is darks above the water (a darker ceiling or shadowed upper walls, unlit openings) and lamps whose reflections are much brighter than the tile. That is a room and lamp question for 夸张结构调研与设计 and the zone lamps, listed in §10.6.
+
+### 10.6 Asks for the owners
+
+1. **游戏视觉 (rendering, GlassRT):** P4d, the water as a GlassRT receiver (§10.4 item 1, Red's Q3 "v1"); a water instance type in the traced scene so glass sees the pool wet (item 2); step 2's material hookup in scene 4 when pool_water lands (this line writes the scene-4 side, 游戏视觉 owns the shader).
+2. **夸张结构调研与设计 (rooms, tile glaze, thrown light):** the darks above the water (§10.1) in the pool districts; the glaze shimmer builds on FRSubThrown, the one caustic source (agreed 11-04).
+3. **Zone lamps / 游戏视觉 (lamp lenses):** pool lamps whose lens drive gives glints 10x or more their floor, so the water sparkles (cue 3).
+4. **关卡设计 (scene 4):** scene 4's districts without a map register with GlassRT through `FrontRoomsGlassRT.Register`, or RT stays in P only (§10.4 item 3).
+5. **总控:** a workstation for the measurement run and the option sheet (§2.2 rows: player eye, wading, 3/4 at 3 m, under a lamp, RT off and on, COST).
+
+### 10.7 Rendered: the five looks and what RT does (run s10b, 2026-11-04)
+
+Account A (local_d012b32d), workstation `build` lent by 总控, 12:50-12:59. Clone-only harness `W/water/harness/FrontRoomsWaterRTProbe.cs`; stage 2 (`W/water/stage/water_stage2`) and 游戏视觉's pool_water runtime set (from proj_unlock, FrontRoomsSurface 7be4e235) were copied into the clone only, then the clone was synced back to main. Unity batch with graphics, Metal, M3 Max, quality Ultra, 1920x1080, ripple clock fixed at 20 s in every still: fail 0, 56 stills, 600 film frames, no shader error. Run s10a (account B, 11:56) is superseded: its pool_water mirrors rendered at 368x276 (sized from the batch window), R1 came out at the probe tier, the paper walls of P's entry corridor failed to compile (magenta: the `sub` collision under FR_SUBSTRATE, fixed by 游戏视觉 at 12:48), and its RT frames were RT Off in effect (below).
+
+Images (Shot format): `sheets/water_looks.jpg` (WAIT-RED; rows R1-R7 x TODAY, W-A calm, W-B dark glass, W-C clear x1, W-D turquoise x4, then COST), `sheets/water_rt.jpg` (FLAG), `video/water_looks.mp4` (20 s at R3, 4 s per look, video only, no audio track).
+
+**The looks (the author's one look; Red's eye is the check):**
+- TODAY: the 2 m lattice of blobs (§10.3) in every deep row (R1, R3, R5). In P (R6) it is the only look that makes the flooded floor read as water at all, because its blobs are bright.
+- W-A calm: the blobs go; the surface reads as a polished wet floor, not as a body of water (no mirror of what is near, no depth).
+- W-B dark glass: POOLS' darkness, but in our white rooms it reads as a dark slab or oil; the blue patch at the far end of R3 is the hall probe showing through.
+- W-C clear x1 and W-D turquoise x4 (pool_water): the walls mirror and meet their reflections at the waterline (R1, R3, R5), the wall lamps break into moving glints (R5), the body takes colour with depth (R3, R4); at the probe tier (R7) the colour stays and the mirror softens to the probe. W-D is more saturated and bluer than W-C; the two differ little in shallow water.
+- **Flaw found: ankle-deep water in P (R6, `Kind.Ankle`, about 0.12 m) nearly vanishes with W-C and W-D.** A white, evenly lit office ceiling mirrored over white tile, with 0.12 m of colour, reads as a clean wet floor: §10.1's rule (the water shows what is above it) at its strongest. For level water that floods office floors the fix is the room (darks above, compact bright lamps) or a stronger colour or film term for ankle water in the Submerged stage (游戏视觉's call), not RT.
+- Cost (COST row): pool_water in SP1 = 7 bodies, +7 draws, +14 tris, 2 mirror images at 1104x621 on Ultra (half resolution plus 15 % overscan); 1 mirror at 736x414 in the 1280x720 film. GPU time not measured (rule 25).
+
+**What RT does** (P stops 9 L1 hall, 8 gallery, 5 corner, 7 M0; TODAY and W-D; RT Off, High, Ultra; 120 frames each with the stream-in gate off, so RT shows at once):
+- GlassRT traced (1.2-4.3 ms GPU at High, TLAS 2,048-4,096 instances, 3-21 receivers inside the frustum) but found **0 glass pixels on screen at every stop**: P's receivers are clear-glass panes behind walls and pillars, and the gallery's round and square "observation windows" are emissive panels (`FrontRoomsPoolMaterials.Glow`), not glass. SP1, SP2 and SP6 have 0 receivers (s10a), as §10.4 predicted.
+- RT Off against High, both blurred over 7 px so the film grain (which moves with time) drops out, pixels changed by more than 4/255: on the water 0.0-3.6 %, elsewhere 0-19 %, and the latter is the ceiling's greybox caustic texture, which scrolls with time between two stills. Ultra gives the same.
+- So in scene 4 J changes nothing that RT draws, and the image does not drop with RT here. The drop Red described is the water beside surfaces that look right: the stand-in's frozen blobs and teal veil and, in the game, the RT glass beside it (§10.4). Both step-2 looks fix the deep water; ankle water needs the room.
+- Measured in the batch capture path (the camera rendered into a texture), not in the Editor's Game view.
+- Harness note: with no glass on screen GlassRT's stream-in gate never opens (its per-camera coverage reading needs glass pixels; by design), so a capture that waits for weight 1 waits for ever. s10a's rt pass did that at every stop.
+
+**Next:** stage 2 lands as soon as pool_water is in main; then Red walks scene 4 with K (five looks) and J. New ask for 游戏视觉 (§10.6 item 1): ankle water's colour or film term in white rooms (R6).

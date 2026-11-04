@@ -51,10 +51,28 @@ using UnityEngine.Rendering.Universal;
 ///       the goal's (lane >= 1.4 m), the side doors and cabinets by rule, frames only when asked (every third cell line), the
 ///       lights (armed n + 1 / n shadowed, tripped 2U + 1 / 2U), the trip and the reset photosafe, the reset n x 0.15 s of sweep
 ///       from the entrance (ticked); 6 and 15 cells refused at 9. The COST line per length goes to log.txt.
+///   R20 card 2 (71 s.4-s.5, the recede, head first): the schedule's seats (T2 R 9: 1.55 / 3.35 s, R 15: 1.55 / 2.90 / 4.25 / 6.05 s;
+///       T1 R 15: 1.15 / 2.15 / 3.15 / 4.85 s) and peaks, the glide (6 m/s); Receding(9, 12 | 14) by rule (FD1 / FD2 only, no side door,
+///       units clear of the frames, the carried goal unit, cabinets in the fixed length, refusals); a built 9 -> 12 room: the hidden strips
+///       and cells, the trip and the stepped recede (seats, events in order, the strips striking at their seats, one-way), the keep-away
+///       glide (a walker 5 m from the end at the gate), the gaze gate (shut facing away, open facing the goal), the 8-byte record and
+///       Restore; a plain 9-cell room has no goal mount, no hidden strip and its gate on z 27.
 ///   (S1 / S2 / S3, the title-stream checks, were dropped with the RoomStream hunk: call 6 / C40, 2026-10-31.)
+///   R21 card 2, the T2 body (71 s.5.3): the four clips (69 blocks / 28 strips, T2's phases, rest at both ends, courses landing
+///       0 -> 12 in order); a built 9 -> 12 room re-stacks at every step (the body shown from the tell to the end of the seat, its
+///       materials in the room's gate, the static wall whole in every dwell and after the final seat, 26 landings bottom up, the
+///       grit on desktop); the glide and a restore ride whole and quiet; iPad blocks without grit, phones the strips; a plain room
+///       builds none of it.
 ///   W1  the WebGL tier is off in the editor (the FRONTROOMS_WEBGL_PREVIEW compile is checked outside Unity).
 ///   W2  step 9 (stage C): the handheld tier (ForceHandheldForTools) builds 5 head + 5 wrap Lights, hard shadows, no beams,
 ///       the pools and the goal kept, photosafe; the desktop build before and after it is the same, light for light.
+///   R22 card 4 (71 s.7.2, decision 8c: the Run door's tell): every Corridor(n) keeps today's arch; UseEntranceDoor (both hands) makes
+///       the entrance the door's opening (1.0 x 2.1), the goal face and everything else untouched, the NOTICE plate on the hinge side;
+///       the map skin builds no arch reveal at a Run door and closes the wall over it from 2.1 m; the gate's entrance portal is none
+///       while the leaf is shut and the whole door while it is open (an arch ignores it); the entrance tell (DressEntranceTell): the
+///       card on the latch side clear of the frame, the detector at the door head's sight-rule depth, past the 2.5 m trip, clear of
+///       the strips (the arch's as landed); the light under the door: one draw, zero lights, on the approach side only, cool white
+///       armed, black in the trip's gap, back with the reset, off as the leaf opens, no allocation per Tick.
 /// The rig needs the B kits (Kit_EmergencyTwinHead*, Kit_WrapFixture_4ft, the RN-K DA door kits); without them it builds
 /// named stand-ins and the light counts still hold.
 /// </summary>
@@ -99,8 +117,11 @@ public static class FrontRoomsRunRigTests
             Run("R17 F8 F9 F2 F6: plate outside, overhead unshadowed, dark obstacles, LOD distances", R17Dress);
             Run("R18 card 1: Corridor(9) is today's room, field for field and piece for piece", R18TodayUnchanged);
             Run("R19 card 1: 7 .. 14 cells by rule, photosafe, reset n x 0.15 s", R19Cells);
+            Run("R20 card 2: the receding end (schedule, layout, keep-away, gate, record), today untouched", R20Recede);
+            Run("R21 card 2 T2: the re-stack (kits, clips, a step flies and seats, tiers, glide and restore whole)", R21Restack);
             Run("W1 WebGL tier off in the editor", W1Gate);
             Run("W2 step 9: the handheld tier, desktop unchanged", W2Handheld);
+            Run("R22 card 4: the Run door entrance (opening, skin, gate, tell, the light under the door), today's arch kept", R22DoorTell);
         }
         finally
         {
@@ -132,6 +153,208 @@ public static class FrontRoomsRunRigTests
     }
 
     static void Require(bool ok, string message) { if (!ok) throw new Exception(message); }
+
+    // ------------------------------------------------------------------ card 4 (71 s.7.2 and s.9, decision 8c): the Run door's tell
+    static bool SameFace(RunWallFace a, RunWallFace b)
+    {
+        if (a.start != b.start || a.along != b.along || a.normal != b.normal || !Mathf.Approximately(a.length, b.length)) return false;
+        var ga = a.gaps ?? new Vector2[0];
+        var gb = b.gaps ?? new Vector2[0];
+        if (ga.Length != gb.Length) return false;
+        for (var i = 0; i < ga.Length; i++) if (ga[i] != gb[i] || !Mathf.Approximately(a.GapTop(i), b.GapTop(i))) return false;
+        return true;
+    }
+
+    static Vector3 NoticeOf(RunRigLayout l)
+    {
+        for (var i = 0; i < l.wallItems.Length; i++)
+            if (l.wallItems[i].kit == RunRigLayout.NoticePlateKit && l.wallItems[i].point.z < 0f) return l.wallItems[i].point;
+        throw new Exception("no NOTICE plate on the host face");
+    }
+
+    static Vector4 GateD(Transform dress)
+    {
+        var mpb = new MaterialPropertyBlock();
+        foreach (var r in dress.GetComponentsInChildren<Renderer>(true))
+        {
+            var mats = r.sharedMaterials;
+            for (var k = 0; k < mats.Length; k++)
+                if (mats[k] != null && FrontRoomsRunGate.IsTwin(mats[k]))
+                {
+                    r.GetPropertyBlock(mpb, k);
+                    return mpb.GetVector("_FR_RunGateD");
+                }
+        }
+        throw new Exception("no gated dress renderer");
+    }
+
+    static string R22DoorTell()
+    {
+        var sb = new StringBuilder();
+        // 1. Today: every length keeps the arch (the map builds arches only).
+        for (var n = RunRigLayout.MinCells; n <= RunRigLayout.MaxCells; n++)
+        {
+            var c = RunRigLayout.Corridor(n, 1.4f, 1f);
+            Require(!c.entranceDoor && Mathf.Approximately(c.archHalf, .7f) && Mathf.Approximately(c.archTop, 2.2f), n + " cells: the entrance is not today's arch");
+        }
+        var arch = RunRigLayout.Corridor1x9(1.4f, 1f);
+        var archNotice = NoticeOf(arch);
+        Require(Mathf.Abs(archNotice.x - 1.1f) < 1e-4f, "today's NOTICE plate moved: x " + F(archNotice.x));
+        // 2. UseEntranceDoor, both hands: the door's opening, the goal face and the rest untouched, the plate on the hinge side.
+        for (var hand = -1; hand <= 1; hand += 2)
+        {
+            var l = RunRigLayout.Corridor1x9(1.4f, 1f);
+            l.UseEntranceDoor(1f, hand);
+            Require(l.entranceDoor && l.entranceHinge == hand && Mathf.Approximately(l.archHalf, .5f) && Mathf.Approximately(l.archTop, 2.1f),
+                "UseEntranceDoor(" + hand + "): opening " + F(l.archHalf) + " / " + F(l.archTop));
+            Require(l.walls.Length == arch.walls.Length, "faces changed");
+            var entry = 0;
+            for (var i = 0; i < l.walls.Length; i++)
+            {
+                var shortFace = Mathf.Abs(l.walls[i].along.x) > .5f;
+                var isEntry = shortFace && l.walls[i].start.z < 1f;
+                if (!isEntry) { Require(SameFace(l.walls[i], arch.walls[i]), "face " + i + " changed"); continue; }
+                entry++;
+                var g = l.walls[i].gaps;
+                Require(g != null && g.Length == 1 && Mathf.Abs(g[0].x - (l.halfWidth - .5f)) < 1e-5f && Mathf.Abs(g[0].y - (l.halfWidth + .5f)) < 1e-5f
+                    && Mathf.Abs(l.walls[i].GapTop(0) - 2.1f) < 1e-5f, "the entrance face's opening is not the door's");
+            }
+            Require(entry == 1, entry + " entrance faces");
+            var p = NoticeOf(l);
+            Require(Mathf.Abs(p.x - hand * .9f) < 1e-4f && Mathf.Abs(p.y - archNotice.y) < 1e-5f && Mathf.Abs(p.z - archNotice.z) < 1e-5f, "NOTICE plate at " + p);
+            Require(l.length == arch.length && l.units.Length == arch.units.Length && l.ownLamps.Length == arch.ownLamps.Length && l.sideDoors.Length == arch.sideDoors.Length,
+                "the door changed the corridor");
+        }
+        sb.Append("Corridor(7..14) arch kept; door 1.0 x 2.1 both hands, plate +-0.9");
+        // 3. The map skin: no arch reveal at a Run door, the wall closed over it from 2.1 m.
+        var skinRoot = new GameObject("TEST run door skin").transform;
+        try
+        {
+            skinRoot.position = new Vector3(4992f, 0f, 4992f);
+            var l = RunRigLayout.Corridor1x9(1.4f, 1f);
+            l.buildShell = false;
+            l.skinShell = true;
+            l.UseEntranceDoor(1f, -1);
+            FrontRoomsRunDress.Build(skinRoot, l);
+            int reveal = 0, header = 0;
+            foreach (var t in skinRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith("run b arch reveal", StringComparison.Ordinal)) reveal++;
+                if (t.name == "run b upper tone header")
+                {
+                    var b = t.GetComponent<Renderer>().bounds;
+                    var lo = skinRoot.InverseTransformPoint(b.min);
+                    var hi = skinRoot.InverseTransformPoint(b.max);
+                    if (Mathf.Max(lo.z, hi.z) < 1f && Mathf.Abs(Mathf.Min(lo.y, hi.y) - 2.1f) < .002f && Mathf.Abs(hi.x - lo.x) > .99f) header++;
+                }
+            }
+            Require(reveal == 0 && header == 1, "Run door skin: " + reveal + " arch reveal slabs, " + header + " headers from 2.1 m over the door");
+            sb.Append("; skin: 0 reveal, header from 2.1");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(skinRoot.gameObject); }
+        // 4. The gate, the tell and the light under the door on a built Run door room (look-dev shell).
+        var root = new GameObject("TEST run door room").transform;
+        var archRoot = new GameObject("TEST run arch room").transform;
+        try
+        {
+            root.position = new Vector3(4992f, 0f, 4992f);
+            archRoot.position = new Vector3(4892f, 0f, 4992f);
+            var l = RunRigLayout.Corridor1x9(1.4f, 1f);
+            l.UseEntranceDoor(1f, 1);
+            var dress = FrontRoomsRunDress.Build(root, l);
+            var entranceDetector = FrontRoomsRunRigBinder.DressEntranceTell(root, dress, l);
+            var rig = FrontRoomsRunRig.Create(root, l, RunRigHost.OwnLamps, null, dress);
+            var al = RunRigLayout.Corridor1x9(1.4f, 1f);
+            var adress = FrontRoomsRunDress.Build(archRoot, al);
+            var archDetector = FrontRoomsRunRigBinder.DressEntranceTell(archRoot, adress, al);
+            var arig = FrontRoomsRunRig.Create(archRoot, al, RunRigHost.OwnLamps, null, adress);
+            // gate
+            var d = GateD(dress);
+            Require(!rig.EntranceOpen && d == Vector4.zero, "shut Run door: D " + d);
+            rig.SetEntranceOpen(true);
+            d = GateD(dress);
+            Require(rig.EntranceOpen && Mathf.Abs(d.y - .5f) < 1e-5f && Mathf.Abs(d.z - 2.1f) < 1e-5f && Mathf.Abs(d.x) < 1e-5f, "open Run door: D " + d);
+            rig.SetEntranceOpen(false);
+            Require(GateD(dress) == Vector4.zero, "shut again: D " + GateD(dress));
+            var ad = GateD(adress);
+            arig.SetEntranceOpen(true);
+            arig.SetEntranceOpen(false);
+            var ad2 = GateD(adress);
+            Require(Mathf.Abs(ad.y - .7f) < 1e-5f && Mathf.Abs(ad.z - 2.2f) < 1e-5f && ad == ad2, "the arch's portal moved: " + ad + " / " + ad2);
+            sb.Append("; gate shut 0 / open (0, .5, 2.1) / arch (0, .7, 2.2) kept");
+            // tell
+            Transform card = null, acard = null;
+            foreach (Transform t in root) if (t.name == FrontRoomsAlarmTell.CardName) card = t;
+            foreach (Transform t in archRoot) if (t.name == FrontRoomsAlarmTell.CardName) acard = t;
+            Require(card != null && entranceDetector != null && acard != null && archDetector != null, "the entrance tell is missing");
+            var cx = .5f + FrontRoomsAlarmTell.FrameFace + FrontRoomsAlarmTell.CardGap + FrontRoomsAlarmTell.CardHalfWidth;
+            var cp = card.localPosition;
+            Require(Mathf.Abs(cp.x + cx) < 1e-4f && Mathf.Abs(cp.y - FrontRoomsAlarmTell.CardCentreHeight) < 1e-4f && Mathf.Abs(cp.z + l.WallHalf) < 1e-4f,
+                "the card is not on the latch side (hinge right, latch left): " + cp);
+            Require(Mathf.Abs(cp.x) - FrontRoomsAlarmTell.CardHalfWidth >= .5f + .0488f + .05f, "the card is not clear of the frame's casing");
+            Require(Mathf.Sign(cp.x) != Mathf.Sign(NoticeOf(l).x), "the card and the NOTICE plate are on the same side");
+            var dz = entranceDetector.transform.localPosition.z;
+            var stripHalf = FrontRoomsRunRig.OwnLampHalfLength(l) + FrontRoomsRunRigBinder.DetectorClear;
+            for (var k = 0; k < l.ownLamps.Length; k++) Require(Mathf.Abs(dz - l.ownLamps[k].z) >= stripHalf - 1e-4f, "the detector touches strip " + k);
+            Require(FrontRoomsAlarmTell.SeenFromOutside(dz, l.wallThickness, l.height, FrontRooms.Map.ModuleUnits.DoorHeight) && dz > 2.5f && Mathf.Abs(entranceDetector.transform.localPosition.x) < 1e-4f,
+                "the Run door's detector at z " + F(dz));
+            var acp = acard.localPosition;
+            var adz = archDetector.transform.localPosition.z;
+            Require(Mathf.Abs(acp.x + (.7f + FrontRoomsAlarmTell.FrameFace + FrontRoomsAlarmTell.CardGap + FrontRoomsAlarmTell.CardHalfWidth)) < 1e-4f && Mathf.Abs(adz - 2.71f) < .02f,
+                "today's arch tell moved: card " + acp + ", detector z " + F(adz));
+            sb.Append("; tell: card x ").Append(F(cp.x)).Append(", detector z ").Append(F(dz)).Append(" (arch ").Append(F(acp.x)).Append(", ").Append(F(adz)).Append(")");
+            // the light under the door
+            int total0, on0, sh0;
+            rig.CountLights(out total0, out on0, out sh0);
+            var gap = FrontRoomsRunDoorGap.Build(rig, root);
+            int total1, on1, sh1;
+            rig.CountLights(out total1, out on1, out sh1);
+            Require(gap != null && total1 == total0 && root.GetComponentsInChildren<Light>(true).Length == Lights(rig).Length, "the light under the door added a Light");
+            var gr = gap.Renderer;
+            Require(gr != null, "FrontRooms/RunB/DoorGap is missing (Resources/Rendering/RunDoorGap.shader)");
+            Require(gr.shadowCastingMode == ShadowCastingMode.Off && gr.sharedMaterials.Length == 1, "the strip is not one unshadowed draw");
+            var mesh = gr.GetComponent<MeshFilter>().sharedMesh;
+            foreach (var v in mesh.vertices)
+                Require(v.z < -.0215f && v.z > -.31f && Mathf.Abs(v.x) <= .536f && v.y >= 0f && v.y < .0135f, "a strip vertex off the approach side's saddle and floor: " + v);
+            rig.Tick(Dt);
+            gap.Tick(1f);
+            var armed = gap.Slot;
+            var armedSum = armed.r + armed.g + armed.b;
+            Require(armedSum > .05f && armed.b >= armed.r && gr.enabled, "armed: the slot " + armed);
+            gap.Tick(0f);
+            Require(!gr.enabled, "open: the strip still draws");
+            gap.Tick(1f);
+            Require(gr.enabled, "shut again: the strip is off");
+            // the trip: dark in the black gap (mains down, heads not yet up), then the tripped light (warm or dark)
+            rig.Trip();
+            for (var k = 0; k < 12; k++) { rig.Tick(Dt); gap.Tick(1f); }
+            var gapLevel = gap.Slot.r + gap.Slot.g + gap.Slot.b;
+            Require(gapLevel < .05f * armedSum, "the trip's black gap: the slot " + gap.Slot + " against armed " + armed);
+            for (var k = 0; k < 90; k++) { rig.Tick(Dt); gap.Tick(1f); }
+            var tripped = gap.Slot;
+            Require(tripped.r >= tripped.b - 1e-5f, "tripped: the slot is not warm " + tripped);
+            // the reset re-strike brings the armed slot back
+            rig.StartReset();
+            var steps = Mathf.CeilToInt((rig.ResetDuration + .2f) / Dt);
+            for (var k = 0; k < steps; k++) { rig.Tick(Dt); gap.Tick(1f); }
+            var back = gap.Slot.r + gap.Slot.g + gap.Slot.b;
+            Require(rig.State == RunRigState.Armed && Mathf.Abs(back - armedSum) <= .02f * armedSum, "after the reset: " + F(back) + " against " + F(armedSum));
+            // no allocation
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var k = 0; k < 200; k++) gap.Tick(1f - (k % 2) * .5f);
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Require(allocated == 0, "Tick allocated " + allocated + " bytes");
+            sb.Append("; gap: armed ").Append(F(armed.r)).Append("/").Append(F(armed.g)).Append("/").Append(F(armed.b))
+                .Append(", black gap ").Append(F(gapLevel)).Append(", tripped ").Append(F(tripped.r)).Append("/").Append(F(tripped.g)).Append("/").Append(F(tripped.b))
+                .Append(", ").Append(gap.LightCount).Append(" lights read, ").Append(mesh.vertexCount).Append(" verts, 0 alloc");
+            return sb.ToString();
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(root.gameObject);
+            UnityEngine.Object.DestroyImmediate(archRoot.gameObject);
+        }
+    }
 
     static void SetReduced(bool on)
     {
@@ -1428,11 +1651,15 @@ public static class FrontRoomsRunRigTests
                 foreach (var c in cabinets) near = Mathf.Min(near, Mathf.Abs(z - c));
                 Require(near <= 22.86f, tag + "z " + F(z) + " is " + F(near) + " m from a cabinet");
             }
-            // Compartment frames: none unless asked; asked, every third cell line inside the room.
+            // Compartment frames: none unless asked; asked, FD1 on z 9 and FD2 on z 18 (71 s.10, card 2), FD2 only 3 m or more from the
+            // goal unit and 6 m from the goal wall (so not at 7 or 8 cells); every unit but the goal unit half a cell past its line.
             Require(l.compartmentFrames.Length == 0, tag + "frames without being asked");
             var framed = RunRigLayout.Corridor(n, 1.4f, 1f, true);
-            Require(framed.compartmentFrames.Length == (n - 1) / 3, tag + framed.compartmentFrames.Length + " frames");
+            Require(framed.compartmentFrames.Length == (n >= 9 ? 2 : 1), tag + framed.compartmentFrames.Length + " frames");
             for (var i = 0; i < framed.compartmentFrames.Length; i++) Require(framed.compartmentFrames[i] == 9f * (i + 1) && framed.compartmentFrames[i] < len, tag + "frame " + i);
+            foreach (var fu in framed.units)
+                foreach (var fz in framed.compartmentFrames)
+                    Require(Mathf.Abs(fu.z - fz) >= 1f, tag + "framed: a unit at z " + F(fu.z) + " stands in the frame on z " + F(fz));
             // The binder reads the length from the room's record.
             Require(FrontRoomsRunRigBinder.CellsOf(new FrontRooms.Map.FrontRoomsRunRoom { Cells = new FrontRooms.Map.GridCoord[n] }) == n, tag + "CellsOf");
             // Built: lights, the lanes, the trip and the reset over the current length.
@@ -1495,6 +1722,366 @@ public static class FrontRoomsRunRigTests
         Require(Mathf.Abs(reset9 - 2.4f) < 1e-4f, "today's reset " + F(reset9) + " s, not 2.4");
         Log.AppendLine("R19 COST " + sb);
         return sb.Append("6 and 15 cells refused (built at 9)").ToString();
+    }
+
+    // ------------------------------------------------------------------ card 2: the receding end
+    static string R20Recede()
+    {
+        var sb = new StringBuilder();
+        // 1. The schedule (71 s.4.5, motion.txt R5).
+        var t2r9 = new RunRecedeSchedule(27f, 36f, RunRecedeBody.T2Restack);
+        var t2r15 = new RunRecedeSchedule(27f, 42f, RunRecedeBody.T2Restack);
+        var t1r15 = new RunRecedeSchedule(27f, 42f, RunRecedeBody.T1Roll);
+        Require(t2r9.Steps == 2 && Near(t2r9.SeatedAt(0), 1.55f) && Near(t2r9.SeatedAt(1), 3.35f), "T2 R 9 seats " + F(t2r9.SeatedAt(0)) + " / " + F(t2r9.SeatedAt(1)));
+        Require(t2r15.Steps == 4 && Near(t2r15.SeatedAt(0), 1.55f) && Near(t2r15.SeatedAt(1), 2.90f) && Near(t2r15.SeatedAt(2), 4.25f) && Near(t2r15.SeatedAt(3), 6.05f),
+            "T2 R 15 seats " + F(t2r15.SeatedAt(0)) + " / " + F(t2r15.SeatedAt(1)) + " / " + F(t2r15.SeatedAt(2)) + " / " + F(t2r15.SeatedAt(3)));
+        Require(t1r15.Steps == 4 && Near(t1r15.SeatedAt(0), 1.15f) && Near(t1r15.SeatedAt(1), 2.15f) && Near(t1r15.SeatedAt(2), 3.15f) && Near(t1r15.SeatedAt(3), 4.85f),
+            "T1 R 15 seats " + F(t1r15.SeatedAt(0)) + " / " + F(t1r15.SeatedAt(3)));
+        Require(t2r9.StepTo(0) == 33f && t2r9.StepTo(1) == 36f && t2r15.StepTo(1) == 36f && t2r15.StepTo(2) == 39f, "seat lines");
+        // the travel's peak (s / (t - 0.175)) and the glide's 6 m/s
+        var peak = 0f;
+        for (var u = 0f; u < 1.1f; u += .001f) peak = Mathf.Max(peak, (RunRecedeSchedule.TravelAt(u + .001f, 1.1f, 6f) - RunRecedeSchedule.TravelAt(u, 1.1f, 6f)) / .001f);
+        Require(Mathf.Abs(peak - 6f / (1.1f - .175f)) < .05f, "the flinch peaks at " + F(peak));
+        var gl = RunRecedeSchedule.GlideTravel(9f);
+        var gpeak = 0f;
+        for (var u = 0f; u < gl; u += .001f) gpeak = Mathf.Max(gpeak, (RunRecedeSchedule.TravelAt(u + .001f, gl, 9f) - RunRecedeSchedule.TravelAt(u, gl, 9f)) / .001f);
+        Require(Mathf.Abs(gpeak - RunRecedeSchedule.GlideSpeed) < .05f, "the glide peaks at " + F(gpeak));
+        // the end never moves toward the player but in the tell's 15 mm jolt; it ends on its line
+        float line, off, local; RunRecedePhase ph; int st;
+        var last = 27f;
+        for (var t = 0f; t < 3.6f; t += .01f)
+        {
+            t2r9.Sample(t, out line, out off, out ph, out st, out local);
+            Require(line >= last - 1e-4f, "the end came back at t " + F(t));
+            Require(off >= -RunRecedeSchedule.Jolt - 1e-5f && off <= RunRecedeSchedule.FinalOvershoot + 1e-5f, "offset " + F(off) + " at t " + F(t));
+            last = line;
+        }
+        t2r9.Sample(4f, out line, out off, out ph, out st, out local);
+        Require(ph == RunRecedePhase.Seated && line == 36f && off == 0f, "not seated on 36 at 4 s");
+        sb.Append("seats T2 R9 1.55/3.35, R15 1.55/2.9/4.25/6.05, T1 R15 1.15/4.85; flinch peak ").Append(F(peak)).Append(", glide ").Append(F(gpeak));
+
+        // 2. The layout (Receding).
+        foreach (var to in new[] { 12, 14 })
+        {
+            var r = RunRigLayout.Receding(9, to);
+            var tag = "9 -> " + to + ": ";
+            Require(r.length == 3f * to && r.recedeLine == 27f && r.goalPoint.z == 27f, tag + "lines");
+            Require(r.compartmentFrames.Length == 2 && r.compartmentFrames[0] == 9f && r.compartmentFrames[1] == 18f, tag + "frames");
+            Require(r.sideDoors.Length == 0, tag + r.sideDoors.Length + " side doors");
+            var carried = 0;
+            foreach (var u in r.units)
+            {
+                if (u.carried) { carried++; Require(Near(u.z, 27f + RunRigLayout.CarriedUnitZ) && u.goalPlus, tag + "carried unit"); continue; }
+                Require(!u.goalPlus && u.z < 24f, tag + "a fixed unit at z " + F(u.z));
+                foreach (var fz in r.compartmentFrames) Require(Mathf.Abs(u.z - fz) >= 1f, tag + "unit in a frame");
+            }
+            Require(carried == 1 && r.units.Length == 5 && r.units[r.units.Length - 1].carried, tag + "units");
+            foreach (var it in r.wallItems) Require(it.point.z <= 27f, tag + it.kit + " at z " + F(it.point.z) + " in the length the end travels");
+            Require(r.obstacles.Length == 3, tag + r.obstacles.Length + " obstacles");
+            foreach (var o in r.obstacles) Require(o.position.z < 27f - 1.68f, tag + "an obstacle in the goal pool");
+            Require(r.ownLamps.Length == to, tag + "strips");
+        }
+        var refusedWarn = false;
+        Application.LogCallback lc = (m, st2, ty) => { if (m.Contains("receding Run!")) refusedWarn = true; };
+        Application.logMessageReceived += lc;
+        var refused = RunRigLayout.Receding(9, 13);
+        Application.logMessageReceived -= lc;
+        Require(refusedWarn && refused.recedeLine < 0f && refused.Cells == 9, "9 -> 13 not refused");
+        sb.Append("; Receding 9->12/14 by rule, 9->13 refused");
+
+        // 3. A built 9 -> 12 room (look-dev shell).
+        var lay = RunRigLayout.Receding(9, 12);
+        var root = new GameObject("TEST run b recede").transform;
+        root.position = new Vector3(5600f, 0f, 4992f);
+        var viewer = new GameObject("TEST recede viewer").transform;
+        try
+        {
+            var dress = FrontRoomsRunDress.Build(root, lay);
+            var rec = FrontRoomsRunRecede.Build(dress, lay);
+            Require(rec != null, "no recede built");
+            var rig = FrontRoomsRunRig.Create(root, lay, RunRigHost.OwnLamps, null, dress);
+            rec.Bind(rig);
+            Require(rig.GoalMount != null && rig.HiddenWraps == 3 && Near(rig.GoalLine, 27f) && rig.GoalBeyondHidden, "built: mount " + (rig.GoalMount != null) + ", hidden " + rig.HiddenWraps + ", line " + F(rig.GoalLine));
+            var cellsOff = 0;
+            foreach (Transform t in dress.Find("run b recede hidden cells")) if (!t.gameObject.activeSelf && t.childCount > 0) cellsOff++;
+            Require(cellsOff == 3, cellsOff + " hidden cells off");
+            var heads = Named(rig, "head light");
+            Require(heads.Length == 10, heads.Length + " head lights (4 fixed units + the carried one)");
+            var cues = new List<string>();
+            var seats = new List<string>();
+            rec.Cue += (c, i, p) => cues.Add(c + ":" + i);
+            rec.SeatReached += (i, z, fin) => seats.Add(i + "@" + F(z) + (fin ? "F" : ""));
+            // walk the viewer down the axis facing the goal, 3.2 m/s from z 9 (the trip), 60 Hz
+            viewer.position = root.TransformPoint(new Vector3(0f, 1.62f, 9f));
+            viewer.rotation = root.rotation;
+            rec.SetViewer(viewer);
+            rig.SetViewer(viewer);
+            rig.Trip();
+            rec.Trip();
+            var strikeSeen = 0f;
+            for (var k = 0; k < 60 * 6; k++)
+            {
+                viewer.position = root.TransformPoint(new Vector3(0f, 1.62f, 9f + 3.2f * k / 60f));
+                rig.Tick(Dt);
+                rec.Tick(Dt);
+                if (rec.Seated && strikeSeen <= 0f) strikeSeen = k / 60f;
+            }
+            Require(rec.Seated && Near(rec.Line, 36f) && rec.StepsDone == 2 && !rec.Gliding, "walker: seated " + rec.Seated + " line " + F(rec.Line) + " steps " + rec.StepsDone + " glide " + rec.Gliding);
+            Require(seats.Count == 2 && seats[0] == "0@33" && seats[1] == "1@36F", "seats " + string.Join(",", seats.ToArray()));
+            Require(rig.HiddenWraps == 0 && !rig.GoalBeyondHidden && Near(rig.GoalLine, 36f), "after the seat: hidden " + rig.HiddenWraps + " line " + F(rig.GoalLine));
+            Require(cues.IndexOf("MagnetRelease:0") == 0 && cues.Contains("MagnetRelease:1") && cues.Contains("TrolleyRoll:0") && cues.Contains("Seat:0") && cues.Contains("FinalSeat:1")
+                && cues.Contains("StripStrike:0") && cues.Contains("StripStrike:2"), "cues " + string.Join(",", cues.ToArray()));
+            Require(Near(rig.GoalMount.localPosition.z, 9f) && Near(rec.Head.localPosition.z, 36f), "the mount rides the end");
+            var record = rec.Record;
+            Require(record.Started && record.Done && record.steps == 2 && record.glideFrom == 255, "record " + record.flags + "/" + record.steps);
+            sb.Append("; walker: seats ").Append(string.Join(",", seats.ToArray())).Append(", ").Append(cues.Count).Append(" cues, strips struck, record 8 B");
+
+            // the keep-away: a viewer 5 m from the end when the gate opens glides the whole way
+            var root2 = new GameObject("TEST run b recede glide").transform;
+            root2.position = new Vector3(5700f, 0f, 4992f);
+            try
+            {
+                var d2 = FrontRoomsRunDress.Build(root2, lay);
+                var r2 = FrontRoomsRunRecede.Build(d2, lay);
+                var g2 = FrontRoomsRunRig.Create(root2, lay, RunRigHost.OwnLamps, null, d2);
+                r2.Bind(g2);
+                viewer.position = root2.TransformPoint(new Vector3(0f, 1.62f, 22f));
+                viewer.rotation = root2.rotation;
+                r2.SetViewer(viewer);
+                r2.Trip();
+                var seatedAt = -1f;
+                for (var k = 0; k < 60 * 4 && seatedAt < 0f; k++) { r2.Tick(Dt); if (r2.Seated) seatedAt = (k + 1) / 60f; }
+                var expect = RunRecedeSchedule.GlideTell + RunRecedeSchedule.GlideTravel(9f) + .35f;
+                Require(r2.Gliding && r2.Seated && Mathf.Abs(seatedAt - expect) < .05f, "glide: seated at " + F(seatedAt) + " (expected " + F(expect) + ")");
+                // Restore from the first room's record
+                var root3 = new GameObject("TEST run b recede restore").transform;
+                root3.position = new Vector3(5800f, 0f, 4992f);
+                try
+                {
+                    var d3 = FrontRoomsRunDress.Build(root3, lay);
+                    var r3 = FrontRoomsRunRecede.Build(d3, lay);
+                    var g3 = FrontRoomsRunRig.Create(root3, lay, RunRigHost.OwnLamps, null, d3);
+                    r3.Bind(g3);
+                    var quietCues = 0;
+                    r3.Cue += (c, i, p) => quietCues++;
+                    r3.Restore(record);
+                    Require(r3.Seated && Near(r3.Line, 36f) && g3.HiddenWraps == 0 && quietCues == 0, "restore: seated " + r3.Seated + ", cues " + quietCues);
+                }
+                finally { UnityEngine.Object.DestroyImmediate(root3.gameObject); }
+                sb.Append("; glide seated at ").Append(F(seatedAt)).Append(" s, restore seated quietly");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root2.gameObject); }
+
+            // the gaze gate: facing the entrance at 9.5 m it stays shut; facing the goal it opens
+            var root4 = new GameObject("TEST run b recede gate").transform;
+            root4.position = new Vector3(5900f, 0f, 4992f);
+            try
+            {
+                var d4 = FrontRoomsRunDress.Build(root4, lay);
+                var r4 = FrontRoomsRunRecede.Build(d4, lay);
+                var g4 = FrontRoomsRunRig.Create(root4, lay, RunRigHost.OwnLamps, null, d4);
+                r4.Bind(g4);
+                viewer.position = root4.TransformPoint(new Vector3(0f, 1.62f, 9.5f));
+                viewer.rotation = root4.rotation * Quaternion.Euler(0f, 180f, 0f);
+                r4.SetViewer(viewer);
+                r4.Trip();
+                for (var k = 0; k < 60; k++) r4.Tick(Dt);
+                Require(r4.Phase == RunRecedePhase.Waiting && Near(r4.Line, 27f), "gate open facing away: " + r4.Phase);
+                viewer.rotation = root4.rotation * Quaternion.Euler(0f, 30f, 0f);
+                r4.Tick(Dt);
+                Require(r4.Phase == RunRecedePhase.Tell, "gate shut facing 30 deg off the goal: " + r4.Phase);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root4.gameObject); }
+            sb.Append("; gaze gate shut facing away, open at 30 deg");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(root.gameObject);
+            UnityEngine.Object.DestroyImmediate(viewer.gameObject);
+        }
+
+        // 4. Today's room is untouched: no goal mount, no hidden strip, the gate on z 27.
+        using (var today = new Corridor())
+        {
+            Require(today.rig.GoalMount == null && today.rig.HiddenWraps == 0 && today.rig.GoalLine == 27f && !today.rig.GoalBeyondHidden, "today's room changed");
+            Require(today.rig.Layout.recedeLine < 0f, "today's layout recedes");
+        }
+        return sb.Append("; today's room untouched").ToString();
+    }
+
+    static bool Near(float a, float b) { return Mathf.Abs(a - b) < .006f; }
+
+    /// <summary>R21 (card 2, the T2 body, 71 s.5.3): the pieces and their clips; a built 9 -> 12 room re-stacks at every step and
+    /// is whole again at each seat; the cues come in order (bottom-up landings); the glide and a restore keep the wall whole;
+    /// desktop blocks with grit, iPad blocks without, phones the strips; a plain room builds none of it.</summary>
+    static string R21Restack()
+    {
+        var sb = new StringBuilder();
+        // 1. The clips: T2's phases, exact rest at both ends, landings from the bottom up.
+        foreach (var kit in new[] { FrontRoomsRunRestack.BlocksKit, FrontRoomsRunRestack.StripsKit })
+        {
+            var n = kit == FrontRoomsRunRestack.BlocksKit ? 69 : 28;
+            foreach (var suffix in new[] { FrontRoomsRunRestack.FlinchSuffix, FrontRoomsRunRestack.StepSuffix })
+            {
+                var c = FrontRoomsRunRestack.LoadClip(kit + suffix);
+                var tag = kit + suffix + ": ";
+                Require(c != null && c.hz == 30 && c.pieces.Length == n, tag + "missing or " + (c != null ? c.pieces.Length : -1) + " pieces");
+                var flinch = suffix == FrontRoomsRunRestack.FlinchSuffix;
+                Require(Mathf.Abs(c.phases[0] - (flinch ? .25f : .15f)) < 1e-4f && Mathf.Abs(c.phases[1] - (flinch ? 1.1f : .8f)) < 1e-4f && Mathf.Abs(c.phases[2] - .2f) < 1e-4f
+                    && Mathf.Abs(c.distance - (flinch ? 6f : 3f)) < 1e-4f, tag + "phases");
+                Require(Mathf.Abs(c.frames - 1 - c.duration * 30f) <= 1f, tag + c.frames + " frames for " + F(c.duration) + " s");
+                foreach (var p in c.pieces)
+                {
+                    Require(p.keys.Length == c.frames * 7, tag + p.name + " keys");
+                    for (var e = 0; e < 2; e++)
+                    {
+                        var o = e == 0 ? 0 : (c.frames - 1) * 7;
+                        Require(Mathf.Abs(p.keys[o] - p.rest[0]) < 1e-4f && Mathf.Abs(p.keys[o + 1] - p.rest[1]) < 1e-4f && Mathf.Abs(p.keys[o + 2]) < 1e-4f
+                            && Mathf.Abs(p.keys[o + 6] - 1f) < 1e-4f, tag + p.name + (e == 0 ? " does not start" : " does not end") + " at rest");
+                    }
+                }
+                var lastCourse = -1; var lastT = -1f; var courses = 0;
+                foreach (var e in c.contacts)
+                {
+                    Require(e.t >= lastT - 1e-5f, tag + "contacts out of order");
+                    lastT = e.t;
+                    if (e.kind != "course") continue;
+                    Require(e.course == lastCourse + 1, tag + "course " + e.course + " landed after " + lastCourse);
+                    lastCourse = e.course; courses++;
+                }
+                Require(courses == 13, tag + courses + " course landings");
+            }
+        }
+        sb.Append("clips: blocks 69 / strips 28 x flinch (.25/1.1/.2, 6 m) and step (.15/.8/.2, 3 m), rest at both ends, courses land 0..12");
+
+        // 2. A built 9 -> 12 room, desktop: the wall comes apart at each tell and is whole at each seat.
+        var lay = RunRigLayout.Receding(9, 12);
+        var root = new GameObject("TEST run b restack").transform;
+        root.position = new Vector3(6000f, 0f, 4992f);
+        var viewer = new GameObject("TEST restack viewer").transform;
+        try
+        {
+            var dress = FrontRoomsRunDress.Build(root, lay);
+            var rec = FrontRoomsRunRecede.Build(dress, lay);
+            var rig = FrontRoomsRunRig.Create(root, lay, RunRigHost.OwnLamps, null, dress);
+            rec.Bind(rig);
+            var body = rec.Restack;
+            Require(body != null && body.BodyTier == FrontRoomsRunRestack.Tier.Desktop && body.PieceCount == 69 && body.Levels == 3, "desktop body: " + (body != null ? body.BodyTier + " " + body.PieceCount + " pieces " + body.Levels + " levels" : "none"));
+            var tris = body.LevelTriangles;
+            Require(tris[0] > tris[1] && tris[1] > tris[2] && tris[2] >= 69 * 12, "level triangles " + tris[0] + "/" + tris[1] + "/" + tris[2]);
+            Require(rec.WallSkins != null && rec.WallSkins.activeSelf && !body.gameObject.activeSelf && !body.Active, "at rest: the static wall shows, the body is hidden");
+            var gated = 0;
+            foreach (var r in body.Renderers) foreach (var m in r.sharedMaterials) if (FrontRoomsRunGate.IsTwin(m)) gated++;
+            Require(gated > 0, "the body's materials are not in the room's light gate");
+            var cues = new List<string>();
+            rec.Cue += (cue, i, p) => cues.Add(cue + ":" + i);
+            viewer.position = root.TransformPoint(new Vector3(0f, 1.62f, 9f));
+            viewer.rotation = root.rotation;
+            rec.SetViewer(viewer);
+            rig.SetViewer(viewer);
+            rig.Trip();
+            rec.Trip();
+            var flew = 0; var wholeInDwell = 0; var apartInDwell = 0; var maxOut = 0f;
+            for (var k = 0; k < 60 * 6; k++)
+            {
+                viewer.position = root.TransformPoint(new Vector3(0f, 1.62f, 9f + 3.2f * k / 60f));
+                rig.Tick(Dt);
+                rec.Tick(Dt);
+                if (body.Active) flew++;
+                if (rec.Phase == RunRecedePhase.Dwell) { if (rec.WallSkins.activeSelf && !body.gameObject.activeSelf) wholeInDwell++; else apartInDwell++; }
+                if (body.Active && (rec.Phase == RunRecedePhase.Travel))
+                    foreach (Transform b in body.transform)
+                        if (b.name.StartsWith("p", StringComparison.Ordinal)) maxOut = Mathf.Max(maxOut, -b.localPosition.z);
+            }
+            Require(rec.Seated && rec.StepsDone == 2 && !body.Active && rec.WallSkins.activeSelf && !body.gameObject.activeSelf, "after the final seat the wall is whole: active " + body.Active);
+            Require(flew > 60 && wholeInDwell > 0 && apartInDwell == 0, "flew " + flew + " frames, dwell whole " + wholeInDwell + " apart " + apartInDwell);
+            Require(maxOut > .3f && maxOut < 4f, "the pieces hung back at most " + F(maxOut) + " m");
+            var iCrack = cues.IndexOf("MortarCrack:0"); var iSlide = cues.IndexOf("SubframeSlide:0");
+            var iLand0 = cues.IndexOf("CourseLand:0"); var iLand12 = cues.IndexOf("CourseLand:12");
+            Require(iCrack > 0 && iSlide > iCrack && cues.Contains("BlockLift:12") && cues.Contains("StreamClatter:0") && iLand0 > iSlide && iLand12 > iLand0 && cues.Contains("MortarSift:12"),
+                "T2 cues: crack " + iCrack + " slide " + iSlide + " land0 " + iLand0 + " land12 " + iLand12);
+            var landings = 0; foreach (var cu in cues) if (cu.StartsWith("CourseLand:", StringComparison.Ordinal)) landings++;
+            Require(landings == 26, landings + " course landings in two steps");
+            Require(body.HasGrit && body.Grit.Emitted > 0, "desktop grit: " + (body.HasGrit ? body.Grit.Emitted + " grains" : "none"));
+            sb.Append("; desktop: tris ").Append(tris[0]).Append("/").Append(tris[1]).Append("/").Append(tris[2]).Append(", flew ").Append(flew).Append(" frames, hung back ")
+                .Append(F(maxOut)).Append(" m, whole in every dwell, 26 landings bottom-up, grit ").Append(body.Grit.Emitted);
+
+            // 3. The keep-away glide: the wall rides whole (T1 under T2).
+            var root2 = new GameObject("TEST run b restack glide").transform;
+            root2.position = new Vector3(6100f, 0f, 4992f);
+            try
+            {
+                var d2 = FrontRoomsRunDress.Build(root2, lay);
+                var r2 = FrontRoomsRunRecede.Build(d2, lay);
+                var g2 = FrontRoomsRunRig.Create(root2, lay, RunRigHost.OwnLamps, null, d2);
+                r2.Bind(g2);
+                viewer.position = root2.TransformPoint(new Vector3(0f, 1.62f, 22f));
+                viewer.rotation = root2.rotation;
+                r2.SetViewer(viewer);
+                r2.Trip();
+                var apart = 0;
+                for (var k = 0; k < 60 * 4; k++) { r2.Tick(Dt); if (r2.Restack != null && r2.Restack.Active) apart++; }
+                Require(r2.Gliding && r2.Seated && apart == 0 && r2.WallSkins.activeSelf, "glide: apart " + apart + " frames");
+                // a restore: seated whole, no event
+                var root3 = new GameObject("TEST run b restack restore").transform;
+                root3.position = new Vector3(6200f, 0f, 4992f);
+                try
+                {
+                    var d3 = FrontRoomsRunDress.Build(root3, lay);
+                    var r3 = FrontRoomsRunRecede.Build(d3, lay);
+                    var g3 = FrontRoomsRunRig.Create(root3, lay, RunRigHost.OwnLamps, null, d3);
+                    r3.Bind(g3);
+                    var quiet = 0;
+                    r3.Cue += (cue, i, p) => quiet++;
+                    r3.Restore(rec.Record);
+                    Require(r3.Seated && quiet == 0 && r3.WallSkins.activeSelf && !r3.Restack.Active, "restore: whole and quiet");
+                }
+                finally { UnityEngine.Object.DestroyImmediate(root3.gameObject); }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root2.gameObject); }
+            sb.Append("; glide and restore ride whole");
+
+            // 4. The tiers: iPad blocks without grit, phones the strips without grit.
+            foreach (var phone in new[] { false, true })
+            {
+                var root5 = new GameObject("TEST run b restack tier").transform;
+                root5.position = new Vector3(phone ? 6400f : 6300f, 0f, 4992f);
+                FrontRoomsRunRestack.ForceTabletForTools = !phone;
+                FrontRoomsRunRestack.ForcePhoneForTools = phone;
+                try
+                {
+                    var d5 = FrontRoomsRunDress.Build(root5, lay);
+                    var r5 = FrontRoomsRunRecede.Build(d5, lay);
+                    var b5 = r5.Restack;
+                    if (phone) Require(b5 != null && b5.BodyTier == FrontRoomsRunRestack.Tier.Phone && b5.PieceCount == 28 && b5.Levels == 1 && !b5.HasGrit, "phone: strips, no grit");
+                    else Require(b5 != null && b5.BodyTier == FrontRoomsRunRestack.Tier.Tablet && b5.PieceCount == 69 && b5.Levels == 3 && !b5.HasGrit, "iPad: blocks, no grit");
+                }
+                finally
+                {
+                    FrontRoomsRunRestack.ForceTabletForTools = false;
+                    FrontRoomsRunRestack.ForcePhoneForTools = false;
+                    UnityEngine.Object.DestroyImmediate(root5.gameObject);
+                }
+            }
+            sb.Append("; iPad blocks no grit, phone 28 strips no grit");
+
+            // 5. Today: a plain 9-cell room builds no end, no wall kit, no body.
+            var root6 = new GameObject("TEST run b plain").transform;
+            root6.position = new Vector3(6500f, 0f, 4992f);
+            try
+            {
+                var d6 = FrontRoomsRunDress.Build(root6, RunRigLayout.Corridor(9));
+                Require(FrontRoomsRunRecede.Build(d6, RunRigLayout.Corridor(9)) == null && d6.GetComponentInChildren<FrontRoomsRunRestack>(true) == null, "a plain room built a re-stack");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root6.gameObject); }
+            sb.Append("; a plain 9-cell room builds none");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(root.gameObject);
+            UnityEngine.Object.DestroyImmediate(viewer.gameObject);
+        }
+        return sb.ToString();
     }
 
     static string W1Gate()

@@ -43,7 +43,9 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     {
         try
         {
-            poolProfile = Grade(-12f, -2f, .45f, -4f, 4f);
+            // Tuned by eye on the scene-4 review (70 section 1 says starting values): at -12 / +.45 the porcelain tile read
+            // grey-teal (wall luma 84, Red 10-31 17:19 asks Dream Pools' porcelain white): -6, +.55, saturation +2.
+            poolProfile = Grade(-6f, -2f, .6f, -4f, 2f);
             darkProfile = Grade(-16f, -2f, .6f, -4f, 6f);
             var go = new GameObject("Post / structures pool grade (runtime)");
             go.transform.SetParent(host, false);
@@ -89,14 +91,18 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         {
             case Preset.Pool:
             case Preset.PoolClub:
-                Trilight(new Color(.30f, .36f, .38f), new Color(.32f, .38f, .40f), new Color(.36f, .44f, .44f), new Color(.11f, .16f, .17f), .010f);
+                // 70 section 1's (.30, .36, .38) / (.32, .38, .40) / (.36, .44, .44) x about 1.4 and toward neutral (review
+                // SP1-F8, KIT-F1, SP6-F9: the tile read grey-teal under the cyan trilight); fog as 70.
+                // The equator and ground raised again (walls and lid stand in for the hall's bounce, which realtime lamps alone do
+                // not give): walls toward 160+, the lid over them.
+                Trilight(new Color(.44f, .49f, .51f), new Color(.50f, .555f, .575f), new Color(.66f, .72f, .72f), new Color(.11f, .16f, .17f), .010f);
                 Grade(poolProfile, 1f);
                 // The halls' own probes (rendered once) carry the tile's reflections; elsewhere the game's default cube.
                 FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
                 break;
             case Preset.PoolNight:
                 // SP1's night key (70 section 3): the three trilight colours halved, the same grade.
-                Trilight(new Color(.15f, .18f, .19f), new Color(.16f, .19f, .20f), new Color(.18f, .22f, .22f), new Color(.06f, .08f, .085f), .010f);
+                Trilight(new Color(.22f, .245f, .255f), new Color(.25f, .28f, .29f), new Color(.33f, .36f, .36f), new Color(.06f, .08f, .085f), .010f);
                 Grade(poolProfile, 1f);
                 FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
                 break;
@@ -207,7 +213,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         public Renderer lens;
         public Color lensEmission;
         public float intensity;
-        public bool mayShadow, view;
+        public bool mayShadow, view, mustShadow;
         public int district;
         public float scale = 1f;
     }
@@ -231,6 +237,40 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// A trilight ambient (sky, equator, ground as RenderSettings takes them, gamma) as an L2 probe, for renderers that keep
+    /// another zone's ambient (SP7's vestibule): the gradient environment (up sky, horizon equator, down ground) projected
+    /// from 512 directions, each a directional term of radiance x 4 / N, so a lit Lambert surface reads as under the trilight.
+    /// </summary>
+    public static SphericalHarmonicsL2 TrilightSH(Color sky, Color equator, Color ground)
+    {
+        var sh = new SphericalHarmonicsL2();
+        sh.Clear();
+        Color s = sky.linear, e = equator.linear, g = ground.linear;
+        const int n = 512;
+        var golden = Mathf.PI * (3f - Mathf.Sqrt(5f));
+        for (var i = 0; i < n; i++)
+        {
+            var y = 1f - 2f * (i + .5f) / n;
+            var r = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
+            var a = golden * i;
+            var d = new Vector3(r * Mathf.Cos(a), y, r * Mathf.Sin(a));
+            var c = y >= 0f ? Color.Lerp(e, s, y) : Color.Lerp(e, g, -y);
+            sh.AddDirectionalLight(d, c, 4f / n);
+        }
+        return sh;
+    }
+
+    /// <summary>A lamp that always casts its shadow while on (a lamp whose light must not pass through walls: SP5's sodium heads;
+    /// review SP5-F4). Unknown lights are ignored.</summary>
+    public void Shadowed(Light light)
+    {
+        if (light == null) return;
+        foreach (var l in lamps)
+            if (l.light == light) { l.mustShadow = true; break; }
+        budgetClock = 0f;
+    }
+
     /// <summary>Scale one lamp (0 keeps it off; SP1's night lines and dimmed hall lamps). Unknown lights are ignored.</summary>
     public void Scale(Light light, float scale)
     {
@@ -248,7 +288,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         {
             if (l.district != district || l.light == null) continue;
             lights++;
-            if (l.mayShadow) shadowed++;
+            if (l.mayShadow || l.mustShadow) shadowed++;
         }
     }
 
@@ -287,7 +327,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
             var on = level > .001f;
             if (l.light.enabled != on) l.light.enabled = on;
             if (on) l.light.intensity = l.intensity * level;
-            var shadow = on && l.mayShadow && d < 9f ? LightShadows.Soft : LightShadows.None;
+            var shadow = on && (l.mustShadow || (l.mayShadow && d < 9f)) ? LightShadows.Soft : LightShadows.None;
             if (l.light.shadows != shadow) l.light.shadows = shadow;
         }
     }

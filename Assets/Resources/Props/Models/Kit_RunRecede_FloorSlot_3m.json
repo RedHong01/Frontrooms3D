@@ -1,0 +1,52 @@
+{
+ "name": "Kit_RunRecede_FloorSlot_3m",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_recede"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  30.0
+ ],
+ "lodBudget": [
+  300,
+  40,
+  12
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "boundsMin": [
+  -0.01600000075995922,
+  0.00040000007720664144,
+  -0.0
+ ],
+ "boundsMax": [
+  0.01600000075995922,
+  0.0023999998811632395,
+  3.0
+ ],
+ "triangles": 340,
+ "slots": [
+  "Prop_PlasticBlack",
+  "RunB_GalvSteel"
+ ],
+ "trianglesLod1": 36,
+ "trianglesLod2": 12,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  1.5
+ ],
+ "footprintSize": [
+  0.03200000151991844,
+  3.0
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.052
+}

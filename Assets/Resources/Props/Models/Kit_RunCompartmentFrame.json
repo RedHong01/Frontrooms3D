@@ -1,0 +1,73 @@
+{
+ "name": "Kit_RunCompartmentFrame",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "hinge_l",
+   "pos": [
+    -0.988,
+    0.0,
+    0.095
+   ]
+  },
+  {
+   "name": "hinge_r",
+   "pos": [
+    0.988,
+    0.0,
+    0.095
+   ]
+  }
+ ],
+ "tags": [
+  "run",
+  "run_recede",
+  "compartment_frame"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  6.0,
+  20.0,
+  0.0
+ ],
+ "lodBudget": [
+  2400,
+  800,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "runRecede": "card 2, 2026-11-04 (10 RN-2, 71_run_room.md s.4.3, s.10 FD1 / FD2); rule 5b: never in today's game",
+ "boundsMin": [
+  -1.4200000762939453,
+  0.0,
+  -0.09200000017881393
+ ],
+ "boundsMax": [
+  1.4200000762939453,
+  2.9000000953674316,
+  0.10300000011920929
+ ],
+ "triangles": 2292,
+ "slots": [
+  "RunB_BlockUpper",
+  "RunB_BlockLower",
+  "RunB_Cove",
+  "Prop_SteelBrown"
+ ],
+ "trianglesLod1": 564,
+ "trianglesLod2": 96,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.005499999970197678
+ ],
+ "footprintSize": [
+  2.8400001525878906,
+  0.19500000029802322
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.95
+}

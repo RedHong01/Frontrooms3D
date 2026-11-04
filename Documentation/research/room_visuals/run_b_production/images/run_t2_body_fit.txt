@@ -1,0 +1,54 @@
+/Users/redwang/FrontRoomsVisualWork/run_rethink/out/run_t2_body.jpg 2559x3922 u=1.333 tile=636
+TODAY 9 m flinch | tripped +0.8 s, end fixed at 27 m | label 190 of 610 px, data 363 of 404 px OK
+T1 9 m flinch | the wall rides whole, +0.8 s | label 156 of 610 px, data 308 of 438 px OK
+T2 9 m flinch | apart: courses hang back, door alone | label 156 of 610 px, data 396 of 438 px OK
+T2 PHONE 9 m flinch | half-course strips, no grit | label 229 of 610 px, data 297 of 365 px OK
+TODAY 9 m flinch crop | the same frame, end 4.4x | label 251 of 610 px, data 264 of 343 px OK
+T1 9 m flinch crop | the same frame, end 4.4x | label 217 of 610 px, data 264 of 377 px OK
+T2 9 m flinch crop | the same frame, end 4.4x | label 217 of 610 px, data 264 of 377 px OK
+T2 PHONE 9 m flinch crop | the same frame, end 4.4x | label 290 of 610 px, data 264 of 304 px OK
+TODAY arch flinch | the same moment from the arch | label 202 of 610 px, data 319 of 392 px OK
+T1 arch flinch | the end mid-flinch, whole | label 168 of 610 px, data 275 of 426 px OK
+T2 arch flinch | the streams along both walls | label 168 of 610 px, data 308 of 426 px OK
+T2 PHONE arch flinch | strips, the same camera | label 241 of 610 px, data 253 of 353 px OK
+TODAY 9 m step | tripped +2.5 s | label 170 of 610 px, data 154 of 424 px OK
+T1 9 m step | the final step, whole | label 136 of 610 px, data 231 of 458 px OK
+T2 9 m step | the final step re-stacks (step clip) | label 136 of 610 px, data 396 of 458 px OK
+T2 PHONE 9 m step | strips in the final step | label 209 of 610 px, data 264 of 385 px OK
+TODAY 9 m step crop | the same frame, end 4.4x | label 231 of 610 px, data 264 of 363 px OK
+T1 9 m step crop | the same frame, end 4.4x | label 197 of 610 px, data 264 of 397 px OK
+T2 9 m step crop | the same frame, end 4.4x | label 197 of 610 px, data 264 of 397 px OK
+T2 PHONE 9 m step crop | the same frame, end 4.4x | label 270 of 610 px, data 264 of 324 px OK
+TODAY arch step | the same moment from the arch | label 182 of 610 px, data 319 of 412 px OK
+T1 arch step | final step from the arch | label 148 of 610 px, data 264 of 446 px OK
+T2 arch step | final step from the arch | label 148 of 610 px, data 264 of 446 px OK
+T2 PHONE arch step | strips from the arch | label 221 of 610 px, data 220 of 373 px OK
+TODAY seat | 6 m before the door, tripped | label 120 of 610 px, data 308 of 474 px OK
+T1 seat | 6 m before the seated door | label 86 of 610 px, data 286 of 508 px OK
+T2 seat | whole again: the same wall | label 86 of 610 px, data 286 of 508 px OK
+T2 PHONE seat | whole again, phone tier | label 159 of 610 px, data 253 of 435 px OK
+TODAY jamb 0.35 m | block at the RN-F trim, armed | label 214 of 610 px, data 319 of 380 px OK
+T1 jamb 0.35 m | the end at rest, armed | label 180 of 610 px, data 242 of 414 px OK
+T2 jamb 0.35 m | the static wall: the swap seam | label 180 of 610 px, data 330 of 414 px OK
+T2 PHONE jamb 0.35 m | the same wall, phone tier | label 253 of 610 px, data 275 of 341 px OK
+T2 block 0.35 m | LOD0 in flight: cores, mortar | label 191 of 610 px, data 319 of 403 px OK
+PHONE strip 0.35 m | one level, 3 mm chamfer, no grit | label 220 of 610 px, data 352 of 374 px OK
+COST blocks 69     33396 / 3852 / 828 | 320 of 604 px OK
+COST strips 28     1232 | 180 of 604 px OK
+COST static wall   120 | 170 of 604 px OK
+COST end steel     4044 / 1780 / 264 | 310 of 604 px OK
+COST kit meshes 7.83 MiB (readable) | 300 of 604 px OK
+COST skinned body 10.32 MiB, phone 0.44 MiB | 380 of 604 px OK
+COST clips 333 KB (4 JSON) | 210 of 604 px OK
+COST core maps 3 x 1024: Run_BlockCore_A/N/S | 390 of 604 px OK
+COST pieces | hand-built levels, baked clips | label 128 of 610 px, data 330 of 466 px OK
+COST in flight: 1 renderer, 4 / 3 / 3 slots | 380 of 604 px OK
+COST   phone: 1 renderer, 3 slots | 280 of 604 px OK
+COST at rest: the static wall, 2 slots | 330 of 604 px OK
+COST grit: 1 draw, 2570 grains a step, desktop | 410 of 604 px OK
+COST pose 69 bones 0.012 ms a frame | 300 of 604 px OK
+COST GPU frame time: not measured | 280 of 604 px OK
+COST tests 23 pass, 0 fail (R1-R21, W1, W2) | 380 of 604 px OK
+COST pattern proxy: T2 adds <= 5.2 % of frame | 400 of 604 px OK
+COST time | one Unity, edit mode | label 105 of 610 px, data 220 of 489 px OK
+ALL LABELS FIT

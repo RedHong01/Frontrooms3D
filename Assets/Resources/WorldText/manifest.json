@@ -453,6 +453,10 @@
                 "Print/Stair/exit_door_to_glyphs",
                 "Print/Stair/id_floor_glyphs",
                 "Print/Stair/id_terminus_glyphs",
+                "Props/Models/Kit_ExitSign",
+                "Props/Models/Kit_ExitSign_End",
+                "Props/Models/Kit_ExitSign_Hanging",
+                "Props/Models/Kit_ExitSign_HangingFlush",
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing_rects",
                 "Terminal/Content/interoffice",
                 "Terminal/Content/terminal_1",
@@ -460,6 +464,13 @@
                 "Terminal/Content/terminal_3"
             ],
             "patch": [
+                "Surfaces/Textures/ExitSign_Diffuser_A",
+                "Surfaces/Textures/ExitSign_Diffuser_E",
+                "Surfaces/Textures/ExitSign_Diffuser_F",
+                "Surfaces/Textures/ExitSign_Diffuser_S",
+                "Surfaces/Textures/ExitSign_Face_A",
+                "Surfaces/Textures/ExitSign_Face_N",
+                "Surfaces/Textures/ExitSign_Face_S",
                 "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0",
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing",
                 "Surfaces/Textures/Prop_EvacPlan_A_RoomPhase0",
@@ -470,7 +481,12 @@
                 "Surfaces/Textures/Prop_EvacPlan_E",
                 "Surfaces/Textures/Prop_EvacPlan_Locked_E"
             ],
-            "models": []
+            "models": [
+                "Props/Models/Kit_ExitSign",
+                "Props/Models/Kit_ExitSign_End",
+                "Props/Models/Kit_ExitSign_Hanging",
+                "Props/Models/Kit_ExitSign_HangingFlush"
+            ]
         },
         {
             "code": "pt-BR",

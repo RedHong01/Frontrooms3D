@@ -170,6 +170,9 @@ namespace FrontRooms.Map
         public int zonesDecided, placed, notReady, ineligible, noFit, suppressed;
         // Placed rooms by host theme, by goal (a forced Door onto a Standard cell, or a Standard-to-Low border door), those straddling zones, and module Relay entries the world would hide (within minEntryCells).
         public int level0, office, ownZoneDoors, borderDoors, multiZone, entriesHidden;
+        // The Run! rethink (71 s.9, card 1): rooms by length and twist; the competing zones of the square and how many hold a
+        // straight of the checked length (the fit rate's two counts).
+        public int cells7, cells9, cells12, cells14, doorEntrances, receding, competing, fit;
         public List<string> errors = new List<string>();
     }
 
@@ -182,7 +185,46 @@ namespace FrontRooms.Map
         public string timestampUtc;
         public bool goalDoorForced, office;
         public int radiusChunks, seedCount, passed, failed, placed, notReady, ineligible, noFit, suppressed, ownZoneDoors, borderDoors, multiZone, entriesHidden;
+        // The Run! rethink (71 s.9, card 1): the card every room is (per zone: forceCard, else plain 9), rooms by length and twist,
+        // and the fit rate: competing zones of the squares that hold a straight of the card's length (fit / competing).
+        public string card;
+        public int cells7, cells9, cells12, cells14, doorEntrances, receding, competing, fit;
+        public float fitRate;
         public List<MapRunSeedRow> seeds = new List<MapRunSeedRow>();
+    }
+
+    /// <summary>One run of the deck check (RunRunDeck): every floor's deal, and the rows' errors.</summary>
+    [Serializable]
+    public sealed class MapRunDeckSeedRow
+    {
+        public int seed;
+        public bool passed;
+        // Per floor: "floor 3 T3: door 9 (deck door 9)" ... (RunDeal.ToString).
+        public List<string> deals = new List<string>();
+        // Rooms placed, floors dealt nothing, twists placed, devices the calm rule kept out (planner-excluded candidates touching a calm zone).
+        public int rooms, nothing, twists, calmExcluded;
+        // The devices-first pass (card 3's other order): rooms placed, zones refused (a goal door into a zone with a decided
+        // device: CalmRefused), and devices decided before a room on its host zone's border (built later as plain).
+        public int firstRooms, calmRefused, hostDevicesPlain;
+        public List<string> errors = new List<string>();
+    }
+
+    /// <summary>
+    /// The Run! deck and the calm rule (71 s.9, cards 2 and 3; RunRunDeck): a run of floors per seed, the game's way (one Run!
+    /// a floor from the run's deck, foil and alarm doors forced on the one budget), every room placed counted as met.
+    /// </summary>
+    [Serializable]
+    public sealed class MapRunDeckReport
+    {
+        public string suite = "FrontRooms Run! deck and calm (71 s.9, cards 2 and 3)";
+        public string scope = "Per seed a run of floors 1..N at the tiers given (non-decreasing), each a fresh cache on its floor seed with the run's one FrontRoomsRunDeck, the start door at cell (0, 0) met at tier 1, every other zone met at the floor's tier after the first send, foil and alarm doors forced on the one budget, every placed room counted as met. Rows: at most one Run! a floor; the run's first Run! plain 7, built at 7 (never shortened), and plain until one is met; no twist on two floors running (the receding end never); the receding end only on B2+ (9 -> 14 only on B3+ at T5); lengths by tier (decision 3: T2-T3 9, T4 12, T5 14 or 12 where 14 does not fit; a twist that cannot be dealt plays as the tier's plain room; a 9-cell room at T4-T5 only as a Run door or ramp twist; FitOrder shortens only 14 to 12 and a receding 9 -> 14 to 9 -> 12); each room's structure (CR-1, CR-5, CR-6, the entrance arch or Run door, F5 never the only route, F7 no chain or dead end beyond the goal door); card 3: no foiled window or alarm door decided after a room touches its host zone or the zone beyond its goal door; a replay of the same run deals the same. Then a devices-first pass per seed (card 3's other order: every device of the square's west half decided at tier 1 before the floor's zones are met): no room placed whose goal door opens into a zone a decided device touches (they are refused, CalmRefused), and every device in a room's calm zones was decided before it and touches only its host zone (built later, it reads plain). Data only.";
+        public string timestampUtc;
+        public bool doorEntrance, recede, ramps;
+        public string tiers;
+        public int seedCount, floors, passed, failed, rooms, nothing, twists, calmExcluded, firstRooms, calmRefused, hostDevicesPlain;
+        // Rooms by what was built (plain 7 / 9 / 12 / 14, door 9, recede 9->12 / 9->14) and by tier.
+        public List<string> builtCounts = new List<string>();
+        public List<MapRunDeckSeedRow> seeds = new List<MapRunDeckSeedRow>();
     }
 
     /// <summary>One seed of the foil check (RunFoil; C13, Relay v2 step V7a): counts, and the rows' errors.</summary>
@@ -303,6 +345,7 @@ namespace FrontRooms.Map
         public static MapRunReport RunRunRooms(MapSettings settings, int firstSeed, int seedCount, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsRunRules rules)
         {
             var report = new MapRunReport { radiusChunks = radius, seedCount = seedCount, timestampUtc = DateTime.UtcNow.ToString("o"), goalDoorForced = rules != null && rules.goalDoorForced, office = rules != null && rules.office };
+            report.card = (rules == null || rules.forceCard.IsNothing ? RunCard.Plain(FrontRoomsRunRooms.Length) : rules.forceCard).ToString();
             for (var i = 0; i < seedCount; i++)
             {
                 var s = (settings ?? new MapSettings()).Clone();
@@ -322,19 +365,43 @@ namespace FrontRooms.Map
                 report.borderDoors += row.borderDoors;
                 report.multiZone += row.multiZone;
                 report.entriesHidden += row.entriesHidden;
+                report.cells7 += row.cells7;
+                report.cells9 += row.cells9;
+                report.cells12 += row.cells12;
+                report.cells14 += row.cells14;
+                report.doorEntrances += row.doorEntrances;
+                report.receding += row.receding;
+                report.competing += row.competing;
+                report.fit += row.fit;
             }
+            report.fitRate = report.competing > 0 ? (float)report.fit / report.competing : 0f;
             return report;
+        }
+
+        /// <summary>
+        /// The Run! rules these check caches hold (RunCache, FoilCache, AlarmCache): the caller's, placed per zone (deck off) and
+        /// without the calm rule (calm off), so every plan stays pure in the seed and the zone and the fresh-cache and revisit
+        /// checks hold as before the Run! rethink. The deck and the calm rule have their own check (RunRunDeck).
+        /// </summary>
+        public static FrontRoomsRunRules ChecksRules(FrontRoomsRunRules rules)
+        {
+            if (rules == null) return null;
+            var r = rules.Clone();
+            r.deck = false;
+            r.calm = false;
+            return r;
         }
 
         /// <summary>
         /// A cache with Run! rooms as the check plays them: the start door at cell (0, 0), its chunk generated at tier 1 before
         /// the map is ready (the arrival zone), then the map ready, the first send gone out and every later zone met at tier 2.
-        /// The same steps on any cache give the same rooms (the plan is pure in the seed, the zone and its tier).
+        /// The same steps on any cache give the same rooms (the plan is pure in the seed, the zone and its tier): the rooms are
+        /// placed per zone (ChecksRules: forceCard's room in every zone whose slot roll passes, else today's plain 9).
         /// </summary>
         public static FrontRoomsMapCache RunCache(MapSettings settings, IReadOnlyList<RoomModuleData> modules, FrontRoomsRunRules rules)
         {
             var cache = new FrontRoomsMapCache(settings, modules);
-            var run = new FrontRoomsRunRooms(rules);
+            var run = new FrontRoomsRunRooms(ChecksRules(rules) ?? new FrontRoomsRunRules { deck = false, calm = false });
             cache.SetRunRooms(run);
             var start = new GridCoord(0, 0);
             run.SetStart(start);
@@ -456,8 +523,8 @@ namespace FrontRooms.Map
                 }
                 var ha = gen.HeightOf(a);
                 var hb = gen.HeightOf(b);
-                // Run! (CR-6a): a goal door may stand between two Standard cells (only with Run! rooms in).
-                var runGoal = kind == EdgeKind.Door && cache.Run != null && cache.Run.IsGoalEdge(a, b);
+                // Run! (CR-6a, card 5): a goal door, or a Run door room's entrance, may stand between two Standard cells (only with Run! rooms in).
+                var runGoal = kind == EdgeKind.Door && cache.Run != null && cache.Run.IsRunDoorEdge(a, b);
                 if (ha == hb && (kind == EdgeKind.Door || kind == EdgeKind.Window) && !runGoal) Fail(kind + " between two " + ha + " cells at " + a + "-" + b);
                 // C33: a Tall zone's one arch to a lower zone is the only opening across a height change that is not a door or glass.
                 if (ha != hb && (kind == EdgeKind.Open || (kind == EdgeKind.Arch && !gen.IsTallExit(a, b)))) Fail(kind + " across a height change at " + a + "-" + b);
@@ -530,11 +597,10 @@ namespace FrontRooms.Map
             return report;
         }
 
-        // ---------- 9. Run! rooms (L7) ----------
+        // ---------- 9. Run! rooms (L7; the Run! rethink, 71 s.9 cards 1, 3, 4, 5) ----------
 
         static void CheckRunRooms(FrontRoomsMapCache cache, FrontRoomsMapCache fresh, int min, int max, FrontRoomsRunRules rules, MapRunSeedRow row, Action<string> fail)
         {
-            const int n = MapGrid.ChunkCells;
             var run = cache.Run;
             var gen = cache.Generator;
             if (row != null)
@@ -545,140 +611,44 @@ namespace FrontRooms.Map
                 row.noFit = run.NoFit;
                 row.suppressed = run.Suppressed;
             }
+            // Per zone (the check caches): every room is the card, exactly (forceCard, else today's plain 9).
+            var card = rules.forceCard.IsNothing ? RunCard.Plain(FrontRoomsRunRooms.Length) : rules.forceCard;
+            // Card 1's fit rate: the zones whose site lies in the square (one site per chunk) two chunks or more from the start
+            // door's (so the 15-cell rule round the start does not count), that compete for a room, and how many of them hold a
+            // straight of the card's length (Candidate is pure in the seed: it generates nothing).
+            if (row != null)
+                for (var cy = min; cy < max; cy++)
+                for (var cx = min; cx < max; cx++)
+                {
+                    var id = new GridCoord(cx, cy);
+                    if (Math.Max(Math.Abs(cx), Math.Abs(cy)) < 2 || !run.CompetesForTools(id)) continue;
+                    row.competing++;
+                    if (run.Candidate(id, card.cells) != null) row.fit++;
+                }
             var chunkOwner = new Dictionary<GridCoord, int>();
             // A snapshot: the checks generate chunks (Get, ZoneTier), and a zone met now may plan a room of its own.
             foreach (var room in new List<FrontRoomsRunRoom>(run.Rooms))
             {
-                // Only rooms wholly inside the square: a room met at its edge is checked by its own cells as far as they reach.
-                var inside = true;
-                foreach (var c in room.Cells)
-                {
-                    var ch = MapGrid.ChunkOf(c);
-                    if (ch.x < min || ch.x >= max || ch.y < min || ch.y >= max) inside = false;
-                }
-                if (!inside) continue;
-                if (row != null)
-                {
-                    row.placed++;
-                    if (room.Theme == ZoneTheme.Office) row.office++; else row.level0++;
-                    if (room.BeyondHeight == ZoneHeight.Low) row.borderDoors++; else row.ownZoneDoors++;
-                    if (room.Zones.Length > 1) row.multiZone++;
-                }
-                var tag = "Run! room " + room.Id + " (zone " + room.Zone + ", " + room.Cells[0] + "->" + room.GoalCell + ")";
-                var zone = gen.Zone(room.Zone);
-                // CR-1: 9 cells in a straight, one Standard zone of an allowed theme.
-                if (room.Cells.Length != FrontRoomsRunRooms.Length) fail(tag + ": " + room.Cells.Length + " cells, not 9");
-                if (zone.height != ZoneHeight.Standard) fail(tag + ": zone is " + zone.height + ", not Standard");
-                if (zone.theme == ZoneTheme.Office && !rules.office) fail(tag + ": an Office zone without call 5");
-                if (Math.Abs(room.AxisX) + Math.Abs(room.AxisY) != 1) fail(tag + ": no axis");
-                var crossings = 0;
-                for (var k = 0; k < room.Cells.Length; k++)
-                {
-                    var c = room.Cells[k];
-                    var cz = gen.ZoneOf(c);
-                    if (cz.height != ZoneHeight.Standard || cz.theme != zone.theme) fail(tag + ": cell " + c + " is " + cz.height + " " + cz.theme + ", not one space with its host zone");
-                    if (System.Array.IndexOf(room.Zones, cz.id) < 0) fail(tag + ": cell " + c + "'s zone missing from its zones");
-                    if (k > 0 && (c.x - room.Cells[k - 1].x != room.AxisX || c.y - room.Cells[k - 1].y != room.AxisY)) fail(tag + ": not a straight at " + c);
-                    if (k + 1 < room.Cells.Length)
-                    {
-                        if (cache.Edge(c, room.Cells[k + 1]) != EdgeKind.Open) fail(tag + ": inside edge " + c + "-" + room.Cells[k + 1] + " is " + cache.Edge(c, room.Cells[k + 1]));
-                        if (MapGrid.ChunkOf(c) != MapGrid.ChunkOf(room.Cells[k + 1])) crossings++;
-                    }
-                    var px = room.AxisY != 0 ? 1 : 0;
-                    var py = room.AxisX != 0 ? 1 : 0;
-                    var s1 = new GridCoord(c.x + px, c.y + py);
-                    var s2 = new GridCoord(c.x - px, c.y - py);
-                    if (cache.Edge(c, s1) != EdgeKind.Wall || cache.Edge(c, s2) != EdgeKind.Wall) fail(tag + ": a long side of " + c + " is not a wall");
-                    if (MapGrid.ChunkOf(s1) != MapGrid.ChunkOf(c) || MapGrid.ChunkOf(s2) != MapGrid.ChunkOf(c)) fail(tag + ": a long side of " + c + " is on a chunk border");
-                    var data = cache.Get(MapGrid.ChunkOf(c));
-                    var o = data.Origin;
-                    if (data.lamp[MapGrid.LocalIndex(c.x - o.x, c.y - o.y)] != ModuleLamp.Off) fail(tag + ": cell " + c + " has a map lamp (CR-4)");
-                    foreach (var rect in data.rooms)
-                        if (rect.Contains(c.x - o.x, c.y - o.y)) fail(tag + ": a carved or module room covers " + c);
-                    if (run.HasStart && Math.Abs(c.x - run.StartDoor.x) + Math.Abs(c.y - run.StartDoor.y) < rules.minStartCells) fail(tag + ": cell " + c + " within " + rules.minStartCells + " cells of the start door");
-                }
-                if (crossings != 1) fail(tag + ": crosses " + crossings + " chunk borders, not 1");
-                // RELAY 6: no zone's key lies in it (a zone's key is held by its site's chunk), and CR-5 for every zone it touches:
-                // met at minTier+ (the host at least), never the arrival zone.
-                foreach (var z in room.Zones)
-                {
-                    var home = cache.Get(z);
-                    if (home.hasKey && room.Contains(home.keyCell)) fail(tag + ": zone " + z + "'s key lies in it at " + home.keyCell);
-                    if (cache.ZoneTier(z) < rules.minTier && !rules.force) fail(tag + ": touches zone " + z + " met at tier " + cache.ZoneTier(z));
-                    if (run.HasStart && z == run.ArrivalZone) fail(tag + ": touches the arrival zone " + z);
-                    if (run.MetAt(z, out _, out var afterSend) && !afterSend) fail(tag + ": touches zone " + z + " met before the first send");
-                }
-                // Both chunks hold a host cell (neither could be generated before the host zone was decided).
-                foreach (var ch in new[] { room.ChunkA, room.ChunkB })
-                {
-                    var holds = false;
-                    var co = MapGrid.ChunkOrigin(ch);
-                    for (var k = 0; k < n * n && !holds; k++) holds = gen.ZoneOf(new GridCoord(co.x + k % n, co.y + k / n)).id == room.Zone;
-                    if (!holds) fail(tag + ": chunk " + ch + " holds no cell of its host zone");
-                }
-                // The arch on the zone's own side, the goal door (CR-6), both off a chunk border.
-                if (gen.ZoneOf(room.Outside).id != room.Zone) fail(tag + ": the arch's outside cell " + room.Outside + " is in another zone");
-                if (cache.Edge(room.Outside, room.Cells[0]) != EdgeKind.Arch) fail(tag + ": the entrance " + room.Outside + "-" + room.Cells[0] + " is " + cache.Edge(room.Outside, room.Cells[0]) + ", not an arch");
-                if (cache.Edge(room.Cells[room.Cells.Length - 1], room.Beyond) != EdgeKind.Door) fail(tag + ": the goal edge is " + cache.Edge(room.Cells[room.Cells.Length - 1], room.Beyond) + ", not a door");
-                if (!run.IsGoalEdge(room.Cells[room.Cells.Length - 1], room.Beyond)) fail(tag + ": the goal edge is not registered (M8)");
-                if (MapGrid.ChunkOf(room.Outside) != MapGrid.ChunkOf(room.Cells[0]) || MapGrid.ChunkOf(room.Beyond) != MapGrid.ChunkOf(room.Cells[room.Cells.Length - 1])) fail(tag + ": an end on a chunk border");
-                var far = gen.ZoneOf(room.Beyond);
-                if (far.height == ZoneHeight.Tall) fail(tag + ": the goal door opens into a Tall zone");
-                if (!rules.goalDoorForced && far.height != ZoneHeight.Low) fail(tag + ": the goal's far cell " + room.Beyond + " (" + far.height + ") is not Low without call 2 (CR-6b)");
-                // CR-5: the tier, the arrival zone, the 15 cells.
-                if (run.HasStart && Math.Abs(room.Outside.x - run.StartDoor.x) + Math.Abs(room.Outside.y - run.StartDoor.y) < rules.minStartCells) fail(tag + ": the arch within " + rules.minStartCells + " cells of the start door");
+                if (!RoomInside(room, min, max)) continue;
+                CheckRunRoom(cache, room, rules, card, row, fail);
+                var tag = RunTag(room);
                 // One zone's room per chunk.
                 foreach (var ch in new[] { room.ChunkA, room.ChunkB })
                 {
                     if (chunkOwner.TryGetValue(ch, out var other) && other != room.Id) fail(tag + ": shares chunk " + ch + " with Run! room " + other);
                     chunkOwner[ch] = room.Id;
                 }
-                // Never the only way round: each of its chunks is one piece without the corridor (cells of the chunk, its own edges).
-                foreach (var ch in new[] { room.ChunkA, room.ChunkB })
-                {
-                    var data = cache.Get(ch);
-                    var o = data.Origin;
-                    var seen = new bool[n * n];
-                    var queue = new Queue<int>();
-                    var first = -1;
-                    var free = 0;
-                    for (var k = 0; k < n * n; k++)
-                    {
-                        if (room.Contains(new GridCoord(o.x + k % n, o.y + k / n))) continue;
-                        free++;
-                        if (first < 0) first = k;
-                    }
-                    if (first < 0) continue;
-                    seen[first] = true;
-                    queue.Enqueue(first);
-                    var reached = 0;
-                    while (queue.Count > 0)
-                    {
-                        var k = queue.Dequeue();
-                        reached++;
-                        int i = k % n, j = k / n;
-                        void Step(int to, EdgeKind kind)
-                        {
-                            if (seen[to] || !MapGrid.Passable(kind) || room.Contains(new GridCoord(o.x + to % n, o.y + to / n))) return;
-                            seen[to] = true;
-                            queue.Enqueue(to);
-                        }
-                        if (i < n - 1) Step(k + 1, data.east[k]);
-                        if (i > 0) Step(k - 1, data.east[k - 1]);
-                        if (j < n - 1) Step(k + n, data.north[k]);
-                        if (j > 0) Step(k - n, data.north[k - n]);
-                    }
-                    if (reached != free) fail(tag + ": chunk " + ch + " falls apart without the corridor (" + reached + " of " + free + " cells)");
-                }
                 // A fresh cache made the same way planned the same room.
                 if (fresh != null)
                 {
-                    // Meet the host zone there (the zone of the arch's outside cell; a corridor cell may lie in another zone).
+                    // Meet the host zone there (the zone of the entrance's outside cell; a corridor cell may lie in another zone).
                     fresh.ZoneOf(room.Outside);
                     var again = fresh.Run.RoomAt(room.Cells[0]);
-                    if (again == null || again.Outside != room.Outside || again.Beyond != room.Beyond || again.Cells[0] != room.Cells[0]) fail(tag + ": a fresh cache planned it differently");
+                    if (again == null || again.Outside != room.Outside || again.Beyond != room.Beyond || again.Cells[0] != room.Cells[0] || again.LengthCells != room.LengthCells || again.Variant != room.Variant)
+                        fail(tag + ": a fresh cache planned it differently");
                 }
-                // Module Relay entries the world hides from the Relay (within minEntryCells), counted.
+                // Module Relay entries the world hides from the Relay (within minEntryCells of the room or the cell beyond its goal
+                // door: CR-5 and F4), counted.
                 if (row != null)
                     for (var cy = min; cy < max; cy++)
                     for (var cx = min; cx < max; cx++)
@@ -692,12 +662,434 @@ namespace FrontRooms.Map
                             {
                                 if (mk.kind != ModuleMarkerKind.RelayEntry) continue;
                                 var ec = new GridCoord(data.Origin.x + data.rooms[r].x + (int)Math.Floor(mk.x / MapGrid.CellSize), data.Origin.y + data.rooms[r].y + (int)Math.Floor(mk.z / MapGrid.CellSize));
+                                var near = Math.Abs(room.Beyond.x - ec.x) + Math.Abs(room.Beyond.y - ec.y) < rules.minEntryCells;
                                 foreach (var c in room.Cells)
-                                    if (Math.Abs(c.x - ec.x) + Math.Abs(c.y - ec.y) < rules.minEntryCells) { row.entriesHidden++; break; }
+                                    if (!near && Math.Abs(c.x - ec.x) + Math.Abs(c.y - ec.y) < rules.minEntryCells) near = true;
+                                if (near) row.entriesHidden++;
                             }
                         }
                     }
             }
+        }
+
+        static string RunTag(FrontRoomsRunRoom room) => "Run! room " + room.Id + " (" + room.VariantText + ", zone " + room.Zone + ", " + room.Cells[0] + "->" + room.GoalCell + ")";
+
+        // Only rooms wholly inside the square: a room met at its edge is checked by its own cells as far as they reach.
+        static bool RoomInside(FrontRoomsRunRoom room, int min, int max)
+        {
+            foreach (var c in room.Cells)
+            {
+                var ch = MapGrid.ChunkOf(c);
+                if (ch.x < min || ch.x >= max || ch.y < min || ch.y >= max) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// One Run! room's structure (CR-1, CR-5, CR-6; 71 s.9 cards 1, 4, 5; F5 and F7 of 71 s.7.6): its length and twist (the
+        /// card when <paramref name="card"/> is given, else 7 .. 14 by its own record), the straight, its cells, the entrance (the
+        /// arch, or card 5's Run door, registered), the goal door, the zones it touches, both chunks, never the only route
+        /// (F5: the far cell reaches the entrance's outside cell without the room, within 2 chunks round it), and no chain (F7:
+        /// the goal door never opens into another Run! room, nor onto a dead end).
+        /// </summary>
+        static void CheckRunRoom(FrontRoomsMapCache cache, FrontRoomsRunRoom room, FrontRoomsRunRules rules, RunCard? card, MapRunSeedRow row, Action<string> fail)
+        {
+            const int n = MapGrid.ChunkCells;
+            var run = cache.Run;
+            var gen = cache.Generator;
+            var tag = RunTag(room);
+            if (row != null)
+            {
+                row.placed++;
+                if (room.Theme == ZoneTheme.Office) row.office++; else row.level0++;
+                if (room.BeyondHeight == ZoneHeight.Low) row.borderDoors++; else row.ownZoneDoors++;
+                if (room.Zones.Length > 1) row.multiZone++;
+                switch (room.LengthCells)
+                {
+                    case 7: row.cells7++; break;
+                    case 9: row.cells9++; break;
+                    case 12: row.cells12++; break;
+                    case 14: row.cells14++; break;
+                }
+                if (room.EntranceDoor) row.doorEntrances++;
+                if (room.Receding) row.receding++;
+            }
+            var zone = gen.Zone(room.Zone);
+            // CR-1 and card 1: 7 .. 14 cells in a straight (the card's length per zone), one Standard zone of an allowed theme.
+            if (room.LengthCells < FrontRoomsRunRooms.MinCells || room.LengthCells > FrontRoomsRunRooms.CapCells) fail(tag + ": " + room.LengthCells + " cells, outside 7 .. 14");
+            if (card.HasValue && (room.LengthCells != card.Value.cells || room.Variant != card.Value.variant)) fail(tag + ": built " + room.VariantText + ", not the card " + card.Value);
+            // Cards 4-6: one twist; a Run door or ramp room 9 cells; a receding room's seats 9 .. its reserved length, the end on its first.
+            if ((room.Variant == RunVariant.Door || room.Variant == RunVariant.Ramp) && room.LengthCells != FrontRoomsRunRooms.Length) fail(tag + ": a " + room.Variant + " room of " + room.LengthCells + " cells");
+            if (room.Variant == RunVariant.Recede)
+            {
+                var seats = room.SeatCells;
+                if (!room.Receding || seats[0] != FrontRoomsRunRooms.RecedeFromCells || seats[seats.Length - 1] != room.LengthCells || (room.LengthCells != FrontRoomsRunRooms.LateCells && room.LengthCells != FrontRoomsRunRooms.DeepestCells))
+                    fail(tag + ": receding seats " + (seats == null ? "none" : string.Join(",", seats)) + " for " + room.LengthCells + " cells");
+                if (room.SeatIndex != 0 || room.OpenCells != FrontRoomsRunRooms.RecedeFromCells || Math.Abs(room.EntranceTrip - FrontRoomsRunRooms.RecedeTripCells * MapGrid.CellSize) > 1e-4f)
+                    fail(tag + ": a new receding room's end at " + room.OpenCells + " cells, arming " + room.EntranceTrip + " m in (not 9 cells, the FD1 frame at 9 m)");
+                // Card 4: the hidden length is shut (the head's line, the goal door before the last seat), the open part walks.
+                if (!run.HeldShut(room.Cells[room.OpenCells - 1], room.Cells[room.OpenCells]) || !run.HeldShut(room.GoalCell, room.Beyond) || run.HeldShut(room.Cells[0], room.Cells[1]) || !run.IsHiddenCell(room.GoalCell) || run.IsHiddenCell(room.Cells[0]))
+                    fail(tag + ": its hidden length is not shut past the end's line");
+            }
+            else if (room.SeatCells != null) fail(tag + ": seats on a room that does not recede");
+            if (zone.height != ZoneHeight.Standard) fail(tag + ": zone is " + zone.height + ", not Standard");
+            if (zone.theme == ZoneTheme.Office && !rules.office) fail(tag + ": an Office zone without call 5");
+            if (Math.Abs(room.AxisX) + Math.Abs(room.AxisY) != 1) fail(tag + ": no axis");
+            var crossings = 0;
+            for (var k = 0; k < room.Cells.Length; k++)
+            {
+                var c = room.Cells[k];
+                var cz = gen.ZoneOf(c);
+                if (cz.height != ZoneHeight.Standard || cz.theme != zone.theme) fail(tag + ": cell " + c + " is " + cz.height + " " + cz.theme + ", not one space with its host zone");
+                if (System.Array.IndexOf(room.Zones, cz.id) < 0) fail(tag + ": cell " + c + "'s zone missing from its zones");
+                if (k > 0 && (c.x - room.Cells[k - 1].x != room.AxisX || c.y - room.Cells[k - 1].y != room.AxisY)) fail(tag + ": not a straight at " + c);
+                if (room.IndexOf(c) != k) fail(tag + ": IndexOf(" + c + ") is " + room.IndexOf(c) + ", not " + k);
+                if (k + 1 < room.Cells.Length)
+                {
+                    if (cache.Edge(c, room.Cells[k + 1]) != EdgeKind.Open) fail(tag + ": inside edge " + c + "-" + room.Cells[k + 1] + " is " + cache.Edge(c, room.Cells[k + 1]));
+                    if (MapGrid.ChunkOf(c) != MapGrid.ChunkOf(room.Cells[k + 1])) crossings++;
+                }
+                var px = room.AxisY != 0 ? 1 : 0;
+                var py = room.AxisX != 0 ? 1 : 0;
+                var s1 = new GridCoord(c.x + px, c.y + py);
+                var s2 = new GridCoord(c.x - px, c.y - py);
+                if (cache.Edge(c, s1) != EdgeKind.Wall || cache.Edge(c, s2) != EdgeKind.Wall) fail(tag + ": a long side of " + c + " is not a wall");
+                if (MapGrid.ChunkOf(s1) != MapGrid.ChunkOf(c) || MapGrid.ChunkOf(s2) != MapGrid.ChunkOf(c)) fail(tag + ": a long side of " + c + " is on a chunk border");
+                var data = cache.Get(MapGrid.ChunkOf(c));
+                var o = data.Origin;
+                if (data.lamp[MapGrid.LocalIndex(c.x - o.x, c.y - o.y)] != ModuleLamp.Off) fail(tag + ": cell " + c + " has a map lamp (CR-4)");
+                foreach (var rect in data.rooms)
+                    if (rect.Contains(c.x - o.x, c.y - o.y)) fail(tag + ": a carved or module room covers " + c);
+                if (run.HasStart && Math.Abs(c.x - run.StartDoor.x) + Math.Abs(c.y - run.StartDoor.y) < rules.minStartCells) fail(tag + ": cell " + c + " within " + rules.minStartCells + " cells of the start door");
+            }
+            if (crossings != 1) fail(tag + ": crosses " + crossings + " chunk borders, not 1");
+            // RELAY 6: no zone's key lies in it (a zone's key is held by its site's chunk), and CR-5 for every zone it touches:
+            // met at minTier+ (the host at least), never the arrival zone.
+            foreach (var z in room.Zones)
+            {
+                var home = cache.Get(z);
+                if (home.hasKey && room.Contains(home.keyCell)) fail(tag + ": zone " + z + "'s key lies in it at " + home.keyCell);
+                if (cache.ZoneTier(z) < rules.minTier && !rules.force) fail(tag + ": touches zone " + z + " met at tier " + cache.ZoneTier(z));
+                if (run.HasStart && z == run.ArrivalZone) fail(tag + ": touches the arrival zone " + z);
+                if (run.MetAt(z, out _, out var afterSend) && !afterSend) fail(tag + ": touches zone " + z + " met before the first send");
+            }
+            // Both chunks hold a host cell (neither could be generated before the host zone was decided).
+            foreach (var ch in new[] { room.ChunkA, room.ChunkB })
+            {
+                var holds = false;
+                var co = MapGrid.ChunkOrigin(ch);
+                for (var k = 0; k < n * n && !holds; k++) holds = gen.ZoneOf(new GridCoord(co.x + k % n, co.y + k / n)).id == room.Zone;
+                if (!holds) fail(tag + ": chunk " + ch + " holds no cell of its host zone");
+            }
+            // The entrance on the zone's own side (the arch, or card 5's Run door), the goal door (CR-6), both off a chunk border.
+            if (gen.ZoneOf(room.Outside).id != room.Zone) fail(tag + ": the entrance's outside cell " + room.Outside + " is in another zone");
+            var entrance = cache.Edge(room.Outside, room.Cells[0]);
+            if (room.EntranceDoor)
+            {
+                if (entrance != EdgeKind.Door || !run.IsEntranceDoorEdge(room.Outside, room.Cells[0]) || run.IsArchEdge(room.Outside, room.Cells[0]) || !run.IsRunDoorEdge(room.Outside, room.Cells[0]))
+                    fail(tag + ": the entrance " + room.Outside + "-" + room.Cells[0] + " is " + entrance + ", not a registered Run door");
+                if (Math.Abs(room.EntranceTrip - room.DoorTrip) > 1e-4f || Math.Abs(room.GoalTrip - room.DoorTrip) > 1e-4f) fail(tag + ": a Run door room arming " + room.EntranceTrip + " / " + room.GoalTrip + " m in, not " + room.DoorTrip);
+            }
+            else if (entrance != EdgeKind.Arch || !run.IsArchEdge(room.Outside, room.Cells[0]) || run.IsEntranceDoorEdge(room.Outside, room.Cells[0]))
+                fail(tag + ": the entrance " + room.Outside + "-" + room.Cells[0] + " is " + entrance + ", not its arch");
+            if (cache.Edge(room.GoalCell, room.Beyond) != EdgeKind.Door) fail(tag + ": the goal edge is " + cache.Edge(room.GoalCell, room.Beyond) + ", not a door");
+            if (!run.IsGoalEdge(room.GoalCell, room.Beyond) || !run.IsRunDoorEdge(room.GoalCell, room.Beyond) || run.RunDoorRoom(room.GoalCell, room.Beyond) != room) fail(tag + ": the goal edge is not registered (M8)");
+            if (MapGrid.ChunkOf(room.Outside) != MapGrid.ChunkOf(room.Cells[0]) || MapGrid.ChunkOf(room.Beyond) != MapGrid.ChunkOf(room.GoalCell)) fail(tag + ": an end on a chunk border");
+            var far = gen.ZoneOf(room.Beyond);
+            if (far.height == ZoneHeight.Tall) fail(tag + ": the goal door opens into a Tall zone");
+            if (!rules.goalDoorForced && far.height != ZoneHeight.Low) fail(tag + ": the goal's far cell " + room.Beyond + " (" + far.height + ") is not Low without call 2 (CR-6b)");
+            // CR-5: the tier, the arrival zone, the 15 cells.
+            if (run.HasStart && Math.Abs(room.Outside.x - run.StartDoor.x) + Math.Abs(room.Outside.y - run.StartDoor.y) < rules.minStartCells) fail(tag + ": the entrance within " + rules.minStartCells + " cells of the start door");
+            // Never the only way round: each of its chunks is one piece without the corridor (cells of the chunk, its own edges).
+            foreach (var ch in new[] { room.ChunkA, room.ChunkB })
+            {
+                var data = cache.Get(ch);
+                var o = data.Origin;
+                var seen = new bool[n * n];
+                var queue = new Queue<int>();
+                var first = -1;
+                var free = 0;
+                for (var k = 0; k < n * n; k++)
+                {
+                    if (room.Contains(new GridCoord(o.x + k % n, o.y + k / n))) continue;
+                    free++;
+                    if (first < 0) first = k;
+                }
+                if (first < 0) continue;
+                seen[first] = true;
+                queue.Enqueue(first);
+                var reached = 0;
+                while (queue.Count > 0)
+                {
+                    var k = queue.Dequeue();
+                    reached++;
+                    int i = k % n, j = k / n;
+                    void Step(int to, EdgeKind kind)
+                    {
+                        if (seen[to] || !MapGrid.Passable(kind) || room.Contains(new GridCoord(o.x + to % n, o.y + to / n))) return;
+                        seen[to] = true;
+                        queue.Enqueue(to);
+                    }
+                    if (i < n - 1) Step(k + 1, data.east[k]);
+                    if (i > 0) Step(k - 1, data.east[k - 1]);
+                    if (j < n - 1) Step(k + n, data.north[k]);
+                    if (j > 0) Step(k - n, data.north[k - n]);
+                }
+                if (reached != free) fail(tag + ": chunk " + ch + " falls apart without the corridor (" + reached + " of " + free + " cells)");
+            }
+            // F5 (71 s.7.6): never the only route: the goal door's far cell reaches the entrance's outside cell without the room.
+            if (!ReachesWithout(cache, room, room.Beyond, room.Outside)) fail(tag + ": F5: the far cell " + room.Beyond + " reaches the entrance " + room.Outside + " only through the room");
+            // F7: no chain: the goal door never opens into another Run! room, nor onto a dead end (the far cell has a way on).
+            var beyondRoom = run.RoomAt(room.Beyond);
+            if (beyondRoom != null) fail(tag + ": F7: its goal door opens into Run! room " + beyondRoom.Id);
+            var ways = 0;
+            foreach (var step in new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) })
+            {
+                var next = new GridCoord(room.Beyond.x + step.x, room.Beyond.y + step.y);
+                if (next != room.GoalCell && MapGrid.Passable(cache.Edge(room.Beyond, next))) ways++;
+            }
+            if (ways == 0) fail(tag + ": F7: its goal door opens onto a dead end at " + room.Beyond);
+        }
+
+        // F5: a walk from one cell to another over passable edges, never through the room, within the 2 chunks round its two chunks.
+        static bool ReachesWithout(FrontRoomsMapCache cache, FrontRoomsRunRoom room, GridCoord from, GridCoord to)
+        {
+            int x0 = Math.Min(room.ChunkA.x, room.ChunkB.x) - 2, x1 = Math.Max(room.ChunkA.x, room.ChunkB.x) + 2;
+            int y0 = Math.Min(room.ChunkA.y, room.ChunkB.y) - 2, y1 = Math.Max(room.ChunkA.y, room.ChunkB.y) + 2;
+            var seen = new HashSet<GridCoord> { from };
+            var queue = new Queue<GridCoord>();
+            queue.Enqueue(from);
+            while (queue.Count > 0)
+            {
+                var c = queue.Dequeue();
+                if (c == to) return true;
+                foreach (var step in new[] { new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1), new GridCoord(0, -1) })
+                {
+                    var next = new GridCoord(c.x + step.x, c.y + step.y);
+                    var ch = MapGrid.ChunkOf(next);
+                    if (ch.x < x0 || ch.x > x1 || ch.y < y0 || ch.y > y1 || seen.Contains(next) || room.Contains(next)) continue;
+                    if (!MapGrid.Passable(cache.Edge(c, next))) continue;
+                    seen.Add(next);
+                    queue.Enqueue(next);
+                }
+            }
+            return false;
+        }
+
+        // ---------- 9b. The Run! deck and the calm rule (71 s.9, cards 2 and 3) ----------
+
+        /// <summary>The floor tiers the deck check plays by default (non-decreasing, as the tier carries down): T2 on LEVEL 0 and B1, T3 on B2, T4 on B3, T5 on B4 and B5.</summary>
+        public static readonly int[] DeckTiers = { 2, 2, 3, 4, 5, 5 };
+
+        /// <summary>
+        /// Cards 2 and 3 over <paramref name="seedCount"/> runs (MapRunDeckReport.scope): per run one FrontRoomsRunDeck through
+        /// floors 1 .. tiers.Length, each floor a fresh cache on its floor seed played the game's way (the deck, the calm rule;
+        /// foil and alarm doors forced on the one budget), every placed room met at once. <paramref name="rules"/> are the Run!
+        /// rules (their twist switches as given: the check turns doorEntrance and recede on to see them dealt, ramps stay as given).
+        /// </summary>
+        public static MapRunDeckReport RunRunDeck(MapSettings settings, int firstSeed, int seedCount, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsRunRules rules, int[] tiers = null)
+        {
+            tiers = tiers ?? DeckTiers;
+            rules = (rules ?? new FrontRoomsRunRules()).Clone();
+            rules.deck = true;
+            rules.force = false;
+            rules.forceCard = RunCard.Nothing;
+            var report = new MapRunDeckReport
+            {
+                seedCount = seedCount, floors = tiers.Length, timestampUtc = DateTime.UtcNow.ToString("o"), doorEntrance = rules.doorEntrance, recede = rules.recede, ramps = rules.ramps,
+                tiers = string.Join(" ", Array.ConvertAll(tiers, t => "T" + t)),
+            };
+            var built = new SortedDictionary<string, int>(StringComparer.Ordinal);
+            for (var i = 0; i < seedCount; i++)
+            {
+                var runSeed = unchecked(firstSeed + i * 7919);
+                var row = new MapRunDeckSeedRow { seed = runSeed };
+                void Fail(string message) { if (row.errors.Count < 12) row.errors.Add(message); }
+                var deck = PlayDeckRun(settings, runSeed, radius, modules, rules, tiers, row, Fail);
+                // A replay of the same run deals the same (the deck is pure in the run's seed and the floors' order).
+                var replay = PlayDeckRun(settings, runSeed, radius, modules, rules, tiers, null, null);
+                if (deck.History.Count != replay.History.Count) Fail("a replay dealt " + replay.History.Count + " floors, not " + deck.History.Count);
+                else
+                    for (var k = 0; k < deck.History.Count; k++)
+                        if (deck.History[k].ToString() != replay.History[k].ToString()) Fail("a replay dealt floor " + deck.History[k].Floor + " as " + replay.History[k] + ", not " + deck.History[k]);
+                // Card 3's other order: the west half walked (its devices decided) before the floor's zones are met.
+                PlayDeckRun(settings, runSeed, radius, modules, rules, tiers, row, m => Fail("devices first: " + m), true);
+                foreach (var deal in deck.History)
+                {
+                    row.deals.Add(deal.ToString());
+                    if (deal.Built.IsNothing) { if (deal.Deck.IsNothing) row.nothing++; continue; }
+                    var key = deal.Built + " at T" + deal.Tier;
+                    built.TryGetValue(key, out var count);
+                    built[key] = count + 1;
+                }
+                row.passed = row.errors.Count == 0;
+                report.seeds.Add(row);
+                if (row.passed) report.passed++; else report.failed++;
+                report.rooms += row.rooms;
+                report.nothing += row.nothing;
+                report.twists += row.twists;
+                report.calmExcluded += row.calmExcluded;
+                report.firstRooms += row.firstRooms;
+                report.calmRefused += row.calmRefused;
+                report.hostDevicesPlain += row.hostDevicesPlain;
+            }
+            foreach (var pair in built) report.builtCounts.Add(pair.Key + ": " + pair.Value);
+            return report;
+        }
+
+        // Every device the planners have decided so far: its edge and its two cells (a foiled window's Tall cell and the other
+        // side; an alarm door's near and far cells), read from their decided plans.
+        static Dictionary<long, GridCoord[]> DecidedDevices(FrontRoomsFoil foil, FrontRoomsAlarmDoors doors)
+        {
+            var map = new Dictionary<long, GridCoord[]>();
+            foreach (var z in foil.Decided) if (z.HasFoil) map[z.FoiledWindow.edge] = new[] { z.FoiledWindow.tall, z.FoiledWindow.other };
+            foreach (var z in doors.Decided) if (z.HasAlarm) map[z.AlarmedDoor.edge] = new[] { z.AlarmedDoor.near, z.AlarmedDoor.far };
+            return map;
+        }
+
+        // One run of floors for the deck check: its deck, every floor's rows into row (null: a quiet replay). devicesFirst: card
+        // 3's other order (the zones of the square's west half met at tier 1 and every foil and alarm-door plan of theirs decided
+        // before the floor's zones are met at its tier), counted in row's firstRooms, calmRefused and hostDevicesPlain.
+        static FrontRoomsRunDeck PlayDeckRun(MapSettings settings, int runSeed, int radius, IReadOnlyList<RoomModuleData> modules, FrontRoomsRunRules rules, int[] tiers, MapRunDeckSeedRow row, Action<string> fail, bool devicesFirst = false)
+        {
+            var deck = new FrontRoomsRunDeck(runSeed);
+            int min = -radius, max = radius;
+            for (var f = 0; f < tiers.Length; f++)
+            {
+                var floor = f + 1;
+                var s = (settings ?? new MapSettings()).Clone();
+                s.seed = floor == 1 ? runSeed : FrontRoomsExitPlanner.FloorSeed(runSeed, floor, 0);
+                var cache = new FrontRoomsMapCache(s, modules);
+                var run = new FrontRoomsRunRooms(rules) { Floor = floor, Deck = deck };
+                cache.SetRunRooms(run);
+                var foil = new FrontRoomsFoil(new FrontRoomsFoilRules { force = true });
+                cache.SetFoil(foil);
+                var doors = new FrontRoomsAlarmDoors(new FrontRoomsAlarmDoorRules { force = true });
+                cache.SetAlarmDoors(doors);
+                var start = new GridCoord(0, 0);
+                run.SetStart(start);
+                foil.SetStart(start);
+                doors.SetStart(start);
+                cache.Tier = 1;
+                cache.Get(MapGrid.ChunkOf(start));
+                run.Ready = run.Open = foil.Ready = doors.Ready = true;
+                // Card 3: the devices decided when the floor's room is planned (its refusal reads the planners; checked below).
+                Dictionary<long, GridCoord[]> atPlan = null;
+                run.Planned += planned =>
+                {
+                    atPlan = DecidedDevices(foil, doors);
+                    if (fail == null) return;
+                    var into = cache.Generator.ZoneOf(planned.Beyond).id;
+                    foreach (var pair in atPlan)
+                        if (cache.Generator.ZoneOf(pair.Value[0]).id == into || cache.Generator.ZoneOf(pair.Value[1]).id == into)
+                        {
+                            fail("floor " + floor + ": Run! room " + planned.Id + "'s goal door opens into zone " + into + ", where a device " + pair.Value[0] + "-" + pair.Value[1] + " was decided before it (not refused)");
+                            break;
+                        }
+                };
+                if (devicesFirst)
+                {
+                    // The square's west half walked first, at tier 1 (no Run! there): every plan of its zones decided now.
+                    var walked = new HashSet<GridCoord>();
+                    for (var y = min * MapGrid.ChunkCells; y < max * MapGrid.ChunkCells; y++)
+                    for (var x = min * MapGrid.ChunkCells; x < 0; x++)
+                    {
+                        var id = cache.Generator.ZoneOf(new GridCoord(x, y)).id;
+                        if (!walked.Add(id)) continue;
+                        if (cache.Generator.Zone(id).height == ZoneHeight.Tall) foil.Plan(id); else doors.Plan(id);
+                    }
+                }
+                cache.Tier = tiers[f];
+                for (var cy = min; cy < max; cy++)
+                for (var cx = min; cx < max; cx++)
+                    cache.Get(new GridCoord(cx, cy));
+                // The player meets every room placed (the run flag: plain first).
+                foreach (var room in run.Rooms) run.MarkMet(room);
+                if (row == null) continue;
+                row.calmRefused += run.CalmRefused;
+                if (!devicesFirst && run.CalmRefused > 0) fail("floor " + floor + ": " + run.CalmRefused + " zones refused for a device beyond the goal door, with no device decided before the rooms");
+                var deal = deck.DealOn(floor);
+                if (run.Placed > 1) fail("floor " + floor + ": " + run.Placed + " Run! rooms (one a floor)");
+                if (run.Placed == 1 && (deal == null || deal.Built.IsNothing || deal.RoomId != run.Rooms[0].Id)) fail("floor " + floor + ": a room with no deal");
+                if (deal == null) continue;
+                if (deal.Floor != floor || deal.Tier < tiers[f]) fail("floor " + floor + ": dealt as floor " + deal.Floor + " at T" + deal.Tier);
+                // The deal's rules (FrontRoomsRunDeck.Play): plain first, the gates, no repeats, the lengths by tier.
+                var before = 0;
+                foreach (var d in deck.History) if (d.Floor < floor && !d.Built.IsNothing) before++;
+                var p = deal.Played;
+                if (before == 0 && !p.IsNothing && p != RunCard.Plain(FrontRoomsRunRooms.FirstCells)) fail("floor " + floor + ": the run's first Run! played " + p + ", not plain 7");
+                if (p.IsTwist && before == 0) fail("floor " + floor + ": a twist before a plain Run! was met");
+                var above = deck.DealOn(floor - 1);
+                if (p.IsTwist && above != null && !above.Built.IsNothing && above.Built.variant == p.variant) fail("floor " + floor + ": " + p + " after " + above.Built + " on the floor above");
+                if (p.variant == RunVariant.Recede && !p.IsNothing && (floor < FrontRoomsRunDeck.RecedeMinFloor || (p.cells > FrontRoomsRunRooms.LateCells && floor < FrontRoomsRunDeck.RecedeLongMinFloor) || !rules.recede))
+                    fail("floor " + floor + ": " + p + " on floor " + floor);
+                if (p.variant == RunVariant.Door && !rules.doorEntrance) fail("floor " + floor + ": a Run door with the switch off");
+                if (p.variant == RunVariant.Ramp && !rules.ramps) fail("floor " + floor + ": a ramp with the switch off");
+                // The deck's card is one of its tier's; a plain card is the tier's length (card 1) and is played as it is once a Run! was met.
+                var inDeck = false;
+                foreach (var c in FrontRoomsRunDeck.DeckAt(deal.Tier)) inDeck |= c == deal.Deck;
+                if (!inDeck) fail("floor " + floor + ": " + deal.Deck + " is not a card of T" + deal.Tier + "'s deck");
+                if (!deal.Deck.IsNothing && deal.Deck.variant == RunVariant.Plain && deal.Deck.cells != FrontRoomsRunRooms.PlainCellsAt(deal.Tier))
+                    fail("floor " + floor + ": plain " + deal.Deck.cells + " in T" + deal.Tier + "'s deck (the table: " + FrontRoomsRunRooms.PlainCellsAt(deal.Tier) + ")");
+                if (before > 0 && !deal.Deck.IsNothing && deal.Deck.variant == RunVariant.Plain && p != deal.Deck) fail("floor " + floor + ": the deck's " + deal.Deck + " played as " + p);
+                if (deal.Deck.IsNothing != p.IsNothing) fail("floor " + floor + ": the deck's " + deal.Deck + " played as " + p);
+                // Decision 3: once a Run! was met, a plain card (the deck's, or a twist that cannot be dealt) is the tier's length.
+                if (before > 0 && !p.IsNothing && p.variant == RunVariant.Plain && p.cells != FrontRoomsRunRooms.PlainCellsAt(deal.Tier))
+                    fail("floor " + floor + ": played " + p + " at T" + deal.Tier + ", not the tier's plain " + FrontRoomsRunRooms.PlainCellsAt(deal.Tier) + (deal.Why != null ? " (" + deal.Why + ")" : ""));
+                var fits = FrontRoomsRunRooms.FitOrder(p);
+                if (!deal.Built.IsNothing && Array.IndexOf(fits, deal.Built) < 0) fail("floor " + floor + ": built " + deal.Built + " for " + p);
+                if (deal.Built.IsNothing && !deal.Played.IsNothing) fail("floor " + floor + ": played " + p + " and built nothing");
+                // The teaching room is built at 7 or not at all (it waits); no plain room under 12 cells at T4-T5.
+                if (before == 0 && !deal.Built.IsNothing && deal.Built != RunCard.Plain(FrontRoomsRunRooms.FirstCells)) fail("floor " + floor + ": the run's first Run! built " + deal.Built + ", not plain 7");
+                if (deal.Tier >= 4 && !deal.Built.IsNothing && deal.Built.variant == RunVariant.Plain && deal.Built.cells < FrontRoomsRunRooms.LateCells && before > 0)
+                    fail("floor " + floor + ": a " + deal.Built + " at T" + deal.Tier + " (decision 3: 12 from T4, 14 at T5 where it fits)");
+                if (run.Placed == 0) continue;
+                var r = run.Rooms[0];
+                if (devicesFirst) row.firstRooms++;
+                else
+                {
+                    row.rooms++;
+                    if (r.Variant != RunVariant.Plain) row.twists++;
+                }
+                if (r.Floor != floor || r.Card != p || r.Variant != deal.Built.variant || r.LengthCells != deal.Built.cells) fail("floor " + floor + ": the room's record (" + r.VariantText + ", floor " + r.Floor + ", card " + r.Card + ") is not its deal's");
+                var shadowRow = new MapRunSeedRow();
+                if (RoomInside(r, min, max)) CheckRunRoom(cache, r, rules, null, shadowRow, fail);
+                // Card 3: the calm zones (the host's and the far cell's). Every plan of the square is decided now; a device in them
+                // was either decided before the room (then only on the host zone's border: built later, the world reads it plain;
+                // one into the zone beyond would have refused the room) or after it, which the planners' own exclusion forbids.
+                var beyondZone = cache.Generator.ZoneOf(r.Beyond).id;
+                var calm = new HashSet<GridCoord> { r.Zone, beyondZone };
+                foreach (var z in calm) if (!run.IsCalmZone(z)) fail("floor " + floor + ": zone " + z + " is not calm");
+                var zones = new HashSet<GridCoord>();
+                for (var y = min * MapGrid.ChunkCells; y < max * MapGrid.ChunkCells; y++)
+                for (var x = min * MapGrid.ChunkCells; x < max * MapGrid.ChunkCells; x++)
+                    zones.Add(cache.Generator.ZoneOf(new GridCoord(x, y)).id);
+                foreach (var z in zones)
+                {
+                    if (cache.Generator.Zone(z).height == ZoneHeight.Tall)
+                    {
+                        var plan = foil.Plan(z);
+                        if (plan == null || devicesFirst) continue;
+                        foreach (var w in plan.Windows) if (!w.plain && run.CalmTouches(w.tall, w.other)) row.calmExcluded++;
+                    }
+                    else
+                    {
+                        var plan = doors.Plan(z);
+                        if (plan == null || devicesFirst) continue;
+                        foreach (var d in plan.Doors) if (d.owned && !d.plain && run.CalmTouches(d.near, d.far)) row.calmExcluded++;
+                    }
+                }
+                foreach (var pair in DecidedDevices(foil, doors))
+                {
+                    GridCoord a = pair.Value[0], b = pair.Value[1];
+                    if (!run.CalmTouches(a, b)) continue;
+                    var what = "a device " + a + "-" + b + " in Run! room " + r.Id + "'s calm zones";
+                    if (atPlan == null || !atPlan.ContainsKey(pair.Key)) fail("floor " + floor + ": " + what + ", decided after the room");
+                    else if (cache.Generator.ZoneOf(a).id == beyondZone || cache.Generator.ZoneOf(b).id == beyondZone) fail("floor " + floor + ": " + what + ", decided before it, beyond its goal door");
+                    else row.hostDevicesPlain++;
+                }
+            }
+            return deck;
         }
 
         // ---------- 10. C13's foiled windows, the trigger budget, the auto Relay entries and cover (Relay v2 step V7a) ----------
@@ -758,7 +1150,8 @@ namespace FrontRooms.Map
             FrontRoomsRunRooms run = null;
             if (runRules != null)
             {
-                run = new FrontRoomsRunRooms(runRules);
+                // Per zone and without the calm rule (ChecksRules): the foil plans stay pure for the fresh-cache check.
+                run = new FrontRoomsRunRooms(ChecksRules(runRules));
                 cache.SetRunRooms(run);
             }
             var foil = new FrontRoomsFoil(rules);
@@ -1157,7 +1550,8 @@ namespace FrontRooms.Map
             FrontRoomsRunRooms run = null;
             if (runRules != null)
             {
-                run = new FrontRoomsRunRooms(runRules);
+                // Per zone and without the calm rule (ChecksRules): the plans stay pure for the fresh-cache checks.
+                run = new FrontRoomsRunRooms(ChecksRules(runRules));
                 cache.SetRunRooms(run);
             }
             FrontRoomsFoil foil = null;

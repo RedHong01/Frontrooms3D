@@ -1,0 +1,53 @@
+{
+ "name": "Kit_RunRecede_SweepSeated",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "run",
+  "run_recede",
+  "receding_end"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  10.0,
+  28.0,
+  0.0
+ ],
+ "lodBudget": [
+  900,
+  300,
+  100
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "runRecede": "card 2 head first, 2026-11-04 (71_run_room.md s.5.1); pose seated",
+ "boundsMin": [
+  -1.4209625720977783,
+  -9.812000644160435e-05,
+  -0.1113329827785492
+ ],
+ "boundsMax": [
+  1.4209625720977783,
+  2.799999952316284,
+  -0.0559999980032444
+ ],
+ "triangles": 768,
+ "slots": [
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 224,
+ "trianglesLod2": 96,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0836664903908968
+ ],
+ "footprintSize": [
+  2.8419251441955566,
+  0.055332984775304794
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.85
+}

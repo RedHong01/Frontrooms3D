@@ -24,8 +24,9 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
     static readonly Color Sodium = new Color(1f, .55f, .22f);
 
     FrontRoomsStructuresKit kit;
-    Material lower, upper, floorMat, soffit, cove, galv, block, steel, red, concrete;
-    readonly List<Light> armed = new List<Light>(), heads = new List<Light>();
+    Material lower, upper, floorMat, soffit, cove, galv, block, steel, red, concrete, waxMat, laneMat, accentMat;
+    readonly List<Light> armed = new List<Light>(), heads = new List<Light>(), dockStrips = new List<Light>();
+    bool dockLit = true;
     readonly List<Renderer> armedLens = new List<Renderer>(), headLens = new List<Renderer>(), pilots = new List<Renderer>(), redTubes = new List<Renderer>();
     // The game's Run! B numbers (the rig's own defaults): the red tube's bounce and burn (card zone_lamps 1, 11-04).
     readonly RunRigLayout rigNumbers = new RunRigLayout();
@@ -116,6 +117,9 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         kit.StepRun(new Vector3(0f, 0f, 18.3f), Vector3.back, 2.84f, -2.1f, -1.8f, floorMat, cove);
         Walls(18.3f, 18.6f, -2.1f, -2.1f, .8f, .8f);
         Soffit(18f, 18.6f, .8f, .8f);
+        // The services step down at each fire wall and start at its downhill face (D6; review SP5-F8).
+        Services(9.08f, 9.6f, -.9f, -.9f);
+        Services(18.08f, 18.6f, -2.1f, -2.1f);
     }
 
     // One piece of the spine from z0 to z1 (floor f0 -> f1, 1:8 or level): floor, Run! B's two-tone walls, soffit, services.
@@ -124,6 +128,7 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         kit.Shell(Mathf.Max(f0, f1) + Clear, Mathf.Min(f0, f1));
         if (Mathf.Abs(f0 - f1) < 1e-3f) kit.Box(-1.5f, f0 - .25f, z0, 1.5f, f0, z1, floorMat);
         else kit.Ramp(new Vector3(0f, f1, z1), Vector3.back, 3f, z1 - z0, f0 - f1, floorMat, .25f);
+        FloorBands(z0, z1, f0, f1);
         // The soffit over landings A and B starts at the fire wall's downhill face; the head's own walls are built with the closet and cage.
         var s0 = f0 + Clear;
         var s1 = f1 + Clear;
@@ -190,6 +195,30 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         kit.Mesh.Box((a + b) * .5f, new Vector3(w, h, len), Quaternion.LookRotation(d / len, Vector3.up), m, false);
     }
 
+    // Run! B's floor (the rig's layout numbers: wax band 0.15 along each wall, lane 0.45 each side of the axis, accent rows
+    // 0.30 wide centred at x +-0.6), 2 mm over the field, render only, following the ramp (review SP5-F7: one flat grey).
+    void FloorBands(float z0, float z1, float f0, float f1)
+    {
+        if (z1 - z0 < 1e-3f) return;
+        if (waxMat == null)
+        {
+            waxMat = FrontRoomsPoolMaterials.Surface("RunB_FloorWax", new Color(.66f, .65f, .61f));
+            laneMat = FrontRoomsPoolMaterials.Surface("RunB_FloorLane", new Color(.58f, .57f, .54f));
+            accentMat = FrontRoomsPoolMaterials.Surface("RunB_FloorAccent", new Color(.45f, .44f, .42f));
+        }
+        Band(-1.345f, .15f, z0, z1, f0, f1, waxMat);
+        Band(1.345f, .15f, z0, z1, f0, f1, waxMat);
+        Band(0f, .9f, z0, z1, f0, f1, laneMat);
+        Band(-.6f, .3f, z0, z1, f0, f1, accentMat);
+        Band(.6f, .3f, z0, z1, f0, f1, accentMat);
+    }
+
+    void Band(float x, float w, float z0, float z1, float f0, float f1, Material m)
+    {
+        const float h = .01f, lift = .002f;
+        Tilted(new Vector3(x, f0 + lift - h * .5f, z0), new Vector3(x, f1 + lift - h * .5f, z1), w, h, m);
+    }
+
     void Soffit(float z0, float z1, float s0, float s1)
     {
         if (z1 - z0 < 1e-3f) return;
@@ -201,17 +230,22 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
     void Services(float z0, float z1, float f0, float f1)
     {
         if (z1 - z0 < 1e-3f) return;
+        // Non-casting, as the game's overhead dressing (FrontRoomsRunDress: every overhead renderer ShadowCastingMode.Off): the
+        // shadowed third of the strips banded both upper walls with their shadows (review SP5-F7).
+        var keep = kit.Mesh.CastShadows;
+        kit.Mesh.CastShadows = false;
         Tilted(new Vector3(.55f, f0 + 2.62f, z0), new Vector3(.55f, f1 + 2.62f, z1), .1f, .1f, red);
         Tilted(new Vector3(-.6f, f0 + 2.70f, z0), new Vector3(-.6f, f1 + 2.70f, z1), .3f, .06f, galv);
         Tilted(new Vector3(-1.39f, f0 + 2.76f, z0), new Vector3(-1.39f, f1 + 2.76f, z1), .025f, .025f, galv);
         Tilted(new Vector3(.995f, f0 + 2.60f, z0), new Vector3(.995f, f1 + 2.60f, z1), .61f, .30f, galv);
+        kit.Mesh.CastShadows = keep;
     }
 
     // ---------------------------------------------------------------- the fire-door walls (FD1 z 9, FD2 z 18)
 
     void BuildFireWalls()
     {
-        var bronze = FrontRoomsPoolMaterials.Surface("Door_Frame", new Color(.18f, .15f, .12f));
+        var bronze = FrontRoomsPoolMaterials.Surface("Prop_SteelBrown", new Color(.16f, .12f, .09f));
         var leaf = FrontRoomsPoolMaterials.Surface("Door_Enamel", new Color(.55f, .52f, .45f));
         foreach (var z in new[] { 9f, 18f })
         {
@@ -223,10 +257,31 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
             kit.Box(-1.06f, f, z - .1f, -1f, f + 2.16f, z + .1f, bronze, false);
             kit.Box(1f, f, z - .1f, 1.06f, f + 2.16f, z + .1f, bronze, false);
             kit.Box(-1.06f, f + 2.1f, z - .1f, 1.06f, f + 2.16f, z + .1f, bronze, false);
-            // The leaves held open at 90 degrees on magnets, on the uphill landing (1.12 m clear: no leaf over the step).
+            // Run! B's lower tone on both faces beside the frame (the game lays it on every face, end walls included;
+            // review SP5-F15, M1).
+            foreach (var face in new[] { z - .08f, z + .08f })
+            {
+                var out1 = face < z ? -1f : 1f;
+                LowerBand(face, out1, -1.42f, -1.06f, f);
+                LowerBand(face, out1, 1.06f, 1.42f, f);
+            }
+            // The leaves held open at 90 degrees on magnets, on the uphill landing (1.12 m clear: no leaf over the step), in a
+            // non-casting renderer (colliders kept): a 172-degree strip's shadow of them combed FD1's south face (review SP5-F12,
+            // as SP7-space-F10).
+            var keep = kit.Mesh.CastShadows;
+            kit.Mesh.CastShadows = false;
             kit.Box(-1.0f, f, z - 1.02f, -.95f, f + 2.08f, z - .06f, leaf);
             kit.Box(.95f, f, z - 1.02f, 1.0f, f + 2.08f, z - .06f, leaf);
+            kit.Mesh.CastShadows = keep;
         }
+    }
+
+    // Run! B's lower tone, 1.2 over the floor, on a wall face in the plane z = face (facing out1 = -1 or +1), x0..x1.
+    void LowerBand(float face, float out1, float x0, float x1, float floor)
+    {
+        var za = face - out1 * .001f;
+        var zb = face + out1 * .011f;
+        kit.Box(x0, floor, Mathf.Min(za, zb), x1, floor + 1.2f, Mathf.Max(za, zb), lower, false);
     }
 
     // ---------------------------------------------------------------- the riser shaft (D7, z 12..15; view only)
@@ -257,7 +312,8 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         for (var y = ladder0 + 1.0f; y < top - .2f; y += .9f) kit.Box(-.4f, y, 14.2f, .4f, y + .03f, 14.24f, steel, false);
         kit.StandIn("ladder cage (greybox)", new Vector3(0f, (ladder0 + 1f + top) * .5f, 14.3f), new Vector3(.8f, top - ladder0 - 1f, .02f), FrontRoomsPoolMaterials.ChainLink(), 0f, false);
         // An R-B strip and a battery head at the +3.90 floor line and under the lid.
-        Strip(new Vector3(1.38f, 3.9f + .3f, 13.5f), true, 1f);
+        // x5: at 5.6 m over the floor a scale-1 strip gave the ramp under the shaft its dimmest stretch, not a pool (review SP5-F14).
+        Strip(new Vector3(1.38f, 3.9f + .3f, 13.5f), true, 5f, 10f, true);
         Head(new Vector3(-1.38f, 3.9f + .4f, 13.5f), Vector3.right, false);
         Head(new Vector3(0f, top - .15f, 13.5f), Vector3.down, false);
     }
@@ -273,11 +329,11 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         kit.Prism(new Vector3(-1.415f, 0f, 2.4f), new Vector3(-1.415f, 0f, 3f), 0f, 1.2f, .012f, lower, false);
         // The entry wall on z 0 with Run! B's arch (x -0.7..0.7, head 2.2), the way in from the hub.
         kit.WallX(0f, -1.58f, 1.58f, 0f, Clear, upper, new List<FrontRoomsStructuresKit.Opening> { new FrontRoomsStructuresKit.Opening(-.7f, .7f, 0f, 2.2f) });
-        kit.Slab(-1.5f, -2.5f, 1.5f, 0f, 0f, floorMat, .25f);
-        kit.WallZ(-1.5f, -2.5f, 0f, 0f, Clear, upper);
-        kit.WallZ(1.5f, -2.5f, 0f, 0f, Clear, upper);
-        kit.WallX(-2.5f, -1.58f, 1.58f, 0f, Clear, upper);
-        kit.Lid(-1.5f, -2.5f, 1.5f, 0f, Clear, soffit);
+        kit.Slab(-1.5f, -3f, 1.5f, 0f, 0f, floorMat, .25f);   // the vestibule a whole cell deep (review SP5-F18)
+        kit.WallZ(-1.5f, -3f, 0f, 0f, Clear, upper);
+        kit.WallZ(1.5f, -3f, 0f, 0f, Clear, upper);
+        kit.WallX(-3f, -1.58f, 1.58f, 0f, Clear, upper);
+        kit.Lid(-1.5f, -3f, 1.5f, 0f, Clear, soffit);
         // The closet: x -4.5..-1.5, z 0..3, Low 2.4, its door propped open on a wedge, lit, enterable; the janitor's cart inside.
         kit.Shell(2.4f, 0f);
         kit.Slab(-4.5f, 0f, -1.5f, 3f, 0f, floorMat, .25f);
@@ -316,10 +372,14 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
     {
         kit.Shell(Dock + Clear, Dock);
         kit.WallX(27f, -1.58f, 7.58f, Dock - .25f, DockCeil + .16f, block, new List<FrontRoomsStructuresKit.Opening> { new FrontRoomsStructuresKit.Opening(-.5f, .5f, Dock, Dock + 2.1f) });
-        var frame = FrontRoomsPoolMaterials.Surface("Door_Frame", new Color(.18f, .15f, .12f));
+        var frame = FrontRoomsPoolMaterials.Surface("Prop_SteelBrown", new Color(.16f, .12f, .09f));
         kit.Box(-.56f, Dock, 26.9f, -.5f, Dock + 2.16f, 27.1f, frame, false);
         kit.Box(.5f, Dock, 26.9f, .56f, Dock + 2.16f, 27.1f, frame, false);
         kit.Box(-.56f, Dock + 2.1f, 26.9f, .56f, Dock + 2.16f, 27.1f, frame, false);
+        LowerBand(26.92f, -1f, -1.42f, -.56f, Dock);
+        LowerBand(26.92f, -1f, .56f, 1.42f, Dock);
+        LowerBand(27.08f, 1f, -1.42f, -.56f, Dock);
+        LowerBand(27.08f, 1f, .56f, 7.42f, Dock);
         // The leaf: hinged at x -0.5, swinging into the dock; a 15 x 15 in lite (F5) lit from behind; a panic bar on the corridor face.
         var hinge = new GameObject("Goal door leaf (E opens)");
         hinge.transform.SetParent(Root, false);
@@ -338,7 +398,8 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         lite.transform.SetParent(hinge.transform, false);
         lite.transform.localPosition = new Vector3(.5f, 1.384f, 0f);
         lite.transform.localScale = new Vector3(.381f, .381f, .05f);
-        lite.GetComponent<Renderer>().sharedMaterial = FrontRoomsPoolMaterials.Glow("SP5 goal lite", new Color(1.4f, 1.3f, 1.1f));
+        // Armed, only the lite can lead (the heads are dark): bright enough to bloom past the end wall (review SP5-F1).
+        lite.GetComponent<Renderer>().sharedMaterial = FrontRoomsPoolMaterials.Glow("SP5 goal lite", new Color(3.2f, 2.95f, 2.5f));
         var bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
         bar.name = "panic bar";
         UnityEngine.Object.Destroy(bar.GetComponent<Collider>());
@@ -346,8 +407,8 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         bar.transform.localPosition = new Vector3(.5f, 1.0f, -.06f);
         bar.transform.localScale = new Vector3(.8f, .05f, .05f);
         bar.GetComponent<Renderer>().sharedMaterial = steel;
-        // C42's light in a box behind the door, so its lite reads lit from the dock.
-        kit.Lamp("goal light behind the door", LightType.Spot, new Vector3(0f, Dock + 2.2f, 27.45f), new Vector3(0f, -.5f, -1f), 120f, 80f, 5f, 8f, new Color(1f, .96f, .88f), true, Vector3.zero, null, Color.black);
+        // No realtime light behind the door: the lite is emissive (as SP7's C42), and an unshadowed spot here lit run 3's floor
+        // through the wall, brighter than the door it was meant to show (review SP5-F1, F4).
     }
 
     // ---------------------------------------------------------------- T_RN_DockRelease (x -1.5..7.5, z 27..39)
@@ -372,6 +433,8 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         kit.Box(-1.5f, Dock - .06f, 32.94f, 7.5f, Dock + .005f, 33.02f, galv, false);
         // The north wall with the 12 x 14 ft overhead door (3.66 x 4.27) centred on x 4.5, half up: its bar 1.2 over the bay.
         kit.WallX(39f, -1.58f, 7.58f, Bay, DockCeil + .16f, block, new List<FrontRoomsStructuresKit.Opening> { new FrontRoomsStructuresKit.Opening(2.67f, 6.33f, Bay, Bay + 4.27f) });
+        LowerBand(38.92f, -1f, -1.42f, 2.67f, Bay);
+        LowerBand(38.92f, -1f, 6.33f, 7.42f, Bay);
         kit.StandIn("overhead coiling door, half up (greybox)", new Vector3(4.5f, (Bay + 1.2f + Bay + 4.27f) * .5f, 39.0f), new Vector3(3.66f, 3.07f, .06f), galv);
         kit.StandIn("door coil hood (greybox)", new Vector3(4.5f, Bay + 4.5f, 38.8f), new Vector3(3.9f, .45f, .45f), galv, 0f, false);
         kit.StandIn("bollard", new Vector3(2.45f, Bay + .55f, 38.7f), new Vector3(.17f, 1.1f, .17f), FrontRoomsPoolMaterials.Surface("RunB_BucketYellow", new Color(.85f, .7f, .1f)));
@@ -386,7 +449,12 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         // swing gate at the leveler (63 Q2's recommendation, asked on the sign).
         Chain(-.22f, 3.9f);
         Chain(5.1f, 6.22f);
-        kit.StandIn("swing gate (greybox)", new Vector3(4.5f, Dock + .55f, 32.9f), new Vector3(1.2f, .05f, .04f), FrontRoomsPoolMaterials.Surface("RunB_BucketYellow", new Color(.85f, .7f, .1f)));
+        // The swing gate as a gate (review SP5-M3: a single knee bar read as a rail): two stiles, a top and a mid rail.
+        var gateMat = FrontRoomsPoolMaterials.Surface("RunB_BucketYellow", new Color(.85f, .7f, .1f));
+        kit.StandIn("swing gate stile (greybox)", new Vector3(3.93f, Dock + .535f, 32.9f), new Vector3(.05f, 1.07f, .04f), gateMat, 0f, false);
+        kit.StandIn("swing gate stile (greybox)", new Vector3(5.07f, Dock + .535f, 32.9f), new Vector3(.05f, 1.07f, .04f), gateMat, 0f, false);
+        kit.StandIn("swing gate top rail (greybox)", new Vector3(4.5f, Dock + 1.045f, 32.9f), new Vector3(1.2f, .05f, .04f), gateMat, 0f, false);
+        kit.StandIn("swing gate mid rail (greybox)", new Vector3(4.5f, Dock + .55f, 32.9f), new Vector3(1.14f, .04f, .03f), gateMat, 0f, false);
         kit.Mesh.Collider(new Vector3(4.5f, Dock + .53f, 32.9f), new Vector3(1.2f, 1.07f, .06f));
         // B2 at the east end: 8 risers 0.15 / 0.30 from the platform down to the bay against the east wall, a rail on the open side.
         kit.Shell(DockCeil, Bay);
@@ -424,7 +492,8 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
                 var a = Mathf.Lerp(x, xn, s / 8f);
                 var b = Mathf.Lerp(x, xn, (s + 1) / 8f);
                 var sa = .12f * Mathf.Sin(Mathf.PI * s / 8f);
-                kit.Box(a, Dock + 1.0f - sa - .012f, 32.895f, b, Dock + 1.0f - sa + .012f, 32.915f, chain, false);
+                var sb = .12f * Mathf.Sin(Mathf.PI * (s + 1) / 8f);
+                Tilted(new Vector3(a, Dock + 1.0f - sa, 32.905f), new Vector3(b, Dock + 1.0f - sb, 32.905f), .02f, .024f, chain);
             }
         }
         kit.Mesh.Collider(new Vector3((x0 + x1) * .5f, Dock + .53f, 32.9f), new Vector3(x1 - x0, 1.07f, .06f));
@@ -463,9 +532,16 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         kit.WallX(45f, 1.35f, 7.65f, -3.75f, 1.2f, concrete, null, .3f);
         // Two high-pressure sodium heads (2100 K) on the walls at z 43.5, 4.0 m over the ramp, aimed at it and the door; on in
         // both states: the slot and its orange spill on the bay floor are the brightest thing in the dock (63 Q3).
+        // Both heads always cast their shadows while on (review SP5-F4): unshadowed, the west head washed the dock's east wall and
+        // the bay floor through the goal wall; shadowed, the slot itself cuts the spill to the trapezoid on the bay floor.
         foreach (var x in new[] { 1.75f, 7.25f })
-            kit.Lamp("high-pressure sodium", LightType.Spot, new Vector3(x, -3.64f + 4f, 43.5f), new Vector3(4.5f - x, -3.2f, -3.5f), 90f, 60f, 14f, 16f, Sodium, true,
+        {
+            // 40 (was 14): shadowed, the slot under the half-raised door is the only way the light reaches the dock, so it must
+            // clip to lead the x1.6-strip dock walls (L 208) (review SP5-F2, by eye).
+            var head = kit.Lamp("high-pressure sodium", LightType.Spot, new Vector3(x, -3.64f + 4f, 43.5f), new Vector3(4.5f - x, -3.2f, -3.5f), 90f, 60f, 40f, 16f, Sodium, true,
                 new Vector3(.4f, .25f, .35f), FrontRoomsPoolMaterials.Surface("RunB_GalvSteel", new Color(.6f, .62f, .63f)), Sodium * 6f);
+            if (kit.Host != null && kit.Host.Look != null) kit.Host.Look.Shadowed(head);
+        }
     }
 
     // ---------------------------------------------------------------- lamps: armed (R-B strips, the dock light) and tripped (heads)
@@ -478,27 +554,39 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
             var z = 1.8f + 3f * k;
             if (Mathf.Abs(z - 13.8f) < .1f) continue;
             var s = SoffitAt(z);
-            Strip(new Vector3(0f, s - .02f, z), false, Mathf.Abs(z - 10.8f) < .1f ? .78f : 1f);
+            // Pitched with the soffit over its 1.22 m (atan 1/8 on a run, half that at a kink; review SP5-F17).
+            var pitch = Mathf.Atan((SoffitAt(z - .61f) - SoffitAt(z + .61f)) / 1.22f) * Mathf.Rad2Deg;
+            Strip(new Vector3(0f, s - .02f, z), false, Mathf.Abs(z - 10.8f) < .1f ? .78f : 1f, 10f, true, pitch);
         }
-        // The dock: one R-B strip per cell at x1.6, and the dock light.
+        // The dock: one R-B strip per cell at x1.6, and the dock light. The dock's strips light only while the walker is in the
+        // dock or the goal door is open (review SP5-F3: every row reached landing C through the goal wall, unshadowed); the
+        // north row casts its shadows, so the overhead door's wall stops lighting the outside ramp white (review SP5-F2).
         for (var i = 0; i < 3; i++)
             for (var j = 0; j < 4; j++)
-                Strip(new Vector3(-1.5f + 3f * i + 1.5f, DockCeil - .02f, 27f + 3f * j + 1.5f), false, 1.6f, 14f);
+            {
+                var ds = Strip(new Vector3(-1.5f + 3f * i + 1.5f, DockCeil - .02f, 27f + 3f * j + 1.5f), false, 1.6f, 14f);
+                dockStrips.Add(ds);
+                if (j == 3 && kit.Host != null && kit.Host.Look != null) kit.Host.Look.Shadowed(ds);
+            }
         var dl = kit.Lamp("dock light", LightType.Spot, new Vector3(3.1f, Dock + 1.75f, 32.7f), new Vector3(.4f, -.3f, 1f), 60f, 40f, 4f, 10f, new Color(1f, .95f, .85f), true,
             new Vector3(.3f, .3f, .25f), steel, new Color(1.8f, 1.7f, 1.5f));
         armed.Add(dl);
         // Tripped heads (battery, 2.45 over the floor): T-A twin heads at the ends (z 3.3 east; over the goal door aimed back),
         // T-B remote heads between (z 9 west on FD1's downhill face, z 15 east, z 21 west); the dock's on its south wall and at
         // each flight's foot. A head lights each B1 (R8). No EXIT sign anywhere in the room (C41).
-        Head(new Vector3(1.38f, FloorAt(3.3f) + 2.45f, 3.3f), Vector3.left, true);
-        Head(new Vector3(0f, -3f + 2.45f, 26.85f), Vector3.back, true);
+        // Review SP5-F5: the east-wall heads hang under the duct at 2.20 with the cone kept under it (they sat 1 cm inside its
+        // edge at 2.45 and lit it point-blank); the z 21 head aims back at FD2's B1; the dock's foot heads aim at their flights.
+        // Review SP5-F1: the goal unit on the east wall 1.2 m out from the door, aimed at the leaf (as the rig's and SP7's goal
+        // unit faces the door; over the door aimed back it lit the floor and left the leaf 64-80 deg off its axis).
+        Head(new Vector3(1.38f, FloorAt(3.3f) + 2.20f, 3.3f), new Vector3(-1f, -.45f, 0f), true);
+        Head(new Vector3(1.38f, -3f + 2.45f, 25.8f), new Vector3(-1.1f, -.2f, 1f), true);
         Head(new Vector3(-1.38f, FloorAt(9.2f) + 2.45f, 9.2f), Vector3.right, false);
-        Head(new Vector3(1.38f, FloorAt(15f) + 2.45f, 15f), Vector3.left, false);
-        Head(new Vector3(-1.38f, FloorAt(21f) + 2.45f, 21f), Vector3.right, false);
+        Head(new Vector3(1.38f, FloorAt(15f) + 2.20f, 15f), new Vector3(-1f, -.45f, 0f), false);
+        Head(new Vector3(-1.38f, FloorAt(21f) + 2.45f, 21f), new Vector3(.6f, 0f, -1f), false);
         Head(new Vector3(1.5f, Dock + 2.45f, 27.15f), Vector3.forward, true);
         Head(new Vector3(4.5f, Dock + 2.45f, 27.15f), Vector3.forward, true);
-        Head(new Vector3(7.35f, Bay + 2.45f, 35.6f), Vector3.left, false);
-        Head(new Vector3(2.2f, Bay + 2.45f, 34.3f), Vector3.forward, false);
+        Head(new Vector3(7.35f, Bay + 2.45f, 35.6f), new Vector3(0f, -.6f, -1f), false);
+        Head(new Vector3(2.2f, Bay + 2.45f, 34.3f), new Vector3(-1f, -.6f, -.2f), false);
     }
 
     static float SoffitAt(float z)
@@ -510,12 +598,12 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
     }
 
     // An R-B strip (the game's strip kit: bare two tubes in a wire guard, its lens 2.6) with Run! B's wrap light under it.
-    void Strip(Vector3 at, bool alongZ, float scale, float range = 10f)
+    Light Strip(Vector3 at, bool alongZ, float scale, float range = 10f, bool view = false, float pitch = 0f)
     {
         var frame = new GameObject("R-B strip");
         frame.transform.SetParent(Root, false);
         frame.transform.localPosition = at;
-        frame.transform.localRotation = alongZ ? Quaternion.identity : Quaternion.identity;
+        frame.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         MeshRenderer lens = null, redTube = null;
         try
         {
@@ -549,9 +637,10 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         l.intensity = 5.5f * scale;
         l.range = range;
         l.shadows = LightShadows.None;
-        if (kit.Host != null && kit.Host.Look != null) kit.Host.Look.AddLamp(Key, l, lens, RunTint * 2.6f, false);
+        if (kit.Host != null && kit.Host.Look != null) kit.Host.Look.AddLamp(Key, l, lens, RunTint * 2.6f, view);
         armed.Add(l);
         armedLens.Add(lens);
+        return l;
     }
 
     // A battery head (T-A twin head from the game's kit, or a T-B remote head): a flood in Run! B's warm colour, a red AC ON
@@ -593,9 +682,9 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         kit.Sign(new Vector3(1.36f, FloorAt(4f) + 1.5f, 4f), new Vector3(0f, FloorAt(4f) + 1.5f, 4f), "SP5 · Run!：一路下坡到卸货间",
             "游戏里的 Run!：设备走廊和它尽头的目标门。走廊 27 米：先平走一格，入口一边是铁丝网储物笼，一边是开着门的杂物间；后 24 米是 1:8 的坡道，一共下降 3 米；每 9 米一道防火门墙，过了门框再下两级小台阶（共 0.3 米）。坡道中段头顶开着一口设备竖井，里面的爬梯够不着。走廊尽头那扇门后面是 5.4 米高的卸货间：平台比卡车位高 1.2 米，边上拉着链条护栏；卷帘门只拉起一半，门下露出通往夜里街道的坡道，钠灯照得橘黄，是这里最亮的东西。按 T 停电，停电后只剩应急灯，再按一次恢复。\n"
             + "灰盒占位：铁丝网储物笼；竖井里的管线和爬梯；卸货间的混凝土地面和平台边；门外的坡道和钠灯；卷帘门、卸货调节板、链条护栏、风管、消防水带箱、打卡钟这些还没做的新道具。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
-            + "要你决定：1 走廊两侧的小房间能进还是只能看（63 Q1）？入口左边的杂物间开着门，可以走进去试。 2 卷帘门下面露出什么（63 Q3）？现在放的是钠灯下通往街道的坡道。 3 装卸平台边：真实的开口边，还是现在这种可拆的链条护栏加摆门（63 Q2）？ 4 储物笼里站着一个替身：铁丝网、龙骨架这类看得穿的隔断，Relay 应该能隔着看见你，还是像墙一样挡住（62 Q1）？ 5 坡道、竖井、储物笼、卸货间，各自放进游戏吗？", FloorAt(4f));
+            + "要你决定：1 走廊两侧的小房间能进还是只能看（63 Q1）？入口左边的杂物间开着门，可以走进去试。 2 卷帘门下面露出什么（63 Q3）？现在放的是钠灯下通往街道的坡道。 3 装卸平台边：真实的开口边，还是现在这种可拆的链条护栏加摆门（63 Q2）？ 4 储物笼里站着一个替身：铁丝网、龙骨架这类看得穿的隔断，Relay 应该能隔着看见你，还是像墙一样挡住（62 Q1）？ 5 竖井、储物笼、卸货间，各自放进游戏吗？（坡道什么时候出现、多长，你已经同意了：71 的决定 2，第 3 档起出现，1:8，最长 24 米，最多下降 3 米；它和别的新结构一样，你走过、说可以，才进游戏。）", FloorAt(4f));
         // The Relay stand-in on run 2 (Run! B's proxy spot), facing north.
-        kit.Relay(new Vector3(.4f, FloorAt(11.4f), 11.4f), new Vector3(.4f, FloorAt(11.4f), 20f));
+        kit.Relay(new Vector3(-.8f, FloorAt(11.4f), 11.4f), new Vector3(-.8f, FloorAt(11.4f), 20f));
         kit.Mark(new Vector3(1.3f, FloorAt(6f) + 1.4f, 6f), Vector3.left, "坡道 1:8 · 24 米降 3.0");
         kit.Mark(new Vector3(1.3f, FloorAt(9.45f) + 1.9f, 9.45f), Vector3.left, "两级 0.15 · 门框 2.0 × 2.1");
         kit.Mark(new Vector3(0f, FloorAt(13.5f) + 3.2f, 13.5f), Vector3.back, "竖井到 +6.60 · 爬梯离地 3.5");
@@ -622,7 +711,7 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         if (block2 == null) block2 = new MaterialPropertyBlock();
         for (var k = 0; k < armed.Count; k++)
         {
-            if (armed[k] != null && look != null) look.Scale(armed[k], on ? 0f : 1f);
+            if (armed[k] != null && look != null) look.Scale(armed[k], on || (!dockLit && dockStrips.Contains(armed[k])) ? 0f : 1f);
             if (k < armedLens.Count && armedLens[k] != null)
             {
                 armedLens[k].GetPropertyBlock(block2);
@@ -644,6 +733,18 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         foreach (var r in headLens) if (r != null) r.sharedMaterial = on ? headOn : lensOff;
         foreach (var r in pilots) if (r != null) r.sharedMaterial = on ? pilotOff : pilotOn;
         if (look != null && look.Current != FrontRoomsStructuresLook.Preset.Game) look.Want(PresetAt(Site));
+    }
+
+    // The dock's strips: on while the walker is past the goal wall or the goal door stands open (review SP5-F3).
+    public override void Tick(FrontRoomsStructures host, float dt, bool isCurrent)
+    {
+        if (!isCurrent || host == null || host.Walker == null || host.Look == null) return;
+        var feet = host.Walker.transform.position - Site;
+        var want = doorOpen || feet.z > 26.9f;
+        if (want == dockLit) return;
+        dockLit = want;
+        if (tripped) return;
+        foreach (var l in dockStrips) if (l != null) host.Look.Scale(l, want ? 1f : 0f);
     }
 
     public override string Describe(Collider c, out bool hold)
@@ -689,7 +790,7 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         sb.AppendLine("SP5-2 卷帘门下面露出什么（63 Q3）？现在放的是钠灯下通往街道的坡道。");
         sb.AppendLine("SP5-3 装卸平台边：真实的开口边，还是现在这种可拆的链条护栏加摆门（63 Q2）？");
         sb.AppendLine("SP5-4 储物笼里站着一个替身：铁丝网、龙骨架这类看得穿的隔断，Relay 应该能隔着看见你，还是像墙一样挡住（62 Q1）？");
-        sb.AppendLine("SP5-5 坡道、竖井、储物笼、卸货间，各自放进游戏吗？");
+        sb.AppendLine("SP5-5 竖井、储物笼、卸货间，各自放进游戏吗？（坡道什么时候出现、多长，你已经同意了：71 的决定 2，第 3 档起出现，1:8，最长 24 米，最多下降 3 米；它和别的新结构一样，你走过、说可以，才进游戏。）");
         sb.AppendLine();
         sb.AppendLine("灰盒占位：铁丝网储物笼；竖井里的管线和爬梯；卸货间的混凝土地面和平台边；门外的坡道和钠灯；卷帘门、卸货调节板、链条护栏、风管、消防水带箱、打卡钟这些还没做的新道具。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。");
         sb.AppendLine();

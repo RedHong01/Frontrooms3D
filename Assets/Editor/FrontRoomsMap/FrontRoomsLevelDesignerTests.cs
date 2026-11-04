@@ -1092,6 +1092,50 @@ public static class FrontRoomsLevelDesignerTests
                 world != null && world.RunRoomsOn && binder != null && binder.Count > 0 && FrontRoomsMapWorld.RunRoomsForTools == tools && !preview.StampedAtOrigin,
                 "rigs " + (binder != null ? binder.Count : 0) + ", RunRoomsForTools " + FrontRoomsMapWorld.RunRoomsForTools + " (was " + tools + "); " + preview.Status);
 
+            // The Run! rethink (71 s.9 cards 1, 4, 5): the view builds each card; 14 cells only where it fits (one place per chunk pair).
+            var cardViews = new[]
+            {
+                FrontRoomsModulePreview.RunCardView.Plain7, FrontRoomsModulePreview.RunCardView.Plain12, FrontRoomsModulePreview.RunCardView.Plain14,
+                FrontRoomsModulePreview.RunCardView.RunDoor9, FrontRoomsModulePreview.RunCardView.Recede9To12, FrontRoomsModulePreview.RunCardView.Recede9To14,
+            };
+            foreach (var cardView in cardViews)
+            {
+                var card = FrontRoomsModulePreview.CardOf(cardView);
+                preview.runCard = cardView;
+                preview.Rebuild();
+                world = preview.World;
+                binder = world != null ? world.GetComponent<FrontRoomsRunRigBinder>() : null;
+                FrontRoomsRunRoom built = null;
+                if (world != null && world.RunRooms != null)
+                    foreach (var r in world.RunRooms.Rooms)
+                        if (world.IsRunRoomBuilt(r) && (built == null || r.Id < built.Id)) built = r;
+                var switches = FrontRoomsMapWorld.RunRoomsForTools == tools && FrontRoomsMapWorld.RunCardForTools.IsNothing;
+                var lenient = card.cells == 14 && built == null;
+                var ok = switches && (lenient || (built != null && built.LengthCells == card.cells && built.Variant == card.variant && binder != null && binder.Count > 0));
+                var detail = "";
+                if (ok && built != null && card.variant == RunVariant.Door)
+                {
+                    var door = world.DoorBetween(built.Outside, built.Cells[0]);
+                    float nx, nz, fx, fz;
+                    built.ToMap(0f, 2.4f, out nx, out nz);
+                    built.ToMap(0f, 2.6f, out fx, out fz);
+                    ok = door != null && world.IsRunDoor(door) && !world.LockedByRule(door) && world.Cache.Edge(built.Outside, built.Cells[0]) == EdgeKind.Door
+                        && !built.InArmedZone(nx, nz) && built.InArmedZone(fx, fz) && System.Math.Abs(built.EntranceTrip - 2.5f) < 1e-4f;
+                    detail = ", entrance door " + (door != null ? (world.IsRunDoor(door) ? "Run" : "theme") + (world.LockedByRule(door) ? " LOCKED" : " free") : "NOT BUILT") + ", arming " + built.EntranceTrip + " m in";
+                }
+                if (ok && built != null && card.variant == RunVariant.Recede)
+                {
+                    var run = world.RunRooms;
+                    ok = built.Receding && built.OpenCells == 9 && run.HeldShut(built.Cells[8], built.Cells[9]) && run.HeldShut(built.GoalCell, built.Beyond) && !run.HeldShut(built.Cells[7], built.Cells[8])
+                        && world.PassageBetween(built.Cells[8], built.Cells[9]) == FrontRoomsMapWorld.Passage.Wall && System.Math.Abs(built.EntranceTrip - 9f) < 1e-4f;
+                    detail = ", seats " + string.Join(",", System.Array.ConvertAll(built.SeatCells, c => c.ToString())) + ", end on " + built.OpenCells + ", passage past it " + world.PassageBetween(built.Cells[8], built.Cells[9]);
+                }
+                Check("views: a Run! corridor as " + card + (lenient ? " (none fits in " + 8 + " seeds: reported)" : "") + ", the tools' switches left as they were",
+                    ok, (built != null ? built.VariantText + ", " + built.LengthMetres + " m" : "no room") + detail + ", rigs " + (binder != null ? binder.Count : 0) + "; " + preview.Status);
+            }
+            preview.runCard = FrontRoomsModulePreview.RunCardView.Tools;
+            preview.Rebuild();
+
             Check("views: station markers drawn as B, P, E, A in cyan; key K, Relay R",
                 FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.StationBeacon) == "B" && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.Placard) == "P"
                 && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.StationEntrance) == "E" && FrontRoomsModuleEditing.MarkerLetter(ModuleMarkerKind.StationArch) == "A"

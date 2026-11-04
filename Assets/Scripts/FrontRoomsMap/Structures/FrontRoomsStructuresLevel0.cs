@@ -60,7 +60,8 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         kit.Stop("V2 · 看台边", new Vector3(32f, 0f, 10.7f), new Vector3(30f, -2.4f, 19f));
         kit.Stop("V2 · 坑底", new Vector3(33f, -2.4f, 15.5f), new Vector3(28f, .6f, 11f));
         kit.Stop("V4 · 高房间里", new Vector3(45f, 0f, 9f), new Vector3(43.5f, 9f, 13.5f));
-        kit.Stop("机房门口", new Vector3(10.5f, 0f, 4.5f), new Vector3(2f, 1.2f, 4.5f));
+        kit.Stop("V4 · 地面的缝，墙一直往上", new Vector3(46.5f, 0f, 12f), new Vector3(39f, 4.4f, 10.7f), 30f);   // review SP3-F16
+        kit.Stop("机房门口", new Vector3(11.6f, 0f, 6.6f), new Vector3(6.0f, .3f, 2.2f));
         kit.Stop("分层套间：地面", new Vector3(27.6f, 0f, 4.6f), new Vector3(34.5f, 2.2f, 4.5f));
         kit.Stop("分层套间：夹层", new Vector3(29f, Gallery, 7.8f), new Vector3(30f, 1.2f, 1.5f));
         BeyondStops();
@@ -103,6 +104,7 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         p.Dark(8, 4, 11, 7);
         p.Dark(8, 0, 11, 2);
         p.Dark(13, 2, 15, 5);
+        p.Dark(7, 3, 12, 3);                               // hung below as view lamps (the arrival's main view: review SP3-F2)
         p.NoLid(0, 7, 0, 7);
 
         // V2 opens on the spine: no wall; the flight starts at the edge, a rail on the stage ledge (built below).
@@ -179,17 +181,20 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         kit.Box(5f, -.25f, 18f, 13f, -.05f, 19f, concrete);       // north
         kit.Box(5f, -.25f, 12f, 6f, -.05f, 18f, concrete);        // west
         kit.Box(12f, -.25f, 12f, 13f, -.05f, 18f, concrete);      // east
-        // The plenum's dark round the cut (under the slab, over the lower grid), so the gap reads as a gap.
+        // The plenum's dark round the cut (under the slab, over the lower grid), so the gap reads as a gap: a dark grey lining
+        // (0.10), not black, so slab, duct and plenum read as bands of their own (review SP3-F15).
+        var lining = FrontRoomsPoolMaterials.Lit("SP3 plenum lining", new Color(.10f, .10f, .10f), .2f);
         foreach (var y in new[] { -.27f, PatchCeil + .16f })
         {
-            kit.Box(2f, y, 8f, 16f, y + .02f, 12f, plenum, false);
-            kit.Box(2f, y, 18f, 16f, y + .02f, 22f, plenum, false);
-            kit.Box(2f, y, 12f, 6f, y + .02f, 18f, plenum, false);
-            kit.Box(12f, y, 12f, 16f, y + .02f, 18f, plenum, false);
+            kit.Box(2f, y, 8f, 16f, y + .02f, 12f, lining, false);
+            kit.Box(2f, y, 18f, 16f, y + .02f, 22f, lining, false);
+            kit.Box(2f, y, 12f, 6f, y + .02f, 18f, lining, false);
+            kit.Box(12f, y, 12f, 16f, y + .02f, 18f, lining, false);
         }
-        // A duct and a sprinkler branch crossing the plenum, seen past the slab edge.
+        // A duct and a sprinkler branch crossing the plenum, seen past the slab edge: the duct's face 0.25 behind the edge,
+        // all of it under the slab and facing the cut's troffers (review SP3-F15).
         var galv = FrontRoomsPoolMaterials.Surface("RunB_GalvSteel", new Color(.6f, .62f, .63f));
-        kit.Box(2.5f, -.75f, 18.6f, 15.5f, -.35f, 19.2f, galv, false);
+        kit.Box(2.5f, -.75f, 18.25f, 15.5f, -.35f, 18.85f, galv, false);
         kit.Box(9.6f, -.5f, 8.5f, 9.66f, -.44f, 11.95f, metal, false);
         kit.Box(9.6f, -.5f, 18.05f, 9.66f, -.44f, 21.5f, metal, false);
     }
@@ -227,6 +232,10 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         // The flight (B2, its own cells): 16 risers of 0.15 on 0.30 treads, 6 m wide, from the spine down to -2.40 at z 16.5.
         kit.Shell(2.9f, -2.4f);
         kit.Flight(new Vector3(27f, -2.4f, 16.5f), Vector3.back, 6f, 16, .15f, .3f, carpet, null, true);
+        // The flight's base is drawn solid but collides as its ramp only: close the 0.7 m under its top end, where the ramp's
+        // soffit clears the player's 1.75 m capsule, so nobody walks into the stair and off the pit's edge under the spine
+        // (walk test 11-04, SP3 BUG 1: out of the world). Collision only; the top stays under the soffit.
+        kit.Mesh.Collider(new Vector3(27f, -1.575f, 12.35f), new Vector3(6f, 1.65f, .7f));
         // The stage ledge (x 30..36): the pit's south face and a rail on the spine side.
         kit.Box(30f, -2.4f, 12f, 36f, 0f, 12.1f, wall);
         kit.Shell(2.9f, 0f);
@@ -240,7 +249,9 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         // Lamps x1.6 (the room's own troffers; ceiling flat at +2.90: 5.30 clear over the pit, 4.40 over the dais).
         for (var i = 8; i <= 11; i++)
             for (var j = 4; j <= 7; j++)
-                kit.Troffer(new Vector3(3f * i + 1.5f, 2.9f, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false, false, 1.6f, 12f);
+                kit.Troffer(new Vector3(3f * i + 1.5f, 2.9f, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true, false, 1.6f, 12f);
+        // The spine's cells from x 21 to the junction: view lamps (its far third is the arrival's main view; review SP3-F2).
+        for (var i = 7; i <= 12; i++) kit.Troffer(new Vector3(3f * i + 1.5f, 2.9f, 10.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
         // The Relay stand-in on the dais, seen from the stage (COMMON rule 12).
         kit.Relay(new Vector3(25.5f, -1.5f, 22.6f), new Vector3(30f, 0f, 11f));
     }
@@ -269,11 +280,15 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
 
     void BuildTall()
     {
-        // The same paper, grid and troffers to 14.6 (the plate's walls and lid); lamps 32 at range 22, kept on while in SP3.
-        var scale = 32f / FrontRoomsTransitionLightLead.Level0Intensity;
+        // The same paper, grid and troffers to 14.6 (the plate's walls and lid); lamps 20 at range 22 in a 120 / 80 degree cone
+        // (32 in the game's 162 / 96 cone grazed the top 2 m of wall to white: review SP3-F4, by eye), kept on while in SP3.
+        var scale = 20f / FrontRoomsTransitionLightLead.Level0Intensity;
         for (var i = 13; i <= 15; i++)
             for (var j = 2; j <= 5; j++)
-                kit.Troffer(new Vector3(3f * i + 1.5f, TallCeil, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true, false, scale, 22f);
+            {
+                var l = kit.Troffer(new Vector3(3f * i + 1.5f, TallCeil, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true, false, scale, 22f);
+                if (l != null) { l.spotAngle = 120f; l.innerSpotAngle = 80f; }
+            }
         // A water cooler and a chair for scale.
         kit.Kit("Kit_WaterCooler", new Vector3(46.9f, 0f, 16.9f), 225f, new Vector3(.32f, 1.1f, .32f));
         kit.Kit("Kit_TaskChair", new Vector3(44.6f, 0f, 15.8f), 200f, new Vector3(.6f, .9f, .6f));

@@ -599,7 +599,7 @@ public sealed class FrontRoomsStructuresKit
     /// A profile (x across, y up) swept along points p[i0..i1] with frames right[i] and up[i]; u = metres along, v = metres
     /// round the profile. Two-sided adds the back faces (an open channel seen from inside and out). No collider.
     /// </summary>
-    public void Sweep(IList<Vector3> p, IList<Vector3> right, IList<Vector3> upv, int i0, int i1, IList<Vector2> prof, bool closed, bool twoSided, Material m, float uStart = 0f)
+    public void Sweep(IList<Vector3> p, IList<Vector3> right, IList<Vector3> upv, int i0, int i1, IList<Vector2> prof, bool closed, bool twoSided, Material m, float uStart = 0f, Material backMat = null)
     {
         if (m == null || p == null || prof == null || prof.Count < 2) return;
         i0 = Mathf.Clamp(i0, 0, p.Count - 1);
@@ -649,7 +649,7 @@ public sealed class FrontRoomsStructuresKit
         foreach (var n in ns) back.Add(-n);
         var tb = new List<int>(ts.Count);
         for (var q = 0; q < ts.Count; q += 3) { tb.Add(ts[q]); tb.Add(ts[q + 2]); tb.Add(ts[q + 1]); }
-        Mesh.Append(vs, back, uvs, tb, m, false);
+        Mesh.Append(vs, back, uvs, tb, backMat != null ? backMat : m, false);
     }
 
     // ---------------------------------------------------------------- stairs, step runs, ramps
@@ -685,6 +685,13 @@ public sealed class FrontRoomsStructuresKit
             var top = foot.y + n * riser;
             Prism(e, e + dir * NosingTread, top - NosingRiser, top + .003f, width + .002f, nosing, false);
         }
+        // The top riser, 1 mm behind the edge line: a thin upper slab (0.05) left a dark slot under its edge (scene 4 review
+        // SP3-F10, KIT-F7); where the upper floor has a face of its own on the edge, that face stands in front of it.
+        {
+            var e = foot + dir * ((n - 1) * tread);
+            e.y = 0f;
+            Prism(e + dir * .001f, e + dir * .021f, foot.y + (n - 1) * riser, foot.y + n * riser - .002f, width, treadMat, false);
+        }
         if (!collide) return;
         // The ramp: its top runs through the nosings, from one tread before the first riser (on the foot's floor).
         var start = foot - dir * tread;
@@ -709,6 +716,91 @@ public sealed class FrontRoomsStructuresKit
         var foot = edgeCentre - upDir * ((n - 1) * Step);
         foot.y = lowY;
         Flight(foot, upDir, width, n, riser, Step, treadMat, nosing, true, true);
+    }
+
+    /// <summary>
+    /// A raking wall beside a flight (a cheek, or a guard on its open side): plan line a..b, a.y and b.y the nosing line's height
+    /// at each end; its top <paramref name="above"/> over that line, its bottom at <paramref name="bottomA"/> / <paramref name="bottomB"/>
+    /// (the floor under a solid flight, a waist under a flight-bridge). Faces and ends vertical, so it never leans past the piece
+    /// it meets (a tilted box did: scene 4 review SP6-F1); u along the line from world 0 and v = world y, as Prism, so tile
+    /// courses stay level. Solid adds one collider along the slope from the nosing line to its top.
+    /// </summary>
+    public void RakeWall(Vector3 a, Vector3 b, float above, float bottomA, float bottomB, float thick, Material m, bool solid = true)
+    {
+        var flat = new Vector3(b.x - a.x, 0f, b.z - a.z);
+        var len = flat.magnitude;
+        if (len < .02f || thick < 1e-3f) return;
+        var t = flat / len;
+        var s = new Vector3(t.z, 0f, -t.x);
+        var h = s * (thick * .5f);
+        var pa = new Vector3(a.x, 0f, a.z);
+        var pb = new Vector3(b.x, 0f, b.z);
+        float ta = a.y + above, tb = b.y + above;
+        var up = Vector3.up;
+        if (m != null)
+        {
+            var u0 = Vector3.Dot(W(pa), t);
+            Quad(pa + h + up * bottomA, pb + h + up * bottomB, pb + h + up * tb, pa + h + up * ta, s,
+                new Vector2(u0, bottomA), new Vector2(u0 + len, bottomB), new Vector2(u0 + len, tb), new Vector2(u0, ta), m);
+            Quad(pa - h + up * bottomA, pb - h + up * bottomB, pb - h + up * tb, pa - h + up * ta, -s,
+                new Vector2(u0, bottomA), new Vector2(u0 + len, bottomB), new Vector2(u0 + len, tb), new Vector2(u0, ta), m);
+            var v0 = Vector3.Dot(W(pa), s);
+            Quad(pa + h + up * bottomA, pa - h + up * bottomA, pa - h + up * ta, pa + h + up * ta, -t,
+                new Vector2(v0 + thick * .5f, bottomA), new Vector2(v0 - thick * .5f, bottomA), new Vector2(v0 - thick * .5f, ta), new Vector2(v0 + thick * .5f, ta), m);
+            Quad(pb + h + up * bottomB, pb - h + up * bottomB, pb - h + up * tb, pb + h + up * tb, t,
+                new Vector2(v0 + thick * .5f, bottomB), new Vector2(v0 - thick * .5f, bottomB), new Vector2(v0 - thick * .5f, tb), new Vector2(v0 + thick * .5f, tb), m);
+            QuadPlanar(pa + h + up * ta, pb + h + up * tb, pb - h + up * tb, pa - h + up * ta, up, m);
+            QuadPlanar(pa + h + up * bottomA, pb + h + up * bottomB, pb - h + up * bottomB, pa - h + up * bottomA, -up, m);
+        }
+        if (!solid) return;
+        var slope = (b - a).normalized;
+        var normal = Vector3.Cross(slope, s);
+        if (normal.y < 0f) normal = -normal;
+        Mesh.Collider((a + b) * .5f + up * (above * .5f), new Vector3(thick, above * Mathf.Max(.2f, normal.y), Vector3.Distance(a, b)), Quaternion.LookRotation(slope, normal));
+    }
+
+    /// <summary>
+    /// A guard on a flight's open side in a guard style: a..b on the nosing line (b the upper end), its top
+    /// <paramref name="height"/> over that line; a half-wall (in <paramref name="wall"/>, under an oak cap) or a tiled wall down
+    /// to bottomA / bottomB; a rail, glass or mesh on posts with raking rails over the nosing line. One collider.
+    /// </summary>
+    public void RakingGuard(Vector3 a, Vector3 b, float bottomA, float bottomB, GuardStyle style, Material wall = null, Material cap = null, float height = GuardHeight)
+    {
+        if (style == GuardStyle.None) return;
+        switch (style)
+        {
+            case GuardStyle.HalfWall:
+                RakeWall(a, b, height - .04f, bottomA, bottomB, .16f, wall != null ? wall : FrontRoomsPoolMaterials.Lit("guard wall", new Color(.7f, .68f, .6f)), true);
+                RakeWall(a, b, height, a.y + height - .04f, b.y + height - .04f, .2f, cap != null ? cap : CapMaterial(), false);
+                return;
+            case GuardStyle.TileWall:
+                RakeWall(a, b, height, bottomA, bottomB, .2f, wall != null ? wall : FrontRoomsPoolMaterials.Tile, true);
+                return;
+        }
+        var post = style == GuardStyle.Glass ? BandMaterial() : PostMaterial();
+        var flat = new Vector3(b.x - a.x, 0f, b.z - a.z);
+        var count = Mathf.Max(1, Mathf.CeilToInt(flat.magnitude / (style == GuardStyle.Rail ? 1.2f : 1.5f)));
+        var size = style == GuardStyle.Rail ? .04f : .05f;
+        var t = flat.normalized;
+        for (var k = 0; k <= count; k++)
+        {
+            var q = Vector3.Lerp(a, b, k / (float)count);
+            var pq = new Vector3(q.x, 0f, q.z);
+            Prism(pq - t * (size * .5f), pq + t * (size * .5f), q.y, q.y + height, size, post, false);
+        }
+        if (style == GuardStyle.Glass)
+        {
+            RakeWall(a, b, .10f, a.y, b.y, .06f, post, false);
+            RakeWall(a, b, height - .05f, a.y + .10f, b.y + .10f, .012f, GlassMaterial(), false);
+            RakeWall(a, b, height, a.y + height - .05f, b.y + height - .05f, .06f, cap != null ? cap : post, false);
+        }
+        else
+        {
+            if (style == GuardStyle.Mesh) RakeWall(a, b, height - .04f, a.y, b.y, .01f, MeshMaterial(), false);
+            else RakeWall(a, b, .55f, a.y + .51f, b.y + .51f, .03f, post, false);
+            RakeWall(a, b, height, a.y + height - .05f, b.y + height - .05f, .05f, post, false);
+        }
+        RakeWall(a, b, height, a.y, b.y, style == GuardStyle.Glass ? .06f : .05f, null, true);
     }
 
     /// <summary>A sloped slab: the top runs from lowCentre (its y) along dir for <paramref name="length"/> m (plan) rising <paramref name="rise"/>.</summary>
@@ -913,8 +1005,11 @@ public sealed class FrontRoomsStructuresKit
             case GuardStyle.Glass:
                 Prism(a, b, floorY, floorY + .10f, .06f, BandMaterial(), false);
                 Prism(a, b, floorY + .10f, top - .05f, .012f, GlassMaterial(), false);
-                Prism(a - t * .01f, b + t * .01f, top - .05f, top, .06f, cap != null ? cap : BandMaterial(), false);
-                Posts(a, b, floorY, top, 1.5f, BandMaterial(), .05f);
+                // A timber cap is the half-wall's own (0.2), so a glass bay in a half-wall run carries the same cap (70 F03;
+                // review SP2 missed 2); steel and tile caps stay the band's 0.06.
+                var capW = cap != null && cap != FrontRoomsPoolMaterials.Tile ? .2f : .06f;
+                Prism(a - t * .01f, b + t * .01f, top - .05f, top, capW, cap != null ? cap : BandMaterial(), false);
+                Posts(a, b, floorY, top, 1.5f, BandMaterial(), .05f, true);
                 Mesh.Collider((a + b) * .5f + Vector3.up * (floorY + top) * .5f, new Vector3(.06f, height, len), Quaternion.LookRotation(t));
                 break;
             case GuardStyle.Rail:
@@ -932,11 +1027,14 @@ public sealed class FrontRoomsStructuresKit
         }
     }
 
-    void Posts(Vector3 a, Vector3 b, float floorY, float top, float pitch, Material m, float size)
+    void Posts(Vector3 a, Vector3 b, float floorY, float top, float pitch, Material m, float size, bool offCentre = false)
     {
         var len = Vector3.Distance(a, b);
         var t = (b - a) / Mathf.Max(1e-4f, len);
         var count = Mathf.Max(1, Mathf.CeilToInt(len / pitch));
+        // Glass: an odd number of bays, so no post stands on a span's middle, where views are aimed (review SP2 missed 2:
+        // the bay's middle post split the arrival's view down).
+        if (offCentre && count % 2 == 0) count++;
         for (var k = 0; k <= count; k++)
         {
             var p = a + t * (len * k / count);
@@ -969,11 +1067,24 @@ public sealed class FrontRoomsStructuresKit
         return guardCap;
     }
 
-    /// <summary>Clear glass: the game's Glass_Window, else a plain transparent pane.</summary>
+    static Material glassPane;
+
+    /// <summary>
+    /// Clear glass: a runtime copy of the game's Glass_Window (else a plain transparent pane). The structures mesh merges every
+    /// pane into unit-scale renderers, so the glass shader's pane frame (the thinnest scaled axis is the pane's normal) always
+    /// took x: every pane facing along z drew as the green float-glass edge at alpha 0.92, an opaque mint sheet (scene 4 review
+    /// SP2-F4). The copy turns the auto edge and the grime (laid out in the same frame) off; the asset is never edited.
+    /// </summary>
     public static Material GlassMaterial()
     {
+        if (glassPane != null) return glassPane;
         var g = FrontRoomsSurfaces.TryGet("Glass_Window");
-        return g != null ? g : FrontRoomsPoolMaterials.Transparent("glass", new Color(.8f, .9f, .9f, .15f), .95f);
+        if (g == null) return glassPane = FrontRoomsPoolMaterials.Transparent("glass", new Color(.8f, .9f, .9f, .15f), .95f);
+        glassPane = new Material(g) { name = "Glass_Window (scene 4, merged panes)" };
+        if (glassPane.HasProperty("_AutoEdge")) glassPane.SetFloat("_AutoEdge", 0f);
+        if (glassPane.HasProperty("_Grime")) glassPane.SetFloat("_Grime", 0f);
+        glassPane.DisableKeyword("_FR_GLASS_GRIME");
+        return glassPane;
     }
 
     static Material MeshMaterial()
@@ -1134,15 +1245,29 @@ public sealed class FrontRoomsStructuresKit
         return light;
     }
 
-    /// <summary>A metal-halide wall box (0.90, 0.97, 1.0) throwing up so the lid is the brightest surface (pool halls; 70 section 2).</summary>
-    public Light WallBox(Vector3 pos, Vector3 outward, float intensity = 7f, float range = 11f, bool view = true)
+    /// <summary>A metal-halide wall box (0.90, 0.97, 1.0) throwing up so the lid is the brightest surface (pool halls; 70 section 2).
+    /// An aim (district direction) tilts the light off the wall into the room with the given cone, the box still on the wall:
+    /// straight up, the first metre of wall over the box takes grazing light at point-blank range (review SP6-F6).</summary>
+    public Light WallBox(Vector3 pos, Vector3 outward, float intensity = 7f, float range = 11f, bool view = true, Vector3 aim = default(Vector3), float spot = 110f, float inner = 70f)
     {
         outward.y = 0f;
         outward.Normalize();
-        var l = Lamp("metal-halide wall box", LightType.Spot, pos + outward * .14f, Vector3.up, 150f, 100f, intensity, range, new Color(.90f, .97f, 1f), view,
+        // Thrown up 30 degrees off the wall into the room with a 110-degree cone, so the lid, not the first metre of wall over
+        // the box, takes the light (70 section 2: the ceiling the brightest surface; review SP1-F8, SP2-F17, KIT-F1: the
+        // straight-up 150-degree boxes bloomed the wall and left the lid darker than the walls). SP6's dome boxes aim their own.
+        if (aim.sqrMagnitude < 1e-6f) aim = Vector3.up * Mathf.Cos(30f * Mathf.Deg2Rad) + outward * Mathf.Sin(30f * Mathf.Deg2Rad);
+        var l = Lamp("metal-halide wall box", LightType.Spot, pos + outward * .14f, Vector3.up, spot, inner, intensity, range, new Color(.90f, .97f, 1f), view,
             new Vector3(.5f, .28f, .22f), FrontRoomsPoolMaterials.Steel, new Color(1.6f, 1.7f, 1.75f));
-        // The box sits on the wall: turn the fixture so its back is on the wall (the light still aims up).
-        if (l != null) l.transform.parent.localRotation = Quaternion.LookRotation(Vector3.up, -outward);
+        // The box sits on the wall: turn the fixture so its back is on the wall (the light still aims up, or along aim).
+        if (l != null)
+        {
+            l.transform.parent.localRotation = Quaternion.LookRotation(Vector3.up, -outward);
+            if (aim.sqrMagnitude > 1e-6f)
+            {
+                l.transform.localPosition = new Vector3(0f, -.16f, .05f);   // 0.3 m off the wall (the box's local y is into the wall)
+                l.transform.rotation = (Root != null ? Root.rotation : Quaternion.identity) * Quaternion.LookRotation(aim.normalized, Vector3.up);
+            }
+        }
         return l;
     }
 
@@ -1151,8 +1276,28 @@ public sealed class FrontRoomsStructuresKit
         Lamp("down-fill", LightType.Spot, pos, Vector3.down, 150f, 110f, intensity, range, new Color(.92f, .98f, 1f), view, new Vector3(.45f, .45f, .12f), FrontRoomsPoolMaterials.Steel, new Color(1.4f, 1.5f, 1.55f));
 
     /// <summary>An underwater lamp on a basin wall, facing <paramref name="into"/>.</summary>
-    public Light Underwater(Vector3 pos, Vector3 into, float intensity = 2.2f, float range = 6f, bool view = true) =>
-        Lamp("underwater", LightType.Spot, pos, into, 120f, 60f, intensity, range, new Color(.75f, .95f, 1f), view, new Vector3(.3f, .3f, .06f), FrontRoomsPoolMaterials.Steel, new Color(1.8f, 2.2f, 2.3f));
+    public Light Underwater(Vector3 pos, Vector3 into, float intensity = 2.2f, float range = 6f, bool view = true)
+    {
+        // A round lens in its square niche plate, cyan-shifted and below clipping, so it reads as a lamp under the water rather
+        // than a white card (review SP6-F11).
+        var l = Lamp("underwater", LightType.Spot, pos, into, 120f, 60f, intensity, range, new Color(.75f, .95f, 1f), view, new Vector3(.3f, .3f, .06f), FrontRoomsPoolMaterials.Steel, new Color(.9f, 1.6f, 1.7f));
+        var lens = l != null ? l.transform.parent.Find("Lens") : null;
+        if (lens != null)
+        {
+            var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            disc.name = "Lens (round)";
+            UnityEngine.Object.Destroy(disc.GetComponent<Collider>());
+            disc.transform.SetParent(lens.parent, false);
+            disc.transform.localPosition = new Vector3(0f, 0f, .004f);
+            disc.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            disc.transform.localScale = new Vector3(.24f, .003f, .24f);
+            var dr = disc.GetComponent<MeshRenderer>();
+            dr.sharedMaterial = lens.GetComponent<MeshRenderer>().sharedMaterial;
+            dr.shadowCastingMode = ShadowCastingMode.Off;
+            UnityEngine.Object.Destroy(lens.gameObject);
+        }
+        return l;
+    }
 
     // ---------------------------------------------------------------- props, signs, stops, blockers, marks
 
@@ -1189,10 +1334,11 @@ public sealed class FrontRoomsStructuresKit
         return FrontRoomsStructuresSigns.Placard(Root, Root.TransformPoint(centre), Root.TransformPoint(viewer), title, body, Root.position.y + floorY);
     }
 
-    /// <summary>A stop at a floor point (district metres) looking at a point.</summary>
-    public void Stop(string name, Vector3 floor, Vector3 lookAt)
+    /// <summary>A stop at a floor point (district metres) looking at a point; its pitch is clamped to <paramref name="maxPitch"/>
+    /// (30 degrees, or more for a look down into a void or up a shaft).</summary>
+    public void Stop(string name, Vector3 floor, Vector3 lookAt, float maxPitch = 30f)
     {
-        District.Stops.Add(FrontRoomsStructuresStop.Facing(name, world + floor, world + lookAt));
+        District.Stops.Add(FrontRoomsStructuresStop.Facing(name, world + floor, world + lookAt, maxPitch));
     }
 
     /// <summary>The static Relay stand-in at a floor point facing a point (district metres).</summary>
@@ -1239,7 +1385,8 @@ public sealed class FrontRoomsStructuresKit
         var r = go.GetComponent<MeshRenderer>();
         if (r != null)
         {
-            if (font != null && font.material != null) r.sharedMaterial = font.material;
+            var depth = FrontRoomsStructuresSigns.DepthText(font);
+            if (depth != null) r.sharedMaterial = depth;
             r.shadowCastingMode = ShadowCastingMode.Off;
         }
         // A thin plumb line under the label.
@@ -1295,6 +1442,10 @@ public sealed class FrontRoomsStructuresKit
         public bool Troffers = true, Office;
         public float LampScale = 1f, LampRange = 10f;
         public bool ViewLamps;
+        /// <summary>Step runs get a cheek on each open side (a side short of its edge's ends): 0.12 over the nosings, solid to the
+        /// lower floor, and from the first tread over 0.76 m the ledge's guard style 1.07 over the nosing line to the edge, where it
+        /// meets the ledge guard's cut end (40 section 11.4, STEP RUN + cheek; 70 section 1, guard; scene 4 review KIT-F3).</summary>
+        public bool RunCheeks;
 
         struct RunSpec
         {
@@ -1657,6 +1808,32 @@ public sealed class FrontRoomsStructuresKit
             var upDir = fb > fa ? toB : -toB;
             // The top riser stands on the edge, inside the lower cell.
             kit.StepRun(edge, upDir, r.to - r.from, Y0 + Mathf.Min(fa, fb), Y0 + Mathf.Max(fa, fb), TreadMat != null ? TreadMat : FloorMat, NosingMat);
+            if (!RunCheeks) return;
+            var lo = Y0 + Mathf.Min(fa, fb);
+            var hi = Y0 + Mathf.Max(fa, fb);
+            var n = Mathf.Max(1, Mathf.RoundToInt((hi - lo) / Course));
+            var riser = (hi - lo) / n;
+            var along = r.axis == 0 ? Vector3.forward : Vector3.right;
+            var lineStart = r.axis == 0 ? new Vector3(at, 0f, s0) : new Vector3(s0, 0f, at);
+            var thick = LedgeGuard == GuardStyle.HalfWall ? .16f : .2f;
+            var cheek = LedgeMat != null ? LedgeMat : (GuardWall != null ? GuardWall : FloorMat);
+            var firstHigh = Mathf.FloorToInt(GuardDrop / riser + 1e-4f) + 1;
+            for (var k = 0; k < 2; k++)
+            {
+                var open = k == 0 ? r.from > .05f : r.to < cs - .05f;
+                if (!open) continue;
+                // Outside the run, 2 mm clear of its side (the ledge face's cut end stays in front there).
+                var sAt = k == 0 ? r.from - thick * .5f - .002f : r.to + thick * .5f + .002f;
+                var top = lineStart + along * sAt;
+                var foot = top - upDir * ((n - 1) * Step);
+                foot.y = lo + riser;
+                top.y = hi;
+                kit.RakeWall(foot, top, .12f, lo, lo, thick, cheek, false);
+                if (firstHigh > n - 1 || LedgeGuard == GuardStyle.None) continue;
+                var g = top - upDir * ((n - firstHigh) * Step);
+                g.y = lo + firstHigh * riser;
+                kit.RakingGuard(g, top, g.y + .12f, hi + .12f, LedgeGuard, GuardWall, GuardCap);
+            }
         }
     }
 }

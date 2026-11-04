@@ -516,3 +516,5 @@ STICK LEFT	PALANCA IZQ.	settings note (叙事设计 signed 2026-11-04, 90 §9); 
 STICK RIGHT	PALANCA DER.	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 SOUNDS THAT HUNT YOU	SONIDOS QUE LO PERSIGUEN	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
 STATE · DISTANCE · TIER	ESTADO · DISTANCIA · NIVEL	settings note (叙事设计 signed 2026-11-04, 90 §9); AI draft
+How the smaller picture is scaled up to the screen. SHARP restores edges from the last few frames (STP); SOFT is a plain, smooth scale.	Cómo se amplía la imagen más pequeña a la pantalla. NÍTIDO recupera bordes con los últimos fotogramas (STP); SUAVE es un escalado simple.	settings, UPSCALING when SHARP is STP (tech_art 20_ranked_changes §3.13, 2026-11-04; shown once FrontRooms/Surface writes motion vectors); AI draft, 叙事设计 to sign
+STP	STP	settings note, UPSCALING when SHARP is STP (tech_art 20 §3.13, 2026-11-04); AI draft, 叙事设计 to sign

@@ -27,6 +27,8 @@ public sealed partial class FrontRoomsKeyMapView
     {
         public string[] Paths = new string[0]; // normalised, primary first: a stick is its tilt, then its press; none for a decoration
         public Rect Home;
+        public float Radius;          // its largest corner (map units): a legend keeps clear of it on touch (FitLegends)
+        public Vector2 Axis;          // the centre it is drawn about on touch (Snap): its cluster's, so a cluster stays even
         public RawImage Fill, Edge;   // Fill null for a decoration
         public Text Legend;           // A B X Y, LB RB LT RT (L1 R1 L2 R2); null for sticks, VIEW, MENU, decorations
         public RawImage Glyph;        // ✕ ○ □ △ on the face buttons, shown instead of Legend on a PlayStation pad
@@ -81,6 +83,11 @@ public sealed partial class FrontRoomsKeyMapView
     void BuildPad()
     {
         if (bodyMask == null) bodyMask = BodyMask();
+        // On touch each part is drawn about its cluster's centre (Snap): the triggers, the shoulders, VIEW and MENU mirror about the
+        // pad's middle (x 588), the face buttons sit about their diamond's centre, the d-pad's keys about its centre square; the
+        // body, the sticks and their wells about their own.
+        Vector2 Mirror(Rect r) => new Vector2(588f, r.center.y);
+        var diamond = new Vector2(702.5f, 307.5f);
         PadDecoration(bodyMask, new Rect(360f, 236f, 456f, 364f));
         var well = new Vector4(35.5f, 35.5f, 35.5f, 35.5f);
         PadDecoration(PadMask(71f, 71f, well, true), new Rect(438f, 272f, 71f, 71f));
@@ -90,19 +97,19 @@ public sealed partial class FrontRoomsKeyMapView
         var small = new Vector4(7.5f, 7.5f, 7.5f, 7.5f);
         var cap = new Vector4(27.5f, 27.5f, 27.5f, 27.5f);
         var face = new Vector4(17.5f, 17.5f, 17.5f, 17.5f);
-        PadControl(new[] { "leftTrigger" }, new Rect(424f, 152f, 71f, 41f), trigger, PadButton.LeftTrigger);
-        PadControl(new[] { "rightTrigger" }, new Rect(681f, 152f, 71f, 41f), trigger, PadButton.RightTrigger);
-        PadControl(new[] { "leftShoulder" }, new Rect(404f, 204f, 111f, 23f), shoulder, PadButton.LeftShoulder);
-        PadControl(new[] { "rightShoulder" }, new Rect(661f, 204f, 111f, 23f), shoulder, PadButton.RightShoulder);
+        PadControl(new[] { "leftTrigger" }, new Rect(424f, 152f, 71f, 41f), trigger, PadButton.LeftTrigger, Mirror(new Rect(424f, 152f, 71f, 41f)));
+        PadControl(new[] { "rightTrigger" }, new Rect(681f, 152f, 71f, 41f), trigger, PadButton.RightTrigger, Mirror(new Rect(681f, 152f, 71f, 41f)));
+        PadControl(new[] { "leftShoulder" }, new Rect(404f, 204f, 111f, 23f), shoulder, PadButton.LeftShoulder, Mirror(new Rect(404f, 204f, 111f, 23f)));
+        PadControl(new[] { "rightShoulder" }, new Rect(661f, 204f, 111f, 23f), shoulder, PadButton.RightShoulder, Mirror(new Rect(661f, 204f, 111f, 23f)));
         // VIEW and MENU are too small for a word: no legend (MENU is SETTINGS', labelled above the pad).
-        PadControl(new[] { "select" }, new Rect(550f, 262f, 25f, 15f), small, null);
-        PadControl(new[] { "start" }, new Rect(601f, 262f, 25f, 15f), small, null);
+        PadControl(new[] { "select" }, new Rect(550f, 262f, 25f, 15f), small, null, Mirror(new Rect(550f, 262f, 25f, 15f)));
+        PadControl(new[] { "start" }, new Rect(601f, 262f, 25f, 15f), small, null, Mirror(new Rect(601f, 262f, 25f, 15f)));
         // A stick is its tilt first, then its press: choosing the cap chooses MOVE or LOOK, never what is bound to L3 or R3.
         PadControl(new[] { "leftStick", "leftStickPress" }, new Rect(446f, 280f, 55f, 55f), cap, null);
-        PadControl(new[] { "buttonNorth" }, new Rect(685f, 242f, 35f, 35f), face, PadButton.North);
-        PadControl(new[] { "buttonWest" }, new Rect(637f, 290f, 35f, 35f), face, PadButton.West);
-        PadControl(new[] { "buttonEast" }, new Rect(733f, 290f, 35f, 35f), face, PadButton.East);
-        PadControl(new[] { "buttonSouth" }, new Rect(685f, 338f, 35f, 35f), face, PadButton.South);
+        PadControl(new[] { "buttonNorth" }, new Rect(685f, 242f, 35f, 35f), face, PadButton.North, diamond);
+        PadControl(new[] { "buttonWest" }, new Rect(637f, 290f, 35f, 35f), face, PadButton.West, diamond);
+        PadControl(new[] { "buttonEast" }, new Rect(733f, 290f, 35f, 35f), face, PadButton.East, diamond);
+        PadControl(new[] { "buttonSouth" }, new Rect(685f, 338f, 35f, 35f), face, PadButton.South, diamond);
         PadControl(new[] { "rightStick", "rightStickPress" }, new Rect(619f, 392f, 55f, 55f), cap, null);
         // The d-pad: the keyboard's keycaps, 5-unit gutters round the empty centre square (517, 407).
         PadKey("↑", "dpad/up", new Rect(517f, 377f, 25f, 25f));
@@ -115,18 +122,19 @@ public sealed partial class FrontRoomsKeyMapView
     /// <summary>A body part drawn as a 25 % keyline, set once: never in use, never a target, never a wall.</summary>
     void PadDecoration(Texture2D texture, Rect rect)
     {
-        var part = new PadPart { Home = rect, Decoration = true };
+        var part = new PadPart { Home = rect, Axis = rect.center, Decoration = true };
         part.Edge = PadImage("pad · decoration", texture, .25f);
-        PlaceUnits(part.Edge.rectTransform, rect);
+        PlaceUnits(part.Edge.rectTransform, rect, part.Axis);
         padParts.Add(part);
     }
 
     /// <summary>A pad control: its paths (under &lt;Gamepad&gt;/), a fill and a keyline of one shape (radii: top-left,
     /// top-right, bottom-right, bottom-left), and the name of <paramref name="button"/> in Plex Mono 13, not styled: the
-    /// legends stay Plex Mono in every language, as the keycaps' do.</summary>
-    void PadControl(string[] controls, Rect rect, Vector4 radii, PadButton? button)
+    /// legends stay Plex Mono in every language, as the keycaps' do. On touch drawn about <paramref name="axis"/> (its own centre
+    /// by default).</summary>
+    void PadControl(string[] controls, Rect rect, Vector4 radii, PadButton? button, Vector2? axis = null)
     {
-        var part = new PadPart { Home = rect, Button = button, Paths = new string[controls.Length] };
+        var part = new PadPart { Home = rect, Axis = axis ?? rect.center, Radius = Mathf.Max(Mathf.Max(radii.x, radii.y), Mathf.Max(radii.z, radii.w)), Button = button, Paths = new string[controls.Length] };
         for (var i = 0; i < controls.Length; i++) part.Paths[i] = FrontRoomsInput.Normalise(PadPath(controls[i]));
         part.Fill = PadImage("pad · " + controls[0], PadMask(rect.width, rect.height, radii, false), 0f);
         part.Edge = PadImage("pad · " + controls[0] + " edge", PadMask(rect.width, rect.height, radii, true), .25f);
@@ -143,7 +151,8 @@ public sealed partial class FrontRoomsKeyMapView
     /// <summary>A d-pad direction as the keyboard's keycap (in <c>keys</c>: drawn, chosen and routed to as keys are).</summary>
     void PadKey(string label, string control, Rect rect)
     {
-        var v = new KeyView { Def = new KeyDef { Label = label, Path = PadPath(control) }, Home = rect };
+        // On touch about the d-pad's centre square (517, 407, 25 × 25), so its four keys stay even (Snap).
+        var v = new KeyView { Def = new KeyDef { Label = label, Path = PadPath(control) }, Home = rect, Axis = new Vector2(529.5f, 419.5f) };
         v.Fill = Img(root, paper, 0f);
         for (var e = 0; e < 4; e++) v.Edges[e] = Img(root, paper, .25f);
         v.Legend = Txt(root, LegendFor(v.Def), mono, 13, paper, TextAnchor.MiddleCenter);
@@ -211,11 +220,17 @@ public sealed partial class FrontRoomsKeyMapView
             if (part.Legend != null)
             {
                 part.Legend.text = FrontRoomsInput.PadName(part.Button.Value);
-                part.Legend.enabled = !legendsPlayStation || part.Glyph == null;
+                part.Legend.enabled = LegendShown(part);
             }
             if (part.Glyph != null) part.Glyph.enabled = legendsPlayStation;
         }
+        // Touch: other names (ZL, L1), the face buttons' letters back after a PlayStation pad's glyphs, or the glyphs (drawn at the
+        // legends' size), may take another size, or drop out.
+        if (ts < 1f) FitLegends();
     }
+
+    // A part's legend is its word, unless a PlayStation pad's glyph stands for it.
+    bool LegendShown(PadPart part) => !legendsPlayStation || part.Glyph == null;
 
     // ------------------------------------------------------------- the pad at run time
 
@@ -260,7 +275,7 @@ public sealed partial class FrontRoomsKeyMapView
     }
 
     /// <summary>A control at <paramref name="r"/> scaled about its centre: both masks and the legend over the rect, the glyph
-    /// 13 × 13 at its centre.</summary>
+    /// 13 × 13 at its centre (on touch at the legends' size, FitLegends).</summary>
     void PlacePad(PadPart part, Rect r, float scale)
     {
         if (!Mathf.Approximately(scale, 1f))
@@ -268,10 +283,17 @@ public sealed partial class FrontRoomsKeyMapView
             var mid = r.center;
             r = new Rect(mid.x - r.width * scale * .5f, mid.y - r.height * scale * .5f, r.width * scale, r.height * scale);
         }
-        if (part.Fill != null) PlaceUnits(part.Fill.rectTransform, r);
-        PlaceUnits(part.Edge.rectTransform, r);
-        if (part.Legend != null) PlaceUnits(part.Legend.rectTransform, r);
-        if (part.Glyph != null) PlaceUnits(part.Glyph.rectTransform, new Rect(r.center.x - 6.5f, r.center.y - 6.5f, 13f, 13f));
+        if (part.Fill != null) PlaceUnits(part.Fill.rectTransform, r, part.Axis);
+        PlaceUnits(part.Edge.rectTransform, r, part.Axis);
+        if (part.Legend != null) PlaceUnits(part.Legend.rectTransform, r, part.Axis);
+        if (part.Glyph == null) return;
+        if (ts < 1f)
+        {
+            // In whole px about the button's middle as drawn: square in it where their sizes' parities agree, else half a px off.
+            var at = Snap(r, part.Axis);
+            Place(part.Glyph.rectTransform, Mathf.Round(at.center.x - legendSize * .5f), Mathf.Round(at.center.y - legendSize * .5f), legendSize, legendSize);
+        }
+        else PlaceUnits(part.Glyph.rectTransform, new Rect(r.center.x - 6.5f, r.center.y - 6.5f, 13f, 13f));
     }
 
     // ------------------------------------------------------------- the pad's detail column

@@ -32,6 +32,13 @@ using UnityEngine;
 /// opening, whose state the binder passes each frame (SetGoalOpen: the leaf off the latch or broken = the whole door, else
 /// its F5 lite); the Run_B grade overrides everything the Office grade sets (stage C).
 /// WebGL: the rig's own tier (no goal light: no lite there); the dress and the tell as everywhere.
+/// Card 4 (71 s.7.2 and s.9, decision 8c: D1, an honest Run door): when the map builds a door on the entrance edge
+/// (DoorBetween(Outside, Cells[0]); the level-design line's card 5, from T3 after one plain Run!) the entrance is a Run door: the layout takes it
+/// (RunRigLayout.UseEntranceDoor, hinged where the map hangs it), the ALARM ZONE card goes on its latch side outside and the
+/// red-banded detector inside at the sight rule's depth for a door head (DressEntranceTell), the gate's entrance portal follows
+/// its leaf (SetEntranceOpen), and the corridor's light shows under it on the approach side (FrontRoomsRunDoorGap); its lite shows
+/// the lit corridor through the map's own wired glass. Today the map builds arches only: no door is found, and every room is
+/// built exactly as before (contract: W/apply/run_rethink_contract/README.md, card 4).
 /// ASCII, no tuples, no per-frame allocation once built.
 /// </summary>
 [DisallowMultipleComponent]
@@ -65,6 +72,9 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         public GridCoord[] farCells;
         public Vector3[] farLamps;
         public FrontRoomsMapWorld.Door goalDoor;
+        /// <summary>Card 4: the map's door on the entrance edge (a Run door entrance), or null for the arch (every room today).</summary>
+        public FrontRoomsMapWorld.Door entranceDoor;
+        public FrontRoomsRunDoorGap gap;
     }
 
     FrontRoomsMapWorld map;
@@ -177,13 +187,20 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         e.root = new GameObject("Run B / room " + room.Id);
         e.root.transform.SetParent(map.transform, false);
         e.root.transform.SetPositionAndRotation(map.RunRoomPoint(room, Vector3.zero), map.RunRoomRotation(room));
-        var layout = Layout(room, e.root.transform);
+        // Card 4: a door on the entrance edge makes it a Run door entrance (none today: the map builds the arch).
+        e.entranceDoor = room.Cells != null && room.Cells.Length > 0 ? map.DoorBetween(room.Outside, room.Cells[0]) : null;
+        var layout = Layout(room, e.root.transform, e.entranceDoor);
         var dress = FrontRoomsRunDress.Build(e.root.transform, layout);
         DressTell(e, layout, dress);
         e.rig = FrontRoomsRunRig.Create(e.root.transform, layout, RunRigHost.OwnLamps, null, dress);
         e.rig.SetViewer(Viewer);
         e.goalDoor = map.DoorBetween(GoalCell(room), room.Beyond);
         e.rig.SetGoalOpen(GoalOpen(e.goalDoor));
+        if (e.entranceDoor != null)
+        {
+            e.rig.SetEntranceOpen(GoalOpen(e.entranceDoor));
+            e.gap = FrontRoomsRunDoorGap.Build(e.rig, e.root.transform);
+        }
         FarLamps(e);
         var entry = e;
         e.rig.FarRoomLamp = () => FarLamp(entry);
@@ -248,8 +265,20 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
             var e = ticking[i];
             if (e.rig == null) { ticking.RemoveAt(i); continue; }
             e.rig.SetGoalOpen(GoalOpen(e.goalDoor));
+            if (e.entranceDoor != null) e.rig.SetEntranceOpen(GoalOpen(e.entranceDoor));
             e.rig.Tick(dt);
+            // Card 4: the light under the shut Run door, from the rig's Lights as this Tick left them.
+            if (e.gap != null) e.gap.Tick(ShutWeight(e.entranceDoor));
         }
+    }
+
+    /// <summary>Card 4: 1 while the entrance leaf is on its latch (0.5 deg), 0 once it is GoalOpenDegrees + 1 off it or broken: the
+    /// light under the door fades as the open door lets the corridor's real light through.</summary>
+    public static float ShutWeight(FrontRoomsMapWorld.Door door)
+    {
+        if (door == null || door.broken) return 0f;
+        var t = Mathf.Clamp01((door.angle - .5f) / (GoalOpenDegrees + .5f));
+        return 1f - t * t * (3f - 2f * t);
     }
 
     void OnDestroy() => Detach();
@@ -261,7 +290,7 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     // ------------------------------------------------------------------ the room's layout
     /// <summary>The map module's layout (Corridor(cells) with the map's arch and door; the cells from the room's record, CellsOf),
     /// the goal from the map's door, the far zone's lamp for the goal window light (C42).</summary>
-    RunRigLayout Layout(FrontRoomsRunRoom room, Transform root)
+    RunRigLayout Layout(FrontRoomsRunRoom room, Transform root, FrontRoomsMapWorld.Door entranceDoor)
     {
         var cells = CellsOf(room);
         var l = RunRigLayout.Corridor(cells, FrontRoomsRunRooms.ArchWidth, ModuleUnits.DoorWidth);
@@ -271,6 +300,8 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         l.wallThickness = ModuleUnits.WallThickness;
         l.buildShell = false;
         l.skinShell = true;
+        // Card 4: the Run door entrance, hinged on the jamb the map hangs it from (its latch side carries the card).
+        if (entranceDoor != null) l.UseEntranceDoor(ModuleUnits.DoorWidth, HingeSide(root, entranceDoor));
         // The goal door's opening centre (the map's RunEntrance, goal side): the goal head aims at it.
         map.RunEntrance(room, true, out var goalWorld, out var outward);
         var g = root.InverseTransformPoint(goalWorld);
@@ -328,11 +359,8 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         var root = e.root.transform;
         var t = l.wallThickness;
         var depth = l.length - t;
-        // The arch (south): the entrance frame is the root's.
-        var archDepth = FrontRoomsAlarmTell.DetectorDepth(t, l.height, ModuleUnits.ArchTop, depth);
-        var archZ = ClearOfWraps(l, archDepth, 1f);
-        FrontRoomsAlarmTell.DressCard(root, FrontRoomsAlarmTell.CardPoint(FrontRoomsRunRooms.ArchWidth, t, -1), 180f);
-        e.archDetector = FrontRoomsAlarmTell.DressCeiling(dress, new Vector3(0f, l.height, archZ), 180f);
+        // The entrance (south): the arch, or card 4's Run door.
+        e.archDetector = DressEntranceTell(root, dress, l);
         // The goal door (north): its entrance frame is turned half round at the goal point.
         var gx = l.goalPoint.x;
         var gz = l.goalPoint.z;
@@ -342,6 +370,40 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         var p = FrontRoomsAlarmTell.CardPoint(ModuleUnits.DoorWidth, t, -latch);   // the entrance frame's +X is the root's -X
         FrontRoomsAlarmTell.DressCard(root, new Vector3(gx - p.x, p.y, gz - p.z), 0f);
         e.goalDetector = FrontRoomsAlarmTell.DressCeiling(dress, new Vector3(gx, l.height, goalZ), 0f);
+    }
+
+    /// <summary>
+    /// The entrance's tell (the entrance frame is the root's: +Z into the room); returns its detector. The arch (every room today):
+    /// the card on the approacher's left (B's NOTICE plate is on the right), the detector at the sight rule's depth for the arch's
+    /// 2.2 m head, pushed deeper clear of the strips. Card 4's Run door (RunRigLayout.entranceDoor): the card on the door's latch side,
+    /// clear of the leaf's swing and its frame (the goal door's rule), the NOTICE plate already on the hinge side (UseEntranceDoor),
+    /// the detector at the sight rule's depth for the door's 2.1 m head (seen from 2 m outside once the leaf is open), pushed deeper
+    /// clear of the strips. With the leaf shut the card, the lit F5 lite and the light under the door carry the tell outside.
+    /// Public for the tests and harnesses.
+    /// </summary>
+    public static GameObject DressEntranceTell(Transform root, Transform dress, RunRigLayout l)
+    {
+        if (root == null || l == null) return null;
+        var t = l.wallThickness;
+        var depth = l.length - t;
+        if (l.entranceDoor)
+        {
+            var doorDepth = FrontRoomsAlarmTell.DetectorDepth(t, l.height, ModuleUnits.DoorHeight, depth);
+            var doorZ = ClearOfWraps(l, doorDepth, 1f);
+            FrontRoomsAlarmTell.DressCard(root, FrontRoomsAlarmTell.CardPoint(ModuleUnits.DoorWidth, t, -l.entranceHinge), 180f);
+            return FrontRoomsAlarmTell.DressCeiling(dress, new Vector3(0f, l.height, doorZ), 180f);
+        }
+        var archDepth = FrontRoomsAlarmTell.DetectorDepth(t, l.height, ModuleUnits.ArchTop, depth);
+        var archZ = ClearOfWraps(l, archDepth, 1f);
+        FrontRoomsAlarmTell.DressCard(root, FrontRoomsAlarmTell.CardPoint(FrontRoomsRunRooms.ArchWidth, t, -1), 180f);
+        return FrontRoomsAlarmTell.DressCeiling(dress, new Vector3(0f, l.height, archZ), 180f);
+    }
+
+    /// <summary>Card 4: the side the map hung the entrance door's hinge on, in the root's frame (+1: +X), -1 without a hinge.</summary>
+    static int HingeSide(Transform root, FrontRoomsMapWorld.Door door)
+    {
+        if (door == null || door.hinge == null || root == null) return -1;
+        return root.InverseTransformPoint(door.hinge.position).x > 0f ? 1 : -1;
     }
 
     /// <summary>The goal door's latch side in the root's frame (+1: +X): opposite its hinge (the map's door), +1 without one.</summary>
