@@ -243,3 +243,13 @@ Each floor hangs the sheet for its own state (A35, `research/narrative/40_floors
 | B8 | 28fa7079… | 7c87548f… | ee7224b2… | 8547174d… |
 | B9 | e0792794… | 3036bee7… | 3eb86942… | 62e0cc18… |
 | B10+ | a56c81fc… | cd777876… | 3cb05b83… | 66a95eb5… |
+
+## Languages (2026-11-03): the sheet says its words in the player's language
+
+Red, 11-03 16:43, 叙事设计 chat: "目前切换成不同的语言，应该游戏里比如说对应的广告，平面视觉的type应该也需要做对应的改变，也就是所有的diegetic narratives 需要adapt 语言的变化。" Then 16:48: "全部按推荐" (`research/narrative/95_world_text_localization.md`, frame A: the same 1990 US sheet, only its words change).
+
+- **Regenerate:** `./tp_gen <dir> A|A0|A1|A10 handoff [level=B<n>] [geom=<json>] lang=<code>`. The words come from `Assets/Resources/Language/<code>.txt`, the rows the TEXT panel reads, so the sheet and the panel say the same thing. Parts of a signed row are used where the sheet splits a line (" · ", the head before "(", the halves at a comma). `examine.json` keeps the English keys, which the panel translates at run time. A word with no row is printed as `UNTRANSLATED` on stderr; there were none for zh-Hans.
+- **Faces:** zh-Hans signs are set in 黑体, Noto Sans SC (Source Han Sans SC, OFL 1.1), weight 700 for Heros Bold and Cn Bold and 400 for Heros, at body = cap ÷ 0.70 (the ideograph about 1.25× the Latin cap), no tracking: the rules shared with 平面视觉 · 信息设计 (WORLD_TYPE.md §3). The CJK line pitch is 1.18× the Latin pitch (7.6 → 9.0 mm). A word too long for its slot is set narrower first (长体, to 85 %), then smaller (cap ≥ 3.6): the red stair-door word keeps 2 mm clear of the stair room's wall. The type system per script is `research/localization/WORLD_TYPE.md`.
+- **English is unchanged:** all 24 variants regenerate byte-identical to the folders above (print, glow, examine.json, checked 11-03).
+- **`zh-Hans/<variant>/`** holds print, glow and examine.json for all 24 sheetA* variants (the room ones with their `geometry.json`). 游戏视觉 packs them with `Tools/lookdev/pack_evac_plan.py` and swaps them by language; the file names in Assets are 游戏视觉's.
+- **Words to sign with 叙事设计:** the stair's run arrow `DN` is lettered `下`, as Chinese plans letter it. For `YOU ARE HERE` the table has 您所在位置 and the LEGEND row has 你在这里; the sheet uses 您所在位置 (the usual wording on a Chinese evacuation plan) in both places.

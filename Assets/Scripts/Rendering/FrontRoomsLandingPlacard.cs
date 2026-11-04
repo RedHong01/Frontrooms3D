@@ -36,6 +36,11 @@ using UnityEngine.Rendering;
 /// The frame shows only while its wall's chunk and the west cell's are built (as the stairwell does, D8); it goes for good when the start
 /// area is given back (the stairwell removed, its door no longer there) or when a rebuilt chunk no longer has the wall.
 /// Desktop, iPhone and iPad hang the same copy (the lens kit too); WebGL keeps the title mount's rule: no lens.
+/// World text follows the language (2026-11-03, FrontRoomsWorldText): the base prints, patches and glows are swapped bases,
+/// so the composite is made from the language on screen, and made again when it changes (Applied); the copies are dropped
+/// through FrontRoomsWorldText.Unload, which keeps a swapped base loaded. A language whose token sits elsewhere on the sheet
+/// moves that token's patch (same size) through its own Prop_EvacPlan_A_Landing_rects (FrontRoomsWorldText.Text; English's
+/// lists none): 简体中文's title band sets the token further left, so its B2-B9 Title0 patches sit at x 3456 (RectsFor).
 /// </summary>
 [AddComponentMenu("")]
 [DisallowMultipleComponent]
@@ -75,6 +80,69 @@ public sealed class FrontRoomsLandingPlacard : MonoBehaviour
         var landing = map.GetComponent<FrontRoomsLandingPlacard>();
         if (landing == null) landing = map.gameObject.AddComponent<FrontRoomsLandingPlacard>();
         landing.Hang(map, relay, floor);
+    }
+
+    // ---------------------------------------------------------------- the language (FrontRoomsWorldText)
+
+    /// <summary>A language's patch moves (Resources path, through FrontRoomsWorldText.Text): English's lists none.</summary>
+    public const string RectsPath = "Surfaces/Textures/Prop_EvacPlan_A_Landing_rects";
+
+    [System.Serializable] sealed class RectMove { public string name; public int[] rect; }
+    [System.Serializable] sealed class RectMoves { public RectMove[] patches; }
+
+    static string rectsCode;
+    static readonly Dictionary<string, int[]> rectMoves = new Dictionary<string, int[]>();
+
+    /// <summary>The sheet's patch rects in the language on screen: the table's, with the language's moves applied.</summary>
+    public static int[] RectsFor(FrontRoomsLandingPlacardSheets.Sheet sheet)
+    {
+        if (sheet == null || sheet.rects == null) return null;
+        var code = FrontRoomsWorldText.AppliedCode;
+        if (rectsCode != code)
+        {
+            rectsCode = code;
+            rectMoves.Clear();
+            var text = FrontRoomsWorldText.Text(RectsPath);
+            var moves = text != null ? JsonUtility.FromJson<RectMoves>(text.text) : null;
+            if (text != null) Resources.UnloadAsset(text);
+            if (moves != null && moves.patches != null)
+                foreach (var m in moves.patches)
+                    if (m != null && !string.IsNullOrEmpty(m.name) && m.rect != null && m.rect.Length == 4) rectMoves[m.name] = m.rect;
+        }
+        if (rectMoves.Count == 0 || sheet.patches == null) return sheet.rects;
+        var rects = (int[])sheet.rects.Clone();
+        for (var i = 0; i < sheet.patches.Length && 4 * i + 3 < rects.Length; i++)
+        {
+            if (!rectMoves.TryGetValue(System.IO.Path.GetFileName(sheet.patches[i]), out var r)) continue;
+            // a move keeps the piece's size (the copy swaps into the same texture)
+            if (r[2] != rects[4 * i + 2] || r[3] != rects[4 * i + 3]) continue;
+            rects[4 * i] = r[0];
+            rects[4 * i + 1] = r[1];
+        }
+        return rects;
+    }
+
+    void OnEnable() => FrontRoomsWorldText.Applied += OnWorldTextApplied;
+
+    void OnDisable() => FrontRoomsWorldText.Applied -= OnWorldTextApplied;
+
+    // The language changed: the base and the patches hold its pixels now, but the composite was made from the old ones. B1
+    // hangs the base itself and follows by itself; a composite is made again, bound, then the old one goes.
+    void OnWorldTextApplied()
+    {
+        if (root == null || Sheet == null || Glow == null || Glow.Instance == null || composite == null) return;
+        var old = composite;
+        composite = null;
+        var print = LoadPrint(Sheet, "LEVEL " + Sheet.level + " (the language changed)");
+        if (composite == null)
+        {
+            // no composite came out (a patch missing): keep the old one rather than hang B1's token
+            composite = old;
+            return;
+        }
+        sheetPrint = print;
+        Glow.Instance.SetTexture("_BaseMap", sheetPrint);
+        DestroyTexture(old);
     }
 
     /// <summary>The map's landing placard component, or null (tools and tests).</summary>
@@ -215,7 +283,7 @@ public sealed class FrontRoomsLandingPlacard : MonoBehaviour
         {
             // The retired copy's material instance went at the end of the frame it was retired in: nothing holds these any more.
             foreach (var t in unloadNextFrame)
-                if (t != null && t != sheetPrint && t != sheetGlow) Resources.UnloadAsset(t);
+                if (t != null && t != sheetPrint && t != sheetGlow) FrontRoomsWorldText.Unload(t);
             unloadNextFrame.Clear();
         }
         if (root == null || map == null) return;
@@ -322,14 +390,15 @@ public sealed class FrontRoomsLandingPlacard : MonoBehaviour
         }
         Texture made = null;
         var how = "blocks";
-        if (missing == null && sheet.rects != null && sheet.rects.Length == count * 4)
+        var rects = RectsFor(sheet);
+        if (missing == null && rects != null && rects.Length == count * 4)
         {
             var name = basePrint.name + " " + sheet.level;
-            if (BlockCopy) made = CompositeBlocks(basePrint, patches, sheet.rects, name);
+            if (BlockCopy) made = CompositeBlocks(basePrint, patches, rects, name);
             if (made == null)
             {
                 how = "blit";
-                made = CompositeBlit(basePrint, patches, sheet.rects, name);
+                made = CompositeBlit(basePrint, patches, rects, name);
             }
         }
         // The patches are in the composite now (or of no use): they go next frame.

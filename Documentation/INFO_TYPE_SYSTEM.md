@@ -197,9 +197,16 @@ Rules:
 - **Stairwell (C22) and first room:** stencil floor tokens and two-ply engraved plates in Heros Bold, from `W/info_type/stair_signs/stair_signs.swift` (SPEC v1.2, VL371). The first room's BUSINESS HOURS plate is 18 × 6 in (Red 10-22 15:33); its desk front carries SECURITY in brushed-aluminium letters (`out/first_room/`, README).
 - **Placard legends:** constants in `placard.swift`.
 - **Alarm family** (fire red #B01E18, legend #EEE9DE; red means ALARM and nothing else): the ALARM ZONE card (10 × 6 in, lit, Heros Bold 42.9 mm, two lines) and the C16 alarm door placard (15 × 3 in screen-printed aluminium, not lit, `ALARM WILL SOUND` in Heros Bold Condensed 27.45 mm +0.04 em, a printed keyline 1/16 in at 1/8 in). Both from `stair_signs.swift`; hand-offs in `research/info_type/ALARM_ZONE_CARD_README.md`. Reading distances use one model for every sign: 691 px per metre at 1 m at the screen's centre (1080p, vFOV 76), 18.6′ reads, phone × 0.45 (`W/info_type/stair_signs/placard_read.py`).
+- **World text** (Red 11-03, research/narrative/95: the signs follow the language, the building stays a US office of 1990). One sign face per script:
+  - zh-Hans: Noto Sans SC Bold (the HUD's own, OFL), agreed with 平面视觉 (`research/localization/WORLD_TYPE.md` §2). zh-Hant, ja and ko take their Noto Sans Bold, from the full localization sources. Latin languages keep Heros, with Heros Bold Condensed as the narrower step.
+  - ru takes Roboto Condensed Bold, then 85 %, until PT Sans Bold / Narrow Bold is downloaded (Red's OK, asked by 平面视觉).
+  - The shared CJK rules (平面视觉 `research/localization/WORLD_TYPE.md` §3): the body is the English cap / 0.70 (the ideograph stands about 1.29 x the cap), with no tracking and 1.3 em line pitch. A row that does not fit is set at 85 % width (长体); a smaller size is the last resort.
+  - Glyphs come from the cmap. Tokens (0, B1, A) stay.
+  - Details: `research/info_type/STAIR_SIGNS_SPEC.md` §10, VL494.
 
 ## 5. Log
 
+- 2026-11-03: §4 world text (zh-Hans signs, VL494).
 - 2026-11-03: §4 alarm family: the C16 alarm door placard (VL485, VL486); the ALARM ZONE card's reading distances corrected to the screen-centre scale.
 - 2026-10-31: §3 rewritten for the decided terminal (C19 DOS text mode with a CUA lightbar, C20 own 8 × 16 face); the G0 mocks are superseded.
 - 2026-10-22 21:26: §3 terminal active area 0.276 × 0.207 m (Red 21:23, VL429).

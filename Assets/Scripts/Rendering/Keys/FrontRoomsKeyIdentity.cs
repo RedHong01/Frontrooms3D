@@ -45,6 +45,27 @@ public struct FrontRoomsKeyIdentity : IEquatable<FrontRoomsKeyIdentity>
     /// <summary>_BaseMap_ST that shows the STAIR A band on a tag insert shipped on cell 00: column 9, centred on the row 8 / 9 boundary.</summary>
     public static readonly Vector4 DeskFobST = new Vector4(1f, 1f, .9f, -.85f);
 
+    /// <summary>The round tag's window (26 mm across) is narrower than a cell's type: B10-B74 (cells 34-98, set at 0.8x) ran up
+    /// to 1.09 mm under its lip, so on the round insert alone those cells show through a crop grown RoundCropGrowth about the
+    /// cell centre, and the token reads at 2/3 of full size, at least 1.26 mm inside the window (平面视觉 · 信息设计's D1.6
+    /// sign-off, option (b), 2026-11-03, VL489; the grown crop, 0.164-0.836 of a cell, reaches no other ink). Every other shape
+    /// and cell keeps crop x1 (DECISIONS #33).</summary>
+    public const float RoundCropGrowth = 1.2f;
+    public const int FirstRoundGrownCell = FirstBCell + 9;
+
+    /// <summary>The _BaseMap_ST that shows atlas cell n on a tag insert of this shape shipped on cell 0 (10 x 10 cells, row 0
+    /// at the top): a pure offset, or for the round insert's B10-B74 the crop grown about the cell centre.</summary>
+    public static Vector4 InsertST(Shape shape, int n)
+    {
+        n = Mathf.Clamp(n, 0, 99);
+        var ox = (n % 10) / 10f;
+        var oy = -(n / 10) / 10f;
+        if (shape != Shape.Round || n < FirstRoundGrownCell || n > LastBCell) return new Vector4(1f, 1f, ox, oy);
+        // uv * g + c0 (1 - g) + the cell's offset, c0 = cell 0's centre (0.05, 0.95): the centre stays, the window sees g x more
+        const float g = RoundCropGrowth;
+        return new Vector4(g, g, .05f * (1f - g) + ox, .95f * (1f - g) + oy);
+    }
+
     /// <summary>What the desk fob prints (叙事 signed, research/narrative/80; for tools and transcripts).</summary>
     public const string DeskFobText = "STAIR A";
 

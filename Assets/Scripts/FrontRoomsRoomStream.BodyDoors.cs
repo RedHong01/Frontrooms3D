@@ -8,6 +8,9 @@ public sealed partial class FrontRoomsRoomStream
     readonly FrontRoomsBodyDoorContact.Leaf bodyRight = new FrontRoomsBodyDoorContact.Leaf();
     bool bodyPairReady;
     int bodyPairSequence = int.MinValue;
+    // Render-only (游戏视觉, 2026-11-03): a barged leaf shudders as the map doors' rigs do (FrontRoomsDoorRig.ShudderAt); the
+    // pair has no latch, bolt or lever, so it takes no other beat (交互设计's answer). Seconds since the barge, -1 = still.
+    float shudderLeft = -1f, shudderRight = -1f;
 
     /// <summary>Call once before the player's move, including zero-move frames so a released leaf can settle.</summary>
     public bool TickBodyDoors(Vector3 feet, Vector3 inputMove, Vector3 viewForward, float dt,
@@ -42,6 +45,8 @@ public sealed partial class FrontRoomsRoomStream
         }
         if (leftVerb == FrontRoomsBodyDoorContact.Verb.Latched && rightVerb == FrontRoomsBodyDoorContact.Verb.Latched)
             room.doorSoundPlayed = false;
+        shudderLeft = leftVerb == FrontRoomsBodyDoorContact.Verb.Barge ? 0f : StepShudder(shudderLeft, dt);
+        shudderRight = rightVerb == FrontRoomsBodyDoorContact.Verb.Barge ? 0f : StepShudder(shudderRight, dt);
         room.doorProgress = Mathf.Clamp01(Mathf.Max(Mathf.Abs(bodyLeft.angle), Mathf.Abs(bodyRight.angle)) / 88f);
         room.doorOpen = Mathf.Abs(bodyLeft.angle) >= 70f || Mathf.Abs(bodyRight.angle) >= 70f;
         room.doorOpening = bodyLeft.moving && !bodyLeft.shutting || bodyRight.moving && !bodyRight.shutting;
@@ -52,6 +57,8 @@ public sealed partial class FrontRoomsRoomStream
         return FrontRoomsBodyDoorContact.BlocksMove(leftHinge, closedDirection, bodyLeft.angle, DoorWidth * .5f, feet, inputMove)
             || FrontRoomsBodyDoorContact.BlocksMove(rightHinge, -closedDirection, bodyRight.angle, DoorWidth * .5f, feet, inputMove);
     }
+
+    static float StepShudder(float t, float dt) => t < 0f ? -1f : t + dt >= FrontRoomsDoorRig.ShudderSeconds ? -1f : t + dt;
 
     static bool BodyVerbStarts(FrontRoomsBodyDoorContact.Verb verb) => verb == FrontRoomsBodyDoorContact.Verb.Ease ||
         verb == FrontRoomsBodyDoorContact.Verb.Barge || verb == FrontRoomsBodyDoorContact.Verb.Shut || verb == FrontRoomsBodyDoorContact.Verb.Slam;
@@ -106,7 +113,7 @@ public sealed partial class FrontRoomsRoomStream
         // A barrel-face change is allowed only with both leaves shut; no hinge jumps on a partial rest.
         if (Mathf.Abs(bodyLeft.angle) < .01f && Mathf.Abs(bodyRight.angle) < .01f)
             SetHingeSide(room, room.doorSwing < 0f ? -1 : 1);
-        room.leftDoor.localRotation = Quaternion.Euler(0f, bodyLeft.angle, 0f);
-        room.rightDoor.localRotation = Quaternion.Euler(0f, bodyRight.angle, 0f);
+        room.leftDoor.localRotation = Quaternion.Euler(0f, bodyLeft.angle + FrontRoomsDoorRig.ShudderAt(shudderLeft), 0f);
+        room.rightDoor.localRotation = Quaternion.Euler(0f, bodyRight.angle + FrontRoomsDoorRig.ShudderAt(shudderRight), 0f);
     }
 }

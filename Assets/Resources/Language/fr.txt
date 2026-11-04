@@ -424,7 +424,7 @@ THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	CETTE PORTE DOIT RESTER DÉVE
 SECURITY	SÉCURITÉ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 PLEASE SIGN IN	VEUILLEZ SIGNER LE REGISTRE	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 ALARM\nZONE	ZONE\nD'ALARME	world text, 95 §5 (叙事设计 2026-11-03); AI draft
-ALARM WILL SOUND	ALARME À L'OUVERTURE	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	SOUS ALARME	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 TROUBLE	DÉFAUT	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 POWER	SOUS TENSION	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 SPARE	RÉSERVE	world text, 95 §5 (叙事设计 2026-11-03); AI draft
@@ -476,3 +476,4 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	PENS�
 [WINDOW ALARM]	[ALARME DE FENÊTRE]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 [DOOR ALARM]	[ALARME DE PORTE]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	PC SÉCURITÉ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DN	DESC.	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft

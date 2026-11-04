@@ -154,7 +154,7 @@ MOVE LEFT	ИДТИ ВЛЕВО
 MOVE RIGHT	ИДТИ ВПРАВО
 NEEDS STAIR KEY	НУЖЕН КЛЮЧ ОТ ЛЕСТНИЦЫ
 NEEDS THIS ZONE'S KEY	НУЖЕН КЛЮЧ ЭТОЙ ЗОНЫ
-NO REENTRY (the door into this floor)	ОБРАТНОГО ВХОДА НЕТ (дверь на этот этаж)	TEXT panel
+NO REENTRY (the door into this floor)	ВХОДА НЕТ (дверь на этот этаж)	TEXT panel
 NOW	СЕЙЧАС
 O  SETTINGS	O  НАСТРОЙКИ
 OCCUPANT ACCOUNTED FOR	ЖИЛЕЦ УЧТЁН
@@ -424,7 +424,7 @@ THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	В РАБОЧЕЕ ВРЕМЯ 
 SECURITY	ОХРАНА	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 PLEASE SIGN IN	ОТМЕТЬТЕСЬ, ПОЖАЛУЙСТА	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 ALARM\nZONE	ЗОНА\nТРЕВОГИ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
-ALARM WILL SOUND	СРАБОТАЕТ СИГНАЛИЗАЦИЯ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	НА СИГНАЛИЗАЦИИ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 TROUBLE	НЕИСПРАВНОСТЬ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 POWER	ПИТАНИЕ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 SPARE	РЕЗЕРВ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
@@ -476,3 +476,4 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	МЫ�
 [WINDOW ALARM]	[СИГНАЛ ТРЕВОГИ ОКНА]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 [DOOR ALARM]	[СИГНАЛ ТРЕВОГИ ДВЕРИ]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	ЦЕНТРАЛЬНЫЙ ПОСТ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DN	ВНИЗ	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft

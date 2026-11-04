@@ -12,6 +12,77 @@ func font(_ file: String) -> CTFontDescriptor { (CTFontManagerCreateFontDescript
 let BOLD = font("texgyreheros-bold.otf"), REG = font("texgyreheros-regular.otf"), CNB = font("texgyreheroscn-bold.otf")
 func capRatio(_ d: CTFontDescriptor) -> Double { Double(CTFontGetCapHeight(CTFontCreateWithFontDescriptor(d, 100, nil))) / 100 }
 let capB = capRatio(BOLD), capR = capRatio(REG), capC = capRatio(CNB)
+// ---------------- world text in the player's language (Red 2026-11-03, 叙事设计 chat: "所有的diegetic narratives 需要adapt 语言的变化";
+// research/narrative/95_world_text_localization.md, frame A: the same 1990 US sheet, its words in the language). CLI lang=<code>.
+// Words come from the game's own tables (Assets/Resources/Language/<code>.txt), so the sheet and its TEXT panel say the same thing;
+// the transcript (examine.json) keeps the English keys the TEXT panel translates at run time. Faces per script: WORLD_TYPE.md.
+var LANG = "en"
+var TABLE: [String: String] = [:]
+var OVR: [String: String] = [:]          // words this sheet splits differently from the tables (derived from signed rows, never new words)
+var MISSING = Set<String>()
+var TRANSLATED = Set<String>()          // words already in the language (a wrapped piece, a looked-up row): never looked up again
+let LANGDIR = "/Users/redwang/Desktop/ArtCenter/Fall26T7/EGAM-401A-01 Individual Game Project/Frontrooms3D/Assets/Resources/Language/"
+func loadTable(_ code: String) {
+  guard let raw = try? String(contentsOfFile: LANGDIR + code + ".txt", encoding: .utf8) else { FileHandle.standardError.write("no table for \(code)\n".data(using: .utf8)!); return }
+  for line in raw.split(separator: "\n", omittingEmptySubsequences: true) where !line.hasPrefix("#") {
+    let f = line.split(separator: "\t", maxSplits: 2, omittingEmptySubsequences: false)
+    if f.count >= 2 && !f[1].isEmpty { TABLE[String(f[0])] = String(f[1]) } }
+  // Parts of signed rows: " · " joins (both sides split the same way), a head before " (" or "（", halves at ", " / "，" and ": " / "：".
+  for (en, tx) in TABLE {
+    let ep = en.components(separatedBy: " · "), tp = tx.components(separatedBy: " · ")
+    if ep.count > 1 && ep.count == tp.count { for (a, b) in zip(ep, tp) where TABLE[a] == nil && OVR[a] == nil { OVR[a] = b } } }
+  for (en, tx) in TABLE.merging(OVR, uniquingKeysWith: { a, _ in a }) {
+    if let r = en.range(of: " ("), let z = tx.range(of: "（") ?? tx.range(of: " ("), OVR[String(en[..<r.lowerBound])] == nil, TABLE[String(en[..<r.lowerBound])] == nil {
+      OVR[String(en[..<r.lowerBound])] = String(tx[..<z.lowerBound]) }
+    for (es, zs0) in [(", ", tx.contains("、") ? "、" : "，"), (": ", "：")] {
+      let zs = tx.contains(zs0) ? zs0 : (es == ": " && tx.contains(" : ") ? " : " : es)
+      let e2 = en.components(separatedBy: es), t2 = tx.components(separatedBy: zs)
+      if e2.count == 2 && t2.count == 2 {
+        if OVR[e2[0] + es.trimmingCharacters(in: .whitespaces)] == nil { OVR[e2[0] + es.trimmingCharacters(in: .whitespaces)] = t2[0] + zs.trimmingCharacters(in: .whitespaces) }
+        if TABLE[e2[0]] == nil && OVR[e2[0]] == nil { OVR[e2[0]] = t2[0] }
+        if TABLE[e2[1]] == nil && OVR[e2[1]] == nil { OVR[e2[1]] = t2[1] } } } } }
+// Line pitch: Latin caps keep the sheet's pitch; CJK, set at the same body, needs about 1.3 em (7.6 mm at cap 5 -> 9.0 mm).
+// Greedy wrap at spaces (CJK: between any two characters, never before closing punctuation), two lines at most.
+func wrap(_ s: String, maxw: Double, cap: Double, face: Face, track: Double) -> [String] {
+  TRANSLATED.insert(s)
+  func measure(_ t: String, cap: Double, face: Face, track: Double) -> Double { TRANSLATED.insert(t); return measureRaw(t, cap: cap, face: face, track: track) }
+  if measure(s, cap: cap, face: face, track: track) <= maxw { return [s] }
+  let cjk = CJK.contains(LANG) && LANG != "ko"
+  let units: [String] = cjk ? s.map { String($0) } : s.components(separatedBy: " ")
+  var lines: [String] = [], cur = ""
+  for u in units {
+    let next = cur.isEmpty ? u : (cjk ? cur + u : cur + " " + u)
+    if measure(next, cap: cap, face: face, track: track) <= maxw || cur.isEmpty || (cjk && "，。、：；）」".contains(u)) { cur = next } else { lines.append(cur); cur = u } }
+  if !cur.isEmpty { lines.append(cur) }
+  if lines.count > 2 { let half = units.count / 2; let j = cjk ? "" : " "; lines = [units[..<half].joined(separator: j), units[half...].joined(separator: j)] }
+  for l in lines { TRANSLATED.insert(l) }
+  return lines }
+func lp(_ d: Double) -> Double { CJK.contains(LANG) ? (d * 1.18 * 10).rounded() / 10 : d }
+// The sheet's word for a string: tokens (numbers, N, single letters) stay; LEVEL B{n} uses the HUD's floor row.
+func T(_ s: String) -> String {
+  if LANG == "en" || s.isEmpty || TRANSLATED.contains(s) { return s }
+  if s.allSatisfy({ $0.isNumber || $0 == " " || $0 == "+" }) || s.count == 1 { return s }
+  if let o = OVR[s] { TRANSLATED.insert(o); return o }
+  if let t = TABLE[s] { TRANSLATED.insert(t); return t }
+  if s.hasPrefix("LEVEL B"), let row = TABLE["LEVEL B{0}"] { return row.replacingOccurrences(of: "{0}", with: String(s.dropFirst(7))) }
+  if s.contains(" · ") { return s.components(separatedBy: " · ").map { T($0) }.joined(separator: " · ") }
+  if s == "YOU ARE" || s == "HERE" { return s }   // English halves, measured for the layout only; another language draws the whole row
+  MISSING.insert(s); return s }
+let CJK: Set<String> = ["zh-Hans", "zh-Hant", "ja", "ko"]
+// zh-Hans signs: 黑体 (Noto Sans SC = Source Han Sans SC, OFL 1.1), Heros Bold -> 700, Heros -> 400, Heros Cn Bold -> 700 (CJK is not condensed).
+let SC_SANS = NSString(string: "~/Library/Fonts/NotoSansSC-VariableFont_wght.ttf").expandingTildeInPath
+let CJK_SRC = NSString(string: "~/FrontRoomsInteractionWork/settings/localization/fonts/src/").expandingTildeInPath + "/"
+let RU_BOLD = FONT.replacingOccurrences(of: "TeXGyre/", with: "RobotoCondensed/RobotoCondensed-Bold.ttf")
+func varFont(_ path: String, _ weight: Double) -> CTFontDescriptor {
+  let base = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: path) as CFURL) as! [CTFontDescriptor])[0]
+  return CTFontDescriptorCreateCopyWithAttributes(base, [kCTFontVariationAttribute as String: [0x77676874: weight]] as CFDictionary) }
+var CJK_BOLD: CTFontDescriptor? = nil, CJK_REG: CTFontDescriptor? = nil
+var RU_DESC: CTFontDescriptor? = nil
+func faceOf(_ face: Face) -> (CTFontDescriptor, Double, String) {
+  let r = face == .bold ? capB : face == .reg ? capR : capC
+  if LANG == "ru", let d = RU_DESC { return (d, capRatio(d), "Roboto Condensed Bold") }
+  if CJK.contains(LANG), let b = CJK_BOLD, let g = CJK_REG { return (face == .reg ? g : b, 0.70, face == .reg ? "Noto Sans CJK 400" : "Noto Sans CJK 700") }
+  return (face == .bold ? BOLD : face == .reg ? REG : CNB, r, face == .bold ? "Heros Bold" : face == .reg ? "Heros" : "Heros Cn Bold") }
 enum Ink { case print, red, white, tint, phos }   // phos: a phosphor field, invisible as ink; it only seeds the underprint
 enum Face { case bold, reg, cond }
 struct Item { var draw: (CGContext) -> Void; var ink: Ink; var glow: Bool }
@@ -30,18 +101,36 @@ func add(_ ink: Ink, _ d: @escaping (CGContext) -> Void) { items.append(Item(dra
 func call(_ n: Int, _ rule: String, _ x: Double, _ y: Double, _ note: String) { callouts.append(Callout(n: n, rule: rule, x: x, y: y, note: note)) }
 
 @discardableResult
-func text(_ s: String, _ x: Double, _ base: Double, cap: Double, face: Face = .bold, track: Double = 0.0, ink: Ink = .print, rot: Double = 0, align: Int = 0) -> Double {
-  let d = face == .bold ? BOLD : face == .reg ? REG : CNB, r = face == .bold ? capB : face == .reg ? capR : capC
-  let f = CTFontCreateWithFontDescriptor(d, cap / r, nil)
+// A line too long for its place (maxw, mm): another language only. Latin takes Heros Cn Bold first, then any line is set
+// narrower (to 85 %), then smaller (to 70 %): never cut (WORLD_TYPE.md §3).
+func fitArgs(_ s: String, cap: Double, face: Face, track: Double, maxw: Double) -> (Double, Face, Double) {
+  if LANG == "en" || maxw <= 0 { return (cap, face, 1) }
+  var f = face
+  if measure(s, cap: cap, face: f, track: track) > maxw && LANG != "ru" && !CJK.contains(LANG) && f == .bold { f = .cond }
+  let w = measure(s, cap: cap, face: f, track: track)
+  if w <= maxw { return (cap, f, 1) }
+  if w * 0.85 <= maxw { return (cap, f, maxw / w) }
+  return (max(cap * 0.7, cap * maxw / (w * 0.85)), f, 0.85) }
+func text(_ s: String, _ x: Double, _ base: Double, cap: Double, face: Face = .bold, track: Double = 0.0, ink: Ink = .print, rot: Double = 0, align: Int = 0, sx: Double = 1, maxw: Double = 0) -> Double {
+  if maxw > 0 && LANG != "en" { let (c, f, k) = fitArgs(s, cap: cap, face: face, track: track, maxw: maxw)
+    if c != cap || f != face || k != 1 { return text(s, x, base, cap: c, face: f, track: track, ink: ink, rot: rot, align: align, sx: k, maxw: 0) } }
+  let (d, r, faceName) = faceOf(face), s = T(s), track = CJK.contains(LANG) ? 0.0 : track
+  var m = CGAffineTransform(scaleX: sx, y: 1)
+  let f = sx == 1 ? CTFontCreateWithFontDescriptor(d, cap / r, nil) : CTFontCreateWithFontDescriptor(d, cap / r, &m)
   let line = CTLineCreateWithAttributedString(NSAttributedString(string: s, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): track, NSAttributedString.Key("CTForegroundColorFromContext"): true]))
   let w = Double(CTLineGetTypographicBounds(line, nil, nil, nil)) - track
-  let ox = align == 0 ? 0 : align == 1 ? -w / 2 : -w
+  let ox = align == 0 ? 0 : align == 1 ? -w / 2 : -w   // CTLine bounds already carry the font matrix (sx)
   add(ink) { c in c.saveGState(); c.translateBy(x: x, y: base); c.rotate(by: rot * .pi / 180); c.scaleBy(x: 1, y: -1); c.textPosition = CGPoint(x: ox, y: 0); CTLineDraw(line, c); c.restoreGState() }
-  texts.append(TextRec(s: s, cap: cap, x: x + ox, base: base, w: w, face: face == .bold ? "Heros Bold" : face == .reg ? "Heros" : "Heros Cn Bold"))
+  texts.append(TextRec(s: s, cap: cap, x: x + ox, base: base, w: w, face: faceName))
   return w }
 // Width of a run without drawing it (same font path as text()).
+func measureRaw(_ s: String, cap: Double, face: Face = .bold, track: Double = 0.0) -> Double {
+  let (d, r, _) = faceOf(face), track = CJK.contains(LANG) ? 0.0 : track
+  let f = CTFontCreateWithFontDescriptor(d, cap / r, nil)
+  let line = CTLineCreateWithAttributedString(NSAttributedString(string: s, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): track]))
+  return Double(CTLineGetTypographicBounds(line, nil, nil, nil)) - track }
 func measure(_ s: String, cap: Double, face: Face = .bold, track: Double = 0.0) -> Double {
-  let d = face == .bold ? BOLD : face == .reg ? REG : CNB, r = face == .bold ? capB : face == .reg ? capR : capC
+  let (d, r, _) = faceOf(face), s = T(s), track = CJK.contains(LANG) ? 0.0 : track
   let f = CTFontCreateWithFontDescriptor(d, cap / r, nil)
   let line = CTLineCreateWithAttributedString(NSAttributedString(string: s, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): track]))
   return Double(CTLineGetTypographicBounds(line, nil, nil, nil)) - track }
@@ -144,17 +233,17 @@ func marker(_ x: Double, _ y: Double, _ n: Int, r: Double = 3.6, ink: Ink = .pri
 // Header + floor number, title block; no red footer: the red block is now the four numbered lines.
 func sheet(level: String, tb: [String]) {
   frameRect(12, 12, W - 24, H - 24, 0.7)                                         // printed border
-  text("EVACUATION PLAN", 20, 37, cap: 15, track: 0.6)                           // header, ISO §6 b: band >= 19.5, caps >= 11.7
+  text("EVACUATION PLAN", 20, 37, cap: 15, track: 0.6, maxw: 392 - measure(level, cap: 15, track: 0.6) - 16)   // header, ISO §6 b: band >= 19.5, caps >= 11.7
   text(level, 412, 37, cap: 15, track: 0.6, align: 2)                             // floor designation = the floor count (L9)
   stroke([(20, 44), (412, 44)], 0.6)
   tr("EVACUATION PLAN · " + level)
   var cx = 300.0; let ty = 243.0, th = 16.0, cap = tb[0].count > 8 ? 3.2 : 3.6, pad = 3.0   // LEVEL B10+ is two characters longer
   var cells: [(Double, Double)] = []
-  for t in tb { let f = CTFontCreateWithFontDescriptor(BOLD, cap / capB, nil); let l = CTLineCreateWithAttributedString(NSAttributedString(string: t, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): 0.15])); let w = Double(CTLineGetTypographicBounds(l, nil, nil, nil)) + 2 * pad; cells.append((cx, w)); cx += w }
+  for t in tb { let f = CTFontCreateWithFontDescriptor(faceOf(.bold).0, cap / capB, nil); let l = CTLineCreateWithAttributedString(NSAttributedString(string: T(t), attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): 0.15])); let w = Double(CTLineGetTypographicBounds(l, nil, nil, nil)) + 2 * pad; cells.append((cx, w)); cx += w }
   let scale = 112.0 / (cx - 300.0)
   var x = 300.0
   stroke([(300, ty), (412, ty), (412, ty + th), (300, ty + th)], 0.6, close: true)
-  for (i, (_, w0)) in cells.enumerated() { let w = w0 * scale; if i > 0 { stroke([(x, ty), (x, ty + th)], 0.6) }; text(tb[i], x + w / 2, ty + th / 2 + cap / 2, cap: cap, track: 0.15, align: 1); x += w } }
+  for (i, (_, w0)) in cells.enumerated() { let w = w0 * scale; if i > 0 { stroke([(x, ty), (x, ty + th)], 0.6) }; text(tb[i], x + w / 2, ty + th / 2 + cap / 2, cap: cap, track: 0.15, align: 1, maxw: w - 2); x += w } }
 // The four lines (signed by 叙事 2026-10-22, research/narrative/40_floors_exit_tutorial_strings.md §3): white on safety red, x 20-288, y 214-259. Never RUN or HIDE as advice,
 // nothing that says darkness hides you, never "relay" (RELAY §9.4; tutorial 10_proposal §5.2).
 var LEVEL = "LEVEL 0"     // the floor on the header and the title block; CLI "level=B1" (C28: LEVEL 0, then B1, B2 …)
@@ -164,16 +253,22 @@ func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT SECURITY D
   text("IN CASE OF ALARM", 26, 216.4, cap: 4.4, track: 0.5, ink: .white)
   stroke([(26, 219.4), (282, 219.4)], 0.35, ink: .white)
   // Fine print (叙事 v1.1 §3, Red 2026-10-22 12:15 in the 叙事 chat): names a role only; not a numbered line.
-  text(WARDEN, 282, 216.4, cap: 3.6, track: 0.2, ink: .white, align: 2)
+  text(WARDEN, 282, 216.4, cap: 3.6, track: 0.2, ink: .white, align: 2, maxw: 256 - measure("IN CASE OF ALARM", cap: 4.4, track: 0.5) - 8)
   func item(_ n: Int, _ x: Double, _ base: Double, _ lines: [String]) {
     text("\(n)", x, base, cap: 5.0, track: 0, ink: .white)
-    for (i, l) in lines.enumerated() { text(l, x + 7, base + Double(i) * 7.6, cap: 5.0, track: 0.1, ink: .white) } }
+    for (i, l) in lines.enumerated() { text(l, x + 7, base + Double(i) * lp(7.6), cap: 5.0, track: 0.1, ink: .white, maxw: 112) } }
   tr("IN CASE OF ALARM"); tr(WARDEN)
   for (n, l) in [(1, ["WALK, DO NOT RUN."]), (2, ["CLOSE DOORS BEHIND YOU."]), (3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]), (4, line4)] { tr("\(n) " + l.joined(separator: " ")) }
-  item(1, 26, 228, ["WALK, DO NOT RUN."])
-  item(2, 26, 246, ["CLOSE DOORS BEHIND YOU."])
-  item(3, 156, 228, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."])
-  item(4, 156, 246, line4)
+  // Another language: the table's numbered row, its number dropped (the number is drawn apart), on one line.
+  func L(_ n: Int, _ en: [String]) -> [String] {
+    if LANG == "en" { return en }
+    let row = T("\(n) " + en.joined(separator: " "))
+    let one = row.hasPrefix("\(n) ") ? String(row.dropFirst("\(n) ".count)) : row
+    return wrap(one, maxw: 112, cap: 5.0, face: .bold, track: 0.1) }
+  item(1, 26, 228, L(1, ["WALK, DO NOT RUN."]))
+  item(2, 26, 246, L(2, ["CLOSE DOORS BEHIND YOU."]))
+  item(3, 156, 228, L(3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]))
+  item(4, 156, 246, L(4, line4))
   call(10, "L4", 33, 226, "walk: sprint steps are a 26 m noise")
   call(11, "L5", 33, 244, "shut doors add 9 m to its hearing path")
   call(12, "L6", 163, 226, "W1 lamps dip = it is near (live 10-22)")
@@ -197,7 +292,9 @@ func stairRoom(_ x: Double, _ y: Double, _ w: Double, _ h: Double, doorX: Double
   rect(doorX - dw / 2, y - 0.45, dw, 0.9)                                        // the leaf, shut
   stairPlan(x + 5, y + 7, w - 10, h - 11, treads: 8)
   if lock { padlock(doorX, y, 11) }
-  if exitLabel { text("EXIT", doorX + dw / 2 + 2, y - 2.4, cap: 5.0, track: 0.4, ink: .red); tr("EXIT (over the stair door" + (lock ? ", padlocked)" : ")"), glow: GLOW) } }
+  if exitLabel { let room = x + w - 2.0 - (doorX + dw / 2 + 2), ew = measure("EXIT", cap: 5.0, track: 0.4)
+    let esx = ew > room ? max(0.85, room / ew) : 1.0, ec = ew * esx > room ? max(3.6, 5.0 * room / (ew * esx)) : 5.0
+    text("EXIT", doorX + dw / 2 + 2, y - 2.4, cap: ec, track: 0.4, ink: .red, sx: esx); tr("EXIT (over the stair door" + (lock ? ", padlocked)" : ")"), glow: GLOW) } }
 // Legend (right column x 300-412): the plan's own symbols. 3 rows (A, B); C adds the padlock.
 // The wall-arrow swatch (R2, Red 10-29; 信息设计 + 叙事 signed 10-29): the wallpaper's turned motif at 1/25, one column
 // of the K00 print cut from legend/flow.png (6 px/mm). Printed, never glowing; one printing for every platform.
@@ -219,25 +316,26 @@ func legend(lock: Bool, phase0: Bool = false, arrows: Bool = false, arrowsY: Dou
   if arrows {                                                                     // the next free row: after the desk, or the stair in Phase 0
     let ty = arrowsY ?? (phase0 ? 125.0 : 154.0)
     swatch(lx + 2.5, ty - 6.3, 15, 15)
-    text("WALL ARROWS", 326, ty, cap: 5.0, track: 0.1); text("POINT THE WAY OUT", 326, ty + 7.6, cap: 5.0, track: 0.1)
+    text("WALL ARROWS", 326, ty, cap: 5.0, track: 0.1, maxw: 85); text("POINT THE WAY OUT", 326, ty + lp(7.6), cap: 5.0, track: 0.1, maxw: 85)   // CJK: halves at the signed comma
     call(5, "L9", lx + 10, ty, "the wall arrows point the way out; the lamps mean near") }
   stroke([(lx, 58.5), (412, 58.5)], 0.35)
-  yah(lx + 10, 72); text("YOU ARE HERE", tx, 74.5, cap: 5.0, track: 0.1)
+  yah(lx + 10, 72); text("YOU ARE HERE", tx, 74.5, cap: 5.0, track: 0.1, maxw: 85)
   stairPlan(lx + 4, 86, 12, 22, treads: 6, label: false); if !phase0 { padlock(lx + 10, 86, 8) }
-  text("STAIR (EXIT)", tx, 96, cap: 5.0, track: 0.1); text("ONE FLOOR DOWN", tx, 103.6, cap: 5.0, track: 0.1)
+  text("STAIR (EXIT)", tx, 96, cap: 5.0, track: 0.1, maxw: 85); text("ONE FLOOR DOWN", tx, 96 + lp(7.6), cap: 5.0, track: 0.1, maxw: 85)   // CJK: the halves of the signed LEGEND row
   if !phase0 { station(lx, 118, 22)
-  text("SECURITY", tx, 125, cap: 5.0, track: 0.1); text("DESK (KEY)", tx, 132.6, cap: 5.0, track: 0.1) }
+  if LANG == "en" { text("SECURITY", tx, 125, cap: 5.0, track: 0.1); text("DESK (KEY)", tx, 132.6, cap: 5.0, track: 0.1) }
+  else { for (i, l) in wrap(T("SECURITY DESK (KEY)"), maxw: 85, cap: 5.0, face: .bold, track: 0.1).enumerated() { text(l, tx, 125 + Double(i) * lp(7.6), cap: 5.0, track: 0.1, maxw: 85) } } }   // one line: SECURITY alone is the desk lettering's word (W11)
   call(1, "L0", lx + 10, 72, "where you are")
   call(2, "L1 L9", lx + 10, 96, "the stair is the way on, one floor down")
   if !phase0 { call(3, "L2", lx + 11, 125, "the key is kept at the station (the playing TV)") }
   if lock {
     rect(lx + 9.55, 146, 0.9, 14); wallH(lx + 3, lx + 10, 146, 1.4); wallH(lx + 10, lx + 17, 160, 1.4); padlock(lx + 10, 153, 9)
-    text("LOCKED DOOR", tx, 155.5, cap: 5.0, track: 0.1)
+    text("LOCKED DOOR", tx, 155.5, cap: 5.0, track: 0.1, maxw: 85)
     call(4, "L2", lx + 10, 153, "only doors a key opens") } }
 // Plan notes in the right column (north points down: the plan is turned to the reader).
 func notes(_ lines: [String], y: Double) {
   north(306, y + 6)
-  for (i, l) in lines.enumerated() { text(l, 318, y + 4 + Double(i) * 5.5, cap: 2.8, face: .reg, track: 0.2); tr(l) } }
+  for (i, l) in lines.enumerated() { text(l, 318, y + 4 + Double(i) * lp(5.5), cap: 2.8, face: .reg, track: 0.2, maxw: 93); tr(l) } }
 // North arrow (the plan is aligned forward-up, so north points DOWN: the reader faces south, into the start room).
 func north(_ x: Double, _ y: Double) {
   ring(x, y, 6, 0.35); poly([(x, y + 6), (x - 2.6, y - 2), (x, y), (x + 2.6, y - 2)]); text("N", x, y + 12.2, cap: 3.2, align: 1) }
@@ -251,11 +349,11 @@ func startEdge(doorX: Double, wallY: Double, x0: Double, x1: Double, s: Double) 
   wallH(x0, doorX - dw / 2, wallY); wallH(doorX + dw / 2, x1, wallY)
   rect(doorX - dw / 2, wallY - 0.45, leaf, 0.9); rect(doorX + dw / 2 - leaf, wallY - 0.45, leaf, 0.9)   // shut: it locked behind you
   stroke([(doorX, wallY - 1.6), (doorX, wallY + 1.6)], 0.35)
-  text("NO REENTRY", doorX, wallY - 3.4, cap: 3.6, track: 0.3, align: 1)                    // NYC LL5 1973 §C26-608.5 form (叙事 10-22)
+  text("NO REENTRY", doorX, wallY - 3.4, cap: 3.6, track: 0.3, align: 1, maxw: 90)                    // NYC LL5 1973 §C26-608.5 form (叙事 10-22)
   tr("NO REENTRY (the door into this floor)"); tr("YOU ARE HERE")
   let yx = doorX + 1.733 * s, yy = wallY + 1.1 * s
   let g = GLOW; GLOW = true; yah(yx, yy); GLOW = g
-  text("YOU ARE HERE", yx + 7.5, yy + 1.9, cap: 5.0, track: 0.2, ink: .red)
+  text("YOU ARE HERE", yx + 7.5, yy + 1.9, cap: 5.0, track: 0.2, ink: .red, maxw: 282 - (yx + 7.5))
   call(20, "L0", yx, yy, "the dot is where the placard hangs")
   call(21, "L1", doorX, wallY - 3, "the door you came in by is shut: no way back")
   return (yx, yy) }
@@ -269,11 +367,11 @@ func buildA() {
   wallV(x0, top, bot); wallV(x1, top, bot); wallH(x0, 220, bot)
   wallH(x0, 54, 100); wallH(70, 150, 100); wallH(190, x1, 100)                  // corridor wall: station door 54-70, arch 150-190
   wallV(110, 100, 140); wallV(110, 156, 170); wallH(x0, 110, 170)               // station room, east door 140-156
-  text("SECURITY DESK", 28, 166, cap: 3.6, track: 0.3); tr("SECURITY DESK")
+  text("SECURITY DESK", 28, 166, cap: 3.6, track: 0.3, maxw: 78); tr("SECURITY DESK")
   station(32, 110, 40, sound: true)
   call(22, "L2", 52, 125, "the key hangs at the station, where the TV plays")
   GLOW = true; stairRoom(220, 120, 64, 80, doorX: 250); GLOW = false
-  text("STAIR A", 216, 196.5, cap: 3.6, track: 0.3, align: 2); tr("STAIR A")
+  text("STAIR A", 216, 196.5, cap: 3.6, track: 0.3, align: 2, maxw: 60); tr("STAIR A")
   call(23, "L1 L2 L9", 250, 160, "the EXIT: a locked stair door, one floor down")
   GLOW = true
   route([(yx, yy + 5.5), (yx, 84), (62, 84), (62, 118)])
@@ -354,7 +452,7 @@ func buildA0() {
   wallH(x0, 54, 100); wallH(70, 150, 100); wallH(190, x1, 100)
   wallV(110, 100, 140); wallV(110, 156, 170); wallH(x0, 110, 170)
   GLOW = true; stairRoom(220, 120, 64, 80, doorX: 250, lock: false); GLOW = false
-  text("STAIR A", 216, 196.5, cap: 3.6, track: 0.3, align: 2); tr("STAIR A")
+  text("STAIR A", 216, 196.5, cap: 3.6, track: 0.3, align: 2, maxw: 60); tr("STAIR A")
   call(23, "L1 L9", 250, 160, "the EXIT: a stair door, one floor down")
   GLOW = true
   route([(yx, yy + 5.5), (yx, 84), (170, 84), (170, 109), (250, 109), (250, 115.5)])
@@ -490,10 +588,10 @@ func buildA1(phase0: Bool) {
   doubleDoorShut(sdp.0, sdp.1, s * sdW, horiz: sdSide == "up" || sdSide == "down")
   var nrBox: Box
   switch sdSide {
-  case "down": text("NO REENTRY", sdp.0, sdp.1 + 7.0, cap: 3.6, track: 0.3, align: 1); nrBox = Box(x0: sdp.0 - nrw / 2, y0: sdp.1 + 3.4, x1: sdp.0 + nrw / 2, y1: sdp.1 + 7.0)
-  case "up": text("NO REENTRY", sdp.0, sdp.1 - 3.4, cap: 3.6, track: 0.3, align: 1); nrBox = Box(x0: sdp.0 - nrw / 2, y0: sdp.1 - 7.0, x1: sdp.0 + nrw / 2, y1: sdp.1 - 3.4)
-  case "left": text("NO REENTRY", sdp.0 - 3.4, sdp.1 + 1.8, cap: 3.6, track: 0.3, align: 2); nrBox = Box(x0: sdp.0 - 3.4 - nrw, y0: sdp.1 - 1.8, x1: sdp.0 - 3.4, y1: sdp.1 + 1.8)
-  default: text("NO REENTRY", sdp.0 + 3.4, sdp.1 + 1.8, cap: 3.6, track: 0.3); nrBox = Box(x0: sdp.0 + 3.4, y0: sdp.1 - 1.8, x1: sdp.0 + 3.4 + nrw, y1: sdp.1 + 1.8) }
+  case "down": text("NO REENTRY", sdp.0, sdp.1 + 7.0, cap: 3.6, track: 0.3, align: 1, maxw: 70); nrBox = Box(x0: sdp.0 - nrw / 2, y0: sdp.1 + 3.4, x1: sdp.0 + nrw / 2, y1: sdp.1 + 7.0)
+  case "up": text("NO REENTRY", sdp.0, sdp.1 - 3.4, cap: 3.6, track: 0.3, align: 1, maxw: 70); nrBox = Box(x0: sdp.0 - nrw / 2, y0: sdp.1 - 7.0, x1: sdp.0 + nrw / 2, y1: sdp.1 - 3.4)
+  case "left": text("NO REENTRY", sdp.0 - 3.4, sdp.1 + 1.8, cap: 3.6, track: 0.3, align: 2, maxw: 70); nrBox = Box(x0: sdp.0 - 3.4 - nrw, y0: sdp.1 - 1.8, x1: sdp.0 - 3.4, y1: sdp.1 + 1.8)
+  default: text("NO REENTRY", sdp.0 + 3.4, sdp.1 + 1.8, cap: 3.6, track: 0.3, maxw: 70); nrBox = Box(x0: sdp.0 + 3.4, y0: sdp.1 - 1.8, x1: sdp.0 + 3.4 + nrw, y1: sdp.1 + 1.8) }
   // YOU ARE HERE: beside the dot, else under the walk; one line, else two (YOU ARE / HERE); clear of the walk, in the room
   let yl1 = measure("YOU ARE HERE", cap: 5.0, track: 0.2), yl2 = measure("YOU ARE", cap: 5.0, track: 0.2)
   var ycands: [(Double, Double, Int, Bool)] = []                                 // x, first baseline, align, two lines
@@ -504,7 +602,8 @@ func buildA1(phase0: Bool) {
     let w = c.3 ? yl2 : yl1, x0 = c.2 == 0 ? c.0 : c.2 == 1 ? c.0 - w / 2 : c.0 - w
     return Box(x0: x0, y0: c.1 - 5.0, x1: x0 + w, y1: c.1 + (c.3 ? 7.6 : 0)) }
   let yc = ycands.first { c in let b = ybox(c); return inside(b) && clear(walkPts, b, 1.2) && !overlap(b, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4)) && !solids.contains { overlap($0, b) } && !overlap(b, deskFoot) } ?? ycands[0]
-  if yc.3 { text("YOU ARE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2); text("HERE", yc.0, yc.1 + 7.6, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
+  if yc.3 && LANG != "en" { for (i, l) in wrap(T("YOU ARE HERE"), maxw: 70, cap: 5.0, face: .bold, track: 0.2).enumerated() { text(l, yc.0, yc.1 + Double(i) * lp(7.6), cap: 5.0, track: 0.2, ink: .red, align: yc.2, maxw: 70) } }
+  else if yc.3 { text("YOU ARE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2); text("HERE", yc.0, yc.1 + 7.6, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
   else { text("YOU ARE HERE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
   tr("YOU ARE HERE")
   call(20, "L0", yx, yy, "the dot is the placard, by the desk")
@@ -528,7 +627,7 @@ func buildA1(phase0: Bool) {
       if inside(b) && clear(walkPts, b, 1.2) && !taken.contains(where: { overlap($0, b) }) { best = (x, y); break } } }
   let (px, py) = best ?? (dc.0 - pw / 2, dc.1 - ph / 2)
   if !phase0 { station(px, py, pw, sound: true); call(22, "L2", px + pw / 2, py + ph / 2, "the key hangs here, where the TV plays") }
-  text("SECURITY DESK", px + pw / 2, phase0 ? py + ph / 2 + 1.8 : py + ph + 5.4, cap: 3.6, track: 0.3, align: 1); tr("SECURITY DESK")
+  text("SECURITY DESK", px + pw / 2, phase0 ? py + ph / 2 + 1.8 : py + ph + 5.4, cap: 3.6, track: 0.3, align: 1, maxw: max(40, pw - 4)); tr("SECURITY DESK")
   tr("NO REENTRY (the door into this floor)")
   call(21, "L1", sdp.0, sdp.1, "the door you came in by is shut: no way back")
   // the stair enclosure at the end of the walk, its door facing the room
@@ -536,15 +635,15 @@ func buildA1(phase0: Bool) {
   stairRoomFacing(door.0, door.1, face: face, w: Sw, h: Sd, lock: !phase0)
   let sc = (door.0 + d.0 * Sd / 2, door.1 + d.1 * Sd / 2)
   switch face {
-  case "right": text("EXIT", door.0 + 2.0, door.1 - 7.0 - 2.4, cap: 5.0, track: 0.4, ink: .red)
-  case "left": text("EXIT", door.0 - 2.0, door.1 - 7.0 - 2.4, cap: 5.0, track: 0.4, ink: .red, align: 2)
-  case "down": text("EXIT", door.0 + 9.0, door.1 + 2.4 + 5.0, cap: 5.0, track: 0.4, ink: .red)
-  default: text("EXIT", door.0 + 9.0, door.1 - 2.4, cap: 5.0, track: 0.4, ink: .red) }
+  case "right": text("EXIT", door.0 + 2.0, door.1 - 7.0 - 2.4, cap: 5.0, track: 0.4, ink: .red, maxw: 48)
+  case "left": text("EXIT", door.0 - 2.0, door.1 - 7.0 - 2.4, cap: 5.0, track: 0.4, ink: .red, align: 2, maxw: 48)
+  case "down": text("EXIT", door.0 + 9.0, door.1 + 2.4 + 5.0, cap: 5.0, track: 0.4, ink: .red, maxw: 48)
+  default: text("EXIT", door.0 + 9.0, door.1 - 2.4, cap: 5.0, track: 0.4, ink: .red, maxw: 48) }
   tr("EXIT (over the stair door" + (phase0 ? ")" : ", padlocked)"), glow: true)
   GLOW = false
   text("DN", sc.0 + (horizWalk ? 0 : 1.8), sc.1 + (horizWalk ? -1.6 : 1.4), cap: 2.8, align: horizWalk ? 1 : 0)
-  if horizWalk { text("STAIR A", sc.0, sc.1 + Sw / 2 + 6.0, cap: 3.6, track: 0.3, align: 1) }
-  else { text("STAIR A", sc.0 + Sw / 2 + 3.0, sc.1 + 1.8, cap: 3.6, track: 0.3) }
+  if horizWalk { text("STAIR A", sc.0, sc.1 + Sw / 2 + 6.0, cap: 3.6, track: 0.3, align: 1, maxw: 60) }
+  else { text("STAIR A", sc.0 + Sw / 2 + 3.0, sc.1 + 1.8, cap: 3.6, track: 0.3, maxw: 60) }
   tr("STAIR A")
   call(23, phase0 ? "L1 L9" : "L1 L2 L9", sc.0, sc.1, "the EXIT, in sight from the doorway: a stair door, one floor down")
   // a drafting break on the walk (3-6 cells, not to scale)
@@ -565,9 +664,9 @@ func buildA1(phase0: Bool) {
   route([(301, gy), (319, gy)])
   rect(gx - 1.3, gy - 1.6, 2.6, 3.2, ink: .white)
   pushRot(gx, gy, 90); brk(gx, gy - 2.2); popRot()
-  text("BEYOND BREAK:", 326, by, cap: 5.0, track: 0.1); text("NOT TO SCALE", 326, by + 7.6, cap: 5.0, track: 0.1)
+  text("BEYOND BREAK:", 326, by, cap: 5.0, track: 0.1, maxw: 85); text("NOT TO SCALE", 326, by + lp(7.6), cap: 5.0, track: 0.1, maxw: 85)
   tr("BEYOND BREAK: NOT TO SCALE")
-  text("THIS FLOOR MAY DIFFER FROM PLAN", 318, northY + 1.4, cap: 2.8, face: .reg, track: 0.2); tr("THIS FLOOR MAY DIFFER FROM PLAN")
+  text("THIS FLOOR MAY DIFFER FROM PLAN", 318, northY + 1.4, cap: 2.8, face: .reg, track: 0.2, maxw: 93); tr("THIS FLOOR MAY DIFFER FROM PLAN")
   if phase0 { alarmBlock(line4: ["EXIT BY STAIR,", "ONE FLOOR DOWN."]) } else { alarmBlock() }
   tr(LEVEL + " · SHEET A-2 OF 4 · PRINTED 11/89")
   regionDefs = [RegionDef(id: "plan", x: 20, y: 46, w: 268, h: 158), RegionDef(id: "legend", x: 296, y: 46, w: 118, h: 178),
@@ -641,6 +740,17 @@ func render(_ path: String, pxPerMM: Double, mode: String) {
   CGImageDestinationAddImage(d, c.makeImage()!, nil); CGImageDestinationFinalize(d) }
 
 let out = CommandLine.arguments[1], opt = CommandLine.arguments[2], handoff = CommandLine.arguments.dropFirst(3).contains("handoff")
+for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("lang=") {
+  LANG = String(a.dropFirst(5)); loadTable(LANG)
+  if LANG == "zh-Hans" { CJK_BOLD = varFont(SC_SANS, 700); CJK_REG = varFont(SC_SANS, 400) }
+  let cjkFiles = ["zh-Hant": "TC", "ja": "JP", "ko": "KR"]
+  if let k = cjkFiles[LANG] { CJK_BOLD = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: CJK_SRC + "NotoSans\(k)-Bold.otf") as CFURL) as! [CTFontDescriptor])[0]; CJK_REG = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: CJK_SRC + "NotoSans\(k)-Regular.otf") as CFURL) as! [CTFontDescriptor])[0] }
+  if LANG == "ru" { RU_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_BOLD) as CFURL) as! [CTFontDescriptor])[0] }
+  // The stair's run arrow (叙事 11-03, narrative/95 §5) and the zh-Hant YOU ARE HERE row used in both places.
+  let dn = ["zh-Hans": "下", "zh-Hant": "下", "ja": "下", "ko": "아래", "de": "AB", "fr": "DESC.", "es": "BAJA", "pt-BR": "DESCE", "ru": "ВНИЗ"]
+  if let d = dn[LANG] { OVR["DN"] = d }
+  if LANG == "zh-Hans" { OVR["YOU ARE HERE"] = TABLE["YOU ARE HERE"] ?? "您所在位置" }
+  if LANG == "zh-Hant" { OVR["YOU ARE HERE"] = "您在此處" } }
 for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("level=") { LEVEL = "LEVEL " + a.dropFirst(6) }
 for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("geom=") {
   GEOM = try! JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: String(a.dropFirst(5))))) as! [String: Any] }
@@ -667,6 +777,7 @@ if handoff {
   let d = try! JSONSerialization.data(withJSONObject: ex, options: [.prettyPrinted, .sortedKeys])
   try! d.write(to: URL(fileURLWithPath: "\(out)/examine.json"))
   print("handoff \(opt): regions \(regs.map { "\($0["id"]!) cap \($0["capMm"]!)" }), transcript \(transcript.count) lines")
+  if !MISSING.isEmpty { FileHandle.standardError.write(("UNTRANSLATED (" + LANG + "): " + MISSING.sorted().joined(separator: " | ") + "\n").data(using: .utf8)!) }
   exit(0)
 }
 render("\(out)/opt\(opt)_lit_6pxmm.png", pxPerMM: 6, mode: "lit")
@@ -687,3 +798,4 @@ try! data.write(to: URL(fileURLWithPath: "\(out)/opt\(opt).json"))
 let minCap = texts.map { $0.cap }.min() ?? 0
 let overflow = texts.filter { $0.x < 14 || $0.x + $0.w > 418 }.map { $0.s }
 print("option \(opt): items \(items.count), texts \(texts.count), min cap \(minCap) mm, rule lines >= 5.0: \(texts.filter { $0.cap >= 5.0 }.count), overflow: \(overflow)")
+if !MISSING.isEmpty { FileHandle.standardError.write(("UNTRANSLATED (" + LANG + "): " + MISSING.sorted().joined(separator: " | ") + "\n").data(using: .utf8)!) }

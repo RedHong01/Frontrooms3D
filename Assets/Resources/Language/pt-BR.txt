@@ -205,7 +205,7 @@ RUN BUTTON	BOTÃO DE CORRER
 Renders light with high dynamic range before the film look. OFF is plain SDR.	Renderiza a luz com alto alcance dinâmico antes do visual de filme. DESL. é SDR comum.
 SCROLL  ·  CLOSER	RODA  ·  APROXIMAR	close-up hint, whole line; keep the spaces around the dot
 SEARCH	PROCURA
-SECURITY DESK	PORTARIA	TEXT panel
+SECURITY DESK	POSTO DE SEGURANÇA	TEXT panel
 SETTINGS	CONFIGURAÇÕES
 SHADOWS	SOMBRAS
 SHARP	NÍTIDO
@@ -476,3 +476,4 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	PENSA
 [WINDOW ALARM]	[ALARME DE JANELA]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 [DOOR ALARM]	[ALARME DE PORTA]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	CENTRAL DE CONTROLE	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DN	DESCE	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft

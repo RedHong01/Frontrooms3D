@@ -130,7 +130,12 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
     // ... and the strike plate, hit by the bolt's bevel, rattles on its two screws: 1.2 mm out toward the swing and back.
     const float StrikeRattleMetres = .0012f, StrikeRattleDeg = 1.2f, StrikeRattleHz = 22f, StrikeRattleDecay = .05f, StrikeRattleSeconds = .18f;
     // The barge's shudder (render-only): the slab rings about its pivot as the shoulder lands, 0.8 deg at 13 Hz, gone in 0.3 s.
-    const float ShudderDeg = .8f, ShudderHz = 13f, ShudderDecay = .07f, ShudderSeconds = .3f;
+    const float ShudderDeg = .8f, ShudderHz = 13f, ShudderDecay = .07f;
+    internal const float ShudderSeconds = .3f;
+
+    /// <summary>The barge shudder's turn (degrees) t seconds after the hit, 0 outside it. The map doors' rigs and RoomStream's
+    /// start pair (no latch, bolt or lever, so it takes this beat alone; 交互设计 11-03) ring alike.</summary>
+    internal static float ShudderAt(float t) => t < 0f || t >= ShudderSeconds ? 0f : Ring(ShudderDeg, ShudderHz, ShudderDecay, t);
     // The unlock's 10 deg pop (Red 10-31 11B, "开锁后门只弹开 10°，你再用身体推"): the map swings the leaf to
     // BodyDoorUnlockDegrees; where it stops the slab coasts 1 deg past and settles, as a leaf the latch spring let go.
     const float PopDeg = 1f, PopHz = 7f, PopDecay = .07f, PopSeconds = .35f, PopArmSeconds = 2f;
@@ -610,7 +615,7 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
         var turn = 0f;
         if (joltClock >= 0f) turn += -swing * joltDegrees * JoltShape(joltClock / Mathf.Max(.01f, joltSpring));
         if (wobbleClock >= 0f) turn += WobbleDeg * Mathf.Exp(-wobbleClock / (WobbleSeconds * .4f)) * Mathf.Sin(2f * Mathf.PI * WobbleHz * wobbleClock);
-        if (shudderClock >= 0f) turn += Ring(ShudderDeg, ShudderHz, ShudderDecay, shudderClock);
+        if (shudderClock >= 0f) turn += ShudderAt(shudderClock);
         if (popClock >= 0f) turn += popSign * Ring(PopDeg, PopHz, PopDecay, popClock);
         // The visual pivot (fix 1): the hinge turns the rig by a about the map's point; R(-a) p - p puts the turn about p.
         var pivot = Vector3.zero;

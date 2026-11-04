@@ -205,7 +205,7 @@ RUN BUTTON	走るボタン
 Renders light with high dynamic range before the film look. OFF is plain SDR.	フィルム風の処理の前に、光をハイダイナミックレンジで描画します。オフは通常のSDRです。
 SCROLL  ·  CLOSER	ホイール  ·  近づく	close-up hint, whole line; keep the spaces around the dot
 SEARCH	捜索
-SECURITY DESK	守衛室	TEXT panel
+SECURITY DESK	警備デスク	TEXT panel
 SETTINGS	設定
 SHADOWS	影
 SHARP	シャープ
@@ -424,7 +424,7 @@ THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	営業時間中は施錠し�
 SECURITY	警備	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 PLEASE SIGN IN	ご記帳ください	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 ALARM\nZONE	警報\n区域	world text, 95 §5 (叙事设计 2026-11-03); AI draft
-ALARM WILL SOUND	開けると警報が鳴ります	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	開けると警報	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 TROUBLE	故障	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 POWER	電源	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 SPARE	予備	world text, 95 §5 (叙事设计 2026-11-03); AI draft
@@ -476,3 +476,4 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	今�
 [WINDOW ALARM]	[窓の警報音]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 [DOOR ALARM]	[ドアの警報音]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	防災センター	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DN	下	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft

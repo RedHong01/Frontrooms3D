@@ -1,0 +1,159 @@
+{
+  "_about": "OFFICE MEMO, fr (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_3.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "Menu principal",
+    "doc": "Lire la note",
+    "list": "File d'impression",
+    "help": "Aide"
+  },
+  "main": {
+    "headline": "NOTES",
+    "second": "{UNREAD} NON LUES",
+    "secondNone": "TOUT EST LU",
+    "listItem": "File d'impression",
+    "listMessage": "Voir ce qui attend à l'imprimante.",
+    "helpItem": "Aide",
+    "helpMessage": "Voir le rôle de chaque touche."
+  },
+  "memos": [
+    {
+      "index": "D.K., Sécurité    Visiteurs",
+      "date": "{DATE_NOW}",
+      "message": "Lire la note de D.K., Sécurité.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "D.K., Sécurité"
+        },
+        {
+          "label": "À:",
+          "value": "Tous les locataires"
+        },
+        {
+          "label": "Date:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "Objet:",
+          "value": "Visiteurs"
+        }
+      ],
+      "body": [
+        "Tout visiteur signe le registre au poste de sécurité.",
+        "Merci d'accueillir vos visiteurs au poste et de les raccompagner à leur départ.",
+        "",
+        "Après 1800, un visiteur n'entre que si un locataire a appelé le poste."
+      ],
+      "sign": "D.K."
+    },
+    {
+      "index": "R.M., Intendance  Interdiction de fumer",
+      "date": "{DATE_BACK4}",
+      "message": "Lire la note de R.M., Intendance.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "R.M., Intendance"
+        },
+        {
+          "label": "À:",
+          "value": "Tous les locataires"
+        },
+        {
+          "label": "Date:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "Objet:",
+          "value": "Interdiction de fumer"
+        }
+      ],
+      "body": [
+        "Depuis le premier du mois, il est interdit de fumer dans tout l'immeuble.",
+        "Cela comprend les bureaux, les toilettes et les escaliers.",
+        "",
+        "Merci de fumer dehors, loin de l'entrée principale."
+      ],
+      "sign": "R.M."
+    }
+  ],
+  "list": {
+    "heading": "File: MAIN             Imprimante: LASER 2      État: Impression",
+    "columns": [
+      "N°",
+      "Document",
+      "Titulaire",
+      "Pages",
+      "État"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "Avis d'exercice incendie",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "Impression",
+        "message": "Impression de la page 2 sur 2."
+      },
+      {
+        "job": "0413",
+        "document": "Registre de sortie des clés",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "En attente",
+        "message": "En attente de l'imprimante."
+      }
+    ]
+  },
+  "help": {
+    "heading": "Touches",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "Choisir un élément"
+      },
+      {
+        "action": "Side",
+        "text": "Précédent ou suivant"
+      },
+      {
+        "action": "Select",
+        "text": "Ouvrir l'élément choisi"
+      },
+      {
+        "action": "Page",
+        "text": "Page précédente ou suivante"
+      },
+      {
+        "action": "Cancel",
+        "text": "Revenir en arrière"
+      },
+      {
+        "action": "Exit",
+        "text": "Quitter {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "Cette aide"
+      }
+    ]
+  },
+  "words": {
+    "help": "Aide",
+    "select": "Choisir",
+    "cancel": "Annuler",
+    "exit": "Quitter",
+    "page": "Page",
+    "softSelect": "Enter",
+    "softCancel": "Annuler",
+    "softHelp": "Aide",
+    "more": "Suite:",
+    "memoOf": "Note {N} sur {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Non autorisé: seul le titulaire d'une tâche peut la modifier.",
+    "topOfData": "Début du dossier: aucune note plus ancienne.",
+    "bottomOfData": "Fin du dossier: aucune autre note."
+  }
+}

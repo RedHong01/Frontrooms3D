@@ -115,3 +115,41 @@ The floor reads from anywhere in the stair (the stencil) and from across a landi
 - UBC Std 33-2 is unread (§1). If it turns up, check the wall sign's order and sizes against it.
 - 叙事's §5 table says the stencil is on the latch side; the lookdev and `10_directions.md` §1.4 put it on the hinge side, because the latch side carries the wall sign and the standpipe. This spec follows the lookdev (asked 叙事 to fix the table).
 - WebGL: a separate tier (e.g. 512 px plates on the WebGL tab). Desktop is the reference.
+
+## 10. World text: the plates in the player's language (2026-11-03)
+
+Red, 2026-11-03, in 叙事设计's chat (verified by 总控 in b8f63700): "所有的diegetic narratives 需要adapt 语言的变化". Frame A of `research/narrative/95_world_text_localization.md`: the building stays a US office of 1990, and only its words change. 简体中文 comes first; WebGL stays English.
+
+- **Words.** From 95 §5 and the zh-Hans table, all signed by 叙事设计 on 11-03 at 17:17, including these line breaks.
+
+| Plate | zh-Hans rows |
+|---|---|
+| ID sign | 楼梯 A / 不通屋顶 / 楼层 / {floor} / 第 {from} 层至第 {to} 层 |
+| Exit door | 禁止返回 / 最近返回点： / 第 {to} 层 |
+| Far door | 可由此返回 / 本层 |
+| NOT AN EXIT | 非出口 |
+| Stair letter | 楼梯 / A |
+| Rescue sign | 救援 / 等候区 |
+
+- **Tokens stay.** 0, B1 and the stair letter A are unchanged. Set alone, they keep Heros. Inside a CJK run, they take the CJK face's own Latin.
+- **Face.** Noto Sans SC Bold, the HUD's zh-Hans face (OFL, `Assets/Resources/Fonts`), proposed to 平面视觉 on 11-03 at 17:14.
+  - Every glyph is drawn from the cmap. CoreText swaps the digits of a Latin run for alternates (glyphs 755–764 of the subset face, with the same advances), and the runtime and the HUD never show those.
+- **Size: the shared CJK rules** (平面视觉, `research/localization/WORLD_TYPE.md` §3, agreed 11-03).
+  - A row keeps its English cap, and its CJK body is that cap / 0.70. Measured on a full-box ideograph (国, or 回 where the 770-glyph cut lacks 国; never .notdef), the ideograph stands 1.29 x the cap.
+  - There is no tracking. CJK lines stand at least 1.3 em apart. The row band, order, colourway and engraving stay as in English.
+  - Gaps fitted to 14 in on the ID sign: 0.5 in under 楼梯 A, 0.8 in over 楼层 and over the terminus.
+  - A row that overflows its measure is set at 85 % width (长体) at the same height. A smaller size is the last resort.
+  - The 85 % run is the 100 % run scaled, not a font matrix: with a matrix, CTRun positions come back unscaled.
+- **Files.** `stair_signs.swift <out> 0 world zh-Hans` writes `out/world/zh-Hans/Print/Stair/`: the fixed art for rt_id, rt_exit_door, far_door, not_an_exit and stair_letter_A, the rescue face (albedo and glow at the base's 1880 x 660), and `zh-Hans_runtime_slots.json`.
+  - `world_glyphs.swift` turns the slot records into the runtime's `<slot>_glyphs.png/json`: id_floor (Latin, baseline moved), id_terminus and exit_door_to (CJK, with faces cjk and cjk85; cjk85 is used from B99 on).
+  - `compose_check.py` recomposes a plate the way `FrontRoomsStairSigns.Compose` does. The zh-Hans plates come within 1 level of the full bake, the same as the English.
+  - They land through `W/apply/world_text_info_zh_hans.sh` (游戏视觉's path `Resources/WorldText/zh-Hans/`).
+- **Found:** the 5 in floor token overflows the ID sign from B100 on, even in Heros Condensed, in English too. A third, smaller face in id_floor's json would fit it, because the runtime keeps the last face it tries. Sent to 游戏视觉.
+- **Record:** VL494 (`images/vl494_world_text_zh_hans_signs.jpg`).
+- **The other eight languages, LANDED 11-03 17:5x and 18:0x:** `W/apply/world_text_info_8lang` and `world_text_info_fit`.
+  - zh-Hant, ja and ko are set as zh-Hans, from the full Noto Sans TC, JP and KR Bold in the localization sources.
+  - de, fr, es and pt-BR use Heros Bold, then Heros Bold Condensed, on the English rows, tracking and baselines.
+  - ru uses Roboto Condensed Bold, then the same face at 85 %. PT Sans replaces it in one re-bake once Red allows the download (平面视觉's ask).
+  - Last-resort sizes, all under 12 %, on the English baseline: fr ESCALIER A, PAS DE RETOUR and ESCALIER; es ESCALERA A, SIN REINGRESO and ESCALERA; pt-BR SEM ACESSO À COBERTURA; ru ЛЕСТНИЦА; ja 出口ではありません (2 %).
+  - The rescue sign is in three lines (two in de). ja and ko set the far door small/large in their own word order.
+  - Every language's slot atlases equal CoreText for 0..B200, and every plate recomposes to 1 level. Record: VL495.

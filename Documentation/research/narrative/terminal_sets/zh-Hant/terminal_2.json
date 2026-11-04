@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO, zh-Hant (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_2.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "主選單",
+    "doc": "閱讀備忘",
+    "list": "列印佇列",
+    "help": "說明"
+  },
+  "main": {
+    "headline": "備忘錄",
+    "second": "{UNREAD} 未讀",
+    "secondNone": "全部已讀",
+    "listItem": "列印佇列",
+    "listMessage": "查看等待列印的文件。",
+    "helpItem": "說明",
+    "helpMessage": "查看各鍵的用途。"
+  },
+  "memos": [
+    {
+      "index": "R.M., 總務部      地毯清洗",
+      "date": "{DATE_NOW}",
+      "message": "閱讀總務部 R.M. 的備忘。",
+      "head": [
+        {
+          "label": "寄件:",
+          "value": "R.M., 總務部"
+        },
+        {
+          "label": "收件:",
+          "value": "全體承租戶"
+        },
+        {
+          "label": "日期:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "主旨:",
+          "value": "地毯清洗"
+        }
+      ],
+      "body": [
+        "本週末將清洗各樓層地毯。",
+        "請在週五下班前清空桌下地面。",
+        "",
+        "週一地毯可能仍有些潮濕。",
+        "氣味來自清潔劑，一兩天內會散去。",
+        "",
+        "如有疑問，請洽總務部。"
+      ],
+      "sign": "R.M."
+    },
+    {
+      "index": "D.K., 警衛部      失物招領",
+      "date": "{DATE_BACK4}",
+      "message": "閱讀警衛部 D.K. 的備忘。",
+      "head": [
+        {
+          "label": "寄件:",
+          "value": "D.K., 警衛部"
+        },
+        {
+          "label": "收件:",
+          "value": "全體承租戶"
+        },
+        {
+          "label": "日期:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "主旨:",
+          "value": "失物招領"
+        }
+      ],
+      "body": [
+        "夜間巡邏拾獲的物品在警衛台保管 30 天。",
+        "請於營業時間內領取。",
+        "",
+        "30 天內無人認領的物品將捐給慈善機構。"
+      ],
+      "sign": "D.K."
+    }
+  ],
+  "list": {
+    "heading": "佇列: MAIN             印表機: LASER 2          狀態: 列印中",
+    "columns": [
+      "工作",
+      "文件",
+      "擁有者",
+      "頁數",
+      "狀態"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "火警演習通知",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "列印中",
+        "message": "正在列印第 2 頁，共 2 頁。"
+      },
+      {
+        "job": "0413",
+        "document": "鑰匙登記表",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "等待中",
+        "message": "正在等待印表機。"
+      }
+    ]
+  },
+  "help": {
+    "heading": "按鍵",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "選擇項目"
+      },
+      {
+        "action": "Side",
+        "text": "上一個或下一個"
+      },
+      {
+        "action": "Select",
+        "text": "開啟所選項目"
+      },
+      {
+        "action": "Page",
+        "text": "上一頁或下一頁"
+      },
+      {
+        "action": "Cancel",
+        "text": "返回上一步"
+      },
+      {
+        "action": "Exit",
+        "text": "離開 {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "本說明"
+      }
+    ]
+  },
+  "words": {
+    "help": "說明",
+    "select": "選擇",
+    "cancel": "取消",
+    "exit": "離開",
+    "page": "翻頁",
+    "softSelect": "Enter",
+    "softCancel": "取消",
+    "softHelp": "說明",
+    "more": "更多:",
+    "memoOf": "備忘 {N} / {M}"
+  },
+  "refusals": {
+    "notAuthorized": "無權操作：只有工作擁有者才能更改。",
+    "topOfData": "已到資料夾開頭：沒有更早的備忘。",
+    "bottomOfData": "已到資料夾結尾：沒有更多備忘。"
+  }
+}

@@ -123,6 +123,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         public float Open;
         public bool IsOpen;
         public float OpenAt, CloseAt;
+        /// <summary>LANGUAGE only: how far its grid is unfolded under it, 0..1.</summary>
+        public float Fold;
     }
 
     /// <summary>The slow gait's speed as a share of the walk: 3.2 m/s × 0.45 = 1.44 m/s.</summary>
@@ -200,6 +202,23 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     /// place to twice its height and says what its choice means; only one is open; -1 none. A tap opens a row and works the
     /// control under it, a tap on the open row's name closes it; with a pad or a keyboard ↑ ↓ open the next, B or Esc close it.</summary>
     public int OpenSettingsRow { get; private set; } = -1;
+    /// <summary>LANGUAGE unfolded into its grid (SETTINGS_MOTION.md; the desktop's E3 on touch): its ten charms five a line under
+    /// the row, each name beside its charm, the key logic kept (a pick flies the charm onto the key). Only one row is open, so it
+    /// closes the open row and an opening row folds it. A tap on the key, the current name or the row's word unfolds it and folds
+    /// it again; on the rail a tap on another charm still picks at once; in the grid a tap on a cell picks and the grid stays. With
+    /// a pad or a keyboard, as the desktop: folded, ← → go along the rail and A picks the charm chosen there or, on the current one,
+    /// unfolds; in the grid ← → ↑ ↓ choose (↑ ↓ past its edge fold it and go on), A picks, B folds.</summary>
+    public bool LanguageUnfolded { get; private set; }
+    /// <summary>The grid's height under the row in points (the view's measure: two lines of cells and the gap under them).</summary>
+    public float LanguageGridHeight { get; set; } = 112f;
+    /// <summary>The whole LANGUAGE row as drawn, grid included, in frame points (the view's), for the grid's taps.</summary>
+    public Rect LanguageRowRect { get; set; }
+    /// <summary>LanguageTagAt's code for the row's head (its word, the key, the current name) while the grid is out.</summary>
+    public const int LanguageHead = -2;
+    // The grid unfolding: 0.26 s + 1 s per 1500 pt, at most 0.52 s, ease-out quart; folding, the cells fade out (0.12 s), then the
+    // row folds in 0.22 s, ease-in-out cubic (as a map row and the desktop's LANGUAGE).
+    public const float UnfoldMin = .26f, UnfoldMax = .52f, UnfoldPerUnit = 1f / 1500f, FoldFadeS = .12f, FoldS = .22f;
+    float langUnfoldAt = -100f, langFoldAt = -100f, langUnfoldFrom, langFoldFrom;
     /// <summary>The view's measure of a row's open height at a list width (its sentence wraps, never cut); null: twice its first line.</summary>
     public Func<FrontRoomsSettingsMenu.Row, float, float> SettingsOpenHeight { get; set; }
     // A row opening in place (SETTINGS_MOTION.md; the constants are W/settings_motion/mock.py's, as FrontRoomsDesktopSettingsView):
@@ -569,7 +588,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             return;
         }
         // B or Esc closes the open row; a second resumes (SETTINGS_MOTION.md).
-        if (nav.Back) { if (OpenSettingsRow >= 0) SetOpenRow(-1); else PressChip(Button.SettingsClose); return; }
+        if (nav.Back) { if (LanguageUnfolded) SetLanguageUnfolded(false); else if (OpenSettingsRow >= 0) SetOpenRow(-1); else PressChip(Button.SettingsClose); return; }
         if (FocusChip == Button.Restart || FocusChip == Button.SettingsClose)
         {
             // The header: END RUN, RESUME (left to right); down goes back to the rows.
@@ -579,6 +598,16 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             return;
         }
         if (SlotRow(ActiveSettingsRow) == null) FocusFirstRow();
+        // LANGUAGE's grid has the pad and the keys: ↑ ↓ a line up or down, past its edge they fold it and go on to the next row;
+        // ← → the next charm; A picks (the grid stays).
+        var gridRow = SlotRow(ActiveSettingsRow);
+        if (LanguageUnfolded && gridRow != null && gridRow.Kind == FrontRoomsSettingsMenu.Kind.Language && LanguageStrip != null)
+        {
+            if (nav.Dir.y != 0 && LanguageStrip.StepRow(nav.Dir.y < 0 ? 1 : -1)) return;
+            if (nav.Dir.y != 0) SetLanguageUnfolded(false);
+            else if (nav.Dir.x != 0) { LanguageStrip.Step(nav.Dir.x); return; }
+            else if (nav.Confirm && Time.frameCount != modeChangedFrame) { LanguageStrip.PickHighlighted(); return; }
+        }
         if (nav.Dir.y != 0)
         {
             // The first ↑ ↓ on a fresh sheet or tab opens the focused row where it is; then each opens the next and closes the
@@ -612,7 +641,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         // A row B closed opens again before A works its control (as Enter on the desktop).
         if (nav.Confirm && !handedOver && Opens(row) && OpenSettingsRow != ActiveSettingsRow) { openArmed = false; SetOpenRow(ActiveSettingsRow); FollowRow(ActiveSettingsRow); return; }
         // A too (2026-11-01): the A that hands the sheet to a pad only shows the focus, so it never starts a bind row's capture.
-        if (nav.Confirm && !handedOver && row.Kind == FrontRoomsSettingsMenu.Kind.Language) LanguageStrip?.PickHighlighted();
+        // LANGUAGE folded, as the desktop: A picks the charm chosen along the rail, or on the current one unfolds the grid.
+        if (nav.Confirm && !handedOver && row.Kind == FrontRoomsSettingsMenu.Kind.Language)
+        {
+            if (LanguageStrip != null && LanguageStrip.HighlightedLanguage != FrontRoomsLanguage.Current) LanguageStrip.PickHighlighted();
+            else { SetLanguageUnfolded(true); FollowRow(ActiveSettingsRow); }
+        }
         else if (nav.Confirm && !handedOver) ApplySettingsRow(ActiveSettingsRow, row.Visual && row.Kind != FrontRoomsSettingsMenu.Kind.Switch ? RowPreview : RowActivate);
     }
 
@@ -992,8 +1026,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             var motion = MotionOf(id);
             var open = OpenAmount(motion, now);
             var h = open > 0f ? Mathf.Lerp(rest, OpenHeightOf(r, list.width), open) : rest;
+            // LANGUAGE grows under its head by its grid's height as the grid unfolds.
+            var fold = r.Kind == FrontRoomsSettingsMenu.Kind.Language ? LanguageFoldAmount(now) : 0f;
+            if (fold > 0f) h = rest + LanguageGridHeight * fold;
             slots.Add(new SettingsSlot { Id = id, Label = r.Label, Value = r.ValueText, Row = r, Rect = new Rect(list.x, y - h, list.width, h),
-                Rest = rest, Open = open, IsOpen = motion.IsOpen, OpenAt = motion.OpenAt, CloseAt = motion.CloseAt });
+                Rest = rest, Open = open, IsOpen = motion.IsOpen, OpenAt = motion.OpenAt, CloseAt = motion.CloseAt, Fold = fold });
             y -= h;
         }
         // The list runs to the bottom edge (Red, 2026-10-24); its last row scrolls up clear of the home indicator.
@@ -1019,6 +1056,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     void SetOpenRow(int id)
     {
         if (!Opens(SlotRow(id))) id = -1;
+        if (id >= 0) SetLanguageUnfolded(false);
         if (id == OpenSettingsRow) return;
         var now = FrontRoomsTouchMotion.Now;
         var at = -1;
@@ -1047,6 +1085,38 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         OpenSettingsRow = -1;
         openArmed = true;
         following = false;
+        // and LANGUAGE's grid, at once.
+        LanguageUnfolded = false;
+        langFoldFrom = 0f;
+        langFoldAt = langUnfoldAt = -100f;
+        LanguageStrip?.SetGrid(false, true);
+    }
+
+    /// <summary>LANGUAGE's grid out or back, in motion, the strip with it; out, it closes the open row.</summary>
+    void SetLanguageUnfolded(bool on)
+    {
+        if (on == LanguageUnfolded) return;
+        var now = FrontRoomsTouchMotion.Now;
+        var amount = LanguageFoldAmount(now);
+        LanguageUnfolded = on;
+        if (on) { SetOpenRow(-1); langUnfoldAt = now; langUnfoldFrom = amount; }
+        else { langFoldAt = now; langFoldFrom = amount; }
+        LanguageStrip?.SetGrid(on);
+    }
+
+    /// <summary>How far LANGUAGE's grid is out, 0..1. Reduced motion: it jumps.</summary>
+    public float LanguageFoldAmount(float now)
+    {
+        if (FrontRoomsHandheld.ReduceMotion) return LanguageUnfolded ? 1f : 0f;
+        if (LanguageUnfolded) return Mathf.Lerp(langUnfoldFrom, 1f, OutQuart((now - langUnfoldAt) / Mathf.Min(UnfoldMax, UnfoldMin + LanguageGridHeight * UnfoldPerUnit)));
+        return langFoldFrom * (1f - FrontRoomsTouchMotion.Evaluate(FrontRoomsTouchMotion.Ease.InOutCubic, Mathf.Clamp01((now - langFoldAt - FoldFadeS) / FoldS)));
+    }
+
+    /// <summary>The LANGUAGE row's slot id on this tab, or -1.</summary>
+    int LanguageRowId()
+    {
+        foreach (var s in slots) if (!s.Header && s.Row != null && s.Row.Kind == FrontRoomsSettingsMenu.Kind.Language) return s.Id;
+        return -1;
     }
 
     RowOpen MotionOf(int id)
@@ -1081,7 +1151,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         for (var i = 0; i < slots.Count; i++)
         {
             var s = slots[i];
-            var h = s.Header ? s.Rest : s.Id == OpenSettingsRow ? OpenHeightOf(s.Row, s.Rect.width) : s.Rest;
+            var h = s.Header ? s.Rest : s.Id == OpenSettingsRow ? OpenHeightOf(s.Row, s.Rect.width)
+                : s.Row != null && s.Row.Kind == FrontRoomsSettingsMenu.Kind.Language && LanguageUnfolded ? s.Rest + LanguageGridHeight : s.Rest;
             if (!s.Header && s.Id == id)
             {
                 top = y;
@@ -1412,7 +1483,19 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     }
 
     /// <summary>The LANGUAGE tag under a point in frame points, or -1.</summary>
-    int LanguageTagAt(Vector2 p) => LanguageStrip != null && LanguageStripRect.Contains(p) ? LanguageStrip.At(p.x - LanguageStripRect.x) : -1;
+    /// <summary>The LANGUAGE charm under a point in frame points: on the rail its tag (the key and the current name are the current
+    /// language); with the grid out the cell under it, or LanguageHead on the row's head; -1 off it.</summary>
+    int LanguageTagAt(Vector2 p)
+    {
+        if (LanguageStrip == null) return -1;
+        if (!LanguageStrip.Grid) return LanguageStripRect.Contains(p) ? LanguageStrip.At(p.x - LanguageStripRect.x) : -1;
+        if (!LanguageRowRect.Contains(p)) return -1;
+        var local = LanguageLocal(p);
+        return local.y < LanguageStripRect.height ? LanguageHead : LanguageStrip.AtCell(local);
+    }
+
+    /// <summary>A frame point in the strip's own units (its top-left origin, y down).</summary>
+    Vector2 LanguageLocal(Vector2 p) => new Vector2(p.x - LanguageStripRect.x, LanguageStripRect.yMax - p.y);
 
     // ---------------------------------------------------------------- touches
 
@@ -1571,11 +1654,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 }
                 f.Button = MenuButtonAt(p);
                 if (f.Button != Button.None) f.Role = Role.Button;
-                else if (LanguageTagAt(p) >= 0)
+                else if (LanguageTagAt(p) != -1)
                 {
                     f.Role = Role.Button;
                     f.Button = Button.LanguageRow;
                     f.Row = LanguageTagAt(p);
+                    // The row has the focus while a finger is on it (the strip keeps the charm under it chosen); a cell swings once.
+                    ActiveSettingsRow = LanguageRowId();
+                    if (LanguageStrip.Grid && f.Row >= 0) LanguageStrip.HoverCell(LanguageLocal(p));
                 }
                 else if (SettingsTabAt(p, out var tabHit))
                 {
@@ -1678,11 +1764,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     // A slide along the strip takes the press to the charm under the finger, and the lift picks it; off the
                     // strip nothing is pressed. The finger sees what it will pick, so charms under 44 pt apart stay safe.
                     var at = LanguageTagAt(p);
-                    var off = at < 0;
+                    // In the grid a press on the head stays on the head (a tap folds it), and one on the cells moves from cell to cell.
+                    if (at == LanguageHead || f.Row == LanguageHead) at = at == LanguageHead && f.Row == LanguageHead ? LanguageHead : -1;
+                    var off = at == -1;
                     if (off != f.Cancelled || (!off && at != f.Row))
                     {
                         f.Cancelled = off;
                         if (!off) f.Row = at;
+                        if (!off && at >= 0 && LanguageStrip.Grid) LanguageStrip.HoverCell(LanguageLocal(p));
                         fingers[id] = f;
                         PressedButton = off ? Button.None : f.Button;
                         PressedSettingsRow = off ? -1 : f.Row;
@@ -1750,8 +1839,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case Button.SettingsPeekBack:
                 return (p - f.Start).sqrMagnitude <= TapSlop * TapSlop * 4f;
             case Button.LanguageRow:
-                // Anywhere on the strip: a slide along it moves the press (Move), it is not a cancel.
-                return LanguageTagAt(p) >= 0;
+                // Anywhere on the strip: a slide along it moves the press (Move), it is not a cancel; the grid's head stays the head.
+                return f.Row == LanguageHead ? LanguageTagAt(p) == LanguageHead : LanguageTagAt(p) >= 0;
             default:
                 if (!TryGetChip(f.Button, out var c, out var size)) return false;
                 return FrontRoomsTouchLayout.Contains(c, size + Vector2.one * (12f + ButtonCancelSlop), p);
@@ -1807,7 +1896,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 PressedButton = Button.None;
                 PressedSettingsRow = -1;
                 // The lift picks the charm under the finger, wherever the slide took it.
-                if (f.Button == Button.LanguageRow && LanguageTagAt(p) >= 0) f.Row = LanguageTagAt(p);
+                if (f.Button == Button.LanguageRow && f.Row != LanguageHead && LanguageTagAt(p) >= 0) f.Row = LanguageTagAt(p);
                 if (!cancelled && !f.Cancelled && StillOnButton(f, p)) Activate(f);
                 break;
             case Role.SliderDrag:
@@ -1885,6 +1974,16 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (!Winded) SetRunning(!Running);
                 break;
             case Button.SettingsRow:
+            {
+                // LANGUAGE's word unfolds its grid and folds it again; a tap between its cells does nothing.
+                var langRow = SlotRow(f.Row);
+                if (langRow != null && langRow.Kind == FrontRoomsSettingsMenu.Kind.Language)
+                {
+                    ActiveSettingsRow = f.Row;
+                    if (f.RowDirection != RowLine) { SetLanguageUnfolded(!LanguageUnfolded); if (LanguageUnfolded) FollowRow(f.Row); }
+                    break;
+                }
+            }
                 // A tap opens its row in place (hover never does) and works the control under it; a tap on the open row's first line
                 // off its control closes it (SETTINGS_MOTION.md, as a click on the desktop).
                 openArmed = false;
@@ -1897,8 +1996,20 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 }
                 break;
             case Button.LanguageRow:
-                LanguageStrip.Pick(f.Row);
+            {
+                // The head (the key, the current name) unfolds the grid and folds it again; on the rail another charm picks at once;
+                // in the grid a cell picks and the grid stays.
+                ActiveSettingsRow = LanguageRowId();
+                var listed = FrontRoomsLanguage.ListedLanguages;
+                var current = f.Row >= 0 && f.Row < listed.Count && listed[f.Row] == FrontRoomsLanguage.Current;
+                if (f.Row == LanguageHead || (!LanguageUnfolded && current))
+                {
+                    SetLanguageUnfolded(!LanguageUnfolded);
+                    if (LanguageUnfolded) FollowRow(ActiveSettingsRow);
+                }
+                else LanguageStrip.Pick(f.Row);
                 break;
+            }
             case Button.SettingsTab:
                 if (f.Row >= 0 && f.Row < FrontRoomsSettingsMenu.Tabs.Length && SettingsTab != FrontRoomsSettingsMenu.Tabs[f.Row])
                 {

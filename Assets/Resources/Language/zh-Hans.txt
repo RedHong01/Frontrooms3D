@@ -130,8 +130,8 @@ LANGUAGE	语言
 LAYOUT	布局
 LEFT-HANDED	左手模式
 LEGEND	图例	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	图例：你在这里 · 楼梯（安全出口），下一层 · 保安台（钥匙） · 墙上箭头，指向出路	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	图例：你在这里 · 楼梯（安全出口），下一层 · 墙上箭头，指向出路	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	图例：您所在位置 · 楼梯（安全出口），下一层 · 保安台（钥匙） · 墙上箭头，指向出路	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	图例：您所在位置 · 楼梯（安全出口），下一层 · 墙上箭头，指向出路	TEXT panel
 LEVEL 0	第 0 层
 LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	第 0 层 · 图纸 A-2，共 4 张 · 印于 11/89	TEXT panel
 LEVEL 4 / OFFICE	第 4 层 / 办公室
@@ -476,3 +476,4 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	今�
 [WINDOW ALARM]	[窗户警报声]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 [DOOR ALARM]	[门警报声]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	消防控制室	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DN	下	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft

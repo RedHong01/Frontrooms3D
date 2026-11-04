@@ -10,7 +10,7 @@ using UnityEngine;
 /// default: on BOTH faces an exit-alarm touch bar (the alarm housing at the latch end with the arming key cylinder, the
 /// pilot LED and the mode button; the rail; the moving pad; the hinge-end cap) and the placard; one fire-red local horn
 /// over the head, on the face of the zone that owns the door (FrontRoomsAlarmDoors.AlarmedZone; the S face for a tools
-/// mark). The placard's face is a STAND-IN (PlacardFaceIsStandIn) until the information design line delivers its art.
+/// mark). The placard's face is the information design line's art (2026-11-03; PlacardFaceIsStandIn false).
 ///
 /// Hook: FrontRoomsInteractableKit.DressDoor calls Attach when door.alarm is set (the map sets it on every build before the
 /// kit dresses the door; always false with the level profile's alarmDoor off and no tools mark), so with the flag off this
@@ -44,9 +44,11 @@ public sealed class FrontRoomsAlarmDoorLook : MonoBehaviour
     public const string BodyKit = "Kit_AlarmExit_Body", PadKit = "Kit_AlarmExit_Pad", HornKit = "Kit_AlarmExit_Horn", PlacardKit = "Kit_AlarmExit_Placard";
     public const string BarLabel = "Alarm bar", PadLabel = "Alarm bar pad", PlacardLabel = "Alarm placard", HornLabel = "Alarm horn";
 
-    /// <summary>The placard's face (Resources/Print/AlarmDoor/alarm_door_placard_albedo.png) is a STAND-IN drawn with the
-    /// signed words (ALARM WILL SOUND) in TeX Gyre Heros Bold; the information design line's face replaces it in place.</summary>
-    public const bool PlacardFaceIsStandIn = true;
+    /// <summary>False since 2026-11-03: the placard's face (Resources/Print/AlarmDoor/alarm_door_placard_albedo.png, 2048 x 408
+    /// for the LOD0 decal face 379.8 x 74.8 mm) is the information design line's art: ALARM WILL SOUND (narrative/90 §4) in TeX
+    /// Gyre Heros Bold Condensed, 27.45 mm caps, #EEE9DE on #B01E18 with a printed 1/16 in keyline 1/8 in in from the edge
+    /// (research/info_type/ALARM_ZONE_CARD_README.md, "Alarm door placard"; VL485, VL486). It was a stand-in in Heros Bold.</summary>
+    public const bool PlacardFaceIsStandIn = false;
 
     // ---------------------------------------------------------------- mounts (door root D, metres; alarm_exit_common.py)
     /// <summary>The leaf faces (+-0.022) and the device datum: the housing's latch-side edge on the pad's centreline.</summary>

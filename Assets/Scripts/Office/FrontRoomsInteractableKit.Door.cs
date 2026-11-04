@@ -88,26 +88,25 @@ public static partial class FrontRoomsInteractableKit
 
     /// <summary>
     /// The kit's printed type: the floor token on key tags and door number plates (Prop_KeyTagNo, Courier Prime, hud_build
-    /// DECISIONS #23 / #33) and the engraved door signs (Prop_SignEngraved, the info line's two-ply plate rules). HELD
-    /// (false) until the graphic-visual line (info design; prints and presentations) OKs the proofs in
-    /// research/interactables/d16/images/d16_type_proof_*.jpg (memory rule "type goes through the graphic-visual line"):
-    /// while held, tags and plates show blank paper (atlas cell FrontRoomsKeyIdentity.BlankCell) and no door sign is hung.
-    /// Flip to true once they sign off; nothing else changes. Tools and captures may set it.
+    /// DECISIONS #23 / #33) and the engraved door signs (Prop_SignEngraved, the info line's two-ply plate rules). Shipped ON
+    /// since 2026-11-03: 平面视觉 · 信息设计 signed the type of the proofs in research/interactables/d16/images/
+    /// d16_type_proof_*.jpg (EMPLOYEES ONLY and STAFF ONLY on pale plates, STORAGE on a dark plate, Heros Bold 17 mm, the bevel
+    /// showing the core; number-plate tokens in Courier Prime Regular as the tags). Off (tools, captures) shows blank paper
+    /// (atlas cell FrontRoomsKeyIdentity.BlankCell) and hangs no door sign.
     /// </summary>
     public static bool ShowKitType = ShowKitTypeShipped;
 
     /// <summary>The shipped values of ShowKitType and ShowTagType (tools and captures may change the statics).</summary>
-    public const bool ShowKitTypeShipped = false, ShowTagTypeShipped = false;
+    public const bool ShowKitTypeShipped = true, ShowTagTypeShipped = true;
 
     /// <summary>
     /// The key TAG's printed token (the floor token the HUD key glyph prints at the KP-1 hand-off: 00, B1, ...; Courier
-    /// Prime Regular as the glyph, DECISIONS #23, Red-confirmed 10-22, which supersedes G12's Bold). HELD (false) until
-    /// the graphic-visual line (info design) signs off the 3D key-tag type on the proof sheet
-    /// research/interactables/d16/images/d16x_tag_type_proof.jpg (fix 3, verify r2 spec S2; the type rule "type goes
-    /// through the graphic-visual line"): while held, the tag shows blank paper and the token appears only on the HUD glyph
-    /// at the swap. Every tag shape takes its token as set, B10 on at 0.8x on the same baseline inside the atlas cell
-    /// (DECISIONS #33: never scaled to fit the insert, so the round tag's B10+ is not shrunk into its window either).
-    /// Flip ShowTagTypeShipped to true once they sign off; nothing else changes. Tools and captures may set the static.
+    /// Prime Regular as the glyph, DECISIONS #23, Red-confirmed 10-22, which supersedes G12's Bold). Shipped ON since
+    /// 2026-11-03: 平面视觉 · 信息设计 signed the 3D key-tag type (research/interactables/d16/images/d16x_tag_type_proof.jpg;
+    /// VL489): rect and long as set; the round insert shows B10-B74 through a crop grown 1.2x about the cell centre
+    /// (FrontRoomsKeyIdentity.InsertST, their option (b)), so the token sits at least 1.26 mm inside its window. Every other
+    /// tag and cell takes its token as set, B10 on at 0.8x on the same baseline (DECISIONS #33). Off (tools, captures): blank
+    /// paper, and the token appears only on the HUD glyph at the swap.
     /// </summary>
     public static bool ShowTagType = ShowTagTypeShipped;
 
@@ -335,8 +334,9 @@ public static partial class FrontRoomsInteractableKit
     /// <summary>The atlas cell a key TAG shows: its token (ShowTagType), or blank paper.</summary>
     public static int TagCell(FrontRoomsKeyIdentity id) => ShowTagType ? id.Cell : FrontRoomsKeyIdentity.BlankCell;
 
-    /// <summary>Print a key tag's token (DressKey, RefreshPrintedTokens): its cell as set, every shape alike (#33). The desk fob
-    /// prints STAIR A (its band, DeskFobST) and never the floor token, so a floor change leaves it as it is.</summary>
+    /// <summary>Print a key tag's token (DressKey, RefreshPrintedTokens): its cell as set (#33), the round insert's B10-B74 through
+    /// the grown crop (FrontRoomsKeyIdentity.InsertST). The desk fob prints STAIR A (its band, DeskFobST) and never the floor
+    /// token, so a floor change leaves it as it is.</summary>
     internal static void SetTagToken(GameObject tag, FrontRoomsKeyIdentity id)
     {
         if (id.deskFob)
@@ -345,7 +345,7 @@ public static partial class FrontRoomsInteractableKit
                 ShowFobType ? FrontRoomsKeyIdentity.DeskFobST : DoorParts.CellST(10, 10, FrontRoomsKeyIdentity.BlankCell));
             return;
         }
-        DoorParts.SetAtlasCell(tag, DoorParts.KeyTagNoSlot, DoorParts.KeyTagNoFallback, 10, 10, TagCell(id));
+        DoorParts.SetAtlasST(tag, DoorParts.KeyTagNoSlot, DoorParts.KeyTagNoFallback, FrontRoomsKeyIdentity.InsertST(id.shape, TagCell(id)));
     }
 
     /// <summary>One parts row (10_design §3.2). Kit names are the DA names; the dormant Single mode drops "_DA".</summary>

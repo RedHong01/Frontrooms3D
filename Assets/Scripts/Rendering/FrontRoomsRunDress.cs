@@ -426,9 +426,7 @@ public static class FrontRoomsRunDress
     static void RemoteCircuit(Transform root, RunRigLayout l)
     {
         if (l.units == null || !FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.RemotePlate)) return;
-        var source = -1;
-        for (var u = 0; u < l.units.Length; u++)
-            if (!l.units[u].remote && (source < 0 || l.units[u].z < l.units[source].z)) source = u;
+        var source = l.RemoteSource();   // the rig's RelayPoint uses the same unit
         if (source < 0) return;
         var s = l.units[source];
         var cabinet = FrontRoomsKitLibrary.GetInfo("Kit_EmergencyTwinHead");

@@ -87,6 +87,7 @@ The table rows already used by the HUD and the TEXT panel win: the world reuses 
 | `NOT AN EXIT` | 非出口 | 非出口 | 出口ではありません | 비상구 아님 | KEIN AUSGANG | PAS UNE SORTIE | NO ES SALIDA | NÃO É SAÍDA | НЕ ВЫХОД |
 | `AREA OF RESCUE ASSISTANCE` | 救援等候区 | 救援等候區 | 救助待機場所 | 구조 대기 구역 | WARTEBEREICH FÜR RETTUNG | ZONE D'ATTENTE DES SECOURS | ÁREA DE ESPERA DE RESCATE | ÁREA DE ESPERA DE RESGATE | ЗОНА ОЖИДАНИЯ СПАСАТЕЛЕЙ |
 | `NO ROOF ACCESS` | 不通屋顶 | 不通屋頂 | 屋上出入不可 | 옥상 출입 불가 | KEIN ZUGANG ZUM DACH | PAS D'ACCÈS AU TOIT | SIN ACCESO A LA AZOTEA | SEM ACESSO À COBERTURA | ВЫХОДА НА КРЫШУ НЕТ |
+| `DN` (the stair's run arrow on the plan; no table row yet) | 下 | 下 | 下 | 아래 | AB | DESC. | BAJA | DESCE | ВНИЗ |
 | `LEVEL` (stair ID sign: small label over the big floor token, which stays) | 楼层 | 樓層 | 階 | 층 | EBENE | NIVEAU | NIVEL | NÍVEL | ЭТАЖ |
 | `LEVELS 0 TO B1` | 第 0 层至第 B1 层 | 第 0 層至第 B1 層 | 0階〜B1階 | 0층~B1층 | EBENEN 0 BIS B1 | NIVEAUX 0 À B1 | NIVELES 0 A B1 | NÍVEIS 0 A B1 | УРОВНИ 0–B1 |
 | `NEAREST REENTRY ON LEVEL B1` | 最近返回点：第 B1 层 | 最近返回點：第 B1 層 | 最寄りの再入場：B1階 | 가장 가까운 재진입: B1층 | NÄCHSTER WIEDEREINTRITT: EBENE B1 | RETOUR LE PLUS PROCHE : NIVEAU B1 | REINGRESO MÁS CERCANO: NIVEL B1 | REENTRADA MAIS PRÓXIMA: NÍVEL B1 | БЛИЖАЙШИЙ ВХОД: УРОВЕНЬ B1 |
@@ -103,6 +104,8 @@ The table rows already used by the HUD and the TEXT panel win: the world reuses 
 | `SPRINKLER FLOW` | 喷淋水流 | 灑水水流 | スプリンクラー流水 | 스프링클러 유수 | SPRINKLER-DURCHFLUSS | DÉBIT SPRINKLEURS | FLUJO ROCIADORES | FLUXO SPRINKLER | ПОТОК СПРИНКЛЕРОВ |
 | `STAY TUNED.` | 敬请锁定。 | 敬請鎖定。 | チャンネルはそのまま。 | 채널 고정! | BLEIBEN SIE DRAN. | RESTEZ À L'ÉCOUTE. | NO SE VAYA. | NÃO SAIA DAÍ. | ОСТАВАЙТЕСЬ С НАМИ. |
 
+**YOU ARE HERE (平面视觉's question, 2026-11-03).** The plan prints it twice, beside the dot and in the legend, so both must match. The standalone rows win: zh-Hans `您所在位置` (the usual wording on a Chinese evacuation plan), zh-Hant `您在此處`. The `LEGEND: …` rows in those two tables change from `你在这里` and `你在這裡`. The other seven languages already match.
+
 **The floor label (信息设计's question, 2026-11-03).**
 - On the stair ID sign the word stands alone over a 5 in token, so it is the bare noun, not the HUD's `第 {0} 层` frame.
 - ja, ko and ru take the building word (`階`, `층`, `ЭТАЖ`). A building there says that; the tables' `レベル`, `레벨`, `УРОВЕНЬ` read like a game.
@@ -110,6 +113,29 @@ The table rows already used by the HUD and the TEXT panel win: the world reuses 
 - **Line breaks signed as 信息设计 set them (zh-Hans):** 可由此返回 / 本层; 禁止返回 / 最近返回点： / 第 B1 层; 救援 / 等候区; 警报 / 区域. Alarm door placard: 开门即报警, lettered.
 
 Already in the tables, reuse as they are: `STAIR A`, `STAIR KEY`, the four plan lines, `IN CASE OF ALARM`, `YOU ARE HERE`, `SECURITY DESK`, `NO REENTRY`, `THIS FLOOR MAY DIFFER FROM PLAN`, the warden line, `LEVEL 0`, `LEVEL B{0}`.
+
+**Fit revisions (信息设计's measurements, 2026-11-03; these win over the rows above):**
+
+| Sign | Language | Signed now | Why |
+|---|---|---|---|
+| Alarm door placard `ALARM WILL SOUND` | ja | 開けると警報 | 6 characters; the usual short sign form |
+| | ko | 열면 경보 울림 | sign register, shorter |
+| | de | ALARMGESICHERT | the standard German door sign, 14 letters |
+| | fr | SOUS ALARME | as on French doors; 11 letters |
+| | ru | НА СИГНАЛИЗАЦИИ | the usual door sign, 15 letters |
+| | es, pt-BR | unchanged | tracking only |
+| Exit-door verdict `NO REENTRY` | de | KEIN ZUTRITT | a standard sign; the plates' family becomes ZUTRITT |
+| | ru | ВХОДА НЕТ | a standard sign |
+| Far-door verdict `REENTRY ON THIS FLOOR` | de | ZUTRITT / AUF DIESER EBENE | same family |
+| Exit-door detail `NEAREST REENTRY ON LEVEL B1` | de | NÄCHSTER ZUTRITT: EBENE B1 | same family |
+| `NOT AN EXIT` | ja | 出口ではありません, unchanged | set 2 % smaller; the polite form is the sign form |
+| Floor words | ru | ЭТАЖИ 0–B1, БЛИЖАЙШИЙ ВХОД: ЭТАЖ B1 | the tables' ЭТАЖ (floor label above) wins over this file's УРОВНИ / УРОВЕНЬ |
+
+**Plan fixes (平面视觉's nine-language build, 2026-11-03):**
+- **One word for the security desk.** The plan prints it twice, beside the room and in the legend, and line 4, the terminals and the station paper already use the desk word. So `SECURITY DESK` follows line 4: pt-BR `POSTO DE SEGURANÇA` (not PORTARIA), ja `警備デスク` (not 守衛室), ko `경비 데스크` (not 경비실). The other six already agree.
+- **es line 4, shortened to set at full size:** `4 PUERTAS DE ESCALERA CERRADAS. LLAVE EN EL PUESTO DE SEGURIDAD.` The key in the same line still says why they are shut. The TEXT panel row is the same key, so it changes too.
+
+The TEXT panel rows `NO REENTRY (the door into this floor)` change with them: de `KEIN ZUTRITT (die Tür in dieses Stockwerk)`, ru `ВХОДА НЕТ (дверь на этот этаж)`. 信息设计's line breaks are signed as set: the rescue sign in three lines (two in de), the far door split as listed in its message, ja and ko keep their word order.
 
 ### 5.2 Signs read off the art (W16, W17)
 
@@ -178,7 +204,24 @@ The voice stays English with translated `[TV]` captions (Q3). `FRONT ROOMS`, `WT
 
 The sign-off notice (`30` §4.1) is not on screen yet; it is translated when it ships.
 
-**Still to write:** the terminal pages (W18, about 2,000 words; none are in the tables yet), after 平面视觉 picks the per-language faces (Q4).
+### 5.5 Terminals (W18): written, 2026-11-03
+
+- **Files:** `research/narrative/terminal_sets/<code>/{interoffice,terminal_1,terminal_2,terminal_3}.json`, nine languages, the same shape as the English sets in `Assets/Resources/Terminal/Content/`. 游戏视觉 / 交互设计 copy them into Resources once the engine reads them.
+- **Source and check:** `~/FrontRoomsVisualWork/narrative_terminal/` (`terminal_strings.py`, the words; `build_terminal_langs.py`, which builds and checks). It reports **0 problems** for all nine:
+  - every string fits its slot in cells (CJK and Hangul = 2, from `FrontRoomsTerminal.cs`);
+  - every string stays inside its 1990 character set (GB 2312, Big5, JIS X 0208, modern Hangul, CP866, CP850);
+  - the tokens are kept.
+  - Re-run it after any wording change.
+- **Kept as they are:**
+  - `OFFICE MEMO` (the program's name), the queue `MAIN`, the printer `LASER 2`;
+  - the initials, times (`2300`, `0700`, `1800`), job numbers and the dates (`{DATE_NOW}` keeps the US `MM/DD/YY`);
+  - key names on row 25. The words beside them translate (`words.select` …); `softSelect` `Enter` is a key and stays.
+- **World words match the signs:** the security desk (保安台, 警衛台, 警備デスク …), Stair A, the floor warden and the posted plan read as in §5 and the tables.
+- **Engine needs (游戏视觉 / 交互设计; none of these is a word change):**
+  1. glyph codes past 255, and a wide glyph spanning two cells (平面视觉, WORLD_TYPE §3b);
+  2. `Wrap` counts cells, not chars. CJK body lines are written at ≤ 76 cells so they never wrap, but `Put`'s clip widths and `PutRight` must count cells too;
+  3. the memo index pads the name to 18 cells, not chars (built in the files);
+  4. the drill tokens in the language. CJK: `{DRILL_MONTH}` as a number and `{DRILL_WEEKDAY}` as 星期三 / 水曜日 / 수요일. de, fr, es, pt-BR, ru: month and weekday names in lower case as each language writes them (ru month in the genitive: `сентября`).
 
 ## 6. Decisions for Red: answered 2026-11-03, 叙事设计 chat, "全部按推荐"
 

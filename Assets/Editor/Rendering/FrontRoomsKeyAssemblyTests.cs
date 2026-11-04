@@ -253,15 +253,22 @@ public static class FrontRoomsKeyAssemblyTests
         return new Vector4(-1f, -1f, -1f, -1f);
     }
 
-    // Fix 3 (verify r2 spec S2): the key TAG's printed token is HELD until the graphic-visual line signs off the 3D tag type
-    // (shipped: blank paper on every tag; plates, signs and hook labels held as before). With the type on (the proof state),
-    // every tag shape takes its token as set, B10+ at 0.8x on the same baseline inside its cell (DECISIONS #33: never scaled
-    // to fit, the round tag included). Look r2 #1: the key part is the satin brass. Fix 3 (S1): the swap offsets keep the depth.
+    // Fix 3 (verify r2 spec S2), signed off 2026-11-03 by 平面视觉 · 信息设计 (VL489): the key TAG's printed token and the kit
+    // type (plates, signs, hook labels) are shipped ON. Every tag shape takes its token as set, B10+ at 0.8x on the same
+    // baseline inside its cell (DECISIONS #33), except the round insert's B10-B74, which show through a crop grown 1.2x about
+    // the cell centre (FrontRoomsKeyIdentity.InsertST, their option (b)). Held (tools, captures): blank paper on every tag.
+    // Look r2 #1: the key part is the satin brass. Fix 3 (S1): the swap offsets keep the depth.
     static void TagRules(List<GameObject> made)
     {
-        Check(!FrontRoomsInteractableKit.ShowTagTypeShipped && !FrontRoomsInteractableKit.ShowKitTypeShipped,
-            "shipped defaults: the tag token HELD (ShowTagType off until the graphic-visual line signs off), plates / signs / hook labels held (ShowKitType off); this run: tag "
+        Check(FrontRoomsInteractableKit.ShowTagTypeShipped && FrontRoomsInteractableKit.ShowKitTypeShipped,
+            "shipped defaults: the tag token ON and plates / signs / hook labels ON (signed by the info design line 11-03); this run: tag "
             + FrontRoomsInteractableKit.ShowTagType + ", kit type " + FrontRoomsInteractableKit.ShowKitType);
+        var r34 = FrontRoomsKeyIdentity.InsertST(FrontRoomsKeyIdentity.Shape.Round, 34);
+        var r33 = FrontRoomsKeyIdentity.InsertST(FrontRoomsKeyIdentity.Shape.Round, 33);
+        var c34 = new Vector2(.05f * r34.x + r34.z, .95f * r34.y + r34.w);
+        Check(Mathf.Abs(r34.x - 1.2f) < 1e-6f && Mathf.Abs(r33.x - 1f) < 1e-6f && (c34 - new Vector2(.45f, .65f)).magnitude < 1e-5f,
+            "round insert crop: B9 (cell 33) x1, B10 (cell 34) x1.2 about its centre (cell 0's centre lands on cell 34's, "
+            + c34.ToString("F4") + ")");
         var offsetsOk = true; var offs = "";
         for (var i = 0; i < FrontRoomsKeyAssembly.HeldShapeOffsets.Length; i++)
         {
@@ -273,7 +280,7 @@ public static class FrontRoomsKeyAssemblyTests
         var keepTag = FrontRoomsInteractableKit.ShowTagType;
         foreach (var proof in new[] { false, true })
         {
-        FrontRoomsInteractableKit.ShowTagType = proof || FrontRoomsInteractableKit.ShowTagTypeShipped;
+        FrontRoomsInteractableKit.ShowTagType = proof && FrontRoomsInteractableKit.ShowTagTypeShipped;
         var shapes = new[] { FrontRoomsKeyIdentity.Shape.Rect, FrontRoomsKeyIdentity.Shape.Round, FrontRoomsKeyIdentity.Shape.Long };
         var floors = new[] { 1, 2, 11, 75 };
         var bad = 0; var n = 0; var first = "";
@@ -289,7 +296,7 @@ public static class FrontRoomsKeyAssemblyTests
             if (a == null) { bad++; continue; }
             var st = TagST(a);
             var cell = FrontRoomsInteractableKit.ShowTagType ? id.Cell : FrontRoomsKeyIdentity.BlankCell;
-            var want = new Vector4(1f, 1f, (cell % 10) / 10f, -(cell / 10) / 10f);
+            var want = FrontRoomsKeyIdentity.InsertST(id.shape, cell);
             if ((st - want).magnitude > 1e-5f) { bad++; if (first.Length == 0) first = "; first miss " + id + " ST " + st.ToString("F4") + " want " + want.ToString("F4"); }
             if (si == 0 && fi == 0 && !proof)
             {
@@ -299,8 +306,8 @@ public static class FrontRoomsKeyAssemblyTests
                 Check(brass > 0 && oldBrass == 0, "the key part wears Prop_BrassSatin (" + brass + " slots), no Prop_Brass left (" + oldBrass + ")");
             }
         }
-        Check(bad == 0, (proof ? "tag tokens (proof, type on): " : "tag tokens (shipped, type held): ") + (n - bad) + " of " + n + " rect / round / long x 00 / B1 / B10 / B74 show "
-            + (proof ? "their token's cell as set, every shape at crop x1 (#33, the round tag's B10+ included)" : "the blank cell " + FrontRoomsKeyIdentity.BlankCell) + first);
+        Check(bad == 0, (proof ? "tag tokens (shipped, type on): " : "tag tokens (tools, type held): ") + (n - bad) + " of " + n + " rect / round / long x 00 / B1 / B10 / B74 show "
+            + (proof ? "their token's cell as set at crop x1 (#33), the round tag's B10 and B74 at crop x1.2 about the cell centre (InsertST)" : "the blank cell " + FrontRoomsKeyIdentity.BlankCell) + first);
         }
         FrontRoomsInteractableKit.ShowTagType = keepTag;
     }

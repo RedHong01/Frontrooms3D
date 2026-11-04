@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO, de (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_2.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "Hauptmenü",
+    "doc": "Mitteilung lesen",
+    "list": "Druckaufträge",
+    "help": "Hilfe"
+  },
+  "main": {
+    "headline": "MITTEILUNGEN",
+    "second": "{UNREAD} UNGELESEN",
+    "secondNone": "ALLE GELESEN",
+    "listItem": "Druckaufträge",
+    "listMessage": "Sehen, was am Drucker wartet.",
+    "helpItem": "Hilfe",
+    "helpMessage": "Sehen, welche Taste was tut."
+  },
+  "memos": [
+    {
+      "index": "R.M., Haustechnik  Teppichreinigung",
+      "date": "{DATE_NOW}",
+      "message": "Mitteilung von R.M., Haustechnik, lesen.",
+      "head": [
+        {
+          "label": "Von:",
+          "value": "R.M., Haustechnik"
+        },
+        {
+          "label": "An:",
+          "value": "Alle Mieter"
+        },
+        {
+          "label": "Datum:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "Betr.:",
+          "value": "Teppichreinigung"
+        }
+      ],
+      "body": [
+        "Die Teppiche auf allen Etagen werden am Wochenende gereinigt.",
+        "Bitte räumen Sie am Freitag vor Feierabend den Boden unter Ihrem Schreibtisch.",
+        "",
+        "Am Montag kann der Teppich noch feucht sein.",
+        "Der Geruch kommt vom Reinigungsmittel und verfliegt in ein, zwei Tagen.",
+        "",
+        "Fragen an die Haustechnik."
+      ],
+      "sign": "R.M."
+    },
+    {
+      "index": "D.K., Sicherheit  Fundsachen",
+      "date": "{DATE_BACK4}",
+      "message": "Mitteilung von D.K., Sicherheit, lesen.",
+      "head": [
+        {
+          "label": "Von:",
+          "value": "D.K., Sicherheit"
+        },
+        {
+          "label": "An:",
+          "value": "Alle Mieter"
+        },
+        {
+          "label": "Datum:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "Betr.:",
+          "value": "Fundsachen"
+        }
+      ],
+      "body": [
+        "Fundsachen der Nachtrunden liegen 30 Tage am Sicherheitsposten.",
+        "Bitte während der Geschäftszeiten danach fragen.",
+        "",
+        "Was nach 30 Tagen nicht abgeholt ist, wird gespendet."
+      ],
+      "sign": "D.K."
+    }
+  ],
+  "list": {
+    "heading": "Warteschlange: MAIN    Drucker: LASER 2         Status: Druckt",
+    "columns": [
+      "Nr.",
+      "Dokument",
+      "Besitzer",
+      "Seiten",
+      "Status"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "Hinweis Brandschutzübung",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "Druckt",
+        "message": "Druckt Seite 2 von 2."
+      },
+      {
+        "job": "0413",
+        "document": "Schlüssel-Ausgabeliste",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "Wartet",
+        "message": "Wartet auf den Drucker."
+      }
+    ]
+  },
+  "help": {
+    "heading": "Tasten",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "Eintrag wählen"
+      },
+      {
+        "action": "Side",
+        "text": "Vorheriger oder nächster"
+      },
+      {
+        "action": "Select",
+        "text": "Gewählten Eintrag öffnen"
+      },
+      {
+        "action": "Page",
+        "text": "Vorherige oder nächste Seite"
+      },
+      {
+        "action": "Cancel",
+        "text": "Einen Schritt zurück"
+      },
+      {
+        "action": "Exit",
+        "text": "{PROGRAM} verlassen"
+      },
+      {
+        "action": "Help",
+        "text": "Diese Hilfe"
+      }
+    ]
+  },
+  "words": {
+    "help": "Hilfe",
+    "select": "Wählen",
+    "cancel": "Abbruch",
+    "exit": "Ende",
+    "page": "Seite",
+    "softSelect": "Enter",
+    "softCancel": "Abbruch",
+    "softHelp": "Hilfe",
+    "more": "Mehr:",
+    "memoOf": "Mitteilung {N} von {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Nicht berechtigt: Nur der Besitzer eines Auftrags kann ihn ändern.",
+    "topOfData": "Anfang des Ordners: keine früheren Mitteilungen.",
+    "bottomOfData": "Ende des Ordners: keine weiteren Mitteilungen."
+  }
+}

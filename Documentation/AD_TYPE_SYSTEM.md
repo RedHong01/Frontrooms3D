@@ -115,6 +115,10 @@ Red, 2026-11-03, 叙事设计 chat: "目前切换成不同的语言，应该游�
   - The steps: STAY TUNED. to CG 30 in fr and ru; PLEASE STAND BY to CG 30 in ja and fr; the fr WAS line, the pt-BR card-4 line and the ru headline by under 7 %.
   - The pink flag grows with its word but never past title safe (ru).
 - **Layout notes.** French has no NOW word (`$499 AU LIEU DE $899`), so its price stands alone. A WAS line too long to start where English did ends at title safe, and its strike follows the line.
+- **Why one video per language, not an overlay layer.** The supers are burned into the mp4: every card is a PNG, and `broadcast.py` cuts the loop from them.
+  - **One video per language (chosen, landed 2026-11-03 17:16).** Our side is done; a changed string means re-running `ad_lang.py` (about a minute for all nine) and landing again. It adds 9 files of 131–151 KB, about 1.25 MB, to the desktop and iOS builds; WebGL can leave them out. 游戏视觉 picks the file by language and falls back to English, which is a small change to the screen bank (one file name) plus its test. There is still one decoder, the picture matches the approved Ad_03 pipeline exactly (scan-line steps, edges, slants), and 声音设计's loop keeps its cuts.
+  - **An overlay layer (not chosen).** We would ship a text-free loop plus a per-card layout spec for ten languages, and every script's face would have to reach the TV path. 游戏视觉 would have to build a runtime text compositor on the set: synced to the loop's clock at 3/7/10/14 s, drawing the CG's unsmoothed steps, edges and shadows, slanting and condensing CJK, and compositing in sRGB. That is days of work and risk, plus a texture update on every playing set.
+  - **What the overlay buys.** Edits without a re-render, but these strings change rarely and a re-render takes a minute. An overlay pays only for text that changes while the game runs, which is why the off-air clock uses one (§3.6).
 - **The runtime** (the current language only; WebGL stays English) is 游戏视觉's: `briefs/visual.md`, 2026-11-03.
 
 ## 2. Programme: the agency layer

@@ -247,6 +247,16 @@ public sealed class RunRigLayout
     public RunSideDoor[] sideDoors = new RunSideDoor[0];
     public RunObstacle[] obstacles = new RunObstacle[0];
 
+    /// <summary>T-B: the unit whose battery feeds the remote heads (RunUnitDef.remote), the self-contained unit nearest the entrance
+    /// (lowest z): the rig's RelayPoint and the dress's remote circuit start at its cabinet. -1 when every unit is remote.</summary>
+    public int RemoteSource()
+    {
+        var source = -1;
+        for (var u = 0; u < units.Length; u++)
+            if (!units[u].remote && (source < 0 || units[u].z < units[source].z)) source = u;
+        return source;
+    }
+
     public Vector3 RightNormal => Vector3.left;
     public Vector3 LeftNormal => Vector3.right;
 
@@ -416,6 +426,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         public int unit;
         public bool plus;
         public bool relayFired;
+        /// <summary>T-B: on a remote mount (its relay is the entry unit's); relayWorld = that relay's cabinet centre.</summary>
+        public bool remote;
+        public Vector3 relayWorld;
         /// <summary>The intensity the state wants (before the cull's weight) and whether the state has it on.</summary>
         public float drive;
         public bool lit;
@@ -495,8 +508,17 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     public event Action<RunRigState, Vector3> StateChanged;
     /// <summary>Raised at t 0 with the room's centre (the contactor drop-out).</summary>
     public event Action<Vector3> MainsDropped;
-    /// <summary>Raised once per head as its transfer relay pulls in (head index, the head's position).</summary>
+    /// <summary>Raised once per head as its transfer relay pulls in (head index, the head's position). A remote head
+    /// (IsRemoteHead) has no relay at its position: its relay is the entry unit's, at RelayPoint.</summary>
     public event Action<int, Vector3> TransferRelay;
+
+    /// <summary>T-B (声音设计 2026-11-03: one click per relay, at the entry cabinet): true when head i hangs on a remote mount, so
+    /// the relay that switches it sits in the entry unit's cabinet (RelayPoint), not at the head.</summary>
+    public bool IsRemoteHead(int i) => heads != null && i >= 0 && i < heads.Length && heads[i].remote;
+
+    /// <summary>The world point of the transfer relay that switches head i: the centre of its unit's cabinet, or for a remote head
+    /// that of the entry unit, which feeds it. Heads switched by one relay share exactly the same point. Zero when out of range.</summary>
+    public Vector3 RelayPoint(int i) => heads == null || i < 0 || i >= heads.Length ? Vector3.zero : heads[i].relayWorld;
     /// <summary>Raised when an animated reset begins.</summary>
     public event Action<Vector3> ResetStarted;
 
@@ -654,7 +676,10 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         var feed = Anchor("Kit_EmergencyTwinHead", "feed", new Vector3(0f, .1965f, .030f));
         var trunnion = Anchor("Kit_EmergencyTwinHead_Yoke", "trunnion", new Vector3(0f, .085f, 0f));
         var lensAnchor = Anchor("Kit_EmergencyTwinHead_Lamp", "lens", new Vector3(0f, 0f, .049f));
-        const float cabinetHalfHeight = .0955f;
+        const float cabinetHalfHeight = .0955f, cabinetHalfDepth = .064f;
+        // Each unit's cabinet centre (world), where its transfer relay sits; the remote heads' relay is the entry unit's.
+        var relays = new Vector3[Layout.units.Length];
+        var source = Layout.RemoteSource();
         for (var u = 0; u < Layout.units.Length; u++)
         {
             var def = Layout.units[u];
@@ -663,6 +688,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             var yaw = def.side > 0 ? -90f : 90f;
             unitRoot.localPosition = new Vector3(def.side * Layout.halfWidth, Layout.unitBoxCentreY - cabinetHalfHeight, def.z);
             unitRoot.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            relays[u] = unitRoot.TransformPoint(new Vector3(0f, cabinetHalfHeight, cabinetHalfDepth));
             // T-B (zone lamps, Red 2026-10-31): a remote unit's heads sit on the remote mount, built in the cabinet's frame (the
             // same mounts); no cabinet, no pilot and no feed of its own (the dress's remote circuit runs into its box). Without
             // the kit it keeps the cabinet.
@@ -695,7 +721,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                 var flat = Vector3.ProjectOnPlane(dir, transform.up);
                 if (flat.sqrMagnitude > 1e-6f) yoke.transform.rotation = Quaternion.LookRotation(flat.normalized, transform.up);
                 lamp.transform.rotation = Quaternion.LookRotation(dir, transform.up);
-                var head = new Head { z = def.z, goal = goal, unit = u, plus = plus };
+                var head = new Head { z = def.z, goal = goal, unit = u, plus = plus, remote = plate != null };
                 SlotRenderers(lamp, "Run_SealedBeamLens", out head.lens, out head.lensIndex);
                 head.world = lamp.transform.position;
                 var makeLight = !WebGLTier || m == 0;
@@ -762,6 +788,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         }
         heads = list.ToArray();
         pilots = pilotList.ToArray();
+        for (var i = 0; i < heads.Length; i++)
+            heads[i].relayWorld = relays[heads[i].remote && source >= 0 ? source : heads[i].unit];
     }
 
     Vector3 AimTarget(RunUnitDef def, Vector3 pivot, bool plus, bool goal)

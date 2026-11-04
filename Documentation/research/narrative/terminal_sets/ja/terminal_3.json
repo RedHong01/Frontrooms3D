@@ -1,0 +1,159 @@
+{
+  "_about": "OFFICE MEMO, ja (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_3.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "メインメニュー",
+    "doc": "回覧を読む",
+    "list": "印刷待ち",
+    "help": "ヘルプ"
+  },
+  "main": {
+    "headline": "回覧",
+    "second": "未読 {UNREAD}",
+    "secondNone": "すべて既読",
+    "listItem": "印刷待ち",
+    "listMessage": "プリンタで待っている文書を見ます。",
+    "helpItem": "ヘルプ",
+    "helpMessage": "キーの使い方を見ます。"
+  },
+  "memos": [
+    {
+      "index": "D.K., 警備        来訪者",
+      "date": "{DATE_NOW}",
+      "message": "警備 D.K. の回覧を読みます。",
+      "head": [
+        {
+          "label": "差出:",
+          "value": "D.K., 警備"
+        },
+        {
+          "label": "宛先:",
+          "value": "入居者各位"
+        },
+        {
+          "label": "日付:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "件名:",
+          "value": "来訪者"
+        }
+      ],
+      "body": [
+        "来訪者は全員、警備デスクで受付簿に記名します。",
+        "来訪者はデスクで出迎え、お帰りの際はお見送りください。",
+        "",
+        "1800 以降は、入居者からデスクへ連絡がある場合のみ入館可。"
+      ],
+      "sign": "D.K."
+    },
+    {
+      "index": "R.M., 総務部      禁煙",
+      "date": "{DATE_BACK4}",
+      "message": "総務部 R.M. の回覧を読みます。",
+      "head": [
+        {
+          "label": "差出:",
+          "value": "R.M., 総務部"
+        },
+        {
+          "label": "宛先:",
+          "value": "入居者各位"
+        },
+        {
+          "label": "日付:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "件名:",
+          "value": "禁煙"
+        }
+      ],
+      "body": [
+        "今月 1 日より、館内は全面禁煙です。",
+        "事務所、化粧室、階段を含みます。",
+        "",
+        "喫煙は屋外で、正面玄関から離れてお願いします。"
+      ],
+      "sign": "R.M."
+    }
+  ],
+  "list": {
+    "heading": "キュー: MAIN           プリンタ: LASER 2        状態: 印刷中",
+    "columns": [
+      "番号",
+      "文書",
+      "所有者",
+      "枚数",
+      "状態"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "避難訓練のお知らせ",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "印刷中",
+        "message": "2/2 ページを印刷中です。"
+      },
+      {
+        "job": "0413",
+        "document": "鍵貸出表",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "待機中",
+        "message": "プリンタの空きを待っています。"
+      }
+    ]
+  },
+  "help": {
+    "heading": "キー",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "項目を選ぶ"
+      },
+      {
+        "action": "Side",
+        "text": "前または次"
+      },
+      {
+        "action": "Select",
+        "text": "選んだ項目を開く"
+      },
+      {
+        "action": "Page",
+        "text": "前または次のページ"
+      },
+      {
+        "action": "Cancel",
+        "text": "一つ戻る"
+      },
+      {
+        "action": "Exit",
+        "text": "{PROGRAM} を終了"
+      },
+      {
+        "action": "Help",
+        "text": "このヘルプ"
+      }
+    ]
+  },
+  "words": {
+    "help": "ヘルプ",
+    "select": "選択",
+    "cancel": "取消",
+    "exit": "終了",
+    "page": "ページ",
+    "softSelect": "Enter",
+    "softCancel": "取消",
+    "softHelp": "ヘルプ",
+    "more": "続き:",
+    "memoOf": "回覧 {N}/{M}"
+  },
+  "refusals": {
+    "notAuthorized": "権限がありません：ジョブを変更できるのは所有者だけです。",
+    "topOfData": "フォルダの先頭です：これより前の回覧はありません。",
+    "bottomOfData": "フォルダの末尾です：これ以上の回覧はありません。"
+  }
+}

@@ -1938,6 +1938,29 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return Tap(new Vector2(rect.x + strip.TagCentreX(0), rect.center.y), 93);
         yield return Frames(.5f);
         Check("LANGUAGE: a tap on the first tag picks that one", FrontRoomsLanguage.Current == FrontRoomsLanguage.ListedLanguages[0], FrontRoomsLanguage.Current.Code);
+        // E4b (SETTINGS_MOTION.md, the desktop's E3): a tap on the key unfolds the grid under the row, a tap on a cell picks and the
+        // grid stays, a tap on the head folds it.
+        rect = controls.LanguageStripRect;
+        yield return Tap(new Vector2(rect.x + strip.TagCentreX(0), rect.center.y), 96);
+        yield return Frames(.8f);
+        var grown = FindRow(FrontRoomsLanguage.T("LANGUAGE"));
+        Check("LANGUAGE: a tap on the key unfolds the grid under the row", controls.LanguageUnfolded && grown.HasValue && grown.Value.Rect.height > stripRow + 60f,
+            grown.HasValue ? F(grown.Value.Rect.height) + " for a " + F(stripRow) + " row" : "no row");
+        yield return Capture("32b_language_grid");
+        var lm = FrontRoomsTouchLayout.LanguageMetrics;
+        rect = controls.LanguageStripRect;
+        var cellW = grown.HasValue ? grown.Value.Rect.width / FrontRoomsLanguageStrip.GridColumns : 0f;
+        var cellH = Mathf.Round(60f * lm.Scale / .6f);
+        if (grown.HasValue) yield return Tap(new Vector2(grown.Value.Rect.x + 2f * cellW - 8f + cellW * .5f, rect.yMax - lm.Row - cellH * .5f), 97);
+        yield return Frames(.8f);
+        Check("LANGUAGE: a tap on a cell picks it and the grid stays", FrontRoomsLanguage.Current == FrontRoomsLanguage.ListedLanguages[2] && controls.LanguageUnfolded,
+            FrontRoomsLanguage.Current.Code + (controls.LanguageUnfolded ? " unfolded" : " folded"));
+        rect = controls.LanguageStripRect;
+        yield return Tap(new Vector2(rect.x + strip.TagCentreX(2), rect.center.y), 98);
+        yield return Frames(.8f);
+        var folded = FindRow(FrontRoomsLanguage.T("LANGUAGE"));
+        Check("LANGUAGE: a tap on the head folds the grid", !controls.LanguageUnfolded && folded.HasValue && Mathf.Abs(folded.Value.Rect.height - stripRow) < .5f,
+            folded.HasValue ? F(folded.Value.Rect.height) : "no row");
         yield return Capture("32_language_back");
     }
 

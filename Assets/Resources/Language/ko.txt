@@ -205,7 +205,7 @@ RUN BUTTON	달리기 버튼
 Renders light with high dynamic range before the film look. OFF is plain SDR.	필름 느낌을 입히기 전에 빛을 넓은 명암 범위로 렌더링합니다. 끔은 일반 SDR입니다.
 SCROLL  ·  CLOSER	휠  ·  가까이	close-up hint, whole line; keep the spaces around the dot
 SEARCH	수색
-SECURITY DESK	경비실	TEXT panel
+SECURITY DESK	경비 데스크	TEXT panel
 SETTINGS	설정
 SHADOWS	그림자
 SHARP	선명
@@ -424,7 +424,7 @@ THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	영업시간 중 이 문을 �
 SECURITY	경비	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 PLEASE SIGN IN	방문 기록을 남겨 주십시오	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 ALARM\nZONE	경보\n구역	world text, 95 §5 (叙事设计 2026-11-03); AI draft
-ALARM WILL SOUND	문을 열면 경보가 울립니다	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	열면 경보 울림	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 TROUBLE	고장	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 POWER	전원	world text, 95 §5 (叙事设计 2026-11-03); AI draft
 SPARE	예비	world text, 95 §5 (叙事设计 2026-11-03); AI draft
@@ -476,3 +476,4 @@ THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	오�
 [WINDOW ALARM]	[창문 경보음]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 [DOOR ALARM]	[문 경보음]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
 CONTROL RM	방재실	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DN	아래	world text, 95 §5 (叙事设计 2026-11-03): the stair's run arrow on the plan; AI draft

@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO, fr (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_2.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "Menu principal",
+    "doc": "Lire la note",
+    "list": "File d'impression",
+    "help": "Aide"
+  },
+  "main": {
+    "headline": "NOTES",
+    "second": "{UNREAD} NON LUES",
+    "secondNone": "TOUT EST LU",
+    "listItem": "File d'impression",
+    "listMessage": "Voir ce qui attend à l'imprimante.",
+    "helpItem": "Aide",
+    "helpMessage": "Voir le rôle de chaque touche."
+  },
+  "memos": [
+    {
+      "index": "R.M., Intendance  Nettoyage des moquettes",
+      "date": "{DATE_NOW}",
+      "message": "Lire la note de R.M., Intendance.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "R.M., Intendance"
+        },
+        {
+          "label": "À:",
+          "value": "Tous les locataires"
+        },
+        {
+          "label": "Date:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "Objet:",
+          "value": "Nettoyage des moquettes"
+        }
+      ],
+      "body": [
+        "Les moquettes de tous les étages seront nettoyées ce week-end.",
+        "Merci de dégager le sol sous votre bureau avant de partir vendredi.",
+        "",
+        "La moquette peut encore être humide lundi.",
+        "L'odeur vient du produit de nettoyage et disparaît en un jour ou deux.",
+        "",
+        "Questions à l'intendance."
+      ],
+      "sign": "R.M."
+    },
+    {
+      "index": "D.K., Sécurité    Objets trouvés",
+      "date": "{DATE_BACK4}",
+      "message": "Lire la note de D.K., Sécurité.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "D.K., Sécurité"
+        },
+        {
+          "label": "À:",
+          "value": "Tous les locataires"
+        },
+        {
+          "label": "Date:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "Objet:",
+          "value": "Objets trouvés"
+        }
+      ],
+      "body": [
+        "Les objets trouvés lors des rondes de nuit restent 30 jours au poste de sécurité.",
+        "Merci de les réclamer pendant les heures d'ouverture.",
+        "",
+        "Les objets non réclamés sous 30 jours sont donnés à une association caritative."
+      ],
+      "sign": "D.K."
+    }
+  ],
+  "list": {
+    "heading": "File: MAIN             Imprimante: LASER 2      État: Impression",
+    "columns": [
+      "N°",
+      "Document",
+      "Titulaire",
+      "Pages",
+      "État"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "Avis d'exercice incendie",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "Impression",
+        "message": "Impression de la page 2 sur 2."
+      },
+      {
+        "job": "0413",
+        "document": "Registre de sortie des clés",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "En attente",
+        "message": "En attente de l'imprimante."
+      }
+    ]
+  },
+  "help": {
+    "heading": "Touches",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "Choisir un élément"
+      },
+      {
+        "action": "Side",
+        "text": "Précédent ou suivant"
+      },
+      {
+        "action": "Select",
+        "text": "Ouvrir l'élément choisi"
+      },
+      {
+        "action": "Page",
+        "text": "Page précédente ou suivante"
+      },
+      {
+        "action": "Cancel",
+        "text": "Revenir en arrière"
+      },
+      {
+        "action": "Exit",
+        "text": "Quitter {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "Cette aide"
+      }
+    ]
+  },
+  "words": {
+    "help": "Aide",
+    "select": "Choisir",
+    "cancel": "Annuler",
+    "exit": "Quitter",
+    "page": "Page",
+    "softSelect": "Enter",
+    "softCancel": "Annuler",
+    "softHelp": "Aide",
+    "more": "Suite:",
+    "memoOf": "Note {N} sur {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Non autorisé: seul le titulaire d'une tâche peut la modifier.",
+    "topOfData": "Début du dossier: aucune note plus ancienne.",
+    "bottomOfData": "Fin du dossier: aucune autre note."
+  }
+}

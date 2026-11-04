@@ -115,11 +115,12 @@ public static class FrontRoomsWorldText
         return byCode.TryGetValue(code, out var k) ? k : null;
     }
 
-    /// <summary>A readable texture for code that reads its pixels: the current language's copy when it has one, else the base
-    /// (Resources.Load). The caller owns what it loaded, as with Resources.Load.</summary>
+    /// <summary>A readable texture for code that reads its pixels: the copy in the language on screen (AppliedCode, so own
+    /// copies, layouts and swapped bases always agree) when it has one, else the base (Resources.Load). The caller owns what
+    /// it loaded, as with Resources.Load.</summary>
     public static Texture2D Texture(string path)
     {
-        var k = For(CurrentCode);
+        var k = For(AppliedCode);
         if (k != null && k.own.Contains(path))
         {
             var copy = Resources.Load<Texture2D>(Root + k.language.code + "/" + path);
@@ -129,10 +130,11 @@ public static class FrontRoomsWorldText
         return Resources.Load<Texture2D>(path);
     }
 
-    /// <summary>A layout or text file: the current language's copy when it has one, else the base (Resources.Load).</summary>
+    /// <summary>A layout or text file: the copy in the language on screen (AppliedCode) when it has one, else the base
+    /// (Resources.Load).</summary>
     public static TextAsset Text(string path)
     {
-        var k = For(CurrentCode);
+        var k = For(AppliedCode);
         if (k != null && k.texts.Contains(path))
         {
             var copy = Resources.Load<TextAsset>(Root + k.language.code + "/" + path);
@@ -195,6 +197,16 @@ public static class FrontRoomsWorldText
         Resources.UnloadAsset(v);
         held[path] = b;
         return true;
+    }
+
+    /// <summary>Resources.UnloadAsset for code that loads a texture, copies it and drops it (the landing placards' composites):
+    /// a base that holds a language's pixels stays loaded, since unloaded it would come back with its English pixels on its
+    /// next load. Anything else is unloaded as asked.</summary>
+    public static void Unload(UnityEngine.Object asset)
+    {
+        if (asset == null) return;
+        if (asset is Texture2D t && held.ContainsValue(t)) return;
+        Resources.UnloadAsset(asset);
     }
 
     /// <summary>Every base back to its own pixels (English), without raising Applied: the end of play mode, a domain reload,

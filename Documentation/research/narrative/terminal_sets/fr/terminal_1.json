@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO, fr (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_1.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "Menu principal",
+    "doc": "Lire la note",
+    "list": "File d'impression",
+    "help": "Aide"
+  },
+  "main": {
+    "headline": "NOTES",
+    "second": "{UNREAD} NON LUES",
+    "secondNone": "TOUT EST LU",
+    "listItem": "File d'impression",
+    "listMessage": "Voir ce qui attend à l'imprimante.",
+    "helpItem": "Aide",
+    "helpMessage": "Voir le rôle de chaque touche."
+  },
+  "memos": [
+    {
+      "index": "D.K., Sécurité    Sortie des clés",
+      "date": "{DATE_NOW}",
+      "message": "Lire la note de D.K., Sécurité.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "D.K., Sécurité"
+        },
+        {
+          "label": "À:",
+          "value": "Tous les locataires"
+        },
+        {
+          "label": "Date:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "Objet:",
+          "value": "Sortie des clés"
+        }
+      ],
+      "body": [
+        "Merci de rapporter et signer vos clés avant de partir le soir.",
+        "La semaine dernière, trois clés de bureau n'ont pas été rendues.",
+        "",
+        "Une clé non rapportée avant 0700 est déclarée manquante.",
+        "Merci de ne pas prêter votre clé. Chaque clé est remise à une seule personne."
+      ],
+      "sign": "D.K."
+    },
+    {
+      "index": "R.M., Intendance  Travaux",
+      "date": "{DATE_BACK4}",
+      "message": "Lire la note de R.M., Intendance.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "R.M., Intendance"
+        },
+        {
+          "label": "À:",
+          "value": "Tous les locataires"
+        },
+        {
+          "label": "Date:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "Objet:",
+          "value": "Travaux"
+        }
+      ],
+      "body": [
+        "Les travaux se poursuivent à plusieurs étages.",
+        "Jusqu'à leur fin, un étage peut différer du plan affiché.",
+        "",
+        "Si le plan affiché à votre étage n'est plus à jour, merci de prévenir l'intendance.",
+        "",
+        "Merci de votre patience."
+      ],
+      "sign": "R.M."
+    }
+  ],
+  "list": {
+    "heading": "File: MAIN             Imprimante: LASER 2      État: Impression",
+    "columns": [
+      "N°",
+      "Document",
+      "Titulaire",
+      "Pages",
+      "État"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "Avis d'exercice incendie",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "Impression",
+        "message": "Impression de la page 2 sur 2."
+      },
+      {
+        "job": "0413",
+        "document": "Registre de sortie des clés",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "En attente",
+        "message": "En attente de l'imprimante."
+      }
+    ]
+  },
+  "help": {
+    "heading": "Touches",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "Choisir un élément"
+      },
+      {
+        "action": "Side",
+        "text": "Précédent ou suivant"
+      },
+      {
+        "action": "Select",
+        "text": "Ouvrir l'élément choisi"
+      },
+      {
+        "action": "Page",
+        "text": "Page précédente ou suivante"
+      },
+      {
+        "action": "Cancel",
+        "text": "Revenir en arrière"
+      },
+      {
+        "action": "Exit",
+        "text": "Quitter {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "Cette aide"
+      }
+    ]
+  },
+  "words": {
+    "help": "Aide",
+    "select": "Choisir",
+    "cancel": "Annuler",
+    "exit": "Quitter",
+    "page": "Page",
+    "softSelect": "Enter",
+    "softCancel": "Annuler",
+    "softHelp": "Aide",
+    "more": "Suite:",
+    "memoOf": "Note {N} sur {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Non autorisé: seul le titulaire d'une tâche peut la modifier.",
+    "topOfData": "Début du dossier: aucune note plus ancienne.",
+    "bottomOfData": "Fin du dossier: aucune autre note."
+  }
+}

@@ -38,6 +38,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     readonly MotionValue settingsDark = new MotionValue();
     Image settingsCardImage;
     FrontRoomsLanguageStrip languageStrip;
+    // A tablet's picture column with LANGUAGE's grid out: the game's words in the language under the finger (设置菜单's).
+    FrontRoomsLanguagePreview languagePreview;
+    // The list's mask in frame points (TickSettings), where LANGUAGE's strip lives.
+    Rect listMaskRect;
     readonly Dictionary<FrontRoomsTouchControls.Button, float> chipWords = new Dictionary<FrontRoomsTouchControls.Button, float>();
 
 
@@ -1575,12 +1579,15 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         // The picture column (a tablet's sheet): on GRAPHICS a live picture of the game at the current settings; a tap on it
         // shows the game full screen. What a row does is in the row (SETTINGS_MOTION.md).
-        // ASSIST's first row (Red, 2026-10-30): on the card, not in the list, whose mask stops at the explanation column.
-        languageStrip = FrontRoomsLanguageStrip.Create(cardRoot, serif);
+        // ASSIST's first row (Red, 2026-10-30): in the list's mask, which now ends where the list does (E4a), so the strip and its
+        // grid scroll with their row and never over the sheet's head.
+        languageStrip = FrontRoomsLanguageStrip.Create(cardViewportRight, serif);
         languageStrip.SetActive(false);
         controls.LanguageStrip = languageStrip;
         controls.ChipWordWidth = ChipWordWidth;
         detailRoot = Node("Explanation", cardRoot, Vector2.zero, false);
+        languagePreview = FrontRoomsLanguagePreview.Create(detailRoot, serif, plex);
+        languagePreview.SetActive(false);
         previewKeyline = Img("preview keyline", detailRoot, Vector2.zero, WithAlpha(Paper, .35f));
         previewKeyline.sprite = FrontRoomsTouchSprites.Solid();
         preview = Node("preview", detailRoot, Vector2.zero, false).gameObject.AddComponent<RawImage>();
@@ -2028,6 +2035,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var viewport = controls.SettingsScrollViewport;
         // The list's mask reaches 16 pt left of it for an open row's bar and underlay, and 8 pt right for a pressed row.
         var mask = Rect.MinMaxRect(viewport.xMin - 16f, viewport.yMin, viewport.xMax + 8f, viewport.yMax);
+        listMaskRect = mask;
         cardViewportRight.anchoredPosition = Local(mask.center);
         cardViewportRight.sizeDelta = mask.size;
         cardViewportLeft.sizeDelta = Vector2.zero;
@@ -2122,9 +2130,10 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             // it at rest (yellow = focus and choice, no bar travels). Under it all, a paper underlay at 7 % while it is open.
             var focus = controls.ExternalInput && controls.FocusChip == FrontRoomsTouchControls.Button.None && controls.ActiveSettingsRow == s.Id;
             r.RuleAlpha.To(focus ? 1f : 0f, Dur(.12f), Ease.OutCubic);
-            r.Bar.color = WithAlpha(Accent, Mathf.Max(r.RuleAlpha.Current, Mathf.Min(1f, s.Open * 4f)));
-            r.Bar.rectTransform.sizeDelta = new Vector2(4f, h);
-            r.Bar.rectTransform.anchoredPosition = new Vector2(-width * .5f - 14f, 0f);
+            // LANGUAGE's bar stays at its head while its grid is out (its cells are the choice, as a map's callouts are).
+            r.Bar.color = WithAlpha(Accent, Mathf.Max(r.RuleAlpha.Current, Mathf.Min(1f, Mathf.Max(s.Open, s.Fold) * 4f)));
+            r.Bar.rectTransform.sizeDelta = new Vector2(4f, s.Fold > 0f ? s.Rest : h);
+            r.Bar.rectTransform.anchoredPosition = new Vector2(-width * .5f - 14f, s.Fold > 0f ? firstY : 0f);
             r.Underlay.color = WithAlpha(Paper, .07f * Mathf.Min(1f, s.Open * 1.5f));
             r.Underlay.rectTransform.sizeDelta = new Vector2(width + 16f, h);
             r.Underlay.rectTransform.anchoredPosition = new Vector2(-8f, 0f);
@@ -2175,11 +2184,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         controls.Layout.SettingsSingleColumn ? -FrontRoomsLanguageStrip.MarkGap
             : FrontRoomsLanguageStrip.LabelWidth(FrontRoomsSettingsMenu.TextWidth(label, FrontRoomsSettingsMenu.Touch.Label, false), FrontRoomsSettingsMenu.Touch.Label);
 
-    /// <summary>The LANGUAGE strip over its row: from past the row's mark to the card's right edge, across the explanation
-    /// column, which steps down for it (TickDetailColumn).</summary>
+    /// <summary>The LANGUAGE strip over its row, in the list's mask: from past the row's word to the list's right end. With its grid
+    /// out (E4b, the desktop's E3 on touch) the cells stand under the row's head, five a line across the row from where its word
+    /// starts; the model hit-tests them on LanguageRowRect.</summary>
     void TickLanguageStrip(FrontRoomsTouchLayout L, Vector2 card, Vector2 cardCenter)
     {
         controls.LanguageStripRect = default;
+        controls.LanguageRowRect = default;
         var showing = false;
         var row = default(FrontRoomsTouchControls.SettingsSlot);
         foreach (var s in controls.SettingsSlots)
@@ -2187,32 +2198,63 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (!showing || controls.SettingsPeek) { languageStrip.SetActive(false); return; }
         var m = LanguageMetrics;
         var list = L.SettingsListRect;
-        var cardLeft = cardCenter.x - card.x * .5f;
         var left = row.Rect.x + FrontRoomsLanguageStrip.StartAfter(m, LanguageLabelEnd(row.Label));
         var top = row.Rect.yMax + controls.SettingsScroll;
         var rect = new Rect(left, top - m.Row, list.xMax - left, m.Row);
         rect = FrontRoomsHandheld.ClearRect(rect, true);
         controls.LanguageStripRect = rect;
+        controls.LanguageRowRect = new Rect(row.Rect.x, top - row.Rect.height, row.Rect.width, row.Rect.height);
         languageStrip.Layout(m, rect.width);
-        languageStrip.PlaceAt(rect.x - cardLeft, cardCenter.y + card.y * .5f - rect.yMax);
+        languageStrip.PlaceAt(rect.x - listMaskRect.xMin, listMaskRect.yMax - rect.yMax);
+        // The grid's cells: 60 px at the charms' .6 scale on the desktop, so 50 pt on a phone and 55 on a tablet; two lines and the
+        // gap under them make the row's unfolded height.
+        var cellH = Mathf.Round(60f * m.Scale / .6f);
+        controls.LanguageGridHeight = 2f * cellH + Mathf.Round(14f * m.Scale / .6f);
+        languageStrip.PlaceGrid(row.Rect.x - rect.x, m.Row, row.Rect.width / FrontRoomsLanguageStrip.GridColumns, cellH);
+        languageStrip.Root.SetAsLastSibling();
         languageStrip.SetActive(true);
         languageStrip.DrawRule(list.xMax - rect.x, rect.xMax - list.xMax);
-        languageStrip.Pressed = controls.PressedButton == FrontRoomsTouchControls.Button.LanguageRow ? controls.PressedSettingsRow : -1;
+        var pressed = controls.PressedButton == FrontRoomsTouchControls.Button.LanguageRow ? controls.PressedSettingsRow : -1;
+        languageStrip.Pressed = pressed >= 0 ? pressed : -1;
         if (controls.ActiveSettingsRow != row.Id) languageStrip.Reset();
         languageStrip.Animate();
     }
 
     /// <summary>The picture column (a tablet's sheet; SETTINGS_MOTION.md: the right column keeps only pictures): on GRAPHICS the
-    /// live game at the current settings, the frame rate in its corner, a tap on it the game full screen. Other tabs leave it empty.</summary>
+    /// live game at the current settings, the frame rate in its corner, a tap on it the game full screen; with LANGUAGE's grid out
+    /// the game's words in the language under the finger, before it is picked (设置菜单's FrontRoomsLanguagePreview, as the
+    /// desktop's). Other tabs leave it empty.</summary>
     void TickDetailColumn(FrontRoomsTouchLayout L, System.Func<Vector2, Vector2> local)
     {
         var rect = L.SettingsDetailRect;
         var graphics = controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics;
-        detailRoot.gameObject.SetActive(rect.width > 1f && graphics);
+        var language = controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Assist && controls.LanguageUnfolded;
+        detailRoot.gameObject.SetActive(rect.width > 1f && (graphics || language));
         controls.SettingsPreviewRect = default;
-        if (rect.width <= 1f || !graphics || controls.SettingsPeek) return;
+        preview.gameObject.SetActive(graphics);
+        previewKeyline.gameObject.SetActive(graphics);
+        previewCaption.gameObject.SetActive(graphics);
+        previewFrameWord.gameObject.SetActive(graphics);
+        previewFrameLine.gameObject.SetActive(graphics);
+        foreach (var d in previewDashes) d.gameObject.SetActive(graphics);
+        languagePreview.SetActive(language && rect.width > 1f && !controls.SettingsPeek);
+        if (rect.width <= 1f || controls.SettingsPeek) return;
         var w = rect.width;
         var top = rect.yMax - 8f;
+        if (language)
+        {
+            // The preview fills the column down to the home indicator's clearance, stepping aside as a whole for a camera or a corner.
+            var h = Mathf.Max(120f, rect.height - 8f - L.SettingsBottomInset);
+            var area = new Rect(rect.x, top - h, w, h);
+            var x = rect.x + FrontRoomsHandheld.ClearRect(area, false, 12f, FrontRoomsHandheld.HudCornerGap).x - area.x;
+            languagePreview.Layout(w, h);
+            languagePreview.Root.anchoredPosition = local(new Vector2(x, top));
+            var under = languageStrip.HighlightedLanguage;
+            languagePreview.Show(under != FrontRoomsLanguage.Current ? under : null);
+            languagePreview.Animate();
+            return;
+        }
+        if (!graphics) return;
         var frame = L.Frame;
         var ph = Mathf.Round(w * frame.y / Mathf.Max(1f, frame.x));
         // The column steps aside as a whole for a camera or a corner (16 pt from a curve).

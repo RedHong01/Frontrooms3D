@@ -117,3 +117,19 @@ Simulated as the GPU samples it: mips built in linear light, BC1 per level, tril
 - No pictogram, brand, maker's line, arrow or EXIT.
 - Detex sells a separate 3-1/2 × 11 in "Emergency Exit Only / Alarm Will Sound" sign for its devices (EA-561; current listings, no era claim) [search, 2026-11-03: https://www.rhsecurityhardware.com/sign-emergency-exit-only-alarm-will-sound-det-ea-561/].
 - The pre-1990 wording and layout stay UNVERIFIED (`90` §4).
+
+## World text (zh-Hans, 2026-11-03)
+
+Both faces in the player's language: Red 11-03, research/narrative/95, 简体中文 first. The same generator makes them: `./stair_signs out 0 world zh-Hans`. They are swapped, so each copy keeps its base's size. Package: `W/apply/world_text_info_zh_hans.sh`; record VL494.
+
+- **The shared CJK rules** (平面视觉 `research/localization/WORLD_TYPE.md` §3): body = English cap / 0.70, no tracking, 1.3 em line pitch, and a smaller size only as the last resort.
+- **ALARM ZONE card:** 警报 / 区域 (95 §5), Noto Sans SC Bold.
+  - The shared size (from 42.9 mm) does not fit two rows at the shared pitch inside the English margins. The rows therefore take the largest height that does fit: ideographs 44.3 mm, 1.3 em apart. This is the last resort, and the break 叙事 signed stays.
+  - The block is centred. The albedo and the glow use the same colours as the English.
+- **Placard:** 开门即报警, one line, ideographs 35.5 mm (27.45 mm / 0.70 em, 1.29 x the English cap), no tracking. It is centred on the plate's centre line, 15.5 mm clear of the keyline, and the keyline is as in English.
+- **Rescue sign** (in `STAIR_SIGNS_SPEC.md` §10): 救援 / 等候区 at 41.1 mm (from the 1.25 in cap), 1.3 em apart, the block centred on the ISA.
+- **The other eight languages (11-03 17:5x, 18:0x).**
+  - The card is in every language at its largest cap inside the English margins: Latin in Heros Bold, ru in Roboto Condensed Bold, CJK by the shared rules.
+  - The placard is in the language's condensed face at the largest cap with 0.5 cap clear of the keyline, never over 27.45 mm: es and pt-BR tighten their tracking to +0.02 and +0.03 em.
+  - The words are 叙事's fit revisions (95 §5): 開けると警報, 열면 경보 울림, ALARMGESICHERT, SOUS ALARME, НА СИГНАЛИЗАЦИИ. zh-Hant keeps 開門即報警.
+  - Record: VL495.
