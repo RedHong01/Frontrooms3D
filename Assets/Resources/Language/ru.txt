@@ -35,7 +35,6 @@ CHANGE	ИЗМЕНИТЬ
 CHASE	ПРЕСЛЕДУЕТ
 CHOSEN	ВЫБРАНО
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	ЩЁЛКНИТЕ ПО КАРТИНКЕ ИЛИ НАЖМИТЕ ПРОБЕЛ, ЧТОБЫ УВИДЕТЬ ЕЁ НА ВЕСЬ ЭКРАН
-CLICK, SPACE OR ESC TO RETURN TO SETTINGS	ЩЕЛЧОК, ПРОБЕЛ ИЛИ ESC: НАЗАД В НАСТРОЙКИ
 CLOSE-UPS	КРУПНЫЙ ПЛАН
 CLOSER	БЛИЖЕ
 COMFORT	КОМФОРТ
@@ -59,8 +58,6 @@ Dragging up looks down.	Свайп вверх смотрит вниз.
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	Рисует картинку в этой доле экрана, затем растягивает её. Ниже значит плавнее и мягче; текст и HUD остаются чёткими.
 END RUN	ЗАКОНЧИТЬ ЗАБЕГ
 END THIS RUN?	ЗАКОНЧИТЬ ЗАБЕГ?
-ENTER  OPEN	ENTER  ОТКРЫТЬ
-ENTER  SWAP     ESC  CANCEL	ENTER  ПОМЕНЯТЬ     ESC  ОТМЕНА
 ESC  RESUME	ESC  ПРОДОЛЖИТЬ
 ESC ALWAYS PAUSES AND GOES BACK	ESC ВСЕГДА ПАУЗА И НАЗАД
 EVACUATION PLAN · LEVEL 0	ПЛАН ЭВАКУАЦИИ · ЭТАЖ 0	TEXT panel, placard title
@@ -313,9 +310,6 @@ ZOOM STEP	ШАГ ЗУМА
 {0} ZONE	ЗОНЫ: {0}
 {0} ZONES	ЗОНЫ: {0}
 {0} s	{0} с
-← →  CHOOSE     ENTER  SET	← →  ВЫБОР     ENTER  ПРИМЕНИТЬ
-↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  ВЫБОР     ← →  ИЗМЕНИТЬ     Q E  ГРУППА     BACKSPACE  ПО УМОЛЧАНИЮ     SPACE  ПРОСМОТР
-↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  ВЫБОР     ENTER  ИЗМЕНИТЬ     BACKSPACE  ПО УМОЛЧАНИЮ     DELETE  ВСЁ ПО УМОЛЧАНИЮ     ESC  НАЗАД
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[ВДАЛЕКЕ ХЛОПАЕТ ДВЕРЬ]
 [HEAVY STEPS]	[ТЯЖЁЛЫЕ ШАГИ]

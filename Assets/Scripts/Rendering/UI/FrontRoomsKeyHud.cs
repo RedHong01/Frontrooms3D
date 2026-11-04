@@ -391,6 +391,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     HM.DoorPose door; bool doorVisible; float doorA = 1f;
     HM.EyePose eye; bool eyeVisible;
     Aim linesKind = Aim.None; bool linesHaveKey; string linesText; int linesNumber = -1; bool linesDirty = true;
+    int linesDevice = -1;   // the device the lines last named USE for (keys, a pad, a handheld's mode)
     FrontRoomsLanguage.Language linesLanguage;
     float line2A = 1f, line2Shown = -1f;   // line 2's own alpha: Broken shows WON'T SHUT only during its reaction (#29)
     float linesScale = -1f;   // the canvas scale the lines were laid out at (the runs' x and widths are whole screen px at it)
@@ -615,6 +616,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         FrontRoomsInspect.Opened += OnInspectOpened; FrontRoomsInspect.Closed += OnInspectClosed;
         FrontRooms3DGame.Paused += OnGamePaused;
         FrontRoomsLanguage.Changed += OnLanguageChanged;
+        FrontRoomsInput.BindingsChanged += OnBindingsChanged;
         if (linesLanguage != FrontRoomsLanguage.Current) OnLanguageChanged();   // also a change made while this was off
     }
     void OnDisable()
@@ -623,6 +625,14 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         FrontRoomsInspect.Opened -= OnInspectOpened; FrontRoomsInspect.Closed -= OnInspectClosed;
         FrontRooms3DGame.Paused -= OnGamePaused;
         FrontRoomsLanguage.Changed -= OnLanguageChanged;
+        FrontRoomsInput.BindingsChanged -= OnBindingsChanged;
+    }
+
+    // A rebind on CONTROLS / CONTROLLER renames USE in the lines (device prompts G8): written again on the next frame.
+    void OnBindingsChanged()
+    {
+        linesDirty = true;
+        if (eyeS != null && active == eyeS) eyeS.Reword();
     }
 
     // A change of language: FrontRoomsLanguage has swapped the faces and the panel's fixed words; the lines are built from the
@@ -807,6 +817,10 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         // a resolution change re-lays the three-run line out too (capture stage 2026-10-22: after a canvas-scale change
         // with the same words, "E . UNLOCK" / the eye's words kept the runs' x and widths from the old scale, off whole px)
         if (!Mathf.Approximately(canvas.scaleFactor, linesScale)) { linesScale = canvas.scaleFactor; linesDirty = true; RebuildTextMeshes(); }
+        // the device in hand names USE in "E . UNLOCK" and the eye's line (device prompts G8, 2026-11-03): a switch between the
+        // keys and a pad (a handheld's touch, pad or keyboard mode) writes the lines again, on that frame only
+        var device = handheld ? 10 + (int)FrontRoomsTouchControls.CurrentMode : FrontRoomsInput.PadInUse ? 1 : 0;
+        if (device != linesDevice) { linesDevice = device; linesDirty = true; if (eyeS != null && active == eyeS) eyeS.Reword(); }
         if (linesDirty) WriteLines();
         linesGroup.alpha = lineA;
         if (line2A != line2Shown) { line2Shown = line2A; var c2 = l2.color; c2.a = line2A; l2.color = c2; }   // only on a change (no per-frame mesh rebuild)
@@ -1429,17 +1443,18 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
 
     // ---------------------------------------------------------------- prompt lines
     /// <summary>
-    /// A prompt line ("E  ·  UNLOCK") with the USE control the player has (交互设计, 2026-10-29): on the desktop the key USE
-    /// is bound to; on a handheld with a pad, the pad's button (A / CROSS); with a keyboard, the key. Null on a touch
-    /// handheld: the USE glyph carries the verb, and the line shows the verb alone.
+    /// A prompt line ("E  ·  UNLOCK") with the USE control of the device in hand (交互设计, 2026-10-29; device prompts G8,
+    /// 2026-11-03): on the desktop the key USE is bound to, or with a pad in use the pad's USE button as the player bound it
+    /// (A, CROSS, a Nintendo pad's B); on a handheld with a pad the same; with a keyboard, the key. HOLD and TAP lines follow.
+    /// Null on a touch handheld: the USE glyph carries the verb, and the line shows the verb alone.
     /// </summary>
     static string WithUseControl(string line, bool handheld)
     {
-        if (!handheld) return FrontRoomsInput.WithKeyNames(line);
+        if (!handheld) return FrontRoomsInput.WithControlNames(line);
         switch (FrontRoomsTouchControls.CurrentMode)
         {
             case FrontRoomsTouchControls.InputMode.Gamepad:
-                return line.StartsWith("E  ", StringComparison.Ordinal) ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South) + line.Substring(1) : line;
+                return FrontRoomsInput.WithPadNames(line);
             case FrontRoomsTouchControls.InputMode.Keyboard:
                 return FrontRoomsInput.WithKeyNames(line);
             default:

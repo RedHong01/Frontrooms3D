@@ -35,7 +35,6 @@ CHANGE	変更
 CHASE	追跡
 CHOSEN	選択中
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	画像をクリックするかスペースキーで全画面表示
-CLICK, SPACE OR ESC TO RETURN TO SETTINGS	クリック、スペース、ESCで設定に戻る
 CLOSE-UPS	クローズアップ
 CLOSER	近づく
 COMFORT	快適性
@@ -59,8 +58,6 @@ Dragging up looks down.	上にドラッグすると下を向きます。
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	画面に対するこの割合で描画してから拡大します。低いほど滑らかで柔らかくなります。文字とHUDは鮮明なままです。
 END RUN	ランを終了
 END THIS RUN?	このランを終える？
-ENTER  OPEN	ENTER  開く
-ENTER  SWAP     ESC  CANCEL	ENTER  入れ替え     ESC  キャンセル
 ESC  RESUME	ESC  再開
 ESC ALWAYS PAUSES AND GOES BACK	ESC は常にポーズと戻る
 EVACUATION PLAN · LEVEL 0	避難経路図 · 0階	TEXT panel, placard title
@@ -313,9 +310,6 @@ ZOOM STEP	ズーム段階
 {0} ZONE	{0} ゾーン
 {0} ZONES	{0} ゾーン
 {0} s	{0} 秒
-← →  CHOOSE     ENTER  SET	← →  選択     ENTER  決定
-↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  選択     ← →  変更     Q E  グループ     BACKSPACE  デフォルト     SPACE  プレビュー
-↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  選択     ENTER  変更     BACKSPACE  デフォルト     DELETE  すべてデフォルト     ESC  戻る
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[遠くでドアが閉まる音]
 [HEAVY STEPS]	[重い足音]

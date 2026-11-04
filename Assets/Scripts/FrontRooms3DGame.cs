@@ -182,6 +182,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // Each shown action line's cap middle (canvas y) and width, for the marker.
     readonly float[] menuLineCapY = new float[3], menuLineWidth = new float[3];
     Image menuMarker;
+    // The caught card's retry chip (交互设计 device prompts §3, Red 2026-11-01 18:5x): the glyph of the button that retries, before
+    // TRY AGAIN, following the device in hand (the END RUN key as bound, or a pad's confirm face).
+    FrontRoomsPromptBar retryBar;
+    const float RetryGap = 10f;
     int menuLineCount, menuHover = -1;
     // The screen size the menus were last laid out for (UpdateDesktopMenu lays them out again on a change) and the HUD
     // canvas's scale factor then (CanvasScaler applies a new size's scale after Update, in preWillRenderCanvases).
@@ -1682,7 +1686,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (floorSwap != FloorSwap.None || exitStairwell == null || exitRefused || !map.HasExitArea || map.ExitSealing) return false;
 #if UNITY_EDITOR
         // A bot-after-exit run goes one floor down, by its walker: once the bot plays (B1's shut on) the EXIT stays closed.
-        if (HarnessRunning && (!autoExitWanted || autoBotHandedOff)) return false;
+        // X16's route (-autopilotStartFloor, FrontRooms3DGame.AutoRoutes.cs) goes down by this gate too, floor by floor.
+        if (HarnessRunning && (!autoExitWanted || autoBotHandedOff) && !toolRouteSeal) return false;
 #endif
         if (phase != Phase.Playing || FrontRoomsInspect.Active || InspectingNow) return false;
         if (rig != null && rig.InShot) return false;
@@ -2777,7 +2782,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #if UNITY_EDITOR
         // M3: the autopilot's own press (the floor key's take, the EXIT's unlock), one frame.
         if (autopilot && Time.frameCount == autoKeyEFrame) return true;
-        if (autoGlassActive || autoDoorActive || autoBaseline) return autoEDown;
+        if (autoGlassActive || autoDoorActive || autoBaseline || toolRouteE) return autoEDown;
 #endif
         return FrontRoomsInput.UseDown;
     }
@@ -2786,7 +2791,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
 #if UNITY_EDITOR
         if (autopilot && Time.frameCount == autoKeyEFrame) return true;
-        if (autoGlassActive || autoDoorActive || autoBaseline) return autoEHeld;
+        if (autoGlassActive || autoDoorActive || autoBaseline || toolRouteE) return autoEHeld;
 #endif
         return FrontRoomsInput.UseHeld;
     }
@@ -3673,6 +3678,13 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         menuMarker = Panel(overlay.transform, "Menu CTA marker", new Vector2(.5f, .5f), Vector2.zero, new Vector2(4f, 14f), accent).GetComponent<Image>();
         menuMarker.rectTransform.pivot = new Vector2(0f, .5f);
         menuMarker.gameObject.SetActive(false);
+        // The retry chip, ink on the paper card (the bar draws its glyphs in "paper" on "ink": the two swap here), centred like
+        // the lines; placed each frame the card shows (UpdateRetryChip).
+        retryBar = FrontRoomsPromptBar.Create(overlay.transform as RectTransform, monoFont, ink, paper);
+        // At the card's own strength (keyline .85, legend 1), as the touch caught card: the default .5/.8 reads as disabled on paper.
+        retryBar.Solid = true;
+        retryBar.Root.anchorMin = retryBar.Root.anchorMax = new Vector2(.5f, .5f);
+        retryBar.Root.gameObject.SetActive(false);
         // A3: hover moves the marker to the line, a click does what its key does.
         for (var i = 0; i < menuHits.Length; i++)
         {
@@ -3777,8 +3789,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             menuLines[1].text = FrontRoomsLanguage.F("{0}  END RUN", FrontRoomsInput.ControlName(FrontRoomsInput.Bind.Restart));
             menuLines[2].text = FrontRoomsLanguage.T("O  SETTINGS");
         }
-        // The END RUN key as bound, or with a pad in use its A, which retries since 2026-11-01 (Update).
-        else menuLines[0].text = FrontRoomsInput.TryAgainLine();
+        // The END RUN key as bound, or with a pad in use its A, which retries since 2026-11-01 (Update): the retry chip draws
+        // that button; the line is the word alone (交互设计 device prompts §3). With no chip it names the button in words.
+        else menuLines[0].text = CaughtLine();
         MenuLineSlots(overlayText, overlayText.text, menuSlots);
         var origin = overlayText.rectTransform.anchoredPosition;
         PlaceOnSlot(pause ? menuLegend : menuStats, origin, pause ? PauseLegendLine : CaughtStatsLine);
@@ -3818,7 +3831,38 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (menuMarker == null || menuLineCount == 0) return;
         var line = menuHover >= 0 && menuHover < menuLineCount ? menuHover : 0;
         var x = menuLines[line].rectTransform.anchoredPosition.x;
-        menuMarker.rectTransform.anchoredPosition = new Vector2(x - menuLineWidth[line] * .5f - 14f, menuLineCapY[line]);
+        // On the caught card the marker stands left of the retry chip, the chip left of the word.
+        menuMarker.rectTransform.anchoredPosition = new Vector2(x - menuLineWidth[line] * .5f - RetryChipSpan(line) - 14f, menuLineCapY[line]);
+    }
+
+    // The caught card's line: the word, with the retry chip before it (UpdateRetryChip); words only without a chip.
+    string CaughtLine() => retryBar != null ? FrontRoomsLanguage.T("TRY AGAIN") : FrontRoomsInput.TryAgainLine();
+
+    // How far the retry chip pushes the marker left of line <paramref name="line"/>: the chip and its gap, on the caught card.
+    float RetryChipSpan(int line) => line == 0 && phase == Phase.Caught && retryBar != null && retryBar.Root.gameObject.activeSelf
+        ? retryBar.Width + RetryGap : 0f;
+
+    // Each frame: the caught card shows the retry chip left of TRY AGAIN, with its centre on the word's caps; the chip follows
+    // the device in hand and answers its button (FrontRoomsPromptBar.Tick). Hidden on every other card.
+    void UpdateRetryChip()
+    {
+        if (retryBar == null) return;
+        var show = phase == Phase.Caught && menuLineCount > 0 && menuLines[0] != null && menuLines[0].gameObject.activeInHierarchy;
+        if (retryBar.Root.gameObject.activeSelf != show) retryBar.Root.gameObject.SetActive(show);
+        if (!show) return;
+        retryBar.Set(new FrontRoomsPromptBar.Prompt(FrontRoomsInput.PadInUse ? FrontRoomsPromptBar.Role.Confirm : FrontRoomsPromptBar.Role.Restart, null));
+        retryBar.Tick();
+        var at = menuLines[0].rectTransform.anchoredPosition;
+        var left = at.x - menuLineWidth[0] * .5f - RetryGap - retryBar.Width;
+        retryBar.Root.anchoredPosition = new Vector2(left, menuLineCapY[0]);
+        // The line's mouse area spans the chip too, and the marker keeps left of it.
+        if (menuHits[0] != null)
+        {
+            var span = menuLineWidth[0] + 16f + 2f * (retryBar.Width + RetryGap);
+            if (!Mathf.Approximately(menuHits[0].rectTransform.sizeDelta.x, span))
+                menuHits[0].rectTransform.sizeDelta = new Vector2(span, menuHits[0].rectTransform.sizeDelta.y);
+        }
+        MarkMenuLine();
     }
 
     /// <summary>
@@ -3897,7 +3941,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var legend = FrontRoomsInput.ControlsLegend();
         if (titleLegend != null && titleLegend.text != legend) titleLegend.text = legend;
         if (menuLegend != null && menuLegend.text != legend) { menuLegend.text = legend; if (phase == Phase.Paused) LayoutDesktopMenu(); }
-        if (phase == Phase.Caught && menuLines[0] != null && menuLines[0].text != FrontRoomsInput.TryAgainLine()) LayoutDesktopMenu();
+        if (phase == Phase.Caught && menuLines[0] != null && menuLines[0].text != CaughtLine()) LayoutDesktopMenu();
+        UpdateRetryChip();
         if (titleLegend != null)
         {
             if (phase == Phase.Title && !titleLegendDismissed && Input.anyKeyDown) titleLegendDismissed = true;
@@ -5085,6 +5130,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // A26: floor 1's station (empty without one): the plan, the start door's hold and shut, the EXIT sign in view,
         // the TV and the placard in the opening's frustum (AutopilotStation), each ok or FAIL.
         public List<string> stationChecks = new List<string>();
+        // The tools' routes (FrontRooms3DGame.AutoRoutes.cs; each empty unless its flag was given): -autopilotRunRoom (X10, a forced
+        // Run! room's loop), -autopilotSash (X11, a plain window's sash pried by E and climbed), -autopilotStartFloor N (X16, down to
+        // floor N by the game's own seal and change, its landing placard and HUD floor token read there), each ok or FAIL.
+        public List<string> runRoomChecks = new List<string>();
+        public List<string> sashChecks = new List<string>();
+        public List<string> startFloorChecks = new List<string>();
     }
 
     readonly List<string> autoFrameNames = new List<string>();
@@ -5175,6 +5226,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autoBotAfterExit) Log("AUTOPILOT BOT AFTER EXIT on · floor 1 by the EXIT walker (the Relay never held), then from B1's start-door shut the bot "
             + AutoBotNames[(int)autoBot] + " for " + AutoF(autoBotBudget / 60f, "0.##") + " min from the run's first send");
         else if (autoExitWanted) Log("AUTOPILOT EXIT scenario on · " + AutoExitFloors + " floors down");
+        // The tools' routes (FrontRooms3DGame.AutoRoutes.cs): -autopilotRunRoom (X10), -autopilotSash (X11), -autopilotStartFloor N (X16).
+        AutoRoutesStart(args);
         // The onboarding (Red 2026-10-30): FrontRoomsMainScenePlaytest sets OnboardOffForTools for -autopilotOnboardOff.
         if (OnboardOffForTools) Log("AUTOPILOT ONBOARDING OFF · floor 1's gate is M7's old one (the key and " + FrontRoomsMapHunter.StationLeaveCells + " path cells out, or "
             + AutoF(FrontRoomsMapHunter.OnboardOffSendSeconds, "0") + " s)");
@@ -5315,6 +5368,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         if (autoDoorWanted && !autoDoorDone) AutopilotDoors(dt);
         if (autoExitWanted && !autoExitDone) AutopilotExit(dt);
         if (autoBotAfterExit) AutoBotAfterExitTick();
+        // The tools' routes (X10, X11, X16): their steps and rows; a route whose rows are in ends the run.
+        if (toolRouteOn) AutoRoutesTick(dt);
         if (!autoHudChecked && autoPlayClock > 1f) AutopilotHudCheck();
         if (autoPlayClock > .6f && autoPlayClock >= autoNextShot && !autoGlassActive && !autoDoorActive && !AutoExitQuiet)
         {
@@ -5325,7 +5380,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         else if (autoExitWanted && autoExitDone && !autoBotAfterExit) AutopilotFinish("exits");
         // A bot-after-exit run follows the bot (caught, or its budget below); it ends early only when the walk failed.
         else if (autoBotAfterExit && autoExitDone && !autoBotHandedOff) AutopilotFinish("the exit walker failed (floor " + floor + ", step " + AutoExitStepNames[autoExitStep] + ")");
-        else if (autoPlayClock >= (autoBaseline ? autoBotSeconds : autoExitWanted ? AutoExitPlayLimit : AutopilotPlaySeconds)) AutopilotFinish("time");
+        else if (autoPlayClock >= (autoBaseline ? autoBotSeconds : autoExitWanted ? AutoExitPlayLimit : AutoRoutesPlaySeconds)) AutopilotFinish("time");
     }
 
     /// <summary>Walk the current route; plan a new far route when it ends or the walk stalls.</summary>
@@ -5347,6 +5402,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             AutoStationTakeSteer(dt, out local);
             return;
         }
+        // The tools' routes (FrontRooms3DGame.AutoRoutes.cs) steer once floor 1's station rows are in; until then the walk below.
+        if (toolRouteOn && AutoRoutesSteer(dt, out local, out sprint)) return;
         // The EXIT scenario walks on its own from the first step past the stream rooms' door (C22).
         if (autoExitWanted && !autoExitDone && AutoExitSteer(dt, out local, out sprint)) return;
         // Out of the stream rooms first: down the centreline, through the door
@@ -7893,7 +7950,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 #else
         var relayOk = relay != null && (relay.Released || onboardingHeld);
 #endif
-        report.verdict = (reached && autoErrors == 0 && relayOk && glassOk && hudOk && doorsOk && exitOk && stationOk ? "PASS" : "FAIL") + " · ended by " + reason
+        // The tools' routes (X10, X11, X16): every row ok and the route finished (true when none was asked).
+        var routesOk = AutoRoutesFinish(report);
+        report.verdict = (reached && autoErrors == 0 && relayOk && glassOk && hudOk && doorsOk && exitOk && stationOk && routesOk ? "PASS" : "FAIL") + " · ended by " + reason
             + (hudOk ? "" : " · HUD off screen: " + string.Join("; ", autoHudOffscreen));
         if (autoBaseline) report.verdict = AutoBaseFinish(reason);
         File.WriteAllText(Path.Combine(autoOutDir, "report.json"), JsonUtility.ToJson(report, true));

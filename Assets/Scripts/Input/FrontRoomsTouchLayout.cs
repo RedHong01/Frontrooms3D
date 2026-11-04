@@ -27,9 +27,12 @@ public readonly struct FrontRoomsTouchLayout
     public readonly bool Tablet;
     /// <summary>Android's back gesture lives on both long edges: a move touch never starts this close to them.</summary>
     public readonly float EdgeGuard;
+    /// <summary>The settings sheet's foot kept for the prompt bar while a pad or a keyboard is in use (D3): its band over the home
+    /// indicator; 0 with touch alone, where the list runs full bleed to the bottom edge.</summary>
+    public readonly float SettingsFooter;
     public Rect SafeRect => Rect.MinMaxRect(SafeLeft, SafeBottom, Frame.x - SafeRight, Frame.y - SafeTop);
 
-    public FrontRoomsTouchLayout(Vector2 framePoints, Rect safePoints, float scale, bool leftHanded, bool tablet, float edgeGuard)
+    public FrontRoomsTouchLayout(Vector2 framePoints, Rect safePoints, float scale, bool leftHanded, bool tablet, float edgeGuard, bool settingsFooter = false)
     {
         Frame = framePoints;
         SafeLeft = Mathf.Max(0f, safePoints.xMin);
@@ -40,6 +43,7 @@ public readonly struct FrontRoomsTouchLayout
         LeftHanded = leftHanded;
         Tablet = tablet;
         EdgeGuard = edgeGuard;
+        SettingsFooter = settingsFooter ? SafeBottom + SettingsFooterBand : 0f;
     }
 
     // ------------------------------------------------------------- the stick
@@ -223,8 +227,12 @@ public readonly struct FrontRoomsTouchLayout
     /// <summary>The list's widest: the phone master's whole sheet less its margins (710 pt with the open row's bar, SETTINGS_MOTION.md).</summary>
     public const float SettingsListWidest = 694f;
     public Vector2 SettingsCardCenter => new Vector2(Frame.x * .5f, SettingsCardSize.y * .5f);
-    /// <summary>How far above the bottom edge the list's last row can scroll: clear of the home indicator.</summary>
-    public float SettingsBottomInset => SafeBottom + 8f;
+    /// <summary>How far above the bottom edge the list's last row can scroll: clear of the home indicator (with the prompt bar's
+    /// footer the list already ends above it).</summary>
+    public float SettingsBottomInset => SettingsFooter > 0f ? 8f : SafeBottom + 8f;
+    /// <summary>The prompt bar's band at the sheet's foot (D3, research/interaction/device_prompts/10_research.md §3): its 20 pt
+    /// glyphs with 12 pt above and below.</summary>
+    public const float SettingsFooterBand = 44f;
     public bool SettingsSingleColumn => SettingsCardSize.x < 700f;
     public const float SettingsRowHeight = 44f;
     public const float SettingsColumnWidth = 337f;
@@ -241,7 +249,7 @@ public readonly struct FrontRoomsTouchLayout
         var width = SettingsSingleColumn ? card.x - 48f : (card.x - 68f) * .5f;
         var left = c.x - card.x * .5f + 24f + (SettingsSingleColumn ? 0 : column) * (width + 20f);
         var top = c.y + card.y * .5f - 52f;
-        var bottom = c.y - card.y * .5f;
+        var bottom = c.y - card.y * .5f + SettingsFooter;
         return new Rect(left, bottom, Mathf.Max(1f, width), Mathf.Max(1f, top - bottom));
     }
 
@@ -264,7 +272,7 @@ public readonly struct FrontRoomsTouchLayout
             var left = c.x - card.x * .5f + 24f;
             var width = SettingsPictures ? card.x - 48f - 20f - SettingsDetailWidth : card.x - 48f;
             var top = c.y + card.y * .5f - 52f;
-            var bottom = c.y - card.y * .5f;
+            var bottom = c.y - card.y * .5f + SettingsFooter;
             return new Rect(left, bottom, Mathf.Max(1f, width), Mathf.Max(1f, top - bottom));
         }
     }

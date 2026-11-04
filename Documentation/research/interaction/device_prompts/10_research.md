@@ -124,6 +124,10 @@ idea is Steam's knockout style with neutral ABXY (S7): colour is never the only 
   extras (Q/E or LB/RB tabs, Backspace or X default, Space or Y preview).
 - Confirm and back are always the first two, with the same glyphs, in the same place.
 - With touch only, the bar is not drawn: the touch sheet keeps its own controls. Rules R4 and R5.
+- As built (2026-11-03, `20_contracts.md`): on the desktop sheet the bar takes the hint line's place, bottom-left, pair
+  first, because the bottom-right corner holds RESUME / END RUN; left-anchored, the pair's glyphs keep their place. On
+  touch it sits in a 44 pt band at the sheet's foot while a pad or a keyboard is in use. A right-anchored bar puts the pair
+  nearest its anchor (extras, confirm, back).
 
 **D4 · The chip answers.**
 - On press, the chip fills: its glyph goes solid paper with an ink legend and drops 1 px. The action fires on the same

@@ -215,3 +215,18 @@ WTCZ 61 SIGNS OFF AT 2 AM
 THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.
 CONTROL RM
 DN
+# The prompt bar's words (FrontRoomsPromptBar.Prompt: each screen passes the key, the bar translates it; 交互设计 D, 2026-11-03).
+{0}  OPEN
+{0}  SET
+{0}  SWAP
+{0}  CANCEL
+{0}  CHANGE
+{0}  CHOOSE
+{0}  GROUP
+{0}  DEFAULT
+{0}  PREVIEW
+{0}  RESUME
+{0}  BACK
+{0}  ALL DEFAULTS
+{0}  END RUN
+PRESS A BUTTON

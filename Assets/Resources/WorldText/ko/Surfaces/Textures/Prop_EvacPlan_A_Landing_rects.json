@@ -1,0 +1,148 @@
+{
+    "patches": [
+        {
+            "name": "Prop_EvacPlan_A_Landing_B2_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B2_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B3_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B3_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B4_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B4_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B5_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B5_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B6_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B6_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B7_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B7_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B8_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B8_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B9_Block0",
+            "rect": [
+                2816,
+                1792,
+                256,
+                128
+            ]
+        },
+        {
+            "name": "Prop_EvacPlan_A_Landing_B9_Title0",
+            "rect": [
+                3584,
+                128,
+                256,
+                256
+            ]
+        }
+    ]
+}

@@ -35,7 +35,6 @@ CHANGE	更改
 CHASE	追逐
 CHOSEN	已选
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	点击画面或按空格键全屏查看
-CLICK, SPACE OR ESC TO RETURN TO SETTINGS	点击、空格键或 ESC 返回设置
 CLOSE-UPS	特写
 CLOSER	靠近
 COMFORT	舒适度
@@ -59,8 +58,6 @@ Dragging up looks down.	向上拖动时视角朝下。
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	先按这个比例绘制画面，再放大到全屏。比例越低越流畅，画面也越柔和；文字和 HUD 始终清晰。
 END RUN	结束本局
 END THIS RUN?	结束本局？
-ENTER  OPEN	ENTER  打开
-ENTER  SWAP     ESC  CANCEL	ENTER  交换     ESC  取消
 ESC  RESUME	ESC  继续
 ESC ALWAYS PAUSES AND GOES BACK	ESC 总是暂停和返回
 EVACUATION PLAN · LEVEL 0	疏散平面图 · 第 0 层	TEXT panel, placard title
@@ -313,9 +310,6 @@ ZOOM STEP	逐级缩放
 {0} ZONE	{0} 个区域
 {0} ZONES	{0} 个区域
 {0} s	{0} 秒
-← →  CHOOSE     ENTER  SET	← →  选择     ENTER  确定
-↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  选择     ← →  更改     Q E  分组     BACKSPACE  默认     SPACE  预览
-↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  选择     ENTER  更改     BACKSPACE  默认     DELETE  全部默认     ESC  返回
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[远处的门砰地关上]
 [HEAVY STEPS]	[沉重的脚步声]

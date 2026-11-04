@@ -949,6 +949,10 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         transitions = source.transitions;              // TRANSITION (T8)
         renovationShare = source.renovationShare;
         sashPry = source.sashPry;
+#if UNITY_EDITOR
+        // Tools (-autopilotSash, FrontRoomsMainScenePlaytest): the sash pry on for this run whatever the profile says.
+        if (SashPryForTools) sashPry = true;
+#endif
         tierRules = source.tiers ?? new FrontRoomsTierRules();
         runRules = source.RunRules();
 #if UNITY_EDITOR
@@ -4882,7 +4886,12 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     /// Run! (M8, 系统设计 2026-10-30; 11_rnx_lite 4): a Run! room's goal door (IsRunDoor) is never locked, so a key floor never
     /// ends the sprint at a locked door; with runRooms off no door is a Run door and the rule is today's.
-    public bool LockedByRule(Door door) => door != null && !IsRunDoor(door) && (IsExitDoor(door) ? exitLocked : InteriorDoorsLocked);
+    /// <summary>Tools (scene 3's museum, 交互设计): a door's own lock rule, true locked, false free; null, or null for a
+    /// door, keeps the floor's rule. Nothing in the game sets it.</summary>
+    public Func<Door, bool?> LockRuleForTools { get; set; }
+
+    public bool LockedByRule(Door door) => door != null && !IsRunDoor(door)
+        && (IsExitDoor(door) ? exitLocked : LockRuleForTools?.Invoke(door) ?? InteriorDoorsLocked);
 
     /// <summary>
     /// §7 Q3 seam, the only place the key rule lives: the zone whose key opens this door from
@@ -5608,6 +5617,15 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     }
 
     // ---------- C12, the quiet sash pry (RELAY 10; profile flag sashPry, off until the latch look lands) ----------
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Tools (-autopilotSash, FrontRoomsMainScenePlaytest; editor only, never in a player): true turns the sash pry on for the
+    /// maps made from now on whatever the profile says (TakeProfile), so the autopilot's X11 route meets latches. False: the
+    /// profile decides.
+    /// </summary>
+    public static bool SashPryForTools;
+#endif
 
     /// <summary>E on a latch to open the sash, in seconds of hold; a tap banks a third of it (the game's tap mode).</summary>
     public const float SashPryHoldSeconds = 4f;
@@ -6605,6 +6623,29 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         movingDoors.Remove(door);
         PoseDoor(door);
         TouchPassageRevision();
+    }
+
+    /// <summary>Tools (scene 3's museum): a window back as built (unbroken, unpried, no glass record, no sash hold, no
+    /// foil trip); its chunks rebuild. Nothing in the game calls it.</summary>
+    public void ResetWindowForTools(GridCoord a, GridCoord b)
+    {
+        var edge = EdgeId(a, b);
+        brokenWindows.Remove(edge);
+        priedWindows.Remove(edge);
+        glassBreaks.Remove(edge);
+        sashHolds.Remove(edge);
+        trippedFoils.Remove(edge);
+        RebuildChunk(MapGrid.ChunkOf(a));
+        if (MapGrid.ChunkOf(b) != MapGrid.ChunkOf(a)) RebuildChunk(MapGrid.ChunkOf(b));
+    }
+
+    /// <summary>Tools (scene 3's museum): the player no longer holds this zone's key; its home chunk rebuilds, so the
+    /// key lies where it was. Nothing in the game calls it.</summary>
+    public void TakeKeyBackForTools(GridCoord zone)
+    {
+        keysHeld.Remove(zone);
+        keysAnnounced.Remove(zone);
+        RebuildChunk(zone);
     }
 
     /// <summary>

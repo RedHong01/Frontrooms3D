@@ -1288,6 +1288,10 @@ CP437 = {
     0xC3: cell(merge({HL: '...#####'}, vline(0, 15))),              # ├
     0xB4: cell(merge({HL: '#####...'}, vline(0, 15))),              # ┤
     0xDB: ['########'] * 16,                                        # █
+    # ▀ ▄ (W18, 2026-11-03): MAIN's big type in half blocks, a cell = two pixel rows (CJK and Hangul, the condensed
+    # Latin and Cyrillic lines of research/localization/WORLD_TYPE.md 3b); halves of the 16 rows, edge to edge
+    0xDF: ['########'] * 8 + ['........'] * 8,                      # ▀
+    0xDC: ['........'] * 8 + ['########'] * 8,                      # ▄
     0xFE: cell({r: '.#####..' for r in range(7, 11)}),              # ■ 5 x 4 on the x-height's centre
     # arrows: 2 px stems / 1 px shafts like the letters; heads = two 2 px diagonal runs from the tip (45 deg on the grid)
     0x18: cell(merge({2: '..##....', 3: '.####...', 4: '######..'}, {r: '..##....' for r in range(5, 13)})),   # ↑
@@ -1342,7 +1346,7 @@ SMALL = {   # 4 x 5, MAIN's second line ({N} UNREAD / ALL READ)
  '!': ".#../.#../.#../..../.#..", '?': "###./...#/.##./..../.#..",
 }
 
-NEED = list(range(0x21, 0x7F)) + [0xC4, 0xB3, 0xDA, 0xBF, 0xC0, 0xD9, 0xC3, 0xB4, 0xDB, 0x18, 0x19, 0x1B, 0x1A, 0xFE]
+NEED = list(range(0x21, 0x7F)) + [0xC4, 0xB3, 0xDA, 0xBF, 0xC0, 0xD9, 0xC3, 0xB4, 0xDB, 0xDF, 0xDC, 0x18, 0x19, 0x1B, 0x1A, 0xFE]
 
 
 def glyph_cell(code):

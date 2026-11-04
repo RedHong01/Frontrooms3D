@@ -60,6 +60,15 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     CanvasGroup controlsGroup;
     RectTransform menuLayer;
     Font bayon, plex, serif;
+    // The prompt bar (D3, research/interaction/device_prompts/10_research.md §3; Red 2026-11-01 18:5x: the iconography follows the
+    // pad or the keyboard in hand, a press presses its icon, select and back stay one constant pair): with a pad or a keyboard
+    // in use the sheet's foot shows its glyph chips, confirm and back first, read as NavigateSheet reads them; touch alone has
+    // none. The full-screen preview shows its way back the same way. Plex 11 pt, the sheet's captions.
+    FrontRoomsPromptBar promptBar, peekBar, retryBar;
+    readonly FrontRoomsPromptBar.Prompt[] retryPrompt = new FrontRoomsPromptBar.Prompt[1];
+    readonly List<FrontRoomsPromptBar.Prompt> barPrompts = new List<FrontRoomsPromptBar.Prompt>();
+    const float BarScale = 11f / 13f;
+
     float builtDensity = -1f;
     float builtScale = -1f;
 
@@ -1322,6 +1331,12 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
                      FrontRoomsTouchControls.Button.RestartCancel, FrontRoomsTouchControls.Button.RestartConfirm, FrontRoomsTouchControls.Button.TryAgain,
                      FrontRoomsTouchControls.Button.SettingsClose })
             BuildChip(b);
+        // TRY AGAIN's button as a glyph left of its chip while a pad or the keys are in use (D3): ink on the caught card's paper.
+        retryBar = FrontRoomsPromptBar.Create(chips[FrontRoomsTouchControls.Button.TryAgain].Rect, plex, Ink, Paper, BarScale);
+        retryBar.Root.anchorMin = retryBar.Root.anchorMax = new Vector2(0f, .5f);
+        // At the card's own strength beside the full-ink chip (at the sheet's .5 / .8 it read as disabled).
+        retryBar.Solid = true;
+        retryBar.Group.alpha = 0f;
 
         // Caught card (Figma TS 8 · CAUGHT).
         caughtTitle = MakeItem("CAUGHT", Txt("CAUGHT", menuLayer, "CAUGHT", bayon, 48, Ink, TextAnchor.MiddleCenter, new Vector2(600f, 48f), true).rectTransform);
@@ -1618,7 +1633,99 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         sentenceProbe.lineSpacing = SentencePitch;
         sentenceProbe.enabled = false;
         controls.SettingsOpenHeight = OpenHeight;
+        // Last, so it draws over the list's mask; anchored to the card's bottom-left.
+        promptBar = FrontRoomsPromptBar.Create(cardRoot, plex, Paper, Ink, BarScale);
+        promptBar.Group.alpha = 0f;
     }
+
+    // The chips as NavigateMenus and NavigateSheet read a pad or the keys: confirm and back first, then the sheet's own; a
+    // button that does nothing on the focused row keeps its chip at 40 %, so the pair never moves.
+    List<FrontRoomsPromptBar.Prompt> SheetPrompts()
+    {
+        barPrompts.Clear();
+        var map = controls.PadMap;
+        if (FrontRoomsBindCapture.Busy) { CapturePrompts(FrontRoomsBindCapture.State == FrontRoomsBindCapture.Phase.Asking, FrontRoomsInput.IsPad(FrontRoomsBindCapture.Target)); return barPrompts; }
+        if (map != null && map.Capturing) { CapturePrompts(map.State == FrontRoomsKeyMapView.CaptureState.Asking, true); return barPrompts; }
+        var chip = controls.FocusChip;
+        if (chip == FrontRoomsTouchControls.Button.Restart || chip == FrontRoomsTouchControls.Button.SettingsClose)
+        {
+            // The header's END RUN and RESUME: A presses the one chosen, ← → go between them, ↓ back to the rows.
+            Chip(FrontRoomsPromptBar.Role.Confirm, chip == FrontRoomsTouchControls.Button.Restart ? "{0}  END RUN" : "{0}  RESUME");
+            Chip(FrontRoomsPromptBar.Role.Back, "{0}  RESUME");
+            Chip(FrontRoomsPromptBar.Role.Change, "{0}  CHOOSE");
+            return barPrompts;
+        }
+        var row = controls.ActiveRow;
+        // With the keys, Esc is the game's pause key on touch: it resumes from anywhere on the sheet (only a pad's B goes back a
+        // level); Y's PREVIEW and DEFAULTS are a pad's alone (ReadMenuNav). Captures 2026-11-03.
+        var keys = controls.Mode == FrontRoomsTouchControls.InputMode.Keyboard;
+        var back = keys ? "{0}  RESUME" : "{0}  BACK";
+        if (controls.LanguageUnfolded && row != null && row.Kind == FrontRoomsSettingsMenu.Kind.Language)
+        {
+            Chip(FrontRoomsPromptBar.Role.Confirm, "{0}  SET");
+            Chip(FrontRoomsPromptBar.Role.Back, back);
+            Chip(FrontRoomsPromptBar.Role.ChooseAll, "{0}  CHOOSE");
+            return barPrompts;
+        }
+        if (controls.MapUnfolded && map != null && row != null && row.Key == FrontRoomsSettingsMenu.Key.PadMap)
+        {
+            // The CONTROLLER map listens only for a pad's button.
+            Chip(FrontRoomsPromptBar.Role.Confirm, "{0}  CHANGE", UnityEngine.InputSystem.Gamepad.current != null);
+            Chip(FrontRoomsPromptBar.Role.Back, back);
+            Chip(FrontRoomsPromptBar.Role.Change, "{0}  CHOOSE");
+            Chip(FrontRoomsPromptBar.Role.Reset, "{0}  DEFAULT");
+            if (!keys) Chip(FrontRoomsPromptBar.Role.Defaults, "{0}  ALL DEFAULTS", !map.AllDefault);
+            return barPrompts;
+        }
+        var confirm = ConfirmVerb(row, out var live);
+        Chip(FrontRoomsPromptBar.Role.Confirm, confirm, live);
+        // B or Esc closes the open row first, then resumes (NavigateSheet).
+        Chip(FrontRoomsPromptBar.Role.Back, !keys && controls.OpenSettingsRow >= 0 ? "{0}  BACK" : "{0}  RESUME");
+        Chip(FrontRoomsPromptBar.Role.Choose, "{0}  CHOOSE");
+        Chip(FrontRoomsPromptBar.Role.Change, "{0}  CHANGE", row != null && Steps(row));
+        Chip(FrontRoomsPromptBar.Role.Tabs, "{0}  GROUP");
+        Chip(FrontRoomsPromptBar.Role.Reset, "{0}  DEFAULT", row != null && Steps(row) && row.Kind != FrontRoomsSettingsMenu.Kind.Language);
+        if (!keys && controls.SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics && confirm != "{0}  PREVIEW") Chip(FrontRoomsPromptBar.Role.Extra, "{0}  PREVIEW");
+        return barPrompts;
+    }
+
+    void Chip(FrontRoomsPromptBar.Role role, string verb, bool live = true) => barPrompts.Add(new FrontRoomsPromptBar.Prompt(role, verb, live));
+
+    // Listening: any button binds, so only the words and the way out (MENU or Esc for a pad's control; Esc or B for a key's);
+    // asking: SWAP or CANCEL.
+    void CapturePrompts(bool asking, bool pad)
+    {
+        if (asking)
+        {
+            Chip(FrontRoomsPromptBar.Role.Confirm, "{0}  SWAP");
+            Chip(FrontRoomsPromptBar.Role.Back, "{0}  CANCEL");
+            return;
+        }
+        Chip(FrontRoomsPromptBar.Role.Text, pad ? "PRESS A BUTTON" : "PRESS A KEY");
+        Chip(pad ? FrontRoomsPromptBar.Role.Menu : FrontRoomsPromptBar.Role.Back, "{0}  CANCEL");
+    }
+
+    // What A (Enter) does on the focused row, in NavigateSheet's order; not live where it does nothing (segments and sliders
+    // change with ← →).
+    string ConfirmVerb(FrontRoomsSettingsMenu.Row row, out bool live)
+    {
+        live = true;
+        if (row == null) { live = false; return "{0}  CHANGE"; }
+        if (row.Key == FrontRoomsSettingsMenu.Key.PadMap) return "{0}  OPEN";
+        if (FrontRoomsTouchControls.Opens(row) && controls.OpenSettingsRow != controls.ActiveSettingsRow) return "{0}  OPEN";
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Language)
+            return languageStrip != null && languageStrip.HighlightedLanguage != FrontRoomsLanguage.Current ? "{0}  SET" : "{0}  OPEN";
+        if (row.Visual && row.Kind != FrontRoomsSettingsMenu.Kind.Switch) return "{0}  PREVIEW";
+        if (row.Kind == FrontRoomsSettingsMenu.Kind.Switch || row.Target != null) return "{0}  CHANGE";
+        if (row.Key == FrontRoomsSettingsMenu.Key.PadDefaults || row.Key == FrontRoomsSettingsMenu.Key.KeyDefaults
+            || (row.Kind == FrontRoomsSettingsMenu.Kind.Action && row.Key == FrontRoomsSettingsMenu.Key.ResetGraphics)) return "{0}  ALL DEFAULTS";
+        live = false;
+        return "{0}  CHANGE";
+    }
+
+    // ← → change this row: a switch, segments, a slider, LANGUAGE's rail.
+    static bool Steps(FrontRoomsSettingsMenu.Row r) => r.Kind == FrontRoomsSettingsMenu.Kind.Switch || r.Kind == FrontRoomsSettingsMenu.Kind.Segments
+        || r.Kind == FrontRoomsSettingsMenu.Kind.Slider || r.Kind == FrontRoomsSettingsMenu.Kind.Language;
 
     /// <summary>The full-screen preview: the game at the new settings, a quiet line at the HUD's corner, no backing card.</summary>
     void BuildPeek()
@@ -1631,6 +1738,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             peekDashes[i] = Img("frame dash", peekLayer, new Vector2(14f, 4f), WithAlpha(Paper, .2f), true);
             peekDashes[i].sprite = FrontRoomsTouchSprites.Solid();
         }
+        peekBar = FrontRoomsPromptBar.Create(peekLayer, plex, Paper, Ink, BarScale);
+        peekBar.Set(new FrontRoomsPromptBar.Prompt(FrontRoomsPromptBar.Role.Back, "{0}  BACK"));
+        // Over the game itself: the HUD's keyline.
+        peekBar.Keyline = true;
+        peekBar.Group.alpha = 0f;
         peekLayer.gameObject.SetActive(false);
     }
 
@@ -1658,6 +1770,14 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         peekTitle.color = WithAlpha(Paper, peekAlpha.Current);
         peekLine.color = WithAlpha(Paper, .8f * peekAlpha.Current);
+        // With a pad or the keys, the way back as a chip at the foot, in the HUD's corner rule (a pad's B, A and Y return too).
+        if (controls.ExternalInput)
+        {
+            var foot = FrontRoomsHandheld.ClearCornerBlock(new Rect(16f, L.SafeBottom + 12f, 240f, 20f));
+            peekBar.Root.anchoredPosition = new Vector2(foot.x, foot.center.y);
+            peekBar.Tick();
+        }
+        peekBar.Group.alpha = controls.ExternalInput ? peekAlpha.Current : 0f;
     }
 
     /// <summary>The GRAPHICS preview: the game camera alone (no HUD) into a texture, at the current settings.</summary>
@@ -1927,6 +2047,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         for (var i = 0; i < 4; i++) { Apply(caughtNumbers[i]); Apply(caughtLabels[i]); }
         foreach (var chip in chips.Values) Apply(chip);
         Apply(settingsCard);
+        var retry = controls.CurrentMenuState == FrontRoomsTouchControls.MenuState.Caught && controls.ExternalInput;
+        if (retry)
+        {
+            // Dim until TRY AGAIN takes a press (TryAgainDelay: a thumb still pressed from the chase must not restart).
+            retryPrompt[0] = new FrontRoomsPromptBar.Prompt(FrontRoomsPromptBar.Role.Confirm, null, controls.TryAgainReady);
+            retryBar.Set(retryPrompt);
+            retryBar.Tick();
+            retryBar.Root.anchoredPosition = new Vector2(-retryBar.Width - 10f, 0f);
+        }
+        retryBar.Group.alpha = retry ? 1f : 0f;
     }
 
     static void Apply(Item item)
@@ -2047,6 +2177,17 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         cardViewportRight.anchoredPosition = Local(mask.center);
         cardViewportRight.sizeDelta = mask.size;
         cardViewportLeft.sizeDelta = Vector2.zero;
+
+        // The prompt bar in the band at the sheet's foot while a pad or a keyboard is in use (D3); it fades with the card.
+        var barShown = settingsOpen && L.SettingsFooter > 0f;
+        if (barShown)
+        {
+            promptBar.Root.anchoredPosition = new Vector2(24f, L.SafeBottom + FrontRoomsTouchLayout.SettingsFooterBand * .5f);
+            promptBar.MaxWidth = card.x - 48f;
+            promptBar.Set(SheetPrompts());
+            promptBar.Tick();
+        }
+        promptBar.Group.alpha = barShown ? settingsCard.Alpha.Current : 0f;
 
         previewWanted = false;
         if (!settingsOpen)

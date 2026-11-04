@@ -55,6 +55,11 @@ func wrap(_ s: String, maxw: Double, cap: Double, face: Face, track: Double) -> 
     if measure(next, cap: cap, face: face, track: track) <= maxw || cur.isEmpty || (cjk && "，。、：；）」".contains(u)) { cur = next } else { lines.append(cur); cur = u } }
   if !cur.isEmpty { lines.append(cur) }
   if lines.count > 2 { let half = units.count / 2; let j = cjk ? "" : " "; lines = [units[..<half].joined(separator: j), units[half...].joined(separator: j)] }
+  if cjk && lines.count == 2 {   // a JIS break inside a word reads awkwardly: take the last break after 。、，：； that still fits
+    var best: Int? = nil
+    for i in 1..<units.count where "。、，：；".contains(units[i - 1]) {
+      if measure(units[..<i].joined(), cap: cap, face: face, track: track) <= maxw && measure(units[i...].joined(), cap: cap, face: face, track: track) <= maxw { best = i } }
+    if let i = best { lines = [units[..<i].joined(), units[i...].joined()] } }
   for l in lines { TRANSLATED.insert(l) }
   return lines }
 func lp(_ d: Double) -> Double { CJK.contains(LANG) ? (d * 1.18 * 10).rounded() / 10 : d }
@@ -73,13 +78,15 @@ let CJK: Set<String> = ["zh-Hans", "zh-Hant", "ja", "ko"]
 let SC_SANS = NSString(string: "~/Library/Fonts/NotoSansSC-VariableFont_wght.ttf").expandingTildeInPath
 let CJK_SRC = NSString(string: "~/FrontRoomsInteractionWork/settings/localization/fonts/src/").expandingTildeInPath + "/"
 let RU_BOLD = FONT.replacingOccurrences(of: "TeXGyre/", with: "RobotoCondensed/RobotoCondensed-Bold.ttf")
+let RU_REG = FONT.replacingOccurrences(of: "TeXGyre/", with: "RobotoCondensed/RobotoCondensed-Regular.ttf")   // the fine print, as Heros Regular elsewhere
 func varFont(_ path: String, _ weight: Double) -> CTFontDescriptor {
   let base = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: path) as CFURL) as! [CTFontDescriptor])[0]
   return CTFontDescriptorCreateCopyWithAttributes(base, [kCTFontVariationAttribute as String: [0x77676874: weight]] as CFDictionary) }
 var CJK_BOLD: CTFontDescriptor? = nil, CJK_REG: CTFontDescriptor? = nil
-var RU_DESC: CTFontDescriptor? = nil
+var RU_DESC: CTFontDescriptor? = nil, RU_REG_DESC: CTFontDescriptor? = nil
 func faceOf(_ face: Face) -> (CTFontDescriptor, Double, String) {
   let r = face == .bold ? capB : face == .reg ? capR : capC
+  if LANG == "ru", face == .reg, let d = RU_REG_DESC { return (d, capRatio(d), "Roboto Condensed Regular") }
   if LANG == "ru", let d = RU_DESC { return (d, capRatio(d), "Roboto Condensed Bold") }
   if CJK.contains(LANG), let b = CJK_BOLD, let g = CJK_REG { return (face == .reg ? g : b, 0.70, face == .reg ? "Noto Sans CJK 400" : "Noto Sans CJK 700") }
   return (face == .bold ? BOLD : face == .reg ? REG : CNB, r, face == .bold ? "Heros Bold" : face == .reg ? "Heros" : "Heros Cn Bold") }
@@ -110,7 +117,51 @@ func fitArgs(_ s: String, cap: Double, face: Face, track: Double, maxw: Double) 
   let w = measure(s, cap: cap, face: f, track: track)
   if w <= maxw { return (cap, f, 1) }
   if w * 0.85 <= maxw { return (cap, f, maxw / w) }
-  return (max(cap * 0.7, cap * maxw / (w * 0.85)), f, 0.85) }
+  var c = max(cap * 0.7, cap * maxw / (w * 0.85))   // tracking does not scale with the cap: shrink again until it fits
+  for _ in 0..<4 { let wc = measure(s, cap: c, face: f, track: track) * 0.85; if wc <= maxw || c <= cap * 0.7 { break }; c = max(cap * 0.7, c * maxw / wc) }
+  return (c, f, 0.85) }
+// One block, one face (WORLD_TYPE.md §3): the alarm items and the legend rows are each set in one face for the whole block
+// and every sheet of the language, Heros Bold while each line fits, else Heros Cn Bold; the lines of one row share one
+// width (narrower to 85 %, then one smaller size). Russian and CJK have one face.
+func blockFace(_ rows: [(String, Bool, Bool)], maxw: Double, cap: Double, track: Double) -> Face {   // (row, may take two lines, one line preferred)
+  if LANG == "en" || LANG == "ru" || CJK.contains(LANG) { return .bold }
+  for (r, two, one) in rows {
+    let ls = two ? breakLines(r, maxw: maxw, cap: cap, face: .bold, track: track, preferOne: one) : [r]
+    if ls.contains(where: { measure($0, cap: cap, face: .bold, track: track) > maxw }) { return .cond } }
+  return .bold }
+func rowFit(_ lines: [String], cap: Double, face: Face, track: Double, maxw: Double) -> (Double, Double) {   // (cap, sx)
+  func widest(_ c: Double) -> Double { lines.map { measure($0, cap: c, face: face, track: track) }.max() ?? 0 }
+  let m = widest(cap)
+  if LANG == "en" || m <= maxw { return (cap, 1) }
+  if m * 0.85 <= maxw { return (cap, maxw / m) }
+  var c = max(cap * 0.7, cap * maxw / (m * 0.85))
+  for _ in 0..<4 { let wc = widest(c) * 0.85; if wc <= maxw || c <= cap * 0.7 { break }; c = max(cap * 0.7, c * maxw / wc) }
+  return (c, 0.85) }
+// Two lines at most. CJK (not ko): wrap(). Else one line while it fits; a row English sets on one line (preferOne) stays
+// on one line while 85 % width fits it. Two lines break at a space, in this order: at a phrase mark (after . , ; : or
+// before "("), as the English rows break, the most even such break at full width, then at 85 % (rowFit narrows both
+// lines alike); else the longest first line that leaves no word alone on a line (a parenthesis may) and no short word (2 letters, Korean
+// one syllable: an article, a preposition, 그 이 한) hanging at its end; when no break fits, the one whose longer line is
+// shortest (a phrase break if it costs at most 5 %). Never before a lone : ; ! ? » or after «.
+func breakLines(_ s: String, maxw: Double, cap: Double, face: Face, track: Double, preferOne: Bool = false) -> [String] {
+  if CJK.contains(LANG) && LANG != "ko" { return wrap(s, maxw: maxw, cap: cap, face: face, track: track) }
+  TRANSLATED.insert(s)
+  func w(_ x: String) -> Double { measureRaw(x, cap: cap, face: face, track: track) }
+  let words = s.components(separatedBy: " ")
+  if w(s) <= maxw || words.count < 2 || (preferOne && w(s) * 0.85 <= maxw) { return [s] }
+  typealias Split = (a: String, b: String, m: Double, phrase: Bool, alone: Bool, hang: Bool)
+  let splits: [Split] = (1..<words.count).filter { ![":", ";", "!", "?", "»"].contains(words[$0]) && words[$0 - 1] != "«" }.map { i in
+    let a = words[..<i].joined(separator: " "), b = words[i...].joined(separator: " "), last = words[i - 1]
+    let short = last.filter { $0.isLetter }.count <= (LANG == "ko" ? 1 : 2) && !".,;:".contains(last.last!)
+    return (a, b, max(w(a), w(b)), ".,;:".contains(a.last!) || b.first == "(", (i == 1 || i == words.count - 1) && b.first != "(", short) }   // a parenthesis may stand alone
+  if splits.isEmpty { return [s] }
+  let fit = splits.filter { $0.m <= maxw }, best = splits.map { $0.m }.min()!
+  let phrase = splits.filter { $0.phrase && !$0.alone }
+  let pick = phrase.filter { $0.m <= maxw }.min(by: { $0.m < $1.m }) ?? phrase.filter { $0.m * 0.85 <= maxw }.min(by: { $0.m < $1.m })
+    ?? fit.last(where: { !$0.alone && !$0.hang }) ?? fit.last(where: { !$0.alone }) ?? fit.last
+    ?? splits.last(where: { $0.phrase && $0.m <= best * 1.05 }) ?? splits.first(where: { $0.m == best })!
+  TRANSLATED.insert(pick.a); TRANSLATED.insert(pick.b)
+  return [pick.a, pick.b] }
 func text(_ s: String, _ x: Double, _ base: Double, cap: Double, face: Face = .bold, track: Double = 0.0, ink: Ink = .print, rot: Double = 0, align: Int = 0, sx: Double = 1, maxw: Double = 0) -> Double {
   if maxw > 0 && LANG != "en" { let (c, f, k) = fitArgs(s, cap: cap, face: face, track: track, maxw: maxw)
     if c != cap || f != face || k != 1 { return text(s, x, base, cap: c, face: f, track: track, ink: ink, rot: rot, align: align, sx: k, maxw: 0) } }
@@ -233,17 +284,38 @@ func marker(_ x: Double, _ y: Double, _ n: Int, r: Double = 3.6, ink: Ink = .pri
 // Header + floor number, title block; no red footer: the red block is now the four numbered lines.
 func sheet(level: String, tb: [String]) {
   frameRect(12, 12, W - 24, H - 24, 0.7)                                         // printed border
-  text("EVACUATION PLAN", 20, 37, cap: 15, track: 0.6, maxw: 392 - measure(level, cap: 15, track: 0.6) - 16)   // header, ISO §6 b: band >= 19.5, caps >= 11.7
-  text(level, 412, 37, cap: 15, track: 0.6, align: 2)                             // floor designation = the floor count (L9)
+  // The header is one block: the title and the floor token share one face, fitted once for every floor of the language
+  // (the longest token, B10+, deciding, with 10 mm at least between them), so it never changes from sheet to sheet.
+  var hf = Face.bold, hc = 15.0, hk = 1.0
+  if LANG != "en" {
+    func longest(_ f: Face) -> Double { ["LEVEL 0", "LEVEL B9", "LEVEL B10+"].map { measure($0, cap: 15, face: f, track: 0.6) }.max()! }
+    if LANG != "ru" && !CJK.contains(LANG) && measure("EVACUATION PLAN", cap: 15, face: .bold, track: 0.6) > 392 - longest(.bold) - 10 { hf = .cond }
+    (hc, _, hk) = fitArgs("EVACUATION PLAN", cap: 15, face: hf, track: 0.6, maxw: 392 - longest(hf) - 10) }
+  text("EVACUATION PLAN", 20, 37, cap: hc, face: hf, track: 0.6, sx: hk)          // header, ISO §6 b: band >= 19.5, caps >= 11.7
+  text(level, 412, 37, cap: 15, face: hf, track: 0.6, align: 2)                   // floor designation = the floor count (L9)
   stroke([(20, 44), (412, 44)], 0.6)
   tr("EVACUATION PLAN · " + level)
   var cx = 300.0; let ty = 243.0, th = 16.0, cap = tb[0].count > 8 ? 3.2 : 3.6, pad = 3.0   // LEVEL B10+ is two characters longer
   var cells: [(Double, Double)] = []
   for t in tb { let f = CTFontCreateWithFontDescriptor(faceOf(.bold).0, cap / capB, nil); let l = CTLineCreateWithAttributedString(NSAttributedString(string: T(t), attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f, NSAttributedString.Key(kCTKernAttributeName as String): 0.15])); let w = Double(CTLineGetTypographicBounds(l, nil, nil, nil)) + 2 * pad; cells.append((cx, w)); cx += w }
+  // A Latin or Cyrillic language: the three cells in one face at one width with the padding kept, Heros Bold while it
+  // fits, else Heros Cn Bold, then narrower (to 85 %), then smaller (WORLD_TYPE.md §3). English and CJK as before.
+  var tf = Face.bold, tc = cap, tk = 1.0
+  if LANG != "en" && !CJK.contains(LANG) {
+    func sum(_ f: Face, _ c: Double, _ ts: [String] = tb) -> Double { ts.map { measure($0, cap: c, face: f, track: 0.15) }.reduce(0, +) }
+    // the face is decided by every floor's block (LEVEL 0, B9, and B10+ at its 3.2 mm), so the sheets of a language match
+    let floors: [(String, Double)] = [("LEVEL 0", 3.6), ("LEVEL B9", 3.6), ("LEVEL B10+", 3.2)]
+    if LANG != "ru" && floors.contains(where: { sum(.bold, $0.1, [$0.0] + Array(tb.dropFirst())) + 6 * pad > 112 }) { tf = .cond }
+    if sum(tf, cap) + 6 * pad > 112 { tk = max(0.85, (112 - 6 * pad) / sum(tf, cap))
+      for _ in 0..<6 where sum(tf, tc) * tk + 6 * pad > 112 && tc > cap * 0.7 { tc = max(cap * 0.7, tc * (112 - 6 * pad) / (sum(tf, tc) * tk)) } }
+    cx = 300.0; cells = []
+    for t in tb { let w = measure(t, cap: tc, face: tf, track: 0.15) * tk + 2 * pad; cells.append((cx, w)); cx += w } }
   let scale = 112.0 / (cx - 300.0)
   var x = 300.0
   stroke([(300, ty), (412, ty), (412, ty + th), (300, ty + th)], 0.6, close: true)
-  for (i, (_, w0)) in cells.enumerated() { let w = w0 * scale; if i > 0 { stroke([(x, ty), (x, ty + th)], 0.6) }; text(tb[i], x + w / 2, ty + th / 2 + cap / 2, cap: cap, track: 0.15, align: 1, maxw: w - 2); x += w } }
+  for (i, (_, w0)) in cells.enumerated() { let w = w0 * scale; if i > 0 { stroke([(x, ty), (x, ty + th)], 0.6) }
+    if LANG != "en" && !CJK.contains(LANG) { text(tb[i], x + w / 2, ty + th / 2 + tc / 2, cap: tc, face: tf, track: 0.15, align: 1, sx: tk) }
+    else { text(tb[i], x + w / 2, ty + th / 2 + cap / 2, cap: cap, track: 0.15, align: 1, maxw: w - 2) }; x += w } }
 // The four lines (signed by 叙事 2026-10-22, research/narrative/40_floors_exit_tutorial_strings.md §3): white on safety red, x 20-288, y 214-259. Never RUN or HIDE as advice,
 // nothing that says darkness hides you, never "relay" (RELAY §9.4; tutorial 10_proposal §5.2).
 var LEVEL = "LEVEL 0"     // the floor on the header and the title block; CLI "level=B1" (C28: LEVEL 0, then B1, B2 …)
@@ -254,17 +326,19 @@ func alarmBlock(line4: [String] = ["STAIR DOORS ARE LOCKED.", "KEY AT SECURITY D
   stroke([(26, 219.4), (282, 219.4)], 0.35, ink: .white)
   // Fine print (叙事 v1.1 §3, Red 2026-10-22 12:15 in the 叙事 chat): names a role only; not a numbered line.
   text(WARDEN, 282, 216.4, cap: 3.6, track: 0.2, ink: .white, align: 2, maxw: 256 - measure("IN CASE OF ALARM", cap: 4.4, track: 0.5) - 8)
+  // Another language: the table's numbered row, its number dropped (the number is drawn apart), broken by breakLines;
+  // the panel's one face is decided by the rows of every sheet (both line 4s), so the sheets of a language match.
+  func one(_ n: Int, _ en: [String]) -> String { let row = T("\(n) " + en.joined(separator: " ")); return row.hasPrefix("\(n) ") ? String(row.dropFirst("\(n) ".count)) : row }
+  let rows: [(Int, [String])] = [(1, ["WALK, DO NOT RUN."]), (2, ["CLOSE DOORS BEHIND YOU."]), (3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]),
+                                 (4, ["STAIR DOORS ARE LOCKED.", "KEY AT SECURITY DESK."]), (4, ["EXIT BY STAIR,", "ONE FLOOR DOWN."])]
+  let face = LANG == "en" ? Face.bold : blockFace(rows.map { (one($0.0, $0.1), true, $0.1.count == 1) }, maxw: 112, cap: 5.0, track: 0.1)
   func item(_ n: Int, _ x: Double, _ base: Double, _ lines: [String]) {
-    text("\(n)", x, base, cap: 5.0, track: 0, ink: .white)
-    for (i, l) in lines.enumerated() { text(l, x + 7, base + Double(i) * lp(7.6), cap: 5.0, track: 0.1, ink: .white, maxw: 112) } }
+    let (c, k) = rowFit(lines, cap: 5.0, face: face, track: 0.1, maxw: 112)
+    text("\(n)", x, base, cap: c, face: face, track: 0, ink: .white)
+    for (i, l) in lines.enumerated() { text(l, x + 7, base + Double(i) * lp(7.6), cap: c, face: face, track: 0.1, ink: .white, sx: k) } }
   tr("IN CASE OF ALARM"); tr(WARDEN)
   for (n, l) in [(1, ["WALK, DO NOT RUN."]), (2, ["CLOSE DOORS BEHIND YOU."]), (3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]), (4, line4)] { tr("\(n) " + l.joined(separator: " ")) }
-  // Another language: the table's numbered row, its number dropped (the number is drawn apart), on one line.
-  func L(_ n: Int, _ en: [String]) -> [String] {
-    if LANG == "en" { return en }
-    let row = T("\(n) " + en.joined(separator: " "))
-    let one = row.hasPrefix("\(n) ") ? String(row.dropFirst("\(n) ".count)) : row
-    return wrap(one, maxw: 112, cap: 5.0, face: .bold, track: 0.1) }
+  func L(_ n: Int, _ en: [String]) -> [String] { LANG == "en" ? en : breakLines(one(n, en), maxw: 112, cap: 5.0, face: face, track: 0.1, preferOne: en.count == 1) }
   item(1, 26, 228, L(1, ["WALK, DO NOT RUN."]))
   item(2, 26, 246, L(2, ["CLOSE DOORS BEHIND YOU."]))
   item(3, 156, 228, L(3, ["IF THE LIGHTS DIM,", "LEAVE THE AREA."]))
@@ -293,8 +367,23 @@ func stairRoom(_ x: Double, _ y: Double, _ w: Double, _ h: Double, doorX: Double
   stairPlan(x + 5, y + 7, w - 10, h - 11, treads: 8)
   if lock { padlock(doorX, y, 11) }
   if exitLabel { let room = x + w - 2.0 - (doorX + dw / 2 + 2), ew = measure("EXIT", cap: 5.0, track: 0.4)
-    let esx = ew > room ? max(0.85, room / ew) : 1.0, ec = ew * esx > room ? max(3.6, 5.0 * room / (ew * esx)) : 5.0
-    text("EXIT", doorX + dw / 2 + 2, y - 2.4, cap: ec, track: 0.4, ink: .red, sx: esx); tr("EXIT (over the stair door" + (lock ? ", padlocked)" : ")"), glow: GLOW) } }
+    let key = "EXIT (over the stair door" + (lock ? ", padlocked)" : ")")
+    if LANG == "en" {
+      let esx = ew > room ? max(0.85, room / ew) : 1.0, ec = ew * esx > room ? max(3.6, 5.0 * room / (ew * esx)) : 5.0
+      text("EXIT", doorX + dw / 2 + 2, y - 2.4, cap: ec, track: 0.4, ink: .red, sx: esx); tr(key, glow: GLOW)
+    } else {
+      func fitW() -> Double { let (c, f, k) = fitArgs("EXIT", cap: 5.0, face: .bold, track: 0.4, maxw: room); return measure("EXIT", cap: c, face: f, track: 0.4) * k }
+      let full = T("EXIT"), savedExit = OVR["EXIT"], savedKey = OVR[key]
+      var short: String? = nil
+      if fitW() > room + 0.01, let s = EXIT_SHORT[LANG] { short = s; OVR["EXIT"] = s; OVR[key] = T(key).replacingOccurrences(of: full, with: s) }
+      if fitW() > room + 0.01 { FileHandle.standardError.write(String(format: "FIT (%@): EXIT %.1f mm in %.1f mm\n", LANG, fitW(), room).data(using: .utf8)!) }
+      text("EXIT", doorX + dw / 2 + 2, y - 2.4, cap: 5.0, track: 0.4, ink: .red, maxw: room); tr(key, glow: GLOW)
+      if short != nil { OVR["EXIT"] = savedExit; OVR[key] = savedKey } } } }
+// A stair-door word that will not fit even at Heros Cn Bold, 85 % and 70 %: its signed short form (the tables' note).
+// Once a language needs it on one sheet, every sheet of that language prints it: one word for one door, and the TEXT
+// panel's shared row says the same (de: 总控 11-03 20:4x on 平面视觉's recommendation; de.txt rows 66-67 follow).
+let EXIT_SHORT = ["de": "AUSGANG"]
+let EXIT_SHORT_EVERYWHERE: Set<String> = ["de"]
 // Legend (right column x 300-412): the plan's own symbols. 3 rows (A, B); C adds the padlock.
 // The wall-arrow swatch (R2, Red 10-29; 信息设计 + 叙事 signed 10-29): the wallpaper's turned motif at 1/25, one column
 // of the K00 print cut from legend/flow.png (6 px/mm). Printed, never glowing; one printing for every platform.
@@ -309,6 +398,15 @@ func swatch(_ x: Double, _ y: Double, _ w: Double, _ h: Double) {
     c.draw(SWATCH, in: CGRect(x: 0, y: 0, width: w, height: h)); c.restoreGState()
     if PAINTMODE == "dark" { c.setFillColor(red: 0.035, green: 0.04, blue: 0.035, alpha: 0.88); c.fill(CGRect(x: x, y: y, width: w, height: h)) } }
   frameRect(x, y, w, h, 0.35) }
+// A legend row of one or two lines (English as before): the legend's one face, one width for its lines.
+var LEGEND_FACE: Face? = nil
+func legendFace() -> Face {
+  if LEGEND_FACE == nil { LEGEND_FACE = blockFace(["YOU ARE HERE", "STAIR (EXIT)", "ONE FLOOR DOWN", "WALL ARROWS", "POINT THE WAY OUT", "BEYOND BREAK:", "NOT TO SCALE"].map { (T($0), false, false) } + [(T("SECURITY DESK (KEY)"), true, false)], maxw: 85, cap: 5.0, track: 0.1) }
+  return LEGEND_FACE! }
+func legendRow(_ lines: [String], _ x: Double, _ y: Double) {
+  if LANG == "en" { for (i, l) in lines.enumerated() { text(l, x, y + Double(i) * 7.6, cap: 5.0, track: 0.1) }; return }
+  let ls = lines.map { T($0) }, f = legendFace(), (c, k) = rowFit(ls, cap: 5.0, face: f, track: 0.1, maxw: 85)
+  for (i, l) in ls.enumerated() { text(l, x, y + Double(i) * lp(7.6), cap: c, face: f, track: 0.1, sx: k) } }
 func legend(lock: Bool, phase0: Bool = false, arrows: Bool = false, arrowsY: Double? = nil) {
   let lx = 300.0, tx = 326.0
   text("LEGEND", lx, 56, cap: 3.6, track: 0.4)
@@ -316,15 +414,15 @@ func legend(lock: Bool, phase0: Bool = false, arrows: Bool = false, arrowsY: Dou
   if arrows {                                                                     // the next free row: after the desk, or the stair in Phase 0
     let ty = arrowsY ?? (phase0 ? 125.0 : 154.0)
     swatch(lx + 2.5, ty - 6.3, 15, 15)
-    text("WALL ARROWS", 326, ty, cap: 5.0, track: 0.1, maxw: 85); text("POINT THE WAY OUT", 326, ty + lp(7.6), cap: 5.0, track: 0.1, maxw: 85)   // CJK: halves at the signed comma
+    legendRow(["WALL ARROWS", "POINT THE WAY OUT"], 326, ty)   // CJK: halves at the signed comma
     call(5, "L9", lx + 10, ty, "the wall arrows point the way out; the lamps mean near") }
   stroke([(lx, 58.5), (412, 58.5)], 0.35)
-  yah(lx + 10, 72); text("YOU ARE HERE", tx, 74.5, cap: 5.0, track: 0.1, maxw: 85)
+  yah(lx + 10, 72); legendRow(["YOU ARE HERE"], tx, 74.5)
   stairPlan(lx + 4, 86, 12, 22, treads: 6, label: false); if !phase0 { padlock(lx + 10, 86, 8) }
-  text("STAIR (EXIT)", tx, 96, cap: 5.0, track: 0.1, maxw: 85); text("ONE FLOOR DOWN", tx, 96 + lp(7.6), cap: 5.0, track: 0.1, maxw: 85)   // CJK: the halves of the signed LEGEND row
+  legendRow(["STAIR (EXIT)", "ONE FLOOR DOWN"], tx, 96)   // CJK: the halves of the signed LEGEND row
   if !phase0 { station(lx, 118, 22)
   if LANG == "en" { text("SECURITY", tx, 125, cap: 5.0, track: 0.1); text("DESK (KEY)", tx, 132.6, cap: 5.0, track: 0.1) }
-  else { for (i, l) in wrap(T("SECURITY DESK (KEY)"), maxw: 85, cap: 5.0, face: .bold, track: 0.1).enumerated() { text(l, tx, 125 + Double(i) * lp(7.6), cap: 5.0, track: 0.1, maxw: 85) } } }   // one line: SECURITY alone is the desk lettering's word (W11)
+  else { legendRow(breakLines(T("SECURITY DESK (KEY)"), maxw: 85, cap: 5.0, face: legendFace(), track: 0.1), tx, 125) } }   // one line: SECURITY alone is the desk lettering's word (W11)
   call(1, "L0", lx + 10, 72, "where you are")
   call(2, "L1 L9", lx + 10, 96, "the stair is the way on, one floor down")
   if !phase0 { call(3, "L2", lx + 11, 125, "the key is kept at the station (the playing TV)") }
@@ -602,7 +700,8 @@ func buildA1(phase0: Bool) {
     let w = c.3 ? yl2 : yl1, x0 = c.2 == 0 ? c.0 : c.2 == 1 ? c.0 - w / 2 : c.0 - w
     return Box(x0: x0, y0: c.1 - 5.0, x1: x0 + w, y1: c.1 + (c.3 ? 7.6 : 0)) }
   let yc = ycands.first { c in let b = ybox(c); return inside(b) && clear(walkPts, b, 1.2) && !overlap(b, Box(x0: yx - 5.4, y0: yy - 5.4, x1: yx + 5.4, y1: yy + 5.4)) && !solids.contains { overlap($0, b) } && !overlap(b, deskFoot) } ?? ycands[0]
-  if yc.3 && LANG != "en" { for (i, l) in wrap(T("YOU ARE HERE"), maxw: 70, cap: 5.0, face: .bold, track: 0.2).enumerated() { text(l, yc.0, yc.1 + Double(i) * lp(7.6), cap: 5.0, track: 0.2, ink: .red, align: yc.2, maxw: 70) } }
+  if yc.3 && LANG != "en" { let s = T("YOU ARE HERE"), f = blockFace([(s, true, false)], maxw: 70, cap: 5.0, track: 0.2), ls = breakLines(s, maxw: 70, cap: 5.0, face: f, track: 0.2), (c, k) = rowFit(ls, cap: 5.0, face: f, track: 0.2, maxw: 70)
+    for (i, l) in ls.enumerated() { text(l, yc.0, yc.1 + Double(i) * lp(7.6), cap: c, face: f, track: 0.2, ink: .red, align: yc.2, sx: k) } }
   else if yc.3 { text("YOU ARE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2); text("HERE", yc.0, yc.1 + 7.6, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
   else { text("YOU ARE HERE", yc.0, yc.1, cap: 5.0, track: 0.2, ink: .red, align: yc.2) }
   tr("YOU ARE HERE")
@@ -664,7 +763,7 @@ func buildA1(phase0: Bool) {
   route([(301, gy), (319, gy)])
   rect(gx - 1.3, gy - 1.6, 2.6, 3.2, ink: .white)
   pushRot(gx, gy, 90); brk(gx, gy - 2.2); popRot()
-  text("BEYOND BREAK:", 326, by, cap: 5.0, track: 0.1, maxw: 85); text("NOT TO SCALE", 326, by + lp(7.6), cap: 5.0, track: 0.1, maxw: 85)
+  legendRow(["BEYOND BREAK:", "NOT TO SCALE"], 326, by)
   tr("BEYOND BREAK: NOT TO SCALE")
   text("THIS FLOOR MAY DIFFER FROM PLAN", 318, northY + 1.4, cap: 2.8, face: .reg, track: 0.2, maxw: 93); tr("THIS FLOOR MAY DIFFER FROM PLAN")
   if phase0 { alarmBlock(line4: ["EXIT BY STAIR,", "ONE FLOOR DOWN."]) } else { alarmBlock() }
@@ -745,10 +844,12 @@ for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("lang=") {
   if LANG == "zh-Hans" { CJK_BOLD = varFont(SC_SANS, 700); CJK_REG = varFont(SC_SANS, 400) }
   let cjkFiles = ["zh-Hant": "TC", "ja": "JP", "ko": "KR"]
   if let k = cjkFiles[LANG] { CJK_BOLD = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: CJK_SRC + "NotoSans\(k)-Bold.otf") as CFURL) as! [CTFontDescriptor])[0]; CJK_REG = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: CJK_SRC + "NotoSans\(k)-Regular.otf") as CFURL) as! [CTFontDescriptor])[0] }
-  if LANG == "ru" { RU_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_BOLD) as CFURL) as! [CTFontDescriptor])[0] }
+  if LANG == "ru" { RU_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_BOLD) as CFURL) as! [CTFontDescriptor])[0]
+    RU_REG_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_REG) as CFURL) as! [CTFontDescriptor])[0] }
   // The stair's run arrow (叙事 11-03, narrative/95 §5) and the zh-Hant YOU ARE HERE row used in both places.
   let dn = ["zh-Hans": "下", "zh-Hant": "下", "ja": "下", "ko": "아래", "de": "AB", "fr": "DESC.", "es": "BAJA", "pt-BR": "DESCE", "ru": "ВНИЗ"]
   if let d = dn[LANG] { OVR["DN"] = d }
+  if EXIT_SHORT_EVERYWHERE.contains(LANG), let s = EXIT_SHORT[LANG] { OVR["EXIT"] = s }   // the stair-door word on every sheet
   if LANG == "zh-Hans" { OVR["YOU ARE HERE"] = TABLE["YOU ARE HERE"] ?? "您所在位置" }
   if LANG == "zh-Hant" { OVR["YOU ARE HERE"] = "您在此處" } }
 for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("level=") { LEVEL = "LEVEL " + a.dropFirst(6) }

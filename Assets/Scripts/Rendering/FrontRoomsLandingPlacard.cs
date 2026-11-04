@@ -41,6 +41,10 @@ using UnityEngine.Rendering;
 /// through FrontRoomsWorldText.Unload, which keeps a swapped base loaded. A language whose token sits elsewhere on the sheet
 /// moves that token's patch (same size) through its own Prop_EvacPlan_A_Landing_rects (FrontRoomsWorldText.Text; English's
 /// lists none): 简体中文's title band sets the token further left, so its B2-B9 Title0 patches sit at x 3456 (RectsFor).
+/// A token wider than the English pieces adds the language's own pieces through the same file ("extra": the sheet's level,
+/// the piece's name, its rect; FrontRoomsWorldText.Piece, ExtraPiecesFor), composited after the patches in the same way:
+/// Deutsch's and Français's LEVEL B10+ (EBENE, NIVEAU) starts left of the English B10+ title piece (x 2688), so their B10+
+/// sheets add one 128 x 256 piece of title band at x 2560. English lists none and composites exactly as before.
 /// </summary>
 [AddComponentMenu("")]
 [DisallowMultipleComponent]
@@ -88,27 +92,44 @@ public sealed class FrontRoomsLandingPlacard : MonoBehaviour
     public const string RectsPath = "Surfaces/Textures/Prop_EvacPlan_A_Landing_rects";
 
     [System.Serializable] sealed class RectMove { public string name; public int[] rect; }
-    [System.Serializable] sealed class RectMoves { public RectMove[] patches; }
+    // A language's own piece for a token wider than the English pieces: the Sheet.level it serves (both variants), the
+    // piece's file name beside the base print (in the language's folder), its rect as Sheet.rects.
+    [System.Serializable] sealed class RectExtra { public string level; public string name; public int[] rect; }
+    [System.Serializable] sealed class RectMoves { public RectMove[] patches; public RectExtra[] extra; }
 
     static string rectsCode;
     static readonly Dictionary<string, int[]> rectMoves = new Dictionary<string, int[]>();
+    static readonly List<RectExtra> rectExtras = new List<RectExtra>();
+
+    // The language's moves and extra pieces, read once per language on screen (FrontRoomsWorldText.Text in AppliedCode).
+    static void ReadRects()
+    {
+        var code = FrontRoomsWorldText.AppliedCode;
+        if (rectsCode == code) return;
+        rectsCode = code;
+        rectMoves.Clear();
+        rectExtras.Clear();
+        var text = FrontRoomsWorldText.Text(RectsPath);
+        if (text == null) return;
+        RectMoves moves = null;
+        try { moves = JsonUtility.FromJson<RectMoves>(text.text); }
+        catch (System.Exception e) { Debug.LogWarning("[Placard] " + RectsPath + " (" + code + ") unreadable: " + e.Message + "; the table's rects"); }
+        Resources.UnloadAsset(text);
+        if (moves == null) return;
+        if (moves.patches != null)
+            foreach (var m in moves.patches)
+                if (m != null && !string.IsNullOrEmpty(m.name) && m.rect != null && m.rect.Length == 4) rectMoves[m.name] = m.rect;
+        if (moves.extra != null)
+            foreach (var x in moves.extra)
+                if (x != null && !string.IsNullOrEmpty(x.level) && !string.IsNullOrEmpty(x.name) && x.rect != null && x.rect.Length == 4
+                    && x.rect[2] > 0 && x.rect[3] > 0) rectExtras.Add(x);
+    }
 
     /// <summary>The sheet's patch rects in the language on screen: the table's, with the language's moves applied.</summary>
     public static int[] RectsFor(FrontRoomsLandingPlacardSheets.Sheet sheet)
     {
         if (sheet == null || sheet.rects == null) return null;
-        var code = FrontRoomsWorldText.AppliedCode;
-        if (rectsCode != code)
-        {
-            rectsCode = code;
-            rectMoves.Clear();
-            var text = FrontRoomsWorldText.Text(RectsPath);
-            var moves = text != null ? JsonUtility.FromJson<RectMoves>(text.text) : null;
-            if (text != null) Resources.UnloadAsset(text);
-            if (moves != null && moves.patches != null)
-                foreach (var m in moves.patches)
-                    if (m != null && !string.IsNullOrEmpty(m.name) && m.rect != null && m.rect.Length == 4) rectMoves[m.name] = m.rect;
-        }
+        ReadRects();
         if (rectMoves.Count == 0 || sheet.patches == null) return sheet.rects;
         var rects = (int[])sheet.rects.Clone();
         for (var i = 0; i < sheet.patches.Length && 4 * i + 3 < rects.Length; i++)
@@ -120,6 +141,32 @@ public sealed class FrontRoomsLandingPlacard : MonoBehaviour
             rects[4 * i + 1] = r[1];
         }
         return rects;
+    }
+
+    /// <summary>
+    /// The language's own pieces for this sheet's token (its rects file's "extra" for sheet.level, the same for both
+    /// variants): Resources paths inside the language's folder (FrontRoomsWorldText.Piece) and their rects (x, y, w, h at
+    /// PrintWidth x PrintHeight from the top-left, as Sheet.rects). Null in English and wherever the token fits the
+    /// English pieces.
+    /// </summary>
+    public static string[] ExtraPiecesFor(FrontRoomsLandingPlacardSheets.Sheet sheet, out int[] rects)
+    {
+        rects = null;
+        if (sheet == null || string.IsNullOrEmpty(sheet.print)) return null;
+        ReadRects();
+        if (rectExtras.Count == 0) return null;
+        var folder = sheet.print.Substring(0, sheet.print.LastIndexOf('/') + 1);
+        var paths = new List<string>();
+        var found = new List<int>();
+        foreach (var x in rectExtras)
+        {
+            if (x.level != sheet.level) continue;
+            paths.Add(folder + x.name);
+            found.AddRange(x.rect);
+        }
+        if (paths.Count == 0) return null;
+        rects = found.ToArray();
+        return paths.ToArray();
     }
 
     void OnEnable() => FrontRoomsWorldText.Applied += OnWorldTextApplied;
@@ -367,32 +414,48 @@ public sealed class FrontRoomsLandingPlacard : MonoBehaviour
     // ---------------------------------------------------------------- the print: base + token patches, once per floor
 
     /// <summary>
-    /// This floor's print (Hang): the variant's base for B1; else the base with the sheet's token patches composited over it
-    /// (blocks on desktop and phones, a RenderTexture on WebGL or where blocks cannot be copied). The patches, and the base
-    /// once composited, are queued to unload next frame. A missing patch or no working path: the base (never a blank).
+    /// This floor's print (Hang): the variant's base for B1; else the base with the sheet's token patches, and the
+    /// language's extra pieces for that token (ExtraPiecesFor; none in English), composited over it (blocks on desktop and
+    /// phones, a RenderTexture on WebGL or where blocks cannot be copied). The patches, and the base once composited, are
+    /// queued to unload next frame. A missing patch or piece, or no working path: the base (never a blank).
     /// </summary>
     Texture LoadPrint(FrontRoomsLandingPlacardSheets.Sheet sheet, string label)
     {
         var basePrint = Resources.Load<Texture2D>(sheet.print);
         if (basePrint == null) return null;
         var count = sheet.patches != null ? sheet.patches.Length : 0;
-        if (count == 0)
+        var extraPaths = ExtraPiecesFor(sheet, out var extraRects);
+        var extra = extraPaths != null ? extraPaths.Length : 0;
+        if (count + extra == 0)
         {
             PrintMode = "base";
             return basePrint;
         }
-        var patches = new Texture2D[count];
+        var patches = new Texture2D[count + extra];
         string missing = null;
         for (var i = 0; i < count; i++)
         {
             patches[i] = Resources.Load<Texture2D>(sheet.patches[i]);
             if (patches[i] == null && missing == null) missing = sheet.patches[i];
         }
+        for (var i = 0; i < extra; i++)
+        {
+            patches[count + i] = FrontRoomsWorldText.Piece(extraPaths[i]);
+            if (patches[count + i] == null && missing == null) missing = extraPaths[i] + " (" + FrontRoomsWorldText.AppliedCode + ")";
+        }
         Texture made = null;
         var how = "blocks";
         var rects = RectsFor(sheet);
         if (missing == null && rects != null && rects.Length == count * 4)
         {
+            if (extra > 0)
+            {
+                // the table's (moved) rects, then the language's pieces: a new array, the table's own stays as it is
+                var all = new int[rects.Length + extraRects.Length];
+                rects.CopyTo(all, 0);
+                extraRects.CopyTo(all, rects.Length);
+                rects = all;
+            }
             var name = basePrint.name + " " + sheet.level;
             if (BlockCopy) made = CompositeBlocks(basePrint, patches, rects, name);
             if (made == null)

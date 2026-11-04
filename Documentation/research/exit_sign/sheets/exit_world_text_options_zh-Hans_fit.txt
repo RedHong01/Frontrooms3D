@@ -1,0 +1,18 @@
+# exit_world_text_options_zh-Hans_fit.txt
+sheet sheets/exit_world_text_options_zh-Hans.jpg  1920x3841
+cell 477x268
+
+desktop  eye3_lit       eye1  EN 78.4px LOD0 lvl 1.000  A 78.4px LOD0 lvl 1.000  B 78.4px LOD0 lvl 1.000  C 78.4px LOD0 lvl 1.000
+desktop  eye8_lit       eye1  EN 29.8px LOD0 lvl 1.000  A 29.8px LOD0 lvl 1.000  B 29.8px LOD0 lvl 1.000  C 29.8px LOD0 lvl 1.000
+desktop  eye8_lit       eye3  EN 29.8px LOD0 lvl 1.000  A 29.8px LOD0 lvl 1.000  B 29.8px LOD0 lvl 1.000  C 29.8px LOD0 lvl 1.000
+desktop  dark8_lit      eye1  EN 29.8px LOD0 lvl 1.000  A 29.8px LOD0 lvl 1.000  B 29.8px LOD0 lvl 1.000  C 29.8px LOD0 lvl 1.000
+desktop  dark3_battery  eye1  EN 78.4px LOD0 lvl 0.166  A 78.4px LOD0 lvl 0.166  B 78.4px LOD0 lvl 0.166  C 78.4px LOD0 lvl 0.166
+phone    eye3_lit       eye1  EN 87.6px LOD0 lvl 1.000  A 87.6px LOD0 lvl 1.000  B 87.6px LOD0 lvl 1.000  C 87.6px LOD0 lvl 1.000
+phone    eye8_lit       eye3  EN 33.3px LOD1 lvl 1.000  A 33.3px LOD1 lvl 1.000  B 33.3px LOD1 lvl 1.000  C 33.3px LOD1 lvl 1.000
+phone    dark3_battery  eye1  EN 87.6px LOD0 lvl 0.166  A 87.6px LOD0 lvl 0.166  B 87.6px LOD0 lvl 0.166  C 87.6px LOD0 lvl 0.166
+desktop  hero_lit       hero  EN 683.3px LOD0 lvl 1.000  A 683.3px LOD0 lvl 1.000  B 683.3px LOD0 lvl 1.000  C 683.3px LOD0 lvl 1.000
+desktop  hero_battery   hero  EN 683.3px LOD0 lvl 0.166  A 683.3px LOD0 lvl 0.166  B 683.3px LOD0 lvl 0.166  C 683.3px LOD0 lvl 0.166
+desktop  hero_off       hero  EN 683.3px LOD0 lvl 0.000  A 683.3px LOD0 lvl 0.000  B 683.3px LOD0 lvl 0.000  C 683.3px LOD0 lvl 0.000
+
+LABELS: header, 4 column heads, 44 image tiles, 4 cost tiles checked at full size; cut: none
+ALL LABELS FIT

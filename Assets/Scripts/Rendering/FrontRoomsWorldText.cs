@@ -34,6 +34,10 @@ using UnityEngine.Rendering;
 ///   own   the base is readable: code reads its pixels on the CPU (the stair signs' plate art and glyph atlases). That code
 ///         loads the language's copy itself with Texture() (any size) and its layout file with Text(), and rebuilds on
 ///         Applied.
+/// A piece is no kind of its own: a language-only texture &lt;path&gt;~piece0, ~piece1 ... beside &lt;path&gt;'s copy, with no English
+/// base and never swapped. The import gives it &lt;path&gt;'s settings and the manifest does not list it; only code whose
+/// layout names it loads it (Piece): the landing placards' extra token pieces, where a language's floor token is wider
+/// than the English pieces (Prop_EvacPlan_A_Landing_rects "extra", FrontRoomsLandingPlacard.ExtraPiecesFor).
 /// The language is read from FrontRoomsLanguage.Current once a frame (its start-up Load raises no event) and applied in
 /// that frame; then Applied is raised. WebGL lists English alone (FrontRoomsLanguage.Listed), so nothing here runs there.
 /// Cost: none in English; in another language the swapped and patched bases stay loaded (they are what the rooms show) and
@@ -61,6 +65,10 @@ public static class FrontRoomsWorldText
 
     /// <summary>The suffix of a patch copy's plan (&lt;path&gt;~patch.json) and atlases (&lt;path&gt;~patch0, ~patch1, ...).</summary>
     public const string PatchSuffix = "~patch";
+
+    /// <summary>The suffix of a language-only piece (&lt;path&gt;~piece0, ~piece1, ...): imported with &lt;path&gt;'s settings, never in
+    /// the manifest, loaded by Piece().</summary>
+    public const string PieceSuffix = "~piece";
 
     /// <summary>A patch copy's plan (Tools/lookdev/pack_world_text_patch.py). Texels at level 0, from the bottom left.</summary>
     [Serializable]
@@ -178,6 +186,17 @@ public static class FrontRoomsWorldText
             Warn(path + " (" + k.language.code + ") is listed but missing");
         }
         return Resources.Load<TextAsset>(path);
+    }
+
+    /// <summary>A language-only piece (its Resources path inside the language's folder, e.g.
+    /// Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Title0~piece0) in the language on screen (AppliedCode); null in
+    /// English or when it is missing. The caller owns what it loaded, as with Resources.Load.</summary>
+    public static Texture2D Piece(string path)
+    {
+        if (string.IsNullOrEmpty(path) || AppliedCode == English) return null;
+        var piece = Resources.Load<Texture2D>(Root + AppliedCode + "/" + path);
+        if (piece == null) Warn(path + " (" + AppliedCode + " piece) is named by a layout but missing");
+        return piece;
     }
 
     /// <summary>Follow the game's language now if it changed (the watcher calls this once a frame).</summary>

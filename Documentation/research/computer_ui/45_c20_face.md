@@ -44,9 +44,10 @@ Rows are counted in the 16-row cell, with 0 at the top. Columns are 0–7 of the
 
 ## 3. Glyph set
 
-109 slots, 108 of them drawn:
+111 slots, 110 of them drawn:
 - the 95 printable ASCII characters, including the space;
-- the 14 CP437 layout glyphs listed in 41 §6.1.
+- the 14 CP437 layout glyphs listed in 41 §6.1;
+- since 11-03 (W18) the half blocks ▀ (0xDF) and ▄ (0xDC), the top and bottom 8 rows edge to edge. MAIN's big type draws a cell to two pixel rows with them: the CJK and Hangul headlines and the condensed Latin and Cyrillic lines of the language faces (`Tools/terminal_face/face_lang.py`, `research/localization/WORLD_TYPE.md` §3b). They sit in 0xC0–0xDF, so the 9th column repeats and they join.
 
 Everything that can reach the screen is covered:
 - `interoffice.json` is plain ASCII.

@@ -1,0 +1,15 @@
+{
+    "patches": [],
+    "extra": [
+        {
+            "level": "B10+",
+            "name": "Prop_EvacPlan_A_Landing_B10plus_Title0~piece0",
+            "rect": [
+                2560,
+                128,
+                128,
+                256
+            ]
+        }
+    ]
+}

@@ -65,12 +65,12 @@ public static class FrontRoomsBindCapture
         if (pad && gp == null) { Cancel(); Say(FrontRoomsLanguage.T("CONNECT A CONTROLLER")); return true; }
         if (!pad && kb == null) { Cancel(); Say(FrontRoomsLanguage.T("CONNECT A KEYBOARD")); return true; }
         // Esc or MENU (never bound) cancel; B too while asking, and on a key target (no pad button binds there).
-        var padBack = gp != null && gp.buttonEast.wasPressedThisFrame && (!pad || State == Phase.Asking);
+        var padBack = gp != null && FrontRoomsInput.PadControl(gp, FrontRoomsInput.BackButton).wasPressedThisFrame && (!pad || State == Phase.Asking);
         if ((kb != null && kb.escapeKey.wasPressedThisFrame) || (gp != null && gp.startButton.wasPressedThisFrame) || padBack) { Cancel(); return true; }
         if (!armed)
         {
             // Listening starts once the press that opened it is released (never capture the opening press).
-            var padDown = pad ? FrontRoomsInput.PadButtonHeld(gp) : gp != null && gp.buttonSouth.isPressed;
+            var padDown = pad ? FrontRoomsInput.PadButtonHeld(gp) : gp != null && FrontRoomsInput.PadControl(gp, FrontRoomsInput.ConfirmButton).isPressed;
             var held = (kb != null && kb.anyKey.isPressed) || (ms != null && (ms.leftButton.isPressed || ms.rightButton.isPressed || ms.middleButton.isPressed)) || padDown;
             if (!held) armed = true;
             return false;
@@ -78,7 +78,7 @@ public static class FrontRoomsBindCapture
         if (State == Phase.Asking)
         {
             var yes = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
-                || (gp != null && gp.buttonSouth.wasPressedThisFrame);
+                || (gp != null && FrontRoomsInput.PadControl(gp, FrontRoomsInput.ConfirmButton).wasPressedThisFrame);
             if (!yes) return false;
             FrontRoomsInput.SwapInto(Target, askPath);
             Cancel();

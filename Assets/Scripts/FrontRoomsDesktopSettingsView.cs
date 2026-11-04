@@ -6,6 +6,8 @@ using Tab = FrontRoomsSettingsMenu.Tab;
 using Kind = FrontRoomsSettingsMenu.Kind;
 using Row = FrontRoomsSettingsMenu.Row;
 using PadButton = FrontRoomsInput.PadButton;
+using Prompt = FrontRoomsPromptBar.Prompt;
+using PromptRole = FrontRoomsPromptBar.Role;
 
 /// <summary>
 /// The desktop settings sheet (Mac, Windows), drawn over the pause card. Figma: section 3688:7842, S1–S3 (1920 × 1080,
@@ -46,8 +48,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     Image sheet, preview2Frame, veil;
     RawImage preview, frost;
     RenderTexture previewRt, frostRt;
-    readonly List<Image> keyEdges = new List<Image>();
-    Text title, previewCaption, frameText, peekText, peekHint, hints, backText, restartText;
+    Text title, previewCaption, frameText, peekText, hints, backText, restartText;
     Image back, restart;
     // CONTROLS' maps (Red, 2026-10-29), which unfold under their rows in the list: KEYBOARD & MOUSE, and its BACK.
     FrontRoomsKeyMapView keyMap;
@@ -75,43 +76,127 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     // What the words were last drawn for: a pad in use, which pad, a PlayStation pad, a pad in, a pad's notice and its moment
     // (Update).
     bool padShown, playStationShown, connectedShown, noticeShown;
+    int namesShown = -1;
     float noticeAt = float.NegativeInfinity;
     UnityEngine.InputSystem.Gamepad padDevice;
-    // The gap between two hints of a line.
-    const string Gap = "     ";
-    string PageHints
+    // The prompt bar (D, research/interaction/device_prompts/10_research.md §3; Red 2026-11-01 18:5x: the iconography follows the
+    // device in hand, a press presses its icon, and select and back stay one constant pair in every menu): glyph + verb chips in
+    // the hint line's place, confirm and back first; the hint line keeps the pad notices. The tab row's Q and E (LB and RB) are
+    // chips of their own, and the full-screen preview shows its way back as one.
+    FrontRoomsPromptBar bar, peekBar, tabPrev, tabNext, captionBar;
+    static readonly TextGenerator inkProbe = new TextGenerator();
+    readonly List<Prompt> prompts = new List<Prompt>();
+
+    // The chips for the state the keys are in, read as HandleKeys reads them: confirm and back first, then this screen's own. A
+    // button that does nothing here keeps its chip, at 40 %, so the pair never moves. Every frame (Set does nothing when nothing
+    // changed).
+    void DrawPrompts()
     {
-        get
+        if (bar == null) return;
+        prompts.Clear();
+        if (pageOpen) PagePrompts();
+        else if (LanguageGridHasKeys)
         {
-            // A pad in use names its buttons (2026-10-31); the CONTROLLER page listens for a button.
-            var pad = FrontRoomsInput.PadInUse;
-            if (page.State == FrontRoomsKeyMapView.CaptureState.Listening)
-                return page.IsPad ? FrontRoomsLanguage.T("PRESS A BUTTON") + Gap + FrontRoomsLanguage.F("{0}  CANCEL", pad ? FrontRoomsInput.PadName(PadButton.Menu) : "ESC")
-                    : FrontRoomsLanguage.T("PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL");
-            if (page.State == FrontRoomsKeyMapView.CaptureState.Asking)
-                return pad ? FrontRoomsLanguage.F("{0}  SWAP", FrontRoomsInput.PadName(PadButton.South)) + Gap + FrontRoomsLanguage.F("{0}  CANCEL", FrontRoomsInput.PadName(PadButton.East))
-                    : FrontRoomsLanguage.T("ENTER  SWAP     ESC  CANCEL");
-            if (pad)
-                return FrontRoomsLanguage.F("{0}  CHOOSE", "↑ ↓ ← →") + Gap + FrontRoomsLanguage.F("{0}  CHANGE", FrontRoomsInput.PadName(PadButton.South)) + Gap
-                    + FrontRoomsLanguage.F("{0}  DEFAULT", FrontRoomsInput.PadName(PadButton.West)) + Gap + FrontRoomsLanguage.F("{0}  ALL DEFAULTS", FrontRoomsInput.PadName(PadButton.North))
-                    + Gap + FrontRoomsLanguage.F("{0}  BACK", FrontRoomsInput.PadName(PadButton.East));
-            return FrontRoomsLanguage.T("↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK");
+            // LANGUAGE's grid (VL487 D-7): its own CHOOSE (← → and ↑ ↓ through its 5 x 2) and SET, and the way out of it.
+            prompts.Add(new Prompt(PromptRole.Confirm, "{0}  SET"));
+            prompts.Add(new Prompt(PromptRole.Back, "{0}  BACK"));
+            prompts.Add(new Prompt(PromptRole.ChooseAll, "{0}  CHOOSE"));
         }
+        else if (corner != Corner.None)
+        {
+            // RESUME or END RUN has the focus: Enter (A) presses it, ← → go between them, ↑ back to the rows.
+            prompts.Add(new Prompt(PromptRole.Confirm, corner == Corner.Resume ? "{0}  RESUME" : "{0}  END RUN"));
+            prompts.Add(new Prompt(PromptRole.Back, "{0}  RESUME"));
+            prompts.Add(new Prompt(PromptRole.Change, "{0}  CHOOSE"));
+        }
+        else SheetPrompts();
+        bar.Set(prompts);
+        // The bar stops short of the corner's buttons (RESUME and END RUN, or BACK and DEFAULTS on a map).
+        var cornerW = pageOpen ? pageBack.rectTransform.sizeDelta.x + 12f + pageDefaults.rectTransform.sizeDelta.x
+            : back.rectTransform.sizeDelta.x + 12f + restart.rectTransform.sizeDelta.x;
+        bar.MaxWidth = root.rect.width - 2f * M - cornerW - 48f;
+        // A pad that came or went says so here for a moment, in place of the chips (2026-11-01).
+        var notice = FrontRoomsInput.NoticeLive;
+        hints.text = notice ? FrontRoomsInput.ChangeLine() : string.Empty;
+        if (bar.Root.gameObject.activeSelf == notice) bar.Root.gameObject.SetActive(!notice);
     }
 
-    // The pause is this page on the desktop (Red, 2026-10-24): Esc resumes; R ends the run and goes to the title at once
-    // (Red, 2026-10-30: no question before the title).
-    const string HintKeys = "↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW";
-    static string HintText()
+    // The top level: Enter (A) works the focused row, Esc (B) closes an open row (or LANGUAGE's grid) first and then resumes the
+    // run (ConsumeEscape), ↑ ↓ choose, ← → change, Q E (LB RB) the tabs, Backspace (X) the default, Space (Y) GRAPHICS' preview,
+    // R ends the run (a pad has no button for it: the corner's END RUN).
+    void SheetPrompts()
     {
-        // A pad in use (2026-10-31): its buttons, as the touch sheet takes them; END RUN is in the corner (↓ past the last row).
-        if (FrontRoomsInput.PadInUse)
-            return FrontRoomsLanguage.F("{0}  CHOOSE", "↑ ↓") + Gap + FrontRoomsLanguage.F("{0}  CHANGE", "← →") + Gap
-                + FrontRoomsLanguage.F("{0}  GROUP", FrontRoomsInput.PadName(PadButton.LeftShoulder) + " " + FrontRoomsInput.PadName(PadButton.RightShoulder)) + Gap
-                + FrontRoomsLanguage.F("{0}  DEFAULT", FrontRoomsInput.PadName(PadButton.West)) + Gap + FrontRoomsLanguage.F("{0}  PREVIEW", FrontRoomsInput.PadName(PadButton.North))
-                + Gap + FrontRoomsLanguage.F("{0}  RESUME", FrontRoomsInput.PadName(PadButton.East));
-        var r = FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(FrontRoomsInput.Bind.Restart));
-        return FrontRoomsLanguage.T(HintKeys) + "     " + FrontRoomsLanguage.F("{0}  END RUN", r) + "     " + FrontRoomsLanguage.T("ESC  RESUME");
+        var row = rows != null && Focus >= 0 && Focus < rows.Count ? rows[Focus] : null;
+        var confirm = ConfirmVerb(row, FrontRoomsInput.PadInUse, out var live);
+        prompts.Add(new Prompt(PromptRole.Confirm, confirm, live));
+        prompts.Add(new Prompt(PromptRole.Back, openRow >= 0 || langOpen ? "{0}  BACK" : "{0}  RESUME"));
+        prompts.Add(new Prompt(PromptRole.Choose, "{0}  CHOOSE"));
+        prompts.Add(new Prompt(PromptRole.Change, "{0}  CHANGE", row != null && Steps(row)));
+        prompts.Add(new Prompt(PromptRole.Tabs, "{0}  GROUP"));
+        prompts.Add(new Prompt(PromptRole.Reset, "{0}  DEFAULT", row != null && Steps(row) && row.Kind != Kind.Language));
+        if (CurrentTab == Tab.Graphics && confirm != "{0}  PREVIEW") prompts.Add(new Prompt(PromptRole.Extra, "{0}  PREVIEW"));
+        prompts.Add(new Prompt(PromptRole.Restart, "{0}  END RUN"));
+    }
+
+    // What Enter (A) does on the focused row, in HandleKeys' order; not live where it does nothing (segments and sliders change
+    // with ← →).
+    string ConfirmVerb(Row row, bool pad, out bool live)
+    {
+        live = true;
+        if (row == null) { live = false; return "{0}  CHANGE"; }
+        if (row.Kind == Kind.Page) return "{0}  OPEN";
+        if (row.Kind == Kind.Language) return languageStrip.HighlightedLanguage != FrontRoomsLanguage.Current ? "{0}  SET" : "{0}  OPEN";
+        if (pad && row.Visual && row.Kind != Kind.Switch) return "{0}  PREVIEW";
+        if (Opens(row) && openRow != Focus) return "{0}  OPEN";
+        if (row.Kind == Kind.Switch || row.Target != null) return "{0}  CHANGE";
+        if (row.Key == FrontRoomsSettingsMenu.Key.PadDefaults || row.Key == FrontRoomsSettingsMenu.Key.KeyDefaults
+            || (row.Kind == Kind.Action && row.Key == FrontRoomsSettingsMenu.Key.ResetGraphics)) return "{0}  ALL DEFAULTS";
+        live = false;
+        return "{0}  CHANGE";
+    }
+
+    // ← → change this row: a switch, segments, a slider, LANGUAGE's rail.
+    static bool Steps(Row r) => r.Kind == Kind.Switch || r.Kind == Kind.Segments || r.Kind == Kind.Slider || r.Kind == Kind.Language;
+
+    // A map has the keys: listening (any button binds, so only the way out), asking (SWAP or CANCEL), or choosing its actions.
+    void PagePrompts()
+    {
+        if (page.State == FrontRoomsKeyMapView.CaptureState.Listening)
+        {
+            // The keyboard page's words are its table line's first hint: "PRESS A KEY OR A MOUSE BUTTON".
+            prompts.Add(new Prompt(PromptRole.Text, page.IsPad ? "PRESS A BUTTON" : FirstHint(FrontRoomsLanguage.T("PRESS A KEY OR A MOUSE BUTTON     ESC  CANCEL"))));
+            prompts.Add(new Prompt(page.IsPad ? PromptRole.Menu : PromptRole.Back, "{0}  CANCEL"));
+            return;
+        }
+        if (page.State == FrontRoomsKeyMapView.CaptureState.Asking)
+        {
+            prompts.Add(new Prompt(PromptRole.Confirm, "{0}  SWAP"));
+            prompts.Add(new Prompt(PromptRole.Back, "{0}  CANCEL"));
+            return;
+        }
+        // The CONTROLLER page listens only for a pad's button: with no pad in, Enter does nothing.
+        prompts.Add(new Prompt(PromptRole.Confirm, "{0}  CHANGE", !page.IsPad || UnityEngine.InputSystem.Gamepad.current != null));
+        prompts.Add(new Prompt(PromptRole.Back, "{0}  BACK"));
+        // ← → choose the actions; ↑ ↓ fold the map and go on (HandlePageKeys).
+        prompts.Add(new Prompt(PromptRole.Change, "{0}  CHOOSE"));
+        prompts.Add(new Prompt(PromptRole.Reset, "{0}  DEFAULT"));
+        prompts.Add(new Prompt(PromptRole.Defaults, "{0}  ALL DEFAULTS", !page.AllDefault));
+    }
+
+    // A translated table line's first hint: its words up to the five-space gap.
+    static string FirstHint(string line)
+    {
+        var gap = line.IndexOf("     ", System.StringComparison.Ordinal);
+        return gap > 0 ? line.Substring(0, gap) : line;
+    }
+
+    // A tab row's Q or E (LB or RB): a chip without words, anchored to the row's top-left.
+    FrontRoomsPromptBar TabChip(PromptRole role)
+    {
+        var chip = FrontRoomsPromptBar.Create(tabsRoot, mono, Paper, Ink);
+        chip.Root.anchorMin = chip.Root.anchorMax = new Vector2(0f, 1f);
+        chip.Set(new Prompt(role, null));
+        return chip;
     }
     readonly List<Image> frameDashes = new List<Image>(), peekDashes = new List<Image>();
     // The frame rate in the picture's bottom-right corner (Red, 2026-11-01), shown with the picture: its word, its reading.
@@ -238,6 +323,11 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         preview.transform.SetParent(detail, false);
         preview.raycastTarget = false;
         previewCaption = Txt(detail, "CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.UpperLeft);
+        // With a pad in use the line is a chip (D): the pad's PREVIEW button and its word.
+        captionBar = FrontRoomsPromptBar.Create(detail, mono, Paper, Ink);
+        captionBar.Root.anchorMin = captionBar.Root.anchorMax = new Vector2(0f, 1f);
+        captionBar.Set(new Prompt(PromptRole.Extra, "{0}  PREVIEW"));
+        captionBar.Root.gameObject.SetActive(false);
         // FRAME RATE NOW lives in the picture's bottom-right corner (Red, 2026-11-01: as a list row and again under the picture
         // it said the same thing twice, and the line under the picture met END RUN): the word and the reading over the dashes,
         // right-aligned, keylined like the HUD so it reads on the lit floor (PlacePicture).
@@ -253,7 +343,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             frameDashes.Add(d);
         }
         frameOsd.gameObject.SetActive(false);
-        hints = Txt(root, HintText(), mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.LowerLeft);
+        hints = Txt(root, "", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .75f), TextAnchor.LowerLeft);
         hints.rectTransform.anchorMin = hints.rectTransform.anchorMax = Vector2.zero; hints.rectTransform.pivot = Vector2.zero;
         hints.rectTransform.anchoredPosition = new Vector2(M, M - 8f); hints.rectTransform.sizeDelta = new Vector2(1200f, 20f);
         // RESUME (the old BACK) and END RUN: keyline buttons, paper word, no fill (yellow means focus only on a settings page;
@@ -264,6 +354,10 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         cornerGroups.Add(hints.gameObject.AddComponent<CanvasGroup>());
         cornerGroups.Add(back.gameObject.AddComponent<CanvasGroup>());
         cornerGroups.Add(restart.gameObject.AddComponent<CanvasGroup>());
+        // The prompt bar (D) in the hint line's place, its glyphs on the corner buttons' centre line (their 38 px box from M - 16).
+        bar = FrontRoomsPromptBar.Create(root, mono, Paper, Ink);
+        bar.Root.anchoredPosition = new Vector2(M, M + 3f);
+        cornerGroups.Add(bar.Group);
         // The map unfolds in the list, across columns 1–12; BACK takes the corner from RESUME and END RUN while it is open
         // (Figma 3688:7842, K2).
         keyClip = Node(listContent, "keyboard map clip");
@@ -299,9 +393,12 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
             Place(d.rectTransform, M + 220f + i * 19f, M + 56f, 16f, 4f);
             peekDashes.Add(d);
         }
-        peekHint = Txt(peekLayer, "CLICK, SPACE OR ESC TO RETURN TO SETTINGS", mono, 13, new Color(Paper.r, Paper.g, Paper.b, .7f), TextAnchor.LowerLeft);
-        peekHint.rectTransform.anchorMin = peekHint.rectTransform.anchorMax = Vector2.zero; peekHint.rectTransform.pivot = Vector2.zero;
-        peekHint.rectTransform.anchoredPosition = new Vector2(M, M - 8f); peekHint.rectTransform.sizeDelta = new Vector2(900f, 20f);
+        // The way back as a chip (D): Esc, or a pad's B (A and Y return too, and a click, Space or Enter).
+        peekBar = FrontRoomsPromptBar.Create(peekLayer, mono, Paper, Ink);
+        peekBar.Root.anchoredPosition = new Vector2(M, M + 3f);
+        peekBar.Set(new Prompt(PromptRole.Back, "{0}  BACK"));
+        // Over the game itself, so the HUD's keyline keeps it readable on bright wallpaper.
+        peekBar.Keyline = true;
         peekLayer.gameObject.SetActive(false);
     }
 
@@ -344,14 +441,6 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         Peeking = value;
         if (overlayGroup != null) overlayGroup.alpha = value ? 0f : 1f;
         if (peekLayer != null) peekLayer.gameObject.SetActive(value);
-        if (value) DrawPeekHint();
-    }
-
-    // The full-screen preview's way back for the device in use (2026-10-31): a pad's B (A and Y return too), else the click,
-    // Space or Esc.
-    void DrawPeekHint()
-    {
-        if (peekHint != null) peekHint.text = FrontRoomsInput.PadInUse ? FrontRoomsLanguage.F("{0}  BACK", FrontRoomsInput.PadName(PadButton.East)) : FrontRoomsLanguage.T("CLICK, SPACE OR ESC TO RETURN TO SETTINGS");
     }
 
     void SetTab(int index)
@@ -685,28 +774,12 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         restart.gameObject.SetActive(!pageOpen);
         pageBack.gameObject.SetActive(pageOpen);
         pageDefaults.gameObject.SetActive(pageOpen);
-        // A pad that came or went says so here for a moment, in place of the hints (2026-11-01).
-        hints.text = FrontRoomsInput.NoticeLive ? FrontRoomsInput.ChangeLine() : pageOpen ? PageHints : LanguageGridHasKeys ? LanguageHints() : HintText() + RowHint();
+        DrawPrompts();
     }
 
     // LANGUAGE's grid has the keys: the line is the grid's own, one CHOOSE, SET and how to fold it (VL487 D-7: not the sheet's
     // ← → CHANGE beside a CHOOSE, nor GRAPHICS' SPACE PREVIEW).
     bool LanguageGridHasKeys => langOpen && corner == Corner.None && rows != null && Focus >= 0 && Focus < rows.Count && rows[Focus].Kind == Kind.Language;
-
-    static string LanguageHints() => FrontRoomsInput.PadInUse
-        ? FrontRoomsLanguage.F("{0}  CHOOSE", "← →") + Gap + FrontRoomsLanguage.F("{0}  SET", FrontRoomsInput.PadName(PadButton.South)) + Gap
-            + FrontRoomsLanguage.F("{0}  BACK", FrontRoomsInput.PadName(PadButton.East))
-        : FrontRoomsLanguage.T("← →  CHOOSE     ENTER  SET") + Gap + FrontRoomsLanguage.F("{0}  BACK", "ESC");
-
-    // What Enter does on a row that unfolds (a map, LANGUAGE).
-    string RowHint()
-    {
-        if (corner != Corner.None || rows == null || Focus < 0 || Focus >= rows.Count) return "";
-        var row = rows[Focus];
-        var pad = FrontRoomsInput.PadInUse;
-        if (row.Kind != Kind.Page && row.Kind != Kind.Language) return "";
-        return Gap + (pad ? FrontRoomsLanguage.F("{0}  OPEN", FrontRoomsInput.PadName(PadButton.South)) : FrontRoomsLanguage.T("ENTER  OPEN"));
-    }
 
     /// <summary>The open map's size: at most 1.45x (the spec's 58 px pitch), as large as the list's height under its row and columns
     /// 1–12 allow (again whenever the window or the words change).</summary>
@@ -728,10 +801,10 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
 
     static bool IsRowOf(Row r, FrontRoomsKeyMapView map) => r.Key == (map.IsPad ? FrontRoomsSettingsMenu.Key.PadMap : FrontRoomsSettingsMenu.Key.KeyMap);
 
-    // The hint line and DEFAULTS while a map has the keys; the words of the chosen action are on its own label.
+    // The chips and DEFAULTS while a map has the keys; the words of the chosen action are on its own label.
     void DrawPageDetail()
     {
-        hints.text = FrontRoomsInput.NoticeLive ? FrontRoomsInput.ChangeLine() : PageHints;
+        DrawPrompts();
         var asking = Time.unscaledTime < defaultsArmedUntil;
         pageDefaultsText.text = FrontRoomsLanguage.T(asking ? "DEFAULTS?" : "DEFAULTS");
         pageDefaultsText.color = new Color(Paper.r, Paper.g, Paper.b, page.AllDefault ? .4f : 1f);
@@ -1001,16 +1074,22 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         var pad = FrontRoomsInput.PadInUse;
         var device = UnityEngine.InputSystem.Gamepad.current;
         var playStation = FrontRoomsInput.PlayStationPad;
+        var names = FrontRoomsInput.PadNames;
         var connected = FrontRoomsInput.PadConnected;
         var notice = FrontRoomsInput.NoticeLive;
         var at = FrontRoomsInput.LastChangeAt;
-        if (pad != padShown || device != padDevice || playStation != playStationShown || connected != connectedShown || notice != noticeShown || at != noticeAt)
+        if (pad != padShown || device != padDevice || playStation != playStationShown || names != namesShown || connected != connectedShown || notice != noticeShown || at != noticeAt)
         {
-            padShown = pad; padDevice = device; playStationShown = playStation; connectedShown = connected; noticeShown = notice; noticeAt = at;
-            if (Peeking) DrawPeekHint();
+            padShown = pad; padDevice = device; playStationShown = playStation; namesShown = names; connectedShown = connected; noticeShown = notice; noticeAt = at;
             Refresh();
         }
         AnimatePageMotion();
+        // The chips follow the state and the device in hand, and answer their presses (D4).
+        DrawPrompts();
+        bar.Tick();
+        if (tabPrev != null) { tabPrev.Tick(); tabNext.Tick(); }
+        if (captionBar.Root.gameObject.activeSelf) captionBar.Tick();
+        if (Peeking) peekBar.Tick();
         // While a map is open every frame: a resized window keeps it on the grid.
         if (pageOpen) { LayoutFrame(); FitMap(); }
         if (FrontRoomsTouchMotion.Now < animateUntil || pageOpen) LayoutRows();
@@ -1071,6 +1150,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         PlaceIn(preview2Frame.rectTransform, -1f, top - 1f, w + 2f, h + 2f);
         PlaceIn(preview.rectTransform, 0f, top, w, h);
         PlaceIn(previewCaption.rectTransform, 0f, top + h + 12f, DetailW, 20f);
+        captionBar.Root.anchoredPosition = new Vector2(0f, -(top + h + 12f + 10f));
         PlaceIn(frameOsd, 0f, top, w, h);
         var dashes = h - inset - 4f;
         for (var i = 0; i < frameDashes.Count; i++) PlaceIn(frameDashes[i].rectTransform, w - inset - (frameDashes.Count - i) * pitch + (pitch - dash), dashes, dash, 4f);
@@ -1086,40 +1166,70 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         var names = FrontRoomsSettingsMenu.Tabs;
         while (tabTexts.Count < names.Length + 2)
         {
-            // Q and E (a pad's LB and RB while one is in use) are keycaps, the rest are words: set once, so a language's face is
-            // not undone on every draw.
+            // Q and E (a pad's LB and RB while one is in use) are prompt chips (D), their Text kept, empty, as the click target;
+            // the rest are words: set once, so a language's face is not undone on every draw.
             var keycap = tabTexts.Count == 0 || tabTexts.Count == names.Length + 1;
             var t = Txt(tabsRoot, "", keycap ? mono : bayon, keycap ? 13 : 20, Paper, TextAnchor.UpperLeft);
             tabTexts.Add(t);
             tabRules.Add(Img(tabsRoot, Paper, 0f));
         }
-        while (keyEdges.Count < 8) keyEdges.Add(Img(tabsRoot, Paper, .5f));
+        if (tabPrev == null)
+        {
+            tabPrev = TabChip(PromptRole.TabPrev);
+            tabNext = TabChip(PromptRole.TabNext);
+        }
         var x = 0f;
         for (var i = 0; i < names.Length + 2; i++)
         {
             var key = i == 0 || i == names.Length + 1;
             var t = tabTexts[i];
-            t.text = key ? (FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(i == 0 ? PadButton.LeftShoulder : PadButton.RightShoulder) : i == 0 ? "Q" : "E")
-                : FrontRoomsSettingsMenu.TabName(names[i - 1]);
+            t.text = key ? string.Empty : FrontRoomsSettingsMenu.TabName(names[i - 1]);
             var selected = !key && names[i - 1] == CurrentTab;
-            t.color = new Color(Paper.r, Paper.g, Paper.b, key ? .8f : selected ? 1f : .6f);
+            t.color = new Color(Paper.r, Paper.g, Paper.b, selected ? 1f : .6f);
             var tw = key ? 24f : FrontRoomsSettingsMenu.TextWidth(t.text, 20f, false) + 2f;
-            // A keycap: Plex Mono 13 centred in a 24 px keyline box (the desktop kit's Set·D / Keycap).
-            t.alignment = key ? TextAnchor.MiddleCenter : TextAnchor.UpperLeft;
-            PlaceIn(t.rectTransform, x, key ? -2f : 0f, key ? 24f : tw + 4f, 24f);
             if (key)
             {
-                var k = i == 0 ? 0 : 4;
-                PlaceIn(keyEdges[k].rectTransform, x, -2f, 24f, 1f);
-                PlaceIn(keyEdges[k + 1].rectTransform, x, 21f, 24f, 1f);
-                PlaceIn(keyEdges[k + 2].rectTransform, x, -2f, 1f, 24f);
-                PlaceIn(keyEdges[k + 3].rectTransform, x + 23f, -2f, 1f, 24f);
+                // The desktop kit's keycap (Set·D) for Q and E, a pad's shoulder pill for LB and RB, drawn for the device in hand
+                // by the prompt bar, which presses it with its button; centred on the old keycap's box (y -2 to 22).
+                var chip = i == 0 ? tabPrev : tabNext;
+                chip.Tick();
+                tw = Mathf.Max(24f, chip.Width);
+                chip.Root.anchoredPosition = new Vector2(x, chip.Root.anchoredPosition.y);
             }
+            t.alignment = key ? TextAnchor.MiddleCenter : TextAnchor.UpperLeft;
+            PlaceIn(t.rectTransform, x, key ? -2f : 0f, key ? tw : tw + 4f, 24f);
             var u = tabRules[i];
             PlaceIn(u.rectTransform, x, 28f, tw, 2f);
             u.color = key ? Color.clear : new Color(Paper.r, Paper.g, Paper.b, selected ? 1f : 0f);
             x += tw + (key ? 24f : 40f);
         }
+        // Both chips on the tab words' eye line.
+        var eye = InkMiddle(tabTexts[1]);
+        tabPrev.Root.anchoredPosition = new Vector2(tabPrev.Root.anchoredPosition.x, -eye);
+        tabNext.Root.anchoredPosition = new Vector2(tabNext.Root.anchoredPosition.x, -eye);
+    }
+
+    // The middle of a Text's ink, y down from its rect's top: the glyph quads the text generator lays out (a word in capitals:
+    // its caps; a CJK face: its own), so a chip beside the words sits on their eye line in every face (captures 2026-11-03:
+    // centred on the old keycap box the Q/E chips sat 7 px above Bayon's caps, 4 px in zh-Hans).
+    static float InkMiddle(Text t)
+    {
+        if (t == null || string.IsNullOrEmpty(t.text)) return 12f;
+        var rect = t.rectTransform.rect;
+        inkProbe.Populate(t.text, t.GetGenerationSettings(rect.size));
+        var verts = inkProbe.verts;
+        float top = float.NegativeInfinity, bottom = float.PositiveInfinity;
+        for (var i = 0; i + 3 < verts.Count; i += 4)
+        {
+            var a = verts[i].position.y;
+            var c = verts[i + 2].position.y;
+            if (Mathf.Approximately(a, c)) continue;
+            top = Mathf.Max(top, Mathf.Max(a, c));
+            bottom = Mathf.Min(bottom, Mathf.Min(a, c));
+        }
+        if (top < bottom) return 12f;
+        var unit = 1f / Mathf.Max(.0001f, t.pixelsPerUnit);
+        return rect.yMax - (top + bottom) * .5f * unit;
     }
 
     void RebuildRows()
@@ -1552,8 +1662,10 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         preview2Frame.gameObject.SetActive(graphics);
         previewCaption.gameObject.SetActive(graphics);
         frameOsd.gameObject.SetActive(graphics);
-        // The picture's line names the device in use: a pad's Y opens it (2026-10-31).
-        previewCaption.text = pad ? FrontRoomsLanguage.F("{0}  PREVIEW", FrontRoomsInput.PadName(PadButton.North)) : FrontRoomsLanguage.T("CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN");
+        // The picture's line names the device in use: a pad's Y opens it (2026-10-31), drawn as its chip (D); the keys keep the words.
+        previewCaption.text = FrontRoomsLanguage.T("CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN");
+        previewCaption.enabled = !pad;
+        if (captionBar.Root.gameObject.activeSelf != (graphics && pad)) captionBar.Root.gameObject.SetActive(graphics && pad);
         if (!graphics) ReleasePreview();
     }
 

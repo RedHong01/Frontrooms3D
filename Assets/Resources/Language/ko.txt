@@ -35,7 +35,6 @@ CHANGE	변경
 CHASE	추격
 CHOSEN	선택됨
 CLICK THE PICTURE OR PRESS SPACE TO SEE IT FULL SCREEN	그림을 클릭하거나 스페이스를 눌러 전체 화면으로 보기
-CLICK, SPACE OR ESC TO RETURN TO SETTINGS	클릭, 스페이스 또는 ESC로 설정에 돌아가기
 CLOSE-UPS	클로즈업
 CLOSER	가까이
 COMFORT	편의
@@ -59,8 +58,6 @@ Dragging up looks down.	위로 드래그하면 아래를 봅니다.
 Draws the picture at this share of the screen, then scales it up. Lower is smoother and softer; text and the HUD stay sharp.	화면의 이 비율로 그린 뒤 확대합니다. 낮을수록 부드럽고 흐려집니다. 글자와 HUD는 선명하게 유지됩니다.
 END RUN	이번 판 끝내기
 END THIS RUN?	이번 판을 끝낼까요?
-ENTER  OPEN	ENTER  열기
-ENTER  SWAP     ESC  CANCEL	ENTER  교체     ESC  취소
 ESC  RESUME	ESC  계속
 ESC ALWAYS PAUSES AND GOES BACK	ESC는 항상 일시정지와 뒤로
 EVACUATION PLAN · LEVEL 0	대피도 · 0층	TEXT panel, placard title
@@ -313,9 +310,6 @@ ZOOM STEP	줌 단계
 {0} ZONE	{0}구역
 {0} ZONES	{0}구역
 {0} s	{0}초
-← →  CHOOSE     ENTER  SET	← →  선택     ENTER  적용
-↑ ↓  CHOOSE     ← →  CHANGE     Q E  GROUP     BACKSPACE  DEFAULT     SPACE  PREVIEW	↑ ↓  선택     ← →  변경     Q E  그룹     BACKSPACE  기본값     SPACE  미리보기
-↑ ↓ ← →  CHOOSE     ENTER  CHANGE     BACKSPACE  DEFAULT     DELETE  ALL DEFAULTS     ESC  BACK	↑ ↓ ← →  선택     ENTER  변경     BACKSPACE  기본값     DELETE  모두 기본값     ESC  뒤로
 # Captions: keep ASCII [ ] (FrontRoomsCaptions.Format)
 [FAR DOOR SLAMS]	[멀리서 문이 쾅 닫힘]
 [HEAVY STEPS]	[무거운 발소리]

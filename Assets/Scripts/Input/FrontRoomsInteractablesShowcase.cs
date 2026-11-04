@@ -31,14 +31,20 @@ using UnityEditor.SceneManagement;
 ///   (1-0, [ ] for the page, J the next one of the same kind). H holds the Relay (the hunter's own HeldForTools), B
 ///   breaks the door in the crosshair with the map's BreakDoor (the Relay's break) for the BROKEN example, V turns
 ///   FrontRoomsInspect.DevTargets on for the test-bed close-ups, G hides the list.
+/// - 5 MUSEUM is the museum built in the game (.Museum.cs): hub 0 and rooms 1-4 carved into the game's own map from one
+///   layout, walked by the game's own player with no title and no Relay; room 1's doors live, rooms 2-4 as framed codes.
+///   P on its hub board (or P on this menu, without the game) opens the plan: the museum from FrontRoomsShowcaseTable,
+///   every station with its code and placard; ENTER loads the station's tour and jumps to it past the start door (.Plan.cs).
+/// - 6 ROOM TYPES is a fourth game tour on a copy tilted toward variety: every kind of room the game builds (R0-R13), found
+///   on the built chunks round the player, a station card each, jumps behind a gate, K the B1 route, L a dark patch lit (.Rooms.cs).
 /// Editor tool: the private fields it sets (levelProfile, doorLessonProfile, yaw, pitch) are found by name and checked;
 /// a missing one is reported on screen and the tour runs on without that part.
 /// </summary>
 [AddComponentMenu("FrontRooms/Interactables Showcase (scene 3)")]
 [DisallowMultipleComponent]
-public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
+public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
 {
-    public enum Tour { Menu, MediaBay, Shipped, Devices, KeysFloor }
+    public enum Tour { Menu, MediaBay, Shipped, Devices, KeysFloor, MuseumPlan, Rooms, Museum }
 
     [Flags]
     enum Floors { None = 0, Shipped = 1, Devices = 2, Keys = 4, Station = Shipped | Devices, All = Shipped | Devices | Keys }
@@ -84,18 +90,19 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         "Foil tape and a sash contact: a pry or a break trips it and calls the Relay.",
         "A push-bar exit alarm: opening it trips the horn and calls the Relay.",
         "B breaks the door in the crosshair, as the Relay does. Then E: WON'T SHUT.",
-        "An alarm corridor's goal door: planned from tier 2, after the first send (H releases the Relay).",
+        "An alarm corridor's goal door. This tour forces Run! rooms; they stand 70-120 m out: walk on.",
         "E · READ SCREEN. Inside, the terminal's own keys (F1 help, F3 exit).",
         "Desk phone, wall clock, vending machine, copier: E · LOOK. Test-bed blocks, never shipped (V).",
         "Any other close-up the game registers: E."
     };
 
-    // The floors each kind is built on (Station: both floor-1 tours).
+    // The floors each kind is built on (Station: both floor-1 tours). Door signs hang only on locked doors, so only the keys
+    // floor shows one; no game code places a terminal yet (None).
     static readonly Floors[] Where =
     {
         Floors.Station, Floors.Keys, Floors.Keys, Floors.Keys, Floors.Keys, Floors.Keys, Floors.Station, Floors.All,
-        Floors.Station, Floors.All, Floors.Station, Floors.All, Floors.All, Floors.All, Floors.Devices,
-        Floors.Devices, Floors.Devices, Floors.All, Floors.Devices, Floors.All, Floors.All, Floors.All
+        Floors.Station, Floors.All, Floors.Station, Floors.Keys, Floors.All, Floors.All, Floors.Devices,
+        Floors.Devices, Floors.Devices, Floors.All, Floors.Devices, Floors.None, Floors.All, Floors.All
     };
 
     sealed class Example
@@ -118,6 +125,8 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
     static readonly FieldInfo PitchField = typeof(FrontRooms3DGame).GetField("pitch", Private);
 
     Tour tour = Tour.Menu;
+    // Set by Choose until the game scene it loads is in: the old game's MapRunEnded (the museum's plan) keeps ENTER's jump.
+    bool tourLoading;
     FrontRooms3DGame game;
     FrontRoomsLevelProfile tourProfile;
     FrontRoomsMapWorld map;
@@ -152,9 +161,10 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() => live = null;
 
-    bool InGameTour => tour == Tour.Shipped || tour == Tour.Devices || tour == Tour.KeysFloor;
+    bool InGameTour => tour == Tour.Shipped || tour == Tour.Devices || tour == Tour.KeysFloor || tour == Tour.Rooms || tour == Tour.Museum;
 
-    Floors ThisFloor => tour == Tour.Shipped ? Floors.Shipped : tour == Tour.Devices ? Floors.Devices : tour == Tour.KeysFloor ? Floors.Keys : Floors.None;
+    // ROOM TYPES keeps the shipped station, its key and the EXIT chain: for the kinds' rules it is the shipped floor.
+    Floors ThisFloor => tour == Tour.Shipped || tour == Tour.Rooms ? Floors.Shipped : tour == Tour.Devices ? Floors.Devices : tour == Tour.KeysFloor ? Floors.Keys : Floors.None;
 
     void Awake()
     {
@@ -166,6 +176,10 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         }
         live = this;
         for (var k = 0; k < KindCount; k++) found[k] = new List<Example>();
+        // The museum table (generated) names every kind once: say which one it lost, never stop the guide for it.
+        for (var k = 0; k < KindCount; k++)
+            if (FrontRoomsShowcaseTable.OfGuideKind(k) == null)
+                Debug.LogWarning("Interactables showcase: FrontRoomsShowcaseTable has no row for " + Names[k] + " (kind " + k + "); regenerate it.");
     }
 
     void OnEnable()
@@ -191,14 +205,21 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         if (live == this) live = null;
         if (tourProfile != null) Destroy(tourProfile);
         if (InGameTour) FrontRoomsInspect.DevTargets = false;
+        DestroyPlanFont();
+        RestoreLamps();
+        // The museum's kit statics (DoorMemberOverride, DoorLockedOverride) back as they were.
+        ClearMuseumTools();
     }
 
     // ---------- tours
 
     void Choose(Tour next)
     {
+        // Leaving the museum (its plan's ENTER): the kit's statics go back before anything else is built.
+        ClearMuseumTools();
         tour = next;
         if (!InGameTour) return;
+        tourLoading = true;
         // The game scene replaces this one; the guide goes with it (a root object).
         DontDestroyOnLoad(gameObject);
         SceneManager.LoadScene(GameBuildIndex, LoadSceneMode.Single);
@@ -206,6 +227,9 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
 
     void BackToMenu()
     {
+        // ROOM TYPES: a patch L lit goes back as built before the map is left; MUSEUM: the kit's statics.
+        RestoreLamps();
+        ClearMuseumTools();
 #if UNITY_EDITOR
         // Scene 3 is not in the enabled build list (it never ships): only the editor loads it by path.
         live = null;
@@ -218,6 +242,7 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        tourLoading = false;
         if (!InGameTour) return;
         map = null;
         relay = null;
@@ -234,6 +259,8 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         }
         view = game.GetComponentInChildren<Camera>(true);
         ApplyTour();
+        // MUSEUM: the Relay's shim, the run's start without the title, a run already going (.Museum.cs).
+        if (tour == Tour.Museum) MuseumSceneLoaded();
     }
 
     /// <summary>The tour's copy of the game's own profile, handed over before the run reads it (StartRunInPlace, at SPACE).</summary>
@@ -260,6 +287,8 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             // Run! rooms; the station, its key and the EXIT chain, and body doors as shipped.
             tourProfile.sashPry = tourProfile.foil = tourProfile.alarmDoor = tourProfile.runRooms = true;
         }
+        else if (tour == Tour.Rooms) ApplyRoomsCopy(source);
+        else if (tour == Tour.Museum) ApplyMuseumCopy();
         else
         {
             // No station: no floor-key rule, so interior doors lock and zone keys lie about; E doors (no body doors).
@@ -282,15 +311,37 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         if (game == null) game = FindAnyObjectByType<FrontRooms3DGame>();
         if (view == null && game != null) view = game.GetComponentInChildren<Camera>(true);
         player = game != null ? game.transform.Find("Player") : null;
-        if (tour == Tour.Devices && map != null)
+        if (tour == Tour.Devices && map != null) ForceDevices();
+        if (tour == Tour.Rooms && map != null) RoomsRunStarted();
+        if (tour == Tour.Museum)
         {
-            // The tools' force: every zone planned from now on that may hold a foiled window or an alarm door gets one.
-            if (map.Foil != null) map.Foil.Rules.force = true;
-            if (map.AlarmDoors != null) map.AlarmDoors.Rules.force = true;
+            // The carve now, the build and the walk in on the next frame; its own toast on arrival (.Museum.cs).
+            if (map != null) MuseumRunStarted();
+            return;
         }
         scanClock = 0f;
-        Toast(TourName(tour), tour == Tour.KeysFloor ? "E doors, locked doors, zone keys and the unlock shot. G lists them, 1-0 jumps."
+        Toast(TourName(tour), tour == Tour.Rooms ? "Every kind of room, R1-R13 on the list: 1-0 jumps, J the next variant, K the B1 route, L a dark patch lit."
+            : tour == Tour.KeysFloor ? "E doors, locked doors, zone keys and the unlock shot. G lists them, 1-0 jumps."
             : "The station, its key, the EXIT, the TV and placard, doors and windows" + (tour == Tour.Devices ? " and every device." : ". G lists them, 1-0 jumps."));
+        // A station picked on the museum plan with no automatic jump (1.6 RUN! DOOR, 3.6 the card): its note and placard.
+        if (pendingStation != null && pendingKind < 0)
+        {
+            Toast(LabelOf(pendingStation), pendingStation.note ?? "");
+            ShowPlacard(pendingStation);
+            ClearPending();
+        }
+    }
+
+    /// <summary>
+    /// EVERY DEVICE: the tools' force on this floor's planners, so every zone planned from now on that may hold a foiled
+    /// window, an alarm door or a Run! room gets one. The Run! force is the autopilot's own flag (FrontRoomsRunRules.force):
+    /// it also lifts the tier-2 and first-send gates. Each floor makes new planners, so FloorChanged sets them again.
+    /// </summary>
+    void ForceDevices()
+    {
+        if (map.Foil != null) map.Foil.Rules.force = true;
+        if (map.AlarmDoors != null) map.AlarmDoors.Rules.force = true;
+        if (map.RunRooms != null) map.RunRooms.Rules.force = true;
     }
 
     void OnMapRunEnded()
@@ -300,6 +351,10 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         player = null;
         lastIndex = -1;
         ClearFound();
+        // A tour chosen on the museum's plan unloads this game first: its jump waits for the next run.
+        if (!tourLoading) ClearPending();
+        RoomsRunEnded();
+        MuseumRunEnded();
     }
 
     void OnFloorChanged(FrontRoomsMapWorld changedMap, FrontRoomsMapHunter hunter, int newFloor)
@@ -310,13 +365,16 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         lastIndex = -1;
         ClearFound();
         scanClock = 0f;
+        if (tour == Tour.Devices && map != null) ForceDevices();
+        if (tour == Tour.Rooms && map != null) RoomsFloorChanged();
+        if (tour == Tour.Museum) MuseumFloorChanged();
     }
 
     void OnPaused(bool on) => paused = on;
 
     static string TourName(Tour t) =>
         t == Tour.Shipped ? "FLOOR 1 · AS SHIPPED" : t == Tour.Devices ? "FLOOR 1 · EVERY DEVICE" : t == Tour.KeysFloor ? "KEYS FLOOR"
-        : t == Tour.MediaBay ? "MEDIA BAY" : "TOURS";
+        : t == Tour.MediaBay ? "MEDIA BAY" : t == Tour.MuseumPlan ? "MUSEUM · PLAN" : t == Tour.Rooms ? "ROOM TYPES" : t == Tour.Museum ? "MUSEUM" : "TOURS";
 
     static Tour HomeOf(Floors where) =>
         (where & Floors.Shipped) != 0 ? Tour.Shipped : (where & Floors.Devices) != 0 ? Tour.Devices : Tour.KeysFloor;
@@ -333,6 +391,10 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             else if (keys.digit2Key.wasPressedThisFrame || keys.numpad2Key.wasPressedThisFrame) Choose(Tour.Shipped);
             else if (keys.digit3Key.wasPressedThisFrame || keys.numpad3Key.wasPressedThisFrame) Choose(Tour.Devices);
             else if (keys.digit4Key.wasPressedThisFrame || keys.numpad4Key.wasPressedThisFrame) Choose(Tour.KeysFloor);
+            else if (keys.digit5Key.wasPressedThisFrame || keys.numpad5Key.wasPressedThisFrame) Choose(Tour.Museum);
+            else if (keys.digit6Key.wasPressedThisFrame || keys.numpad6Key.wasPressedThisFrame) Choose(Tour.Rooms);
+            // The museum's plan alone, here in scene 3 (no game): also the way in when the game scene cannot build it.
+            else if (keys.pKey.wasPressedThisFrame) Choose(Tour.MuseumPlan);
             return;
         }
         if (keys != null && keys.f2Key.wasPressedThisFrame && !FrontRooms3DGame.InspectingNow)
@@ -340,12 +402,28 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             BackToMenu();
             return;
         }
+        if (tour == Tour.MuseumPlan)
+        {
+            UpdatePlan(keys);
+            return;
+        }
         if (!InGameTour) return;
 
         if (relay != null) relay.HeldForTools = holdRelay;
         // The game's teardown of a close-up (FrontRoomsInspect.Abort) puts the switch back; keep it as the tour has it.
         FrontRoomsInspect.DevTargets = devTargets;
-        if (map == null) return;
+        // MUSEUM: its own start, build, keys and plan (.Museum.cs); none of the tours' list, jumps or tags.
+        if (tour == Tour.Museum)
+        {
+            UpdateMuseum(keys);
+            return;
+        }
+        if (map == null)
+        {
+            // ROOM TYPES' title: N picks the station of the floors below (the copy is read at SPACE).
+            if (tour == Tour.Rooms) UpdateRoomsTitle(keys);
+            return;
+        }
         if (player == null && game != null) player = game.transform.Find("Player");
         scanClock -= Time.unscaledDeltaTime;
         if (scanClock <= 0f)
@@ -353,6 +431,8 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             scanClock = ScanSeconds;
             Scan();
         }
+        TryPending();
+        if (tour == Tour.Rooms) TickRooms();
         if (keys == null || paused || FrontRooms3DGame.InspectingNow) return;
         if (keys.gKey.wasPressedThisFrame) listShown = !listShown;
         if (keys.hKey.wasPressedThisFrame)
@@ -367,12 +447,24 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             Toast(devTargets ? "DEV CLOSE-UPS ON" : "DEV CLOSE-UPS OFF", "Rooms built from now on attach them as their kits spawn.");
         }
         if (keys.bKey.wasPressedThisFrame) BreakDoorInView();
+        if (tour == Tour.Rooms)
+        {
+            // The R list's own pages, jumps, J, K and L (.Rooms.cs).
+            UpdateRoomsKeys(keys);
+            return;
+        }
         if (keys.leftBracketKey.wasPressedThisFrame || keys.pageUpKey.wasPressedThisFrame) page = (page + PageCount - 1) % PageCount;
         if (keys.rightBracketKey.wasPressedThisFrame || keys.pageDownKey.wasPressedThisFrame) page = (page + 1) % PageCount;
-        if (keys.jKey.wasPressedThisFrame && lastIndex >= 0) Jump(lastKind, lastIndex + 1);
+        // A jump key cancels ENTER's waiting jump: the manual one wins.
+        if (keys.jKey.wasPressedThisFrame)
+        {
+            ClearPending();
+            if (lastIndex >= 0) Jump(lastKind, lastIndex + 1);
+        }
         var digit = DigitDown(keys);
         if (digit >= 0)
         {
+            ClearPending();
             var k = page * PageSize + digit;
             if (k < KindCount) Jump((Kind)k, 0);
         }
@@ -595,26 +687,27 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
 
     // ---------- jumps and the door break
 
-    void Jump(Kind kind, int index)
+    /// <summary>The player in front of the kind's index-th nearest example, facing it; false (and the reason on screen) when not.</summary>
+    bool Jump(Kind kind, int index)
     {
         var list = found[(int)kind];
         if (player == null || list.Count == 0)
         {
-            Toast(Names[(int)kind], list.Count == 0 ? NotHereLine(kind) : "The run has not started.");
-            return;
+            Toast(Label((int)kind), list.Count == 0 ? NotHereLine(kind) : "The run has not started.");
+            return false;
         }
         // The start rooms belong to the title's stream until the start door is behind the player: walk out first.
         if (map.InStartArea(map.CellOf(player.position)))
         {
-            Toast(Names[(int)kind], "Walk through the start door first; jumps work on the floor itself.");
-            return;
+            Toast(Label((int)kind), "Walk through the start door first; jumps work on the floor itself.");
+            return false;
         }
         index %= list.Count;
         var e = list[index];
         if (!StandFor(e, out var feet))
         {
-            Toast(Names[(int)kind], "No clear floor in front of it: walk there (" + Mathf.RoundToInt(e.distance) + " m).");
-            return;
+            Toast(Label((int)kind), "No clear floor in front of it: walk there (" + Mathf.RoundToInt(e.distance) + " m).");
+            return false;
         }
         var body = player.GetComponent<CharacterController>();
         var was = body != null && body.enabled;
@@ -630,8 +723,10 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             PitchField.SetValue(game, Mathf.Clamp(-Mathf.Atan2(look.y, Mathf.Max(.1f, flat.magnitude)) * Mathf.Rad2Deg, -45f, 45f));
         lastKind = kind;
         lastIndex = index;
-        Toast(Names[(int)kind] + (list.Count > 1 ? "  " + (index + 1) + " / " + list.Count : ""), HowTo[(int)kind]);
+        Toast(Label((int)kind) + (list.Count > 1 ? "  " + (index + 1) + " / " + list.Count : ""), HowTo[(int)kind]);
+        ShowPlacard(FrontRoomsShowcaseTable.OfGuideKind((int)kind));
         scanClock = .1f;
+        return true;
     }
 
     /// <summary>
@@ -725,6 +820,8 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
     string NotHereLine(Kind kind)
     {
         var where = Where[(int)kind];
+        // In no tour (the terminal): HomeOf would name the keys floor.
+        if (where == Floors.None) return "In no tour yet: level design has not picked the terminal desks (L2).";
         if ((where & ThisFloor) == 0)
         {
             var home = HomeOf(where);
@@ -732,13 +829,14 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         }
         if (kind == Kind.BrokenDoor) return "None yet: look at a door and press B.";
         if (kind == Kind.DevCloseUp && !devTargets) return "V turns them on; rooms built after that carry them.";
-        if (kind == Kind.RunDoor) return "Planned from tier 2, after the first send: H releases the Relay.";
+        if (kind == Kind.RunDoor) return "Forced here, 70-120 m out: walk on.";
         return "None near yet: walk on, the floor builds round you.";
     }
 
     string StatusWhenNone(Kind kind)
     {
         var where = Where[(int)kind];
+        if (where == Floors.None) return "NOT IN THE GAME YET";
         if ((where & ThisFloor) == 0) return TourName(HomeOf(where));
         if (kind == Kind.BrokenDoor) return "B MAKES ONE";
         return "NOT FOUND YET";
@@ -749,6 +847,8 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         toastTitle = title;
         toastLine = line;
         toastUntil = Time.unscaledTime + 4f;
+        // A station's placard lines come back only with ShowPlacard.
+        toastWhat = toastDecide = null;
     }
 
     static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
@@ -771,6 +871,7 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         statusStyle = Style(mono, 13f * scale, TextAnchor.UpperRight);
         toastTitleStyle = Style(bayon, 30f * scale, TextAnchor.UpperCenter);
         toastLineStyle = Style(mono, 16f * scale, TextAnchor.UpperCenter);
+        EnsureZhStyles(scale);
         if (white == null)
         {
             white = new Texture2D(1, 1, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
@@ -830,6 +931,17 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             Text(new Rect(18f, 72f * s, 600f * s, 24f * s), "F2 · TOURS", lineStyle, Paper, .85f);
             return;
         }
+        if (tour == Tour.MuseumPlan)
+        {
+            DrawPlan(margin, s);
+            return;
+        }
+        if (tour == Tour.Museum)
+        {
+            // The built museum: its framed codes, room list and placard, or the plan over the game with P (.Museum.cs).
+            if (!paused && !FrontRooms3DGame.InspectingNow) DrawMuseum(margin, s);
+            return;
+        }
         if (paused || FrontRooms3DGame.InspectingNow) return;
         var w = 560f * s;
         var x = Screen.width - margin - w;
@@ -839,20 +951,30 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             Text(new Rect(x, y, w, 40f * s), TourName(tour), titleStyle, Paper);
             Text(new Rect(x, y + 40f * s, w, 40f * s), "SPACE starts the run (the game's own title)  ·  F2 TOURS", lineStyle, Paper, .9f);
             if (problem != null) Text(new Rect(x, y + 70f * s, w, 60f * s), problem, smallStyle, Accent);
+            if (tour == Tour.Rooms) DrawRoomsTitle(x, y + 136f * s, w, s);
             return;
         }
-        DrawTags(s);
-        if (listShown) DrawList(x, y, w, s);
-        else Text(new Rect(x, y, w, 24f * s), "G · INTERACTABLES", lineStyle, Paper, .85f);
+        if (tour == Tour.Rooms)
+        {
+            // ROOM TYPES: the R list on the right and the station card on the left; no kind tags (.Rooms.cs).
+            if (listShown)
+            {
+                DrawRoomsList(x, y, w, s);
+                DrawRoomCard(margin, s);
+            }
+            else Text(new Rect(x, y, w, 24f * s), "G · ROOM TYPES", lineStyle, Paper, .85f);
+        }
+        else
+        {
+            DrawTags(s);
+            if (listShown) DrawList(x, y, w, s);
+            else Text(new Rect(x, y, w, 24f * s), "G · INTERACTABLES", lineStyle, Paper, .85f);
+        }
         if (Time.unscaledTime < toastUntil && toastTitle != null)
         {
-            var a = Mathf.Clamp01((toastUntil - Time.unscaledTime) / .4f);
+            // Its title and line, then a station's two placard lines in Chinese when set (DrawToast, .Plan.cs).
             var tw = Mathf.Min(820f * s, Screen.width - 2f * margin);
-            var tx = (Screen.width - tw) * .5f;
-            var ty = Screen.height * .2f;
-            Text(new Rect(tx, ty, tw, 40f * s), toastTitle, toastTitleStyle, Accent, a);
-            var h = toastLineStyle.CalcHeight(new GUIContent(toastLine), tw);
-            Text(new Rect(tx, ty + 40f * s, tw, h), toastLine, toastLineStyle, Paper, a);
+            DrawToast((Screen.width - tw) * .5f, Screen.height * .2f, tw, s);
         }
     }
 
@@ -869,12 +991,17 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         y = MenuRow(x, y, w, s, "2", "FLOOR 1 · AS SHIPPED", "The game exactly as it ships, with the guide on top: the station, stair key, EXIT chain and U1 fall, TV, placard, body doors, windows, door lites.");
         y = MenuRow(x, y, w, s, "3", "FLOOR 1 · EVERY DEVICE", "The same floor with what the shipped profile keeps off: sash latches, foiled windows, alarm doors, Run! rooms.");
         y = MenuRow(x, y, w, s, "4", "KEYS FLOOR", "No station: E doors, locked doors, zone keys, key tags and the unlock shot.");
+        y = MenuRow(x, y, w, s, "5", "MUSEUM", "Built in the game from its own cells and doors: hub 0 and four rooms, room 1's doors live, rooms 2-4 as framed codes. P on its hub board opens the plan (P here: the plan alone, no game).");
+        y = MenuRow(x, y, w, s, "6", "ROOM TYPES", "Every kind of room the game builds (R0-R13) on a floor tilted toward variety: zones, rooms, columns, piles, borders, dark lamps, Run!, the stairwell, the B1 station.");
         y += 12f * s;
-        var keysLine = "In a tour: G list  ·  1-0 jump  ·  [ ] page  ·  J next one  ·  H Relay held / live  ·  B break a door  ·  V dev close-ups  ·  F2 tours";
+        var keysLine = "In a tour: G list  ·  1-0 jump  ·  [ ] page  ·  J next one  ·  H Relay held / live  ·  B break a door  ·  V dev close-ups  ·  F2 tours"
+            + "  ·  ROOM TYPES: K the B1 route, L a dark patch lit, N on its title the B1 station"
+            + "  ·  MUSEUM: [ ] room, 1-7 station, 0 hub, R reset, B break, P plan";
         var h = smallStyle.CalcHeight(new GUIContent(keysLine), w);
         Text(new Rect(x, y, w, h), keysLine, smallStyle, Paper, .8f);
         y += h + 10f * s;
-        Text(new Rect(x, y, w, 40f * s), "Not in any tour: the ALARM ZONE card (built, not placed by the map yet); lockers (none in the game).", smallStyle, Paper, .6f);
+        var notLine = "Not in any tour: the office terminal (no game code places one yet), lockers, pools, bathrooms, slides and walkable stairs (none in the game). The ALARM ZONE card hangs at every Run! room in tour 3.";
+        Text(new Rect(x, y, w, smallStyle.CalcHeight(new GUIContent(notLine), w)), notLine, smallStyle, Paper, .6f);
     }
 
     float MenuRow(float x, float y, float w, float s, string key, string name, string line)
@@ -895,6 +1022,7 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
         var meta = "RELAY " + (holdRelay ? "HELD" : "LIVE") + " (H)  ·  DEV " + (devTargets ? "ON" : "OFF") + " (V)  ·  PAGE " + (page + 1) + "/" + PageCount + " [ ]  ·  G HIDE  ·  F2 TOURS";
         Text(new Rect(x, y, w, 22f * s), meta, smallStyle, Paper, .8f);
         y += 26f * s;
+        y = DrawWaiting(x, y, w, s);
         if (problem != null)
         {
             var ph = smallStyle.CalcHeight(new GUIContent(problem), w);
@@ -911,7 +1039,7 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             var marked = lastIndex >= 0 && (int)lastKind == k;
             if (marked) Fill(new Rect(x - 14f * s, y + 6f * s, 4f * s, 14f * s), Accent);
             Text(new Rect(x, y, 24f * s, 26f * s), i == 9 ? "0" : (i + 1).ToString(), nameStyle, here ? Accent : Paper, alpha);
-            Text(new Rect(x + 28f * s, y, w - 228f * s, 26f * s), Names[k], nameStyle, Paper, alpha);
+            Text(new Rect(x + 28f * s, y, w - 228f * s, 26f * s), Label(k), nameStyle, Paper, alpha);
             var status = here ? Mathf.RoundToInt(list[0].distance) + " M" + (list.Count > 1 ? "  ·  " + list.Count : "") : StatusWhenNone((Kind)k);
             Text(new Rect(x + w - 200f * s, y + 5f * s, 200f * s, 22f * s), status, statusStyle, Paper, here ? .9f : .5f);
             y += 28f * s;
@@ -920,6 +1048,7 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
                 var h = smallStyle.CalcHeight(new GUIContent(HowTo[k]), w - 28f * s);
                 Text(new Rect(x + 28f * s, y - 2f * s, w - 28f * s, h), HowTo[k], smallStyle, Paper, .85f);
                 y += h + 6f * s;
+                y = DrawRowDecide(k, x + 28f * s, y, w - 28f * s, s);
             }
         }
     }
@@ -943,7 +1072,7 @@ public sealed class FrontRoomsInteractablesShowcase : MonoBehaviour
             Fill(new Rect(gx - dot * .5f - 1f, gy - dot * .5f - 1f, dot + 2f, dot + 2f), new Color(Ink.r, Ink.g, Ink.b, .55f * a));
             Fill(new Rect(gx - dot * .5f, gy - dot * .5f, dot, dot), new Color(Accent.r, Accent.g, Accent.b, a));
             var onPage = k >= first && k < first + PageSize;
-            var label = (onPage ? (k - first == 9 ? "0" : (k - first + 1).ToString()) + "  " : "") + Names[k];
+            var label = (onPage ? (k - first == 9 ? "0" : (k - first + 1).ToString()) + "  " : "") + Label(k);
             Text(new Rect(gx + dot + 2f * s, gy - 9f * s, 360f * s, 22f * s), label, smallStyle, Paper, a);
         }
     }

@@ -65,3 +65,11 @@ Two side effects to report:
 - `Assets/Resources/Props/Models/Kit_ExitSign(.json|.fbx.meta)`, `Kit_ExitSign_Dead(.json|.fbx.meta)`; `Tools/Blender/frontrooms_kit/assets/interact_exit_sign.py`, `interact_key_common.py:211-330`, `kitlib.py:1-60, 132-175, 640-830`, `build_asset.py`.
 - Docs: `research/interactables/10_spec.md` §2.4 and §9.3, `build_g3_*.md`; `research/glass/rt/11a_glossy_surfaces.md` §6 (M1, M2); `research/room_visuals/03_run_research.md`, `04_captures.md`, `10_run_directions.md`; `research/door_break/10_design.md` (EX-K row); `research/webgl/10_webgl_plan.md` §2; `RELAY_PURSUIT_REDESIGN.md` (photosafety rules); `office_and_film/22_era_lock.md`; `FONTS_PERIOD_1990.md`; `VERIFICATION_LOG.md`.
 - git: `git -C Frontrooms3D log` and `diff 7320ed1 HEAD` for the files above.
+
+## 6. World text: the EXIT in another language (`80_world_text_options.md`, 2026-11-03)
+
+| Id | What | URL | How read | Used for |
+|---|---|---|---|---|
+| S13 | Fire Services Department (Hong Kong), Circular Letter No. 2/2000 "Exit and Directional Signs", 12 April 2000, with the amended §5.10 of the Code of Practice for Minimum Fire Service Installations and Equipment | https://www.hkfsd.gov.hk/eng/source/circular/e02_2000.pdf | read (text extracted from the PDF the fetch returned; nothing kept), 2026-11-03 20:3x; government circular, facts only | a real bilingual exit-sign rule: English and Chinese words ≥ 125 mm high; Chinese vertical strokes ≥ 15 mm, horizontal ≥ 10 mm; Figure 1 pairs "EXIT" with "出口"; translucent surrounds, white lettering preferred when internally lit; internally lit signs to BS 5499 Part 3. The size rule is not among the circular's three changes, so it predates April 2000 (first edition not verified) |
+| S14 | Noto Sans SC (Source Han Sans SC), variable, SIL OFL 1.1, `~/Library/Fonts/NotoSansSC-VariableFont_wght.ttf` | WORLD_TYPE.md §2 | read (rendered at wght 700 by FreeType, traced) | the zh-Hans legend outlines (WORLD_TYPE R1 黑体) |
+| S15 | Edge-lit and panel signs in 1930s–40s theatres (dealer listings) | https://www.urbanremainschicago.com/unusual-original-and-impeccable-c-1940-s-edge-lit-interior-theater-wall-mount-machine-age-exit-light.html | [search] summary only, 2026-11-03 | printed and edge-lit legends predate the stencil era; supports option B as a period construction (with S6 Type 606) |

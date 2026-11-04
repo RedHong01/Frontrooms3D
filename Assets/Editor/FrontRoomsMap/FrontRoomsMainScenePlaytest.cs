@@ -32,6 +32,13 @@ using UnityEngine;
 /// the EXIT (-autopilotExit, or a baseline's -autopilotBotAfterExit) to s seconds instead of ExitTimeoutSeconds
 /// (600), so define-on bot runs can play 10 min after floor 1's 180 s onboarding gate (DefaultLongExitTimeout,
 /// 1200 s, when no number follows; lean's play:<seed>:...+autopilotExitTimeout 1500). Other runs keep their own.
+/// The tools' routes (FrontRooms3DGame.AutoRoutes.cs; the combined test's rows X10, X11, X16; any letter case; one per
+/// run; each gets the EXIT's deadline): -autopilotRunRoom walks a forced Run! room's loop (armed, the trip, the sprint,
+/// the goal door, the reset), so it also turns Run! rooms on and forced (as -autopilotRunRooms 2, unless that flag is
+/// given) and floor 1's onboarding off (as -autopilotOnboardOff: the Relay's first send comes on floor 1);
+/// -autopilotSash turns the sash pry on for the run (FrontRoomsMapWorld.SashPryForTools) and the onboarding off, and
+/// pries a plain window's sash by E and climbs through it; -autopilotStartFloor N takes the run down to floor N by the
+/// game's own EXIT seal and change of floor and reads the landing placard and the HUD's floor token there.
 /// </summary>
 [InitializeOnLoad]
 public static class FrontRoomsMainScenePlaytest
@@ -48,6 +55,8 @@ public static class FrontRoomsMainScenePlaytest
     const string RunRoomsKey = "FrontRooms.Playtest.RunRooms";
     // BS1, BS2: -autopilotFloorStations for this run, kept across the domain reload of entering Play.
     const string FloorStationsKey = "FrontRooms.Playtest.FloorStations";
+    // X11: -autopilotSash for this run (the sash pry on), kept across the domain reload of entering Play.
+    const string SashKey = "FrontRooms.Playtest.Sash";
     const float TimeoutSeconds = 240f;
     // C22: the EXIT scenario walks up to 240 s of game time (three floors) after entering Play.
     const float ExitTimeoutSeconds = 600f;
@@ -78,6 +87,7 @@ public static class FrontRoomsMainScenePlaytest
         SessionState.SetBool(OnboardOffKey, OnboardOffArgument());
         SessionState.SetInt(RunRoomsKey, RunRoomsArgument());
         SessionState.SetBool(FloorStationsKey, FlagArgument("-autopilotFloorStations"));
+        SessionState.SetBool(SashKey, FlagArgument("-autopilotSash"));
         HookStation();
         EditorApplication.update -= Watch;
         EditorApplication.update += Watch;
@@ -103,23 +113,28 @@ public static class FrontRoomsMainScenePlaytest
         return i + 1 < args.Length && int.TryParse(args[i + 1], out var depth) && (depth == 3 || depth == 4) ? depth : 4;
     }
 
-    // -autopilotOnboardOff, in any letter case (lean.sh's play:<seed>:onboardOff passes -autopilotonboardOff).
+    // -autopilotOnboardOff, in any letter case (lean.sh's play:<seed>:onboardOff passes -autopilotonboardOff). The X10 and X11
+    // routes (-autopilotRunRoom, -autopilotSash) need the Relay's first send on floor 1, so they turn it off too.
     static bool OnboardOffArgument()
     {
         foreach (var arg in System.Environment.GetCommandLineArgs())
             if (string.Equals(arg, "-autopilotOnboardOff", System.StringComparison.OrdinalIgnoreCase)) return true;
-        return false;
+        return FlagArgument("-autopilotRunRoom") || FlagArgument("-autopilotSash");
     }
 
-    // -autopilotRunRooms [1|2], in any letter case: 2 (on and forced) unless a 1 follows; 0 without the flag.
+    // -autopilotRunRooms [1|2], in any letter case: 2 (on and forced) unless a 1 follows; without it, 2 for the X10 route
+    // (-autopilotRunRoom), else 0.
     static int RunRoomsArgument()
     {
         var args = System.Environment.GetCommandLineArgs();
         for (var i = 0; i < args.Length; i++)
             if (string.Equals(args[i], "-autopilotRunRooms", System.StringComparison.OrdinalIgnoreCase))
                 return i + 1 < args.Length && args[i + 1] == "1" ? 1 : 2;
-        return 0;
+        return FlagArgument("-autopilotRunRoom") ? 2 : 0;
     }
+
+    // The tools' routes (FrontRooms3DGame.AutoRoutes.cs): X10, X11, X16, in any letter case.
+    static bool RouteArgument() => FlagArgument("-autopilotRunRoom") || FlagArgument("-autopilotSash") || FlagArgument("-autopilotStartFloor");
 
     // A flag in any letter case (lean.sh's play:<seed>:<flag> passes -autopilot<flag>).
     static bool FlagArgument(string flag)
@@ -142,6 +157,8 @@ public static class FrontRoomsMainScenePlaytest
         // BS1, BS2: the floors below the first take the stand-in floor stations (FrontRooms3DGame.FloorStationModuleForTools).
         FrontRooms3DGame.FloorStationModuleForTools = SessionState.GetBool(FloorStationsKey, false)
             ? (System.Func<ZoneTheme, RoomModuleData>)(theme => StandInFloorStation(theme)) : null;
+        // X11: the sash pry's tools switch (FrontRoomsMapWorld.SashPryForTools), likewise.
+        FrontRoomsMapWorld.SashPryForTools = SessionState.GetBool(SashKey, false);
     }
 
     /// <summary>
@@ -220,9 +237,9 @@ public static class FrontRoomsMainScenePlaytest
         return m;
     }
 
-    // A Relay baseline with -autopilotBotAfterExit (any letter case) walks floor 1's EXIT before its bot's budget: the EXIT's deadline too.
-    // -autopilotExitTimeout [s] replaces the EXIT's deadline (ExitTimeoutArgument).
-    static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 || BotAfterExitArgument()
+    // A Relay baseline with -autopilotBotAfterExit (any letter case) walks floor 1's EXIT before its bot's budget: the EXIT's deadline too,
+    // as do the tools' routes (RouteArgument). -autopilotExitTimeout [s] replaces the EXIT's deadline (ExitTimeoutArgument).
+    static float Timeout => System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autopilotExit") >= 0 || BotAfterExitArgument() || RouteArgument()
         ? ExitTimeoutArgument(ExitTimeoutSeconds) : TimeoutSeconds;
 
     // -autopilotExitTimeout [s], in any letter case: s seconds (a positive number, invariant culture), DefaultLongExitTimeout
@@ -271,10 +288,12 @@ public static class FrontRoomsMainScenePlaytest
         SessionState.EraseBool(OnboardOffKey);
         SessionState.EraseInt(RunRoomsKey);
         SessionState.EraseBool(FloorStationsKey);
+        SessionState.EraseBool(SashKey);
         FrontRooms3DGame.StationModuleForTools = null;
         FrontRooms3DGame.OnboardOffForTools = false;
         FrontRoomsMapWorld.RunRoomsForTools = 0;
         FrontRooms3DGame.FloorStationModuleForTools = null;
+        FrontRoomsMapWorld.SashPryForTools = false;
         var verdict = done ? File.ReadAllText(DonePath)
             : aborted ? "FAIL · Play mode was left before the autopilot finished"
             : "FAIL · timed out after " + Timeout + " s";

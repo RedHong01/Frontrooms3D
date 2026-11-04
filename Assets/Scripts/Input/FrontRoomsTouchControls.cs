@@ -522,13 +522,15 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (dir == Vector2Int.zero) navHeld = Vector2Int.zero;
         else if (dir != navHeld) { navHeld = dir; navRepeatAt = now + .35f; nav.Dir = dir; }
         else if (now >= navRepeatAt) { navRepeatAt = now + .12f; nav.Dir = dir; }
-        nav.Confirm = (pad != null && pad.buttonSouth.wasPressedThisFrame)
+        // The menus' buttons by role (D6: a Nintendo pad confirms on its A, east, and goes back on its B, south; its X resets
+        // and its Y previews).
+        nav.Confirm = (pad != null && FrontRoomsInput.PadControl(pad, FrontRoomsInput.ConfirmButton).wasPressedThisFrame)
             || (keys != null && (keys.enterKey.wasPressedThisFrame || keys.numpadEnterKey.wasPressedThisFrame || keys.spaceKey.wasPressedThisFrame));
-        nav.Back = pad != null && pad.buttonEast.wasPressedThisFrame;
+        nav.Back = pad != null && FrontRoomsInput.PadControl(pad, FrontRoomsInput.BackButton).wasPressedThisFrame;
         // X (or a keyboard's Backspace) puts the focused row back to its default and Y opens GRAPHICS' preview, as on the
         // desktop sheet (2026-10-31).
-        nav.Reset = (pad != null && pad.buttonWest.wasPressedThisFrame) || (keys != null && keys.backspaceKey.wasPressedThisFrame);
-        nav.Preview = pad != null && pad.buttonNorth.wasPressedThisFrame;
+        nav.Reset = (pad != null && FrontRoomsInput.PadControl(pad, FrontRoomsInput.ResetButton).wasPressedThisFrame) || (keys != null && keys.backspaceKey.wasPressedThisFrame);
+        nav.Preview = pad != null && FrontRoomsInput.PadControl(pad, FrontRoomsInput.ExtraButton).wasPressedThisFrame;
         var next = (pad != null && pad.rightShoulder.wasPressedThisFrame) || (keys != null && (keys.eKey.wasPressedThisFrame || keys.tabKey.wasPressedThisFrame));
         var previous = (pad != null && pad.leftShoulder.wasPressedThisFrame) || (keys != null && keys.qKey.wasPressedThisFrame);
         nav.Tab = (next ? 1 : 0) - (previous ? 1 : 0);
@@ -823,7 +825,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
 #if UNITY_ANDROID
         edgeGuard = 24f;
 #endif
-        Layout = new FrontRoomsTouchLayout(FrontRoomsHandheld.ScreenPoints, safe, controlsScale * FrontRoomsHandheld.DeviceControlsScale, leftHanded, FrontRoomsHandheld.IsTablet, edgeGuard);
+        // A pad or a keyboard in use keeps the sheet's foot for the prompt bar (D3): the list ends above it.
+        Layout = new FrontRoomsTouchLayout(FrontRoomsHandheld.ScreenPoints, safe, controlsScale * FrontRoomsHandheld.DeviceControlsScale, leftHanded, FrontRoomsHandheld.IsTablet, edgeGuard, ExternalInput);
     }
 
     // ------------------------------------------------------------ public api
@@ -1557,6 +1560,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         }
         return false;
     }
+
+    /// <summary>The focused row (the view's prompt bar reads what A does on it).</summary>
+    public FrontRoomsSettingsMenu.Row ActiveRow => SlotRow(ActiveSettingsRow);
 
     FrontRoomsSettingsMenu.Row SlotRow(int id)
     {

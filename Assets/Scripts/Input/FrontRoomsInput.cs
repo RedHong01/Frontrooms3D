@@ -284,7 +284,10 @@ public static class FrontRoomsInput
         padMenu = default(PadMenu);
         padMenuFrame = -1;
         padHeld = Vector2Int.zero;
-        // PlayStationPadOverride stays, as AppleKeysOverride does: the tests reload through here and keep the forced names.
+        mouseTravel = 0f;
+        mouseTravelFrom = float.NegativeInfinity;
+        // PlayStationPadOverride and NintendoPadOverride stay, as AppleKeysOverride does: the tests reload through here and keep
+        // the forced names.
         initialized = false;
         virtualActive = false;
         virtualSnapshot = FrameSnapshot.Empty;
@@ -478,6 +481,10 @@ public static class FrontRoomsInput
     /// read the same whatever pad is paired to the machine. Kept across <see cref="Shutdown"/>, as AppleKeysOverride is: the
     /// caller clears it.</summary>
     public static bool? PlayStationPadOverride { get; set; }
+
+    /// <summary>Tests and the capture harness only: forces <see cref="NintendoPad"/> (null: the pad in hand), as
+    /// <see cref="PlayStationPadOverride"/> forces PlayStation names. Kept across <see cref="Shutdown"/>: the caller clears it.</summary>
+    public static bool? NintendoPadOverride { get; set; }
 
     /// <summary>SPRINT's locked second key: Right Option on Apple keyboards, Right Ctrl elsewhere.</summary>
     public static string SprintLockPath => AppleKeys ? "<Keyboard>/rightAlt" : "<Keyboard>/rightCtrl";
@@ -854,7 +861,7 @@ public static class FrontRoomsInput
             case "buttonwest": return PadName(PadButton.West);
             case "buttonnorth": return PadName(PadButton.North);
             case "start": return PadName(PadButton.Menu);
-            case "select": return PlayStationPad ? (DualSensePad ? "CREATE" : "SHARE") : "VIEW";
+            case "select": return PlayStationPad ? (DualSensePad ? "CREATE" : "SHARE") : NintendoPad ? "-" : "VIEW";
             case "leftshoulder": return PadName(PadButton.LeftShoulder);
             case "rightshoulder": return PadName(PadButton.RightShoulder);
             case "lefttrigger": return PadName(PadButton.LeftTrigger);
@@ -932,7 +939,8 @@ public static class FrontRoomsInput
     }
 
     static string legendText;
-    static bool legendPad, legendPlayStation;
+    static bool legendPad;
+    static int legendNames;
     static FrontRoomsLanguage.Language legendLanguage;
     static Keyboard legendKeyboard;
 
@@ -945,16 +953,16 @@ public static class FrontRoomsInput
         // Made again only when what it names changed (2026-11-01: the title and pause legends ask every frame): the bindings
         // (Persist clears it), the device in use, PlayStation names, the language and the keyboard (its printed letters).
         var pad = PadInUse;
-        var ps = PlayStationPad;
-        if (legendText != null && pad == legendPad && ps == legendPlayStation && legendLanguage == FrontRoomsLanguage.Current && legendKeyboard == Keyboard.current) return legendText;
-        legendPad = pad; legendPlayStation = ps; legendLanguage = FrontRoomsLanguage.Current; legendKeyboard = Keyboard.current;
+        var names = PadNames;
+        if (legendText != null && pad == legendPad && names == legendNames && legendLanguage == FrontRoomsLanguage.Current && legendKeyboard == Keyboard.current) return legendText;
+        legendPad = pad; legendNames = names; legendLanguage = FrontRoomsLanguage.Current; legendKeyboard = Keyboard.current;
         return legendText = LegendPair(LegendPart.Move, pad) + "    " + LegendPair(LegendPart.Look, pad) + "    " + LegendPair(LegendPart.Sprint, pad)
             + "    " + LegendPair(LegendPart.Slow, pad) + "    " + LegendPair(LegendPart.Use, pad);
     }
 
-    /// <summary>The caught card's line: "R  TRY AGAIN" with the END RUN key as bound; with a pad in use the menus' A (CROSS), which
-    /// 关卡设计's suggested retry takes (NOTES_FOR_OWNERS.md §1.3).</summary>
-    public static string TryAgainLine() => FrontRoomsLanguage.F("{0}  TRY AGAIN", PadInUse ? PadName(PadButton.South) : ControlName(Bind.Restart));
+    /// <summary>The caught card's line: "R  TRY AGAIN" with the END RUN key as bound; with a pad in use the menus' confirm, A
+    /// (CROSS; a Nintendo pad's A, east), which 关卡设计's suggested retry takes (NOTES_FOR_OWNERS.md §1.3, ReadPadMenu).</summary>
+    public static string TryAgainLine() => FrontRoomsLanguage.F("{0}  TRY AGAIN", PadInUse ? PadName(ConfirmButton) : ControlName(Bind.Restart));
 
     /// <summary>
     /// A controller (Red, 2026-10-29: phones and iPads play with a pad or a keyboard too; Mac and Windows get it as well).
@@ -1041,13 +1049,35 @@ public static class FrontRoomsInput
         keyboardSeen = keyboard;
         var used = ExternalActivity();
         var mouse = Mouse.current;
-        if (used == Device.None && mouse != null && (mouse.delta.ReadValue().sqrMagnitude > 4f || mouse.leftButton.wasPressedThisFrame
+        // Mouse movement alone takes the prompts off a pad only when the mouse travels (D2, research/interaction/device_prompts/
+        // 10_research.md §3), so a bumped desk, a resting hand or a Steam Deck trackpad never repaints them; a click or a scroll
+        // switches at once, as a key does.
+        if (used == Device.None && mouse != null && (MouseTravelled(mouse) || mouse.leftButton.wasPressedThisFrame
             || mouse.rightButton.wasPressedThisFrame || Mathf.Abs(mouse.scroll.y.ReadValue()) > .01f)) used = Device.Keyboard;
         if (used != Device.None) DeviceInUse = used;
         if (used == Device.Gamepad) padInHand = Gamepad.current;
         // The pad in hand went: the keys again, even with another pad still in (its first press makes it the pad in hand).
         if (change == DeviceChange.InUseLost && !handheld) DeviceInUse = Device.Keyboard;
         if (DeviceInUse == Device.Gamepad && Gamepad.current == null) DeviceInUse = Device.Keyboard;
+    }
+
+    /// <summary>How far the mouse travels, and within how long, before it takes the prompts off a pad (D2: about 40 px within
+    /// 0.25 s, to be tuned in the combined test).</summary>
+    public const float MouseTravelPx = 40f, MouseTravelSeconds = .25f;
+    static float mouseTravel, mouseTravelFrom = float.NegativeInfinity;
+
+    // The mouse's travel in this burst of movement: a burst starts with the first move once MouseTravelSeconds have passed
+    // since the last one began without reaching MouseTravelPx.
+    static bool MouseTravelled(Mouse mouse)
+    {
+        var step = mouse.delta.ReadValue().magnitude;
+        if (step <= 0f) return false;
+        var now = Time.unscaledTime;
+        if (now - mouseTravelFrom > MouseTravelSeconds) { mouseTravelFrom = now; mouseTravel = 0f; }
+        mouseTravel += step;
+        if (mouseTravel < MouseTravelPx) return false;
+        mouseTravelFrom = float.NegativeInfinity;
+        return true;
     }
 
     // Gamepad.all against last frame's pads. The first look after a launch or a Shutdown only learns them: a pad already in at
@@ -1102,17 +1132,20 @@ public static class FrontRoomsInput
 
     /// <summary>What a pad is (2026-11-01, Red: "如果当前设备已经链接了手柄，应该显示一个手柄以链接的状态"): the connected notice,
     /// CONTROLS' CONTROLLER row and the touch sheet's CONTROLLER list name it by its family.</summary>
-    public enum PadFamily { None, Xbox, PlayStation, Generic }
+    public enum PadFamily { None, Xbox, PlayStation, Generic, Nintendo }
 
     /// <summary>A pad's family by the test the button names use (<see cref="PlayStationPad"/>): a DualShock or a DualSense is
-    /// PlayStation; an XInputController (the base of every Xbox layout on Windows, macOS and iOS) Xbox; any other pad (MFi, a
-    /// browser's, Steam Input's) Generic. <see cref="PlayStationPadOverride"/> forces it as it forces the names: true
-    /// PlayStation, false Xbox.</summary>
+    /// PlayStation; a Switch Pro controller (Unity's SwitchProController on a Mac, a PC or iOS) Nintendo (D6, 2026-11-03); an
+    /// XInputController (the base of every Xbox layout on Windows, macOS and iOS) Xbox; any other pad (MFi, a browser's, Steam
+    /// Input's) Generic. <see cref="PlayStationPadOverride"/> forces it as it forces the names: true PlayStation, false Xbox;
+    /// <see cref="NintendoPadOverride"/> true forces Nintendo.</summary>
     public static PadFamily FamilyOf(Gamepad pad)
     {
         if (pad == null) return PadFamily.None;
+        if (NintendoPadOverride == true) return PadFamily.Nintendo;
         if (PlayStationPadOverride != null) return PlayStationPadOverride.Value ? PadFamily.PlayStation : PadFamily.Xbox;
         if (pad is UnityEngine.InputSystem.DualShock.DualShockGamepad) return PadFamily.PlayStation;
+        if (pad is UnityEngine.InputSystem.Switch.SwitchProController) return PadFamily.Nintendo;
         return pad is UnityEngine.InputSystem.XInput.XInputController ? PadFamily.Xbox : PadFamily.Generic;
     }
 
@@ -1170,11 +1203,20 @@ public static class FrontRoomsInput
     // A DualSense by its layout name (DualSenseGamepadHID on a Mac or a PC, DualSenseGampadiOS on iOS): a string test, so it compiles everywhere.
     static bool DualSensePad => PlayStationPadOverride == null && Gamepad.current != null && Gamepad.current.layout.IndexOf("DualSense", System.StringComparison.Ordinal) >= 0;
 
+    /// <summary>A Nintendo pad in hand (D6): a Switch Pro controller, whose A is east and B south, X north and Y west.</summary>
+    public static bool NintendoPad => NintendoPadOverride ?? (PlayStationPadOverride == null && Gamepad.current is UnityEngine.InputSystem.Switch.SwitchProController);
+
+    /// <summary>Which names the pad in hand prints: 0 Xbox (and MFi, generic), 1 PlayStation, 2 Nintendo. Views that cache
+    /// their words compare it.</summary>
+    public static int PadNames => PlayStationPad ? 1 : NintendoPad ? 2 : 0;
+
     /// <summary>A pad button's name: A B X Y MENU LB RB LT RT on Xbox and MFi pads, CROSS CIRCLE SQUARE TRIANGLE OPTIONS
-    /// L1 R1 L2 R2 on PlayStation (words: the HUD's Bayon has no ✕ ○ □ △).</summary>
+    /// L1 R1 L2 R2 on PlayStation (words: the HUD's Bayon has no ✕ ○ □ △), and on a Nintendo pad its own letters by place (B
+    /// south, A east, Y west, X north), + for MENU, L R ZL ZR (D6).</summary>
     public static string PadName(PadButton button)
     {
         var ps = PlayStationPad;
+        if (!ps && NintendoPad) return NintendoName(button);
         switch (button)
         {
             case PadButton.South: return ps ? "CROSS" : "A";
@@ -1189,12 +1231,56 @@ public static class FrontRoomsInput
         }
     }
 
+    static string NintendoName(PadButton button)
+    {
+        switch (button)
+        {
+            case PadButton.South: return "B";
+            case PadButton.East: return "A";
+            case PadButton.West: return "Y";
+            case PadButton.North: return "X";
+            case PadButton.Menu: return "+";
+            case PadButton.LeftShoulder: return "L";
+            case PadButton.RightShoulder: return "R";
+            case PadButton.LeftTrigger: return "ZL";
+            default: return "ZR";
+        }
+    }
+
+    /// <summary>The menus' buttons by place (D6, research/interaction/device_prompts/10_research.md §3): confirm A / CROSS
+    /// south, back B / CIRCLE east, reset X / SQUARE west and the extra Y / TRIANGLE north on every pad but a Nintendo one, whose
+    /// letters sit elsewhere (A east, B south, X north, Y west), so menus there confirm on A and go back on B as the pad prints
+    /// them. Gameplay keeps its bindings by place.</summary>
+    public static PadButton ConfirmButton => NintendoPad ? PadButton.East : PadButton.South;
+    public static PadButton BackButton => NintendoPad ? PadButton.South : PadButton.East;
+    public static PadButton ResetButton => NintendoPad ? PadButton.North : PadButton.West;
+    public static PadButton ExtraButton => NintendoPad ? PadButton.West : PadButton.North;
+
+    /// <summary>A pad's button by place (null without a pad).</summary>
+    public static ButtonControl PadControl(Gamepad pad, PadButton button)
+    {
+        if (pad == null) return null;
+        switch (button)
+        {
+            case PadButton.South: return pad.buttonSouth;
+            case PadButton.East: return pad.buttonEast;
+            case PadButton.West: return pad.buttonWest;
+            case PadButton.North: return pad.buttonNorth;
+            case PadButton.Menu: return pad.startButton;
+            case PadButton.LeftShoulder: return pad.leftShoulder;
+            case PadButton.RightShoulder: return pad.rightShoulder;
+            case PadButton.LeftTrigger: return pad.leftTrigger;
+            default: return pad.rightTrigger;
+        }
+    }
+
     /// <summary>A pad's menu buttons this frame (the desktop sheet and its map pages, 2026-10-31; the touch sheet reads its own):
     /// fixed whatever the bindings, as menus are. Dir: the d-pad, or the left stick past half a tilt, as arrows (y up) once, again
     /// after 0.35 s, then every 0.12 s (real time); a direction already held when the menus start reading (a walk carried into
-    /// the pause) waits for its release. Confirm A / CROSS, Back B / CIRCLE, Reset X / SQUARE, Defaults Y / TRIANGLE,
-    /// Tab RB +1 / LB -1. The pad is Gamepad.current, the last one used (with two pads, the last one pressed; the other's first
-    /// press makes it current). All zero without a pad. Read once per frame.</summary>
+    /// the pause) waits for its release. Confirm A / CROSS, Back B / CIRCLE, Reset X / SQUARE, Defaults Y / TRIANGLE (the
+    /// menu roles: on a Nintendo pad its own A, B, X and Y), Tab RB +1 / LB -1. The pad is Gamepad.current, the last one used
+    /// (with two pads, the last one pressed; the other's first press makes it current). All zero without a pad. Read once per
+    /// frame.</summary>
     public struct PadMenu { public Vector2Int Dir; public bool Confirm, Back, Reset, Defaults; public int Tab; }
     static PadMenu padMenu;
     static int padMenuFrame = -1;
@@ -1226,10 +1312,10 @@ public static class FrontRoomsInput
         else if (dir == Vector2Int.zero) padHeld = Vector2Int.zero;
         else if (dir != padHeld) { padHeld = dir; padRepeatAt = t + .35f; padMenu.Dir = dir; }
         else if (t >= padRepeatAt) { padRepeatAt = t + .12f; padMenu.Dir = dir; }
-        padMenu.Confirm = pad.buttonSouth.wasPressedThisFrame;
-        padMenu.Back = pad.buttonEast.wasPressedThisFrame;
-        padMenu.Reset = pad.buttonWest.wasPressedThisFrame;
-        padMenu.Defaults = pad.buttonNorth.wasPressedThisFrame;
+        padMenu.Confirm = PadControl(pad, ConfirmButton).wasPressedThisFrame;
+        padMenu.Back = PadControl(pad, BackButton).wasPressedThisFrame;
+        padMenu.Reset = PadControl(pad, ResetButton).wasPressedThisFrame;
+        padMenu.Defaults = PadControl(pad, ExtraButton).wasPressedThisFrame;
         padMenu.Tab = (pad.rightShoulder.wasPressedThisFrame ? 1 : 0) - (pad.leftShoulder.wasPressedThisFrame ? 1 : 0);
         return padMenu;
     }

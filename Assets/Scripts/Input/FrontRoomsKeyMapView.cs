@@ -761,13 +761,13 @@ public sealed partial class FrontRoomsKeyMapView
         // Esc or a pad's MENU (never bound) cancels; so does B while asking, and on the keyboard page, where no pad button binds.
         // Before the opening press is released too (2026-10-31): none of them can be that press (Esc and MENU go to the sheet's
         // ConsumeEscape, B closes an idle page), and a pad held down must never leave Esc unheard.
-        var padBack = gp != null && gp.buttonEast.wasPressedThisFrame && (!padBoard || State == CaptureState.Asking);
+        var padBack = gp != null && FrontRoomsInput.PadControl(gp, FrontRoomsInput.BackButton).wasPressedThisFrame && (!padBoard || State == CaptureState.Asking);
         if ((kb != null && kb.escapeKey.wasPressedThisFrame) || (gp != null && gp.startButton.wasPressedThisFrame) || padBack) { CancelCapture(); return; }
         if (!armed)
         {
             // The pad page waits for every pad button; the keyboard page only for the pad's A that may have opened it, so a pad
             // resting on a trigger never keeps the keys from being heard (2026-10-31).
-            var padDown = padBoard ? FrontRoomsInput.PadButtonHeld(gp) : gp != null && gp.buttonSouth.isPressed;
+            var padDown = padBoard ? FrontRoomsInput.PadButtonHeld(gp) : gp != null && FrontRoomsInput.PadControl(gp, FrontRoomsInput.ConfirmButton).isPressed;
             var held = (kb != null && kb.anyKey.isPressed) || (ms != null && (ms.leftButton.isPressed || ms.rightButton.isPressed || ms.middleButton.isPressed)) || padDown;
             if (!held) armed = true;
             return;
@@ -775,7 +775,7 @@ public sealed partial class FrontRoomsKeyMapView
         if (State == CaptureState.Asking)
         {
             var yes = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
-                || (ms != null && ms.leftButton.wasPressedThisFrame) || (gp != null && gp.buttonSouth.wasPressedThisFrame);
+                || (ms != null && ms.leftButton.wasPressedThisFrame) || (gp != null && FrontRoomsInput.PadControl(gp, FrontRoomsInput.ConfirmButton).wasPressedThisFrame);
             if (yes) { Commit(true); }
             return;
         }
@@ -874,9 +874,10 @@ public sealed partial class FrontRoomsKeyMapView
     static string Row(string label) => FrontRoomsLanguage.MetaColumn(FrontRoomsLanguage.T(label));
 
     // The detail column's key words for the device in use (a pad's buttons while one is in use, 2026-10-31).
-    static string ConfirmName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.South) : "ENTER";
-    static string CancelName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.East) : "ESC";
-    static string ResetName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.PadButton.West) : "BACKSPACE";
+    // The menus' own buttons (D6: a Nintendo pad confirms on its A, east, and goes back on its B, south).
+    static string ConfirmName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.ConfirmButton) : "ENTER";
+    static string CancelName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.BackButton) : "ESC";
+    static string ResetName => FrontRoomsInput.PadInUse ? FrontRoomsInput.PadName(FrontRoomsInput.ResetButton) : "BACKSPACE";
     static string Col(string control) => FrontRoomsLanguage.MetaColumn(control);
 
     public string Meta

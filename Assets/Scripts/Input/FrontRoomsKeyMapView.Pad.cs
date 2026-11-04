@@ -43,6 +43,8 @@ public sealed partial class FrontRoomsKeyMapView
 
     readonly List<PadPart> padParts = new List<PadPart>();
     bool legendsPlayStation;
+    // The pad's name set the legends were drawn for (FrontRoomsInput.PadNames: Xbox, PlayStation or Nintendo letters).
+    int legendsNames = -1;
     static Texture2D[] glyphMasks;    // cross, circle, square, triangle: made once
     // The body and the controls' masks are made once per run of the game too, not once per sheet: every scene load builds a
     // new settings sheet, and a HideAndDontSave texture is never unloaded, so each sheet would keep its own copy (the body
@@ -196,11 +198,13 @@ public sealed partial class FrontRoomsKeyMapView
             "{0} ALWAYS PAUSES AND GOES BACK", new Bind[0], PadPath("start"));
     }
 
-    /// <summary>The board's names for the pad in hand: A B X Y LB RB LT RT, or a PlayStation pad's L1 R1 L2 R2 with its face
-    /// buttons' ✕ ○ □ △ drawn instead of their words. After building, and whenever the kind of pad in hand changes.</summary>
+    /// <summary>The board's names for the pad in hand: A B X Y LB RB LT RT, a PlayStation pad's L1 R1 L2 R2 with its face
+    /// buttons' ✕ ○ □ △ drawn instead of their words, or a Nintendo pad's letters by its places (B south, A east; D6). After
+    /// building, and whenever the kind of pad in hand changes.</summary>
     void UpdatePadLegends()
     {
-        legendsPlayStation = FrontRoomsInput.PlayStationPad;
+        legendsNames = FrontRoomsInput.PadNames;
+        legendsPlayStation = legendsNames == 1;
         foreach (var part in padParts)
         {
             if (part.Button == null) continue;
@@ -234,8 +238,8 @@ public sealed partial class FrontRoomsKeyMapView
     /// <summary>Animate's pad half, the keys' rules: in use paper, free a 25 % keyline, chosen yellow; the reveal, and pop (D1).</summary>
     void AnimatePads()
     {
-        // Another pad in hand (a PlayStation pad for an Xbox pad, or a second pad used): the names follow at once.
-        if (FrontRoomsInput.PlayStationPad != legendsPlayStation) UpdatePadLegends();
+        // Another pad in hand (a PlayStation or a Nintendo pad for an Xbox pad, or a second pad used): the names follow at once.
+        if (FrontRoomsInput.PadNames != legendsNames) UpdatePadLegends();
         foreach (var part in padParts)
         {
             if (part.Decoration) { part.Edge.color = new Color(paper.r, paper.g, paper.b, .25f * keysIn); continue; }
@@ -299,9 +303,10 @@ public sealed partial class FrontRoomsKeyMapView
         if (State == CaptureState.Listening)
             return FrontRoomsLanguage.F("Press the button you want for {0}. {1} cancels; it keeps {2}.", FrontRoomsLanguage.T(c.Action))
                 .Replace("{1}", FrontRoomsInput.PadName(PadButton.Menu)).Replace("{2}", FrontRoomsInput.KeyName(FrontRoomsInput.PathOf(c.Binds[0])));
-        // SETTINGS names MENU (OPTIONS) and the title's A; BACK the menus' own A and B.
+        // SETTINGS names MENU (OPTIONS, +) and the title's start button (south: A, CROSS, a Nintendo pad's B); BACK the menus'
+        // own confirm and back (D6: a Nintendo pad's A and B).
         if (c.Action == "SETTINGS") return FrontRoomsLanguage.F(c.Explain, FrontRoomsInput.PadName(PadButton.Menu)).Replace("{1}", FrontRoomsInput.PadName(PadButton.South));
-        if (c.Action == "BACK") return FrontRoomsLanguage.F(c.Explain, FrontRoomsInput.PadName(PadButton.South)).Replace("{1}", FrontRoomsInput.PadName(PadButton.East));
+        if (c.Action == "BACK") return FrontRoomsLanguage.F(c.Explain, FrontRoomsInput.PadName(FrontRoomsInput.ConfirmButton)).Replace("{1}", FrontRoomsInput.PadName(FrontRoomsInput.BackButton));
         return FrontRoomsLanguage.T(c.Explain);
     }
 

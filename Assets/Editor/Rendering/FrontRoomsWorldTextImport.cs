@@ -17,6 +17,9 @@ using UnityEngine;
 ///   base, a swap copy whose source size differs from its base's, or a patch whose plan does not fit its base or misses an
 ///   atlas, is refused: logged and left out, so the game keeps English for it. Where a path has both a full copy and a
 ///   patch, the patch is used and the full copy is reported (it only adds to the build: delete it).
+/// - A piece (&lt;path&gt;~piece0, ~piece1 ...: a language-only texture that a layout names, FrontRoomsWorldText.Piece, such
+///   as the landing placards' extra token pieces) takes &lt;path&gt;'s import settings and is not listed; one with no image
+///   at Resources/&lt;path&gt; is refused (reported).
 /// FrontRooms/World Text/Rebuild Manifest does the same from the menu and prints the list.
 /// Runs after the other texture importers (FrontRoomsSurfaceTextureImporter configures everything under
 /// Resources/Surfaces/Textures/ by its name, copies included, and an atlas's name is not its base's), so a copy always ends
@@ -85,13 +88,24 @@ public sealed class FrontRoomsWorldTextImport : AssetPostprocessor
         return null;
     }
 
-    /// <summary>A copy's path without a patch suffix; part = the atlas number, -1 for the plan, -3 for the tail, -2 for a
-    /// file that is no part of a patch.</summary>
+    /// <summary>A copy's path without a patch or piece suffix; part = the atlas number, -1 for the plan, -3 for the tail,
+    /// -4 for a piece (&lt;path&gt;~piece&lt;n&gt;), -2 for a file that is no part of a patch.</summary>
     public static string PatchKey(string stem, out int part)
     {
         part = -2;
+        var slash = stem.LastIndexOf('/');
+        var piece = stem.LastIndexOf(FrontRoomsWorldText.PieceSuffix, StringComparison.Ordinal);
+        if (piece >= 0 && piece > slash)
+        {
+            var number = stem.Substring(piece + FrontRoomsWorldText.PieceSuffix.Length);
+            if (number.Length > 0 && number.Length <= 3 && int.TryParse(number, out var k) && k.ToString() == number)
+            {
+                part = -4;
+                return stem.Substring(0, piece);
+            }
+        }
         var cut = stem.LastIndexOf(FrontRoomsWorldText.PatchSuffix, StringComparison.Ordinal);
-        if (cut < 0 || cut < stem.LastIndexOf('/')) return stem;
+        if (cut < 0 || cut < slash) return stem;
         var rest = stem.Substring(cut + FrontRoomsWorldText.PatchSuffix.Length);
         if (rest.Length == 0) part = -1;
         else if (rest == "tail") part = -3;
@@ -141,7 +155,7 @@ public sealed class FrontRoomsWorldTextImport : AssetPostprocessor
                 report.Add("refused folder " + code + ": not a language of FrontRoomsLanguage.All (or English)");
                 continue;
             }
-            List<string> swap = new List<string>(), own = new List<string>(), texts = new List<string>(), patch = new List<string>();
+            List<string> swap = new List<string>(), own = new List<string>(), texts = new List<string>(), patch = new List<string>(), pieces = new List<string>();
             var files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
             Array.Sort(files, StringComparer.Ordinal);
             // Patches first: a path with a working patch uses it, and a full copy beside it only adds to the build.
@@ -166,6 +180,14 @@ public sealed class FrontRoomsWorldTextImport : AssetPostprocessor
                 if (ext == ".meta" || Path.GetFileName(path).StartsWith(".", StringComparison.Ordinal)) continue;
                 var rel = path.Substring(dir.Length + 1).Replace('\\', '/');
                 var key = PatchKey(rel.Substring(0, rel.Length - Path.GetExtension(rel).Length), out var part);
+                if (part == -4)
+                {
+                    // a piece: imported with its base's settings, named by a layout, never listed
+                    if (Array.IndexOf(ImageExtensions, ext) >= 0 && BaseOf(path, ImageExtensions) == null)
+                        report.Add("refused " + code + "/" + rel + ": a piece with no image at Resources/" + key + " (it takes that texture's import settings)");
+                    else pieces.Add(rel);
+                    continue;
+                }
                 if (part != -2) continue;   // a plan, an atlas or a tail: listed above
                 if (Array.IndexOf(ImageExtensions, ext) >= 0)
                 {
@@ -195,6 +217,7 @@ public sealed class FrontRoomsWorldTextImport : AssetPostprocessor
                 foreach (var p in patch) report.Add("  patch " + p);
                 foreach (var p in own) report.Add("  own  " + p);
                 foreach (var p in texts) report.Add("  text " + p);
+                foreach (var p in pieces) report.Add("  piece " + p + " (not listed: named by a layout)");
             }
         }
         manifest.languages = languages.ToArray();
