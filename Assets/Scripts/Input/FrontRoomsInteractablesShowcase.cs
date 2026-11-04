@@ -32,7 +32,7 @@ using UnityEditor.SceneManagement;
 ///   breaks the door in the crosshair with the map's BreakDoor (the Relay's break) for the BROKEN example, V turns
 ///   FrontRoomsInspect.DevTargets on for the test-bed close-ups, G hides the list.
 /// - 5 MUSEUM is the museum built in the game (.Museum.cs): hub 0 and rooms 1-4 carved into the game's own map from one
-///   layout, walked by the game's own player with no title and no Relay; room 1's doors live, rooms 2-4 as framed codes.
+///   layout, walked by the game's own player with no title and no Relay; rooms 1-4 live (2.6, 2.7, 4.2 framed codes).
 ///   P on its hub board (or P on this menu, without the game) opens the plan: the museum from FrontRoomsShowcaseTable,
 ///   every station with its code and placard; ENTER loads the station's tour and jumps to it past the start door (.Plan.cs).
 /// - 6 ROOM TYPES is a fourth game tour on a copy tilted toward variety: every kind of room the game builds (R0-R13), found
@@ -123,10 +123,16 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
     static readonly FieldInfo DoorLessonField = typeof(FrontRooms3DGame).GetField("doorLessonProfile", BindingFlags.Static | BindingFlags.NonPublic);
     static readonly FieldInfo YawField = typeof(FrontRooms3DGame).GetField("yaw", Private);
     static readonly FieldInfo PitchField = typeof(FrontRooms3DGame).GetField("pitch", Private);
+    // TRY AGAIN and R (FrontRooms3DGame.RestartRun) set this and reload build 0; the new game's Awake then starts its run at once.
+    static readonly FieldInfo RestartField = typeof(FrontRooms3DGame).GetField("restart", BindingFlags.Static | BindingFlags.NonPublic);
 
     Tour tour = Tour.Menu;
     // Set by Choose until the game scene it loads is in: the old game's MapRunEnded (the museum's plan) keeps ENTER's jump.
     bool tourLoading;
+    // A restart taken over (OnMapRunEnded): the game waits at its title until the tour's copy is in, then StartTourRun starts it.
+    bool restartToTour;
+    float restartNextTry, restartSince;
+    const float RestartGiveUp = 30f;
     FrontRooms3DGame game;
     FrontRoomsLevelProfile tourProfile;
     FrontRoomsMapWorld map;
@@ -139,6 +145,9 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
     float scanClock;
     Kind lastKind;
     int lastIndex = -1;
+    // J walks every example of the last kind once: the doors (by edge) and the panes, keys and close-ups already jumped to.
+    readonly HashSet<long> visitedDoors = new HashSet<long>();
+    readonly HashSet<UnityEngine.Object> visitedThings = new HashSet<UnityEngine.Object>();
     string toastTitle, toastLine, problem;
     float toastUntil;
 
@@ -218,6 +227,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         // Leaving the museum (its plan's ENTER): the kit's statics go back before anything else is built.
         ClearMuseumTools();
         tour = next;
+        restartToTour = false;
         if (!InGameTour) return;
         tourLoading = true;
         // The game scene replaces this one; the guide goes with it (a root object).
@@ -250,6 +260,8 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         floor = 1;
         paused = false;
         lastIndex = -1;
+        ClearVisited();
+        restartNextTry = Time.unscaledTime + .5f;
         ClearFound();
         game = FindAnyObjectByType<FrontRooms3DGame>();
         if (game == null)
@@ -305,6 +317,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
     void OnMapRunStarted(FrontRoomsMapWorld startedMap, FrontRoomsMapHunter hunter)
     {
         if (!InGameTour) return;
+        restartToTour = false;
         map = startedMap;
         relay = hunter;
         floor = 1;
@@ -346,10 +359,21 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
 
     void OnMapRunEnded()
     {
+        // TRY AGAIN and R (FrontRooms3DGame.RestartRun) set the game's static restart and reload build 0; the new game would
+        // start its run in Awake with its own profile, before OnSceneLoaded hands over the tour's copy. So the restart is
+        // taken over: the new game waits at its title, the copy goes in, and StartTourRun starts the run (the museum
+        // starts its own run from its title anyway). Our own loads (tourLoading) and Play stopping leave restart false.
+        if (InGameTour && !tourLoading && RestartField != null && RestartField.FieldType == typeof(bool) && (bool)RestartField.GetValue(null))
+        {
+            RestartField.SetValue(null, false);
+            restartToTour = tour != Tour.Museum;
+            restartSince = Time.unscaledTime;
+        }
         map = null;
         relay = null;
         player = null;
         lastIndex = -1;
+        ClearVisited();
         ClearFound();
         // A tour chosen on the museum's plan unloads this game first: its jump waits for the next run.
         if (!tourLoading) ClearPending();
@@ -363,6 +387,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         relay = hunter;
         floor = newFloor;
         lastIndex = -1;
+        ClearVisited();
         ClearFound();
         scanClock = 0f;
         if (tour == Tour.Devices && map != null) ForceDevices();
@@ -422,6 +447,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         {
             // ROOM TYPES' title: N picks the station of the floors below (the copy is read at SPACE).
             if (tour == Tour.Rooms) UpdateRoomsTitle(keys);
+            if (restartToTour) StartTourRun();
             return;
         }
         if (player == null && game != null) player = game.transform.Find("Player");
@@ -459,7 +485,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         if (keys.jKey.wasPressedThisFrame)
         {
             ClearPending();
-            if (lastIndex >= 0) Jump(lastKind, lastIndex + 1);
+            if (lastIndex >= 0) Jump(lastKind, NextUnvisited(lastKind));
         }
         var digit = DigitDown(keys);
         if (digit >= 0)
@@ -642,8 +668,10 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         else
         {
             var aim = door.leaf != null ? map.Kind(door.leaf, feet, out _, out _) : FrontRoomsMapWorld.AimKind.None;
-            kind = aim == FrontRoomsMapWorld.AimKind.Locked ? Kind.LockedDoor
-                : aim == FrontRoomsMapWorld.AimKind.LockedHaveKey ? Kind.KeyDoor
+            // A locked door opens with the key of the zone the player stands in (the map's KeyFor), so it is a KEY DOOR when
+            // either side's key is held, whichever side the player is on now; StandFor then puts them on the key's side.
+            var locked = aim == FrontRoomsMapWorld.AimKind.Locked || aim == FrontRoomsMapWorld.AimKind.LockedHaveKey;
+            kind = locked ? (map.HoldsKeyAt(door.a) || map.HoldsKeyAt(door.b) ? Kind.KeyDoor : Kind.LockedDoor)
                 : map.BodyDoors ? Kind.BodyDoor : Kind.Door;
         }
         var e = Take(kind);
@@ -696,10 +724,11 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
             Toast(Label((int)kind), list.Count == 0 ? NotHereLine(kind) : "The run has not started.");
             return false;
         }
-        // The start rooms belong to the title's stream until the start door is behind the player: walk out first.
-        if (map.InStartArea(map.CellOf(player.position)))
+        // A calm frame only (GateRefusal, .Rooms.cs): out of the start rooms, no close-up, shot, climb, pull, seal or floor change.
+        var why = GateRefusal();
+        if (why != null)
         {
-            Toast(Label((int)kind), "Walk through the start door first; jumps work on the floor itself.");
+            Toast(Label((int)kind), why);
             return false;
         }
         index %= list.Count;
@@ -721,12 +750,77 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
             YawField.SetValue(game, Mathf.Atan2(flat.x, flat.z) * Mathf.Rad2Deg);
         if (PitchField != null && PitchField.FieldType == typeof(float))
             PitchField.SetValue(game, Mathf.Clamp(-Mathf.Atan2(look.y, Mathf.Max(.1f, flat.magnitude)) * Mathf.Rad2Deg, -45f, 45f));
+        if (kind != lastKind || lastIndex < 0) ClearVisited();
+        MarkVisited(e);
         lastKind = kind;
         lastIndex = index;
         Toast(Label((int)kind) + (list.Count > 1 ? "  " + (index + 1) + " / " + list.Count : ""), HowTo[(int)kind]);
         ShowPlacard(FrontRoomsShowcaseTable.OfGuideKind((int)kind));
         scanClock = .1f;
         return true;
+    }
+
+    /// <summary>J: the nearest example of the kind not yet jumped to; once every one has been, the round starts again from the nearest one that is not the one at hand.</summary>
+    int NextUnvisited(Kind kind)
+    {
+        var list = found[(int)kind];
+        for (var i = 0; i < list.Count; i++) if (!Visited(list[i])) return i;
+        ClearVisited();
+        for (var i = 0; i < list.Count; i++) if (list[i].distance > 2f) return i;
+        return 0;
+    }
+
+    bool Visited(Example e)
+    {
+        if (e.door != null) return visitedDoors.Contains(e.door.edge);
+        var thing = e.target != null ? (UnityEngine.Object)e.target : e.collider;
+        return thing != null && visitedThings.Contains(thing);
+    }
+
+    void MarkVisited(Example e)
+    {
+        if (e.door != null)
+        {
+            visitedDoors.Add(e.door.edge);
+            return;
+        }
+        var thing = e.target != null ? (UnityEngine.Object)e.target : e.collider;
+        if (thing != null) visitedThings.Add(thing);
+    }
+
+    void ClearVisited()
+    {
+        visitedDoors.Clear();
+        visitedThings.Clear();
+    }
+
+    /// <summary>
+    /// A restart taken over (OnMapRunEnded): once the tour's copy is in, the game's private RequestTitleStart every half
+    /// second, as the museum starts its own run (UpdateMuseumTitle; it returns until the title is ready). Missing, failing or
+    /// not started within RestartGiveUp seconds: SPACE starts it, the title's own way.
+    /// </summary>
+    void StartTourRun()
+    {
+        if (game == null || paused) return;
+        var now = Time.unscaledTime;
+        if (now < restartNextTry) return;
+        restartNextTry = now + .5f;
+        if (TitleStartMethod == null || now - restartSince > RestartGiveUp)
+        {
+            restartToTour = false;
+            problem = "SPACE starts the run again" + (TitleStartMethod == null ? " (FrontRooms3DGame.RequestTitleStart not found)." : ".");
+            return;
+        }
+        try
+        {
+            TitleStartMethod.Invoke(game, null);
+        }
+        catch (Exception ex)
+        {
+            restartToTour = false;
+            var inner = ex.InnerException ?? ex;
+            problem = "SPACE starts the run again (" + inner.GetType().Name + ": " + inner.Message + ").";
+        }
     }
 
     /// <summary>
@@ -763,6 +857,9 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         // A close-up is read from in front of its face, the stair key from its take side; anything else first from the player's side.
         var faced = e.target != null || e.kind == Kind.StairKey;
         var first = faced || Vector3.Dot(current - anchor, normal) >= 0f ? normal : -normal;
+        // A KEY DOOR opens from the side whose zone key is held (KeyFor reads the zone the player stands in): stand there.
+        if (e.door != null && e.kind == Kind.KeyDoor && map.HoldsKeyAt(e.door.a) != map.HoldsKeyAt(e.door.b))
+            first = map.HoldsKeyAt(e.door.a) ? -normal : normal;
         for (var d = 0; d < distances.Length; d++)
         for (var side = 0; side < (faced ? 1 : 2); side++)
             if (TryFloor(Flat(anchor) + (side == 0 ? first : -first) * distances[d], out feet)) return true;
@@ -847,13 +944,16 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         toastTitle = title;
         toastLine = line;
         toastUntil = Time.unscaledTime + 4f;
-        // A station's placard lines come back only with ShowPlacard.
+        // A station's placard lines (and its code chip) come back only with ShowPlacard.
         toastWhat = toastDecide = null;
+        toastStation = null;
     }
 
     static Vector3 Flat(Vector3 v) => new Vector3(v.x, 0f, v.z);
 
-    // ---------- drawing (the HUD's own faces and keyline: Bayon for names, IBM Plex Mono for lines; no backing card)
+    // ---------- drawing (the HUD's own faces and keyline: Bayon for names, IBM Plex Mono for lines; no backing card).
+    // The cards (the toast with a placard, the plan's room sign and placard, ROOM TYPES' card) take 平面视觉's placard type on
+    // top: Plex Mono Medium code chips, Noto Sans SC lines, the grey meta and 要你决定 in accent (.Plan.cs, DrawCard).
 
     void EnsureStyles()
     {
@@ -869,7 +969,9 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         lineStyle = Style(mono, 15f * scale, TextAnchor.UpperLeft);
         smallStyle = Style(mono, 13f * scale, TextAnchor.UpperLeft);
         statusStyle = Style(mono, 13f * scale, TextAnchor.UpperRight);
-        toastTitleStyle = Style(bayon, 30f * scale, TextAnchor.UpperCenter);
+        // The toast's title is set in spans (DrawToast centres them: a code and figures in Plex Mono Medium): left, one line.
+        toastTitleStyle = Style(bayon, 30f * scale, TextAnchor.UpperLeft);
+        toastTitleStyle.wordWrap = false;
         toastLineStyle = Style(mono, 16f * scale, TextAnchor.UpperCenter);
         EnsureZhStyles(scale);
         if (white == null)
@@ -895,6 +997,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
     static readonly Color Paper = new Color(244f / 255f, 241f / 255f, 232f / 255f, 1f);   // FrontRoomsHudStyle.TextPaper
     static readonly Color Accent = new Color(244f / 255f, 223f / 255f, 59f / 255f, 1f);   // #F4DF3B, the brand accent on screen
     static readonly Color Ink = new Color(20f / 255f, 20f / 255f, 20f / 255f, 1f);        // FrontRoomsHudStyle.KeylineColor
+    static readonly Color Meta = new Color(150f / 255f, 147f / 255f, 139f / 255f, 1f);    // #96938B, the placards' labels and meta (20_placard_type §1)
 
     static void Text(Rect r, string s, GUIStyle style, Color color, float alpha = 1f)
     {
@@ -991,7 +1094,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         y = MenuRow(x, y, w, s, "2", "FLOOR 1 · AS SHIPPED", "The game exactly as it ships, with the guide on top: the station, stair key, EXIT chain and U1 fall, TV, placard, body doors, windows, door lites.");
         y = MenuRow(x, y, w, s, "3", "FLOOR 1 · EVERY DEVICE", "The same floor with what the shipped profile keeps off: sash latches, foiled windows, alarm doors, Run! rooms.");
         y = MenuRow(x, y, w, s, "4", "KEYS FLOOR", "No station: E doors, locked doors, zone keys, key tags and the unlock shot.");
-        y = MenuRow(x, y, w, s, "5", "MUSEUM", "Built in the game from its own cells and doors: hub 0 and four rooms, room 1's doors live, rooms 2-4 as framed codes. P on its hub board opens the plan (P here: the plan alone, no game).");
+        y = MenuRow(x, y, w, s, "5", "MUSEUM", "Built in the game from its own cells, doors, windows, keys and kits: hub 0 and four rooms, all live (2.6, 2.7 and 4.2 as framed codes). P on its hub board opens the plan (P here: the plan alone, no game).");
         y = MenuRow(x, y, w, s, "6", "ROOM TYPES", "Every kind of room the game builds (R0-R13) on a floor tilted toward variety: zones, rooms, columns, piles, borders, dark lamps, Run!, the stairwell, the B1 station.");
         y += 12f * s;
         var keysLine = "In a tour: G list  ·  1-0 jump  ·  [ ] page  ·  J next one  ·  H Relay held / live  ·  B break a door  ·  V dev close-ups  ·  F2 tours"
@@ -1000,7 +1103,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         var h = smallStyle.CalcHeight(new GUIContent(keysLine), w);
         Text(new Rect(x, y, w, h), keysLine, smallStyle, Paper, .8f);
         y += h + 10f * s;
-        var notLine = "Not in any tour: the office terminal (no game code places one yet), lockers, pools, bathrooms, slides and walkable stairs (none in the game). The ALARM ZONE card hangs at every Run! room in tour 3.";
+        var notLine = "Not in any tour: the office terminal (no game code places one yet; the museum's room 4 has one), lockers, pools, bathrooms, slides and walkable stairs (none in the game). The ALARM ZONE card hangs at every Run! room in tour 3 and on the museum's 3.6 arch.";
         Text(new Rect(x, y, w, smallStyle.CalcHeight(new GUIContent(notLine), w)), notLine, smallStyle, Paper, .6f);
     }
 
@@ -1038,8 +1141,10 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
             var alpha = here ? 1f : .45f;
             var marked = lastIndex >= 0 && (int)lastKind == k;
             if (marked) Fill(new Rect(x - 14f * s, y + 6f * s, 4f * s, 14f * s), Accent);
-            Text(new Rect(x, y, 24f * s, 26f * s), i == 9 ? "0" : (i + 1).ToString(), nameStyle, here ? Accent : Paper, alpha);
-            Text(new Rect(x + 28f * s, y, w - 228f * s, 26f * s), Label(k), nameStyle, Paper, alpha);
+            // The key and the code in Plex Mono Medium, the name in Bayon (RowLabel, .Plan.cs: as the plan's rows).
+            RowKey(x, y, i == 9 ? "0" : (i + 1).ToString(), here ? Accent : Paper, alpha);
+            var row = FrontRoomsShowcaseTable.OfGuideKind(k);
+            RowLabel(x + 28f * s, y, row != null ? row.code : null, Names[k], 64f * s, Paper, alpha);
             var status = here ? Mathf.RoundToInt(list[0].distance) + " M" + (list.Count > 1 ? "  ·  " + list.Count : "") : StatusWhenNone((Kind)k);
             Text(new Rect(x + w - 200f * s, y + 5f * s, 200f * s, 22f * s), status, statusStyle, Paper, here ? .9f : .5f);
             y += 28f * s;

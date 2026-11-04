@@ -75,6 +75,8 @@ public static class FrontRoomsBodyDoorTests
                 AlarmCommit(h);
                 UnlockCrack(h);
                 PullOnly(h);
+                PushShut(h);
+                TouchClose(h);
             }
         }
         catch (Exception e) { Check(false, e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace); }
@@ -322,5 +324,92 @@ public static class FrontRoomsBodyDoorTests
         Check(shut, "1C: latch-half aim dwell plus a genuine backward controller step pulls the door shut");
         for (var i = 0; i < 60; i++) Frame(h, Vector3.zero, 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Walk, false, 2f, 0f);
         Check(h.door.swingKind == FrontRoomsMapWorld.DoorSwingKind.Slam, "pull within the sprint-crossing window is a slam");
+    }
+
+    // Push-shut (Red 2026-11-04): a real body opens the door and crosses, then stands beyond the hinge, ahead of the open leaf,
+    // and presses the face it hangs toward. A walk takes it back into its frame (one noise, latched, the body never stalls);
+    // a slow press takes it only as far as the body goes and it stays there (2A).
+    static void PushShut(H h)
+    {
+        foreach (var slow in new[] { false, true })
+        {
+            Reset(h);
+            for (var i = 0; i < 26; i++) Frame(h, h.forward * (5.5f / 60f), 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Sprint, true, 0f);
+            for (var i = 0; i < 40; i++) Frame(h, Vector3.zero, 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Walk, false, 100f, 0f);
+            var toHinge = h.door.hinge.position - h.door.position;
+            toHinge.y = 0f; toHinge.Normalize();
+            var pocket = h.door.hinge.position + toHinge * .46f - h.normal * .55f;
+            pocket.y = h.body.transform.position.y;
+            if (h.door.angle < FrontRoomsMapWorld.DoorPassableDegrees || !ClearCapsule(pocket))
+            {
+                Check(false, "push-shut setup: open leaf " + h.door.angle.ToString("0.0") + " deg, pocket clear " + ClearCapsule(pocket));
+                continue;
+            }
+            h.body.enabled = false; h.body.transform.position = pocket; h.body.enabled = true;
+            Physics.SyncTransforms();
+            h.map.ResetBodyDoorInput();
+            h.noises = 0;
+            var along = -toHinge;
+            var speed = slow ? 1.44f : 3.2f;
+            var gait = slow ? FrontRoomsMapWorld.BodyDoorGait.Slow : FrontRoomsMapWorld.BodyDoorGait.Walk;
+            var start = h.body.transform.position;
+            for (var i = 0; i < (slow ? 20 : 30); i++) Frame(h, along * (speed / 60f), 1f / 60f, gait, false, 100f, 1f, null, default, along);
+            var moved = Vector3.Dot(h.body.transform.position - start, along);
+            if (!slow)
+            {
+                Check(h.door.angle < .5f && h.noises == 1 && h.door.swingKind == FrontRoomsMapWorld.DoorSwingKind.Ease,
+                    "push-shut: a walk into the face an open leaf hangs toward latches it in its frame with one EASE noise (angle "
+                    + h.door.angle.ToString("0.0") + ", noises " + h.noises + ")");
+                Check(moved >= .9f * speed * .5f, "push-shut: the leaf leads the walker, no stall (travel " + moved.ToString("0.000") + " m)");
+                continue;
+            }
+            var left = h.door.angle;
+            for (var i = 0; i < 30; i++) Frame(h, Vector3.zero, 1f / 60f, gait, false, 100f, 0f);
+            Check(left >= 3f && left < 85f && Mathf.Abs(h.door.angle - left) <= .5f && h.noises == 1,
+                "push-shut: a slow press squeezes the leaf back only as far as the body goes and it stays there (2A): "
+                + left.ToString("0.0") + " -> " + h.door.angle.ToString("0.0") + " deg, noises " + h.noises);
+        }
+    }
+
+    // Touch-close (decision 14B, Red 2026-11-04): after a real crossing the body stands in front of the doorway beside the open
+    // leaf and presses the face it pushed. Looking away, nothing happens. Facing it, the door closes after the walk's lean with
+    // one EASE noise and offers the step aside (DoorPulled); the leaf waits on the body and latches once the body steps clear.
+    static void TouchClose(H h)
+    {
+        Reset(h);
+        for (var i = 0; i < 26; i++) Frame(h, h.forward * (5.5f / 60f), 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Sprint, true, 0f);
+        for (var i = 0; i < 40; i++) Frame(h, Vector3.zero, 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Walk, false, 100f, 0f);
+        var toHinge = h.door.hinge.position - h.door.position;
+        toHinge.y = 0f; toHinge.Normalize();
+        var spot = h.door.position - toHinge * .05f - h.normal * .5f;
+        spot.y = h.body.transform.position.y;
+        if (h.door.angle < FrontRoomsMapWorld.DoorPassableDegrees || !ClearCapsule(spot))
+        {
+            Check(false, "touch-close setup: open leaf " + h.door.angle.ToString("0.0") + " deg, spot clear " + ClearCapsule(spot));
+            return;
+        }
+        h.body.enabled = false; h.body.transform.position = spot; h.body.enabled = true;
+        Physics.SyncTransforms();
+        h.map.ResetBodyDoorInput();
+        var pulled = false;
+        Action<FrontRoomsMapWorld.Door, Vector3> onPulled = (d, p) => { if (d == h.door) pulled = true; };
+        h.map.DoorPulled += onPulled;
+        try
+        {
+            h.noises = 0;
+            var step = toHinge * (3.2f / 60f);
+            for (var i = 0; i < 20; i++) Frame(h, step, 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Walk, false, 100f, 1f, null, default, h.normal);
+            Check(h.noises == 0 && h.door.angle >= FrontRoomsMapWorld.DoorPassableDegrees,
+                "touch-close: a press on the pushed face while looking away leaves the open door a wall (noises " + h.noises + ")");
+            h.map.ResetBodyDoorInput();
+            var shut = false;
+            for (var i = 0; i < 30 && !shut; i++) shut = Frame(h, step, 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Walk, false, 100f, 1f, null, default, toHinge).shut;
+            Check(shut && h.noises == 1 && h.door.swingKind == FrontRoomsMapWorld.DoorSwingKind.Ease && pulled,
+                "touch-close: facing the open leaf, the press closes it after the lean with one EASE noise and the step aside (shut "
+                + shut + ", noises " + h.noises + ", pulled " + pulled + ")");
+            for (var i = 0; i < 70; i++) Frame(h, i < 30 ? -step : Vector3.zero, 1f / 60f, FrontRoomsMapWorld.BodyDoorGait.Walk, false, 100f, i < 30 ? 1f : 0f);
+            Check(h.door.angle < .5f, "touch-close: once the body steps clear the leaf latches (" + h.door.angle.ToString("0.0") + " deg)");
+        }
+        finally { h.map.DoorPulled -= onPulled; }
     }
 }

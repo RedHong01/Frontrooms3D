@@ -34,6 +34,8 @@ Red answered in the Codex chat: parent thread `01a19402-0853-7eb1-9400-625ee6857
 | 11 | End of the unlock | **B** "开锁后门只弹开 10°，你再用身体推" | The unlock ends with the leaf 10° ajar, and the body opens it (4.2). DoorShotTests and the key bots change. |
 | 12 | Watch the 11-03/04 testers | unanswered | Not approved; the moderator sheet does not change. |
 
+**11-04, Red in the 交互设计 chat:** “目前门关闭和打开还是有一点奇怪，现在我一旦把门打开之后，再去碰门就没有那种能够把门给挤关闭上。我希望你能够重点研究最新的生化危机游戏安魂曲里的门的交互是怎么做的，然后优化现有的门的交互。” (opening and closing still feel odd: once a door is open, touching it again never squeezes it shut; study Resident Evil Requiem's doors and improve ours). The cause was this design, not a slip in the code: 1.6 made an open leaf at rest a wall, a leaf hanging toward you moved only when you crossed and then flipped through the frame (Through), and 2.1 said a body never shuts a door. §2b (push-shut, built 11-04, still no button) replaces those lines. Requiem's own close is a tap of Interact at the open door (`10_research.md`, [R1]); that, and a touch-to-close on the face you pushed, were decision 14 in `30_for_red_zh.md`. **Red, 11-04, in the 交互设计 sub-chat: "要，选 B"** = touch-close (§2b.6), LANDED 06:57.
+
 **Open items from the picks.** Neither blocks the "build regardless" list.
 - **O1. A USE SHUTS DOORS assist.** The ask listed one as needed for 1C ("需要一个"USE 也能关门"的辅助设置"). Red then declined the matching open assist (7B), and the runner's record says the shut assist is not approved. Default: not built. Asked Red once, in the 交互设计 chat.
 - **O2. The start door while the map streams (6B).** The ask warned that it would look locked ("会像锁住了"). 4.10 keeps the latch holding with the strain cue, never the padlock or a rattle, until the map is ready. RoomStream is 游戏视觉's, so this needs its agreement.
@@ -109,11 +111,11 @@ Leaning with no input never moves a leaf. A latched leaf leaves the frame only t
 - **Rule.** Any sprint contact that opens a door is a barge, so no sprint angle opens a door quietly.
 
 **1.6 Leaves already out of the frame.**
-- **At rest at 70° or more (DoorPassableDegrees, :324):** the leaf is a wall to the body, as today. It never moves under contact, from the hinge pocket, along a wall or at its tip. No verb fires and there is no noise.
+- **At rest at 70° or more (DoorPassableDegrees, :324):** **changed 11-04.** From the face it hangs toward (the hinge pocket side) a press pushes it shut (§2b). From the face you pushed (behind it, against its stop) a press while facing it closes it (touch-close, Red's 14B, §2b.6); looking away it is a wall, as before.
 - **Below 70°, in the doorway:** a leaf moves when a body pushes it. That covers the Relay's 30° Ajar and a crack you left.
   - The first movement in an episode raises one EASE (BARGE at a sprint). This keeps RELAY:627 ("The player opens it fully with E (an ease)") true.
   - No player-driven leaf movement is ever free.
-- **Through (A12 rule 3).** Pushed from the side it hangs toward, the leaf runs back through the frame and opens away from you (INTERACTION_DESIGN.md:35). This happens only when the body is crossing the doorway:
+- **Through (A12 rule 3).** Pushed from the side it hangs toward, the leaf runs back through the frame and opens away from you (INTERACTION_DESIGN.md:35). **Since 11-04 only a run (a sprint, or the 0.15 s carry) into the doorway does this; a slow or walking body pushes it shut instead (§2b).** It happens only when the body is crossing the doorway:
   - the centre is inside the opening's span; and
   - the move's through-share is at least 0.5, with the predicted position past the door line. The check is like TryStartClimb's gate against `map.CrossingPoint` (FrontRooms3DGame.cs:2714, :2723).
 - **The body never carries a leaf past the frame in any other way.**
@@ -157,9 +159,9 @@ Under the define, the hunter's door step is FollowShutV2 / FollowAjarV2 (FrontRo
 
 ## 2. Shut rules (Red: decision 1C, the pull only)
 
-**2.1 A body never shuts a door by pushing it.**
-- After you pass a door you opened, the leaf is on your side, and the face you pushed points at the opening. Walking back into it only drives it toward its stop, and a leaf at rest at 70° or more is a wall to the body (1.6).
-- The only shut is the pull (2.4). No device has a door button.
+**2.1 Superseded 11-04 (Red): a body pushes a leaf shut from the face it hangs toward (§2b).** What still holds:
+- After you pass a door you opened, the leaf is on your side, and the face you pushed points at the opening. Physically, walking back into that face only drives it toward its stop. Red's 14B (11-04) makes a facing press there close an open leaf anyway, as A12's shut with its step aside (§2b.6).
+- The pull (2.4) still shuts from the doorway side. No device has a door button.
 - No closer exists or is added. A12 rule 5: "Doors stay where they are left" (INTERACTION_DESIGN.md:37). The EXIT seal (4.5) and the scripted shut-and-lock of the start and stairwell doors (4.10) are the only doors that shut themselves.
 
 **2.2 Dropped (Red: 1C): the aimed USE shut.** USE on an unlatched leaf gives only the pull hint (1.9). A12 rule 6's step aside therefore never runs for a map door (INTERACTION_DESIGN.md:38 changes; item 16).
@@ -185,6 +187,41 @@ Under the define, the hunter's door step is FollowShutV2 / FollowAjarV2 (FrontRo
 **2.8 Backing away is not a pull.** Backing out of a doorway while watching it does nothing: the dot must have rested on the leaf's latch half for 0.3 s, the prompt shows that it has, and the step must be within 40° of straight back.
 
 **Not built:** a USE SHUTS DOORS assist (open item O1, §00). The look-back (1D) stays rejected: a reflex glance back would shut or slam doors.
+
+## 2b. Push-shut (Red 11-04: "再去碰门…把门给挤关闭上")
+
+Built and LANDED 11-04 06:43 (compile gate macOS + iOS, 0 errors; not yet run, rule 25; sha1s in LANDINGS). Code: `FrontRoomsMapWorld.BodyDoors.cs` (PushBodyShut, BeginBodyShut, FloorBodyShut, BodyShutClearAngle, LatchBodyShut; the contact gate in SolveBodyContact), `FrontRoomsMapWorld.cs` (Door.bodyShut; TickSwing latches a body's Through), `FrontRoomsBodyDoorContact.cs` (the start pair and the stairwell north door, same rule).
+
+**2b.1 Which face.** A leaf out of the frame has two faces. The one it hangs toward is the face a body ahead of it touches (AheadOfLeaf: the body's bearing from the hinge is past the leaf's angle), for example from the hinge pocket of an open door, or from in front of a leaf left ajar toward you. Pressing that face (the 1.1 gate: reach, span, 60° cone, 1 m/s, a deliberate tilt) pushes the leaf back toward its frame. Pressing the other face, the one you pushed, works as before (1.6).
+
+**2b.2 By gait** (one act per contact episode, one DoorMoved):
+- **SLOW, squeeze back (挤关).** The leaf follows the body toward the frame only as far as it is pushed, at most 40° a frame, with the squeeze's 0.8 weight (1.3). Stop, and it stays where it is (Red 2A). Within 3° of the frame it drops in and latches with a soft click (DoorLatched, EASE). EASE, 6 m, +1.
+- **WALK, push shut (推关).** The leaf swings back to the frame ahead of the body and latches. It uses the body's planned swing (the barge law of 11-01: the least speed that keeps the leaf past the body on its straight path, never below the verb's own, stepped once a frame before the body moves). EASE, 6 m, +1.
+- **SPRINT into the leaf's face, slam (甩上).** The same swing at the fast verb's speed, ending in SlamBang. SLAM, 27 m, +12. Running into the face of a door is a shut act, so 3.6's "no slam without a shut act" still holds.
+- **SPRINT into the doorway (crossing): the barge goes through, as before.** The leaf runs back through the frame and opens away from you (Through, BARGE). In a chase you never stop for a door.
+
+**2b.3 After the latch.** The door is shut. If you keep pressing, it is a latched door like any other: the lean (0.12 s walk, 0.30 s slow), then it opens away from you with its own noise. So walking at a leaf that hangs toward you shuts it with a click, and pressing on opens it to the far side.
+
+**2b.4 Which leaves.** Whole leaves only: not broken (a broken leaf at rest stays a wall), not the EXIT (as for the pull), not being broken, not key-held, no armed alarm bar. A leaf the Relay is moving answers BLOCKED as before. A Relay standing in the sweep stops the leaf on its body and holds the body pressing it (BLOCKED). The leaf never swings into the player: it moves away from the body that pushes it.
+
+**2b.5 Fixed on the way.** Before, a slow body crossing toward a leaf that hung toward it started the squeeze open (BeginBodyFollow) from the wrong side, and the floor swung the leaf through the body. Now a slow front press is the squeeze back; a slow crossing of a leaf no body may push shut (the EXIT) goes through as a walk does.
+
+**2b.6 Touch-close: the face you pushed (Red, 11-04: "要，选 B" on decision 14; LANDED 06:57).**
+- **When.** A plain leaf open at rest (70° or more, so it cannot go further) is pressed on the face the body pushed (1.1's gate), with the view facing that face (within 60°).
+- **The lean.** The leaf holds for the walk's lean (0.12 s; 0.30 s slow) while the body is held.
+- **The shut.** Then the leaf runs A12's shut (ShutDoor): it swings back to its frame and latches. The game steps the body clear (DoorPulled, A19's "站在门板那边关门时照现在让一步", at most 0.35 s at 4 m/s). Under the Relay's sight or in a chase there is no step, and the leaf waits on the body until it moves (A12 rule 6).
+- **Noise and curve.** As the pull's (2.5, 3.1): a quiet EASE on the 0.55 s smoothstep, 6 m. It is a SLAM (0.3 s, 27 m) after a run through this door within 2 s, pressed at a walk or more.
+- **No accidental close.** Looking away (sliding along the leaf, looking out of the doorway), the open leaf stays a wall.
+- **Start pair and stairwell north door.** The same rule in FrontRoomsBodyDoorContact, but those doors have no step hook, so the leaf waits on the body.
+- **Not taken.** Requiem's own close, a tap of USE at the open door (14C), would change 1C.
+
+The pull (2.4) is unchanged.
+
+**2b.7 Tests.** FrontRoomsBodyDoorTests gains two rows.
+- **PushShut.** A real CharacterController opens and crosses the door, then presses the hanging face from the hinge pocket. A walk latches the leaf with one EASE noise and no stall. A slow press leaves it partway, where it stays (2A).
+- **TouchClose.** After the crossing the body presses the pushed face. Looking away, nothing happens. Facing it, the door closes after the lean with one EASE noise and DoorPulled; the leaf latches once the body steps clear.
+
+The combined test list is in `handoff/interaction.md` §7.
 
 ## 3. Slam rules
 
@@ -221,7 +258,7 @@ The 2.0 s window replaces V5's 0.5 s after-sprint grace for the player (FastAfte
 **3.6 No slam without a shut act.**
 - A sprint pass never slams the door by itself. That would be a closer (A12 rule 5), and it would charge 27 m to every sprint through a door.
 - A look-back alone does nothing.
-- Walking into an open leaf does nothing: it is a wall at rest, or a Through only when crossing.
+- Since 11-04 an open leaf answers a deliberate press on either face: the face it hangs toward pushes it shut (§2b; a run into it is a slam), and the face you pushed, faced, closes it after the lean (§2b.6; a slam only within the 2 s window). Each is a shut act; brushing past or looking away does nothing.
 
 ## 4. Special doors
 
@@ -308,7 +345,7 @@ The 2.0 s window replaces V5's 0.5 s after-sprint grace for the player (FastAfte
    - Contact needs the body centre inside the leaf span and a press within 60° of the normal.
    - Slides shallower than 30° from the wall open nothing.
    - A deliberate 45° press into a latched door does open it: that is a real push, priced as a push or a barge.
-   - Open leaves at rest are walls, so a corridor run past a door that opened into the corridor never flips it.
+   - A corridor run past a door that opened into the corridor never flips it. Since 11-04 (§2b) a run straight into the face it hangs toward slams it shut: a collision with the door, priced as a slam. On the face you pushed only a facing press closes it, after the lean (§2b.6). A slide along either face, under 30° from it, does nothing (the cone).
 3. **Backing into a door while watching the Relay.**
    - You cannot sprint backwards (RunAhead, FrontRooms3DGame.cs:2273), so this is a blind push at most.
    - A soft knock and a 0.15° nudge tell you a door is at your back. It gives only after 0.40 s.

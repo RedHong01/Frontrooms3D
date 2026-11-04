@@ -474,6 +474,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         // V5: this swing runs at FastSwing.SwingSeconds (a barge or a slam), and it is a player's swing the swing lock holds.
         internal bool fastSwing, swingLocked;
         internal bool bodyDriven, bodyFloorActive;
+        // A body pushing the leaf back to its frame (push-shut, 11-04): a squeeze following it (Follow) or its swing (Through),
+        // which latches in the frame instead of going on through it.
+        internal bool bodyShut;
         internal float bodyAngleFloor;
         // A body's swing (FrontRoomsMapWorld.BodyDoors.cs): the seconds of a full 95 deg turn its speed was planned at (0: none),
         // and the door tick the solver last stepped it in (it moves once a frame, before the body).
@@ -1244,7 +1247,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// floor began in) or X (the EXIT's stairwell). No floor, ceiling, lamp, key, column or furniture is built
     /// there, and IsBuilt and PassageBetween treat it as no map.
     /// </summary>
-    public bool IsReserved(GridCoord cell) => InStartArea(cell) || InExitArea(cell);
+    public bool IsReserved(GridCoord cell) => InStartArea(cell) || InExitArea(cell) || (Cache != null && Cache.IsPoolCell(cell));   // pool family: false with no plan (FrontRoomsMapWorld.Pool.cs)
 
     /// <summary>The built EXIT door (on the edge N to X), or null when there is no exit area or X's chunk is not built.</summary>
     public Door ExitDoor => hasExitArea ? DoorBetween(exitFront, exitCell) : null;
@@ -2555,7 +2558,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// <summary>Tools and tests: make the build of the chunks it returns true for throw, to check the guard round Build.</summary>
     public Func<GridCoord, bool> FailBuildForTools { get; set; }
 
-    ThemeMaterials Theme(ZoneTheme theme) => theme == ZoneTheme.Office ? office : level0;
+    ThemeMaterials Theme(ZoneTheme theme) => theme == ZoneTheme.Office ? office : PoolRules.IsPool(theme) ? PoolTheme(theme) : level0;
 
     /// <summary>
     /// Build one chunk. A build that throws is undone (nothing half built
@@ -2612,6 +2615,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             return builder;
         }
         var collision = new MeshBuilder();
+        poolCollision = Cache.HasPool ? collision : null;   // pool family: read only by the pool pass (FrontRoomsMapWorld.Pool.cs)
         wallFaces.Clear();
         int BlockOf(int i, int j, float ceiling) => (i / BlockCells + j / BlockCells * blocks) * heights + HeightClass(ceiling);
 
@@ -2702,7 +2706,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
                 data, wallFaces);
             transition?.Corner(cell);   // TRANSITION (T4c): this cell's south-west lattice point (each point once)
 
-            if (data.pillar[i + j * (n + 1)] && !TouchesReserved(cell.x, cell.y, cell.x, cell.y))
+            if (!reserved && data.pillar[i + j * (n + 1)] && !TouchesReserved(cell.x, cell.y, cell.x, cell.y))
             {
                 // No column, cove or bulkhead reaches into the start area or X.
                 var style = data.pillarStyle[i + j * (n + 1)];
@@ -2722,6 +2726,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
                 collision.Box(post.center, post.size, origin, 1f);
             transition = null;
         }
+
+        // Pool family: the pool cells' floors, ceilings, water, lamps, columns and stand-ins (no plan: never called).
+        if (Cache.HasPool) BuildPoolChunk(chunk, data, BlockOf, Get, Solid, collision, origin);
 
         for (var b = 0; b < builders.Length; b++)
         {
@@ -2758,7 +2765,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             SpawnFloorKey(chunk, floorKeyAt, floorKeyTurn);
         RegisterRelayEntries(chunk, data);
         AddZoneGrades(chunk, data);
-        FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, FixtureKeepOut(coord), chunk.meshes);
+        if (!Cache.HasPool || !PoolChunkHasCells(data)) FrontRoomsWallFixtures.Install(chunk.root.transform, wallFaces, Cache.Generator.Seed, data, FixtureKeepOut(coord), chunk.meshes);
         Furnish(chunk, data);
         built[coord] = chunk;
     }
@@ -3037,6 +3044,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         bool mayExtendStart = true, bool mayExtendEnd = true, int blockA = -1, int blockB = -1,
         MapChunk faceData = null, List<FrontRoomsWallFixtures.WallFace> faces = null)
     {
+        // Pool family: an edge with a pool cell on a side is the pool pass's (doors and windows stay below; no plan: never called).
+        if (Cache.HasPool && BuildPoolEdge(chunk, kind, a, b, start, along, height, wallA, wallB, blockIndex, blockA >= 0 ? blockA : blockIndex, blockB >= 0 ? blockB : blockIndex, get, solid, origin, mayExtendStart, mayExtendEnd)) return;
         if (kind == EdgeKind.Open) { transition?.Open(a, b, start, along, height); return; }   // TRANSITION (T5a): a border portal
         var length = MapGrid.CellSize;
         // Positive "across" points from cell a into cell b.
@@ -4270,7 +4279,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         if (officeDress == null && officeDressOld == null && pileBuild == null) return;
         for (var r = 0; r < data.rooms.Length; r++)
             // A room cut by the start area is not one open space (and its props would land in the stream rooms); nor is one holding X.
-            if (data.RoomIntact(r) && Cache.Generator.Uniform(data, data.rooms[r]) && !RoomInReserved(data, data.rooms[r]))
+            if (data.RoomIntact(r) && Cache.Generator.Uniform(data, data.rooms[r]) && !RoomInReserved(data, data.rooms[r]) && !(Cache.HasPool && PoolRoomAny(data, data.rooms[r])))
                 dressQueue.Enqueue(new DressJob { chunk = chunk, data = data, room = r });
     }
 
@@ -5862,7 +5871,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             return true;
         }
         if (!done || Mathf.Abs(door.angle - target) > 1e-3f) return true;
-        if (door.motion == DoorMotion.Through)
+        // A body's push back to the frame (bodyShut, push-shut 11-04, FrontRoomsMapWorld.BodyDoors.cs) latches there instead.
+        if (door.motion == DoorMotion.Through && !door.bodyShut)
         {
             // At the frame (A12): the far side becomes its side, and the open's ease-out carries it on, never latching.
             // A body's swing keeps the rest of this frame's time, so it crosses the frame at one speed (no dip at 0 deg).
@@ -5872,7 +5882,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             StartSwing(door, ModuleUnits.DoorSwingDegrees, true);
             return over > 0f ? TickSwing(door, over) : true;
         }
-        var latched = door.motion == DoorMotion.Shut;
+        var latched = door.motion == DoorMotion.Shut || door.motion == DoorMotion.Through;
         door.motion = DoorMotion.None;
         // V5: the swing has finished: the swing lock lets go (swingKind stays, so DoorLatched reads a slam's end as Slam).
         door.swingLocked = false;

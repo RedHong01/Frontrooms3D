@@ -161,6 +161,12 @@ public sealed class FrontRoomsPromptBar
     /// quieter keylines (at .5 and .8 they read as a disabled control beside a full-ink chip).</summary>
     public bool Solid;
 
+    /// <summary>The HUD's USE line over the lit world (游戏视觉's, device_prompts/20_contracts.md G8, with Keyline on): every
+    /// part at full strength (edge, legend, drawn mark, the d-pad's arms, the words), since even Solid's .85 edge reads as
+    /// disabled beside the HUD's opaque Bayon. Wins over Solid. A press looks as it always does, its fill full already; at
+    /// rest the shape stays unfilled, as on every bar. A chip whose button does nothing here keeps its 40 %.</summary>
+    public bool Hud;
+
     /// <summary>Over the lit world with no sheet behind (the full-screen preview): the HUD's keyline round every glyph and
     /// word (FrontRoomsHudStyle), so bright wallpaper never washes a chip out.</summary>
     public bool Keyline
@@ -170,9 +176,10 @@ public sealed class FrontRoomsPromptBar
     }
 
     bool keyline;
-    float EdgeA => Solid ? .85f : EdgeAlpha;
-    float LegendA => Solid ? 1f : LegendAlpha;
-    float VerbA => Solid ? 1f : VerbAlpha;
+    float EdgeA => Hud ? 1f : Solid ? .85f : EdgeAlpha;
+    float LegendA => Hud || Solid ? 1f : LegendAlpha;
+    float VerbA => Hud || Solid ? 1f : VerbAlpha;
+    float ArmA => Hud ? 1f : ArmAlpha;
 
     FrontRoomsPromptBar(RectTransform parent, Font mono, Color paper, Color ink, float scale)
     {
@@ -529,7 +536,7 @@ public sealed class FrontRoomsPromptBar
         {
             // The d-pad's arms in use are a fill of their own; pressed, the whole plus is paper and the arms vanish into it.
             var arms = g.Spec.Shape == Shape.Dpad;
-            g.Mark.color = arms ? Alpha(paper, pressed ? 0f : ArmAlpha * dim) : legend;
+            g.Mark.color = arms ? Alpha(paper, pressed ? 0f : ArmA * dim) : legend;
         }
         if (g.Ring != null) g.Ring.color = Alpha(paper, dim);
     }

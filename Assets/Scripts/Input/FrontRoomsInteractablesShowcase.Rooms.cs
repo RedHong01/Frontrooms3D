@@ -5,13 +5,18 @@ using FrontRooms.Map;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Scene 3, menu 6 ROOM TYPES (交互设计, 2026-11-03; scene3/rooms/90_plan.md §3 row 2 and §6, 81_roomtypes.md I1 + I3): a
+// Scene 3, menu 6 ROOM TYPES (交互设计, 2026-11-03; scene3/rooms/90_plan.md §3 rows 2 and 4 and §6, 81_roomtypes.md I1-I3): a
 // game tour on a DontSave copy of the game's own profile tilted toward variety (81 §5.1), where the guide finds every kind
 // of room the game builds on the BUILT chunks round the player (read only: the chunk data, the generator's pure zones, the
 // map's records) and jumps the player to each, R1-R13 with a station card each, behind a gate that never jumps during a
 // shot, a climb, a pull, the seal or the floor change. K walks the B1 route (the stair key, then the EXIT); L lights a dark
-// patch and puts it back as built. The four authored rooms (R2 C, R3 C, R4 B, R5 C) show only where the game made one:
-// placing them is a later increment (81 I2).
+// patch and puts it back as built. The four authored rooms (R2 C, R3 C, R4 B, R5 C) are placed by the tour (90_plan §3 row 4,
+// 81 §5.2 and I2): at the run's start, before any chunk is built, the profile's four pool modules go into unbuilt chunks
+// round the start door with the cache's own placement (Cache.Place), at a spot the game's own module placement would take
+// (off the chunk border, Auto columns on the Level Designer's 6 m phase), their zones are met before the Run! force is
+// turned on (no Run! corridor runs through one), and the stream's first build of each chunk stamps it. So floor 1 holds each
+// for sure, as the designer drew it, and with them the bullpen's and pillar hall's columns (R6 B, C) and the pillar hall's
+// pile (R7); the game's own are listed too. A placement that fails leaves its stop as the game made it, said once on the list.
 public sealed partial class FrontRoomsInteractablesShowcase
 {
     const int RoomRowCount = 14, RoomVariantMax = 5;
@@ -42,32 +47,32 @@ public sealed partial class FrontRoomsInteractablesShowcase
             tryLine = "Walk the corridor; J: a plain room, then the waiting room.", touch = "walk in",
             what = "Standard 2.9 m 的 Level 0 区：黄墙纸、暖灯，82% 的墙让走廊成迷宫。",
             decide = new[] { "82 % 墙的窄走廊迷宫，密度合适吗？", "空房间（2-4 格）要不要更常见或更少？", "等候室（隔墙、三把椅子、钟、落地灯）读得出“有人等过”吗？留着吗？" },
-            small = "HUD LEVEL 0 / THE MAZE · zones 38.5 % shipped (tour 28.6 %) · the waiting room only where the game made one (moduleChance .3; placed for sure in a later increment)" },
+            small = "HUD LEVEL 0 / THE MAZE · zones 38.5 % shipped (tour 28.6 %) · C: L0_WaitingRoom_4x3, one placed by the tour on floor 1 for sure (game: moduleChance .3, natural 43 %); the game's own listed too" },
         new RoomRow { code = "R3", name = "LOW ROOMS", variants = new[] { "LOW ROOMS", "LOW ROOM", "STORE ROOM" },
             tryLine = "Walk the 2.4 m rooms; J: a plain low room, the dead-end store.", touch = "walk in",
             what = "2.4 m 低矮区：一半是墙、两成是拱，房间 2-3 格。",
             decide = new[] { "2.4 m 的压迫感和 Standard 区分得开吗？50 % 墙 / 20 % 拱合适吗？", "低矮空房间留着这个出现率吗？", "死胡同储物间（书柜、柜子、箱子、托盘）留着吗？" },
-            small = "HUD LOW ROOMS · Low 35 % shipped (tour 30 %) · the store room only where the game made one (placed in a later increment)" },
+            small = "HUD LOW ROOMS · Low 35 % shipped (tour 30 %) · C: Low_Storage_2x3, one placed by the tour on floor 1 for sure (natural 83 %); the game's own listed too" },
         new RoomRow { code = "R4", name = "TALL HALLS", variants = new[] { "TALL HALLS", "PILLAR HALL" },
             tryLine = "Stand in the 5.4 m hall; J: the pillar hall and its pile.", touch = "walk in",
             what = "5.4 m 高厅：只有三成是墙，灯更亮、照得更远，不放钥匙。",
             decide = new[] { "5.4 m 高厅的尺度和灯光够“空旷”吗？", "柱厅（6 m 柱网 + 一堆家具）和普通高厅区别够吗？留着吗？" },
-            small = "HUD TALL HALLS · Tall 10 % shipped (tour 18 %) · the pillar hall only where the game made one (placed in a later increment)" },
+            small = "HUD TALL HALLS · Tall 10 % shipped (tour 18 %) · B: Tall_PillarHall_6x5, one placed by the tour on floor 1 for sure, within 3 chunks of the start door (natural 7.6 %)" },
         new RoomRow { code = "R5", name = "OFFICE", variants = new[] { "WALL ROWS", "PODS", "BULLPEN" },
             tryLine = "Walk the office; J: wall rows, pods, the bullpen.", touch = "walk in",
             what = "办公区（只在 Standard 高度）：冷色灯罩，每个房间都摆办公家具。",
             decide = new[] { "两排靠墙工位的窄办公室读得出办公室吗？", "中间成组的隔间工位密度合适吗？", "开放办公区（复印机、饮水机、文件柜）留着吗？三种办公室都要吗？" },
-            small = "HUD LEVEL 4 / OFFICE · 16.5 % shipped (tour 23.4 %) · rows when the short side < 7 m · the bullpen only where the game made one (placed in a later increment)" },
+            small = "HUD LEVEL 4 / OFFICE · 16.5 % shipped (tour 23.4 %) · rows when the short side < 7 m · C: Office_Bullpen_4x4, one placed by the tour on floor 1 for sure (natural 3.7 %)" },
         new RoomRow { code = "R6", name = "COLUMNS", variants = new[] { "LEVEL 0", "OFFICE", "TALL" },
             tryLine = "J compares the three: 0.6 m, 0.9 m with bulkheads, 0.9 m in 5.4 m.", touch = "look",
             what = "房间里 6 m 柱网上的柱子：Level 0 细柱，办公区粗柱带梁，高厅粗柱。",
             decide = new[] { "0.6 m 柱子留着吗？出现率（游戏 25 %）？", "办公区 0.9 m 柱 + 梁头读得出“另一栋楼”吗？", "高厅柱子（游戏 70 %）够多吗？" },
-            small = "PlaceColumns, rooms of 3 x 3 cells and more · game odds .25 / .75 / .70 (tour 1 / 1 / 1)" },
+            small = "PlaceColumns, rooms of 3 x 3 cells and more · game odds .25 / .75 / .70 (tour 1 / 1 / 1) · B and C on floor 1 for sure: the placed bullpen's and pillar hall's columns" },
         new RoomRow { code = "R7", name = "FURNITURE PILE", variants = new[] { "CENTRE SCULPTURE", "COPY-PASTE ROW", "CEILING STUCK", "OFFICE CLUSTER", "ZERO PILE" },
             tryLine = "J steps through the piles found; the name is the tableau.", touch = "look",
             what = "房间中央堆起来的家具地标，共五种堆法。",
             decide = new[] { "五种堆法都留吗？出现率（35 %，高厅 60 %）？" },
-            small = "FrontRoomsFurniturePile · rooms of 4 x 4 cells and more · game .35 (Tall .6), tour 1" },
+            small = "FrontRoomsFurniturePile · rooms of 4 x 4 cells and more · game .35 (Tall .6), tour 1 · floor 1: the placed pillar hall carries one (fill Pile); its tableau is the game's pick" },
         new RoomRow { code = "R8", name = "HEIGHT BORDER", variants = new[] { "DOOR", "WINDOW", "ARCH" },
             tryLine = "J: the door 2.4 to 2.9 m, a window into a hall, the hall's one arch.", touch = "walk into the door · hold USE at the window, then walk in · walk through the arch",
             what = "不同高度的区相接处：低和标准之间是门，进高厅是窗，每个高厅只有一个拱门。",
@@ -138,6 +143,33 @@ public sealed partial class FrontRoomsInteractablesShowcase
     int litDead, litDim;
     static bool gateWarned;
 
+    // I2: the pool modules placed at the run's start (floor 1's cache only; NextFloor's new cache has none).
+    const int PlaceRings = 3, PlaceModulesMax = 8;
+
+    /// <summary>One pool module the tour placed at the run's start, or could not: the stop it shows as, the chunk, the footprint
+    /// in chunk-local cells (as RoomModuleStamp.Apply appends it to the chunk's rooms), its middle in the world, and why not.</summary>
+    sealed class RoomPlacement
+    {
+        public string name, why;
+        public int row, variant, ring, turns;
+        public GridCoord chunk;
+        public CellRect rect;
+        public RoomModuleData module;
+        public Vector3 centre;
+        // fits: a footprint was found (phase 1, pure); placed: the cache holds it (phase 2).
+        public bool fits, placed;
+        // 0 not generated yet, 1 the chunk's data holds the stamped room, -1 the chunk was generated without it (said once).
+        public int stamped;
+    }
+
+    readonly List<RoomPlacement> roomPlacements = new List<RoomPlacement>();
+    readonly List<FrontRoomsRoomModule> placeQueue = new List<FrontRoomsRoomModule>();
+    readonly List<RoomModuleData> placeTurns = new List<RoomModuleData>();
+    readonly HashSet<GridCoord> placeUsed = new HashSet<GridCoord>();
+    readonly HashSet<GridCoord> placeTouched = new HashSet<GridCoord>();
+    // This run's floor 1 had its placements tried (the floors below say "floor 1 only").
+    bool placementsRan;
+
     // The jump gate reads the game's own private state, as its seal does (FrontRooms3DGame.ExitSealAllowed): by name and type,
     // read only. A field not found with that type turns its check off, said once on the list.
     const BindingFlags GameFields = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -204,6 +236,23 @@ public sealed partial class FrontRoomsInteractablesShowcase
     List<RoomStop> RoomList(int row, int variant) =>
         roomFound[Mathf.Clamp(row, 0, RoomRowCount - 1) * RoomVariantMax + Mathf.Clamp(variant, 0, RoomVariantMax - 1)];
 
+    /// <summary>The card's and the list's title for a stop: RoomLabel, but R7 under its own name ("R7  FURNITURE PILE") while
+    /// no pile of that tableau is on the scan (no pile seen yet: key 7 opens variant A), since the placed pillar hall's
+    /// tableau is the game's pick, not A's.</summary>
+    string CardLabel(int row, int variant)
+    {
+        if (row != 7 || RoomList(7, variant).Count > 0) return RoomLabel(row, variant);
+        var r = RoomRowAt(7);
+        return r.code + "  " + r.name;
+    }
+
+    // Any furniture pile on the last scan (R7, any tableau).
+    bool PileSeen()
+    {
+        for (var v = 0; v < VariantCount(7); v++) if (RoomList(7, v).Count > 0) return true;
+        return false;
+    }
+
     // ---------- the tour's copy and its run (called from the landed tour code)
 
     /// <summary>
@@ -246,13 +295,17 @@ public sealed partial class FrontRoomsInteractablesShowcase
 
     void RoomsRunStarted()
     {
-        if (map.RunRooms != null) map.RunRooms.Rules.force = true;
         litCells.Clear();
         ClearRoomFound();
         roomsRow = -1;
         roomsVariant = roomsIndex = 0;
         cardRow = -1;
         roomsClock = 0f;
+        // I2 (81 §5.2): the pool modules into unbuilt chunks and their zones met while the Run! force is still off, so those
+        // zones are decided "no Run! room" for good (FrontRoomsRunRooms.Meet, ZonesStillOk); only then the force. It never
+        // throws (a failure is one line on the list), so the force below is always set: without placements the tour is as before.
+        PlaceRoomModules();
+        if (map.RunRooms != null) map.RunRooms.Rules.force = true;
         var missing = GateMissing();
         if (missing == null) return;
         problem = problem == null ? missing : problem + " " + missing;
@@ -261,7 +314,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
         Debug.LogWarning("Interactables showcase: " + missing);
     }
 
-    // NextFloor made a new Run! planner and cleared every lamp mode: force the planner again, forget the lit cells.
+    // NextFloor made a new Run! planner and cleared every lamp mode: force the planner again, forget the lit cells. Its new
+    // cache holds no placement (81 §5.3: none on the floors below), so the records go too.
     void RoomsFloorChanged()
     {
         if (map.RunRooms != null) map.RunRooms.Rules.force = true;
@@ -269,6 +323,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
         ClearRoomFound();
         cardRow = -1;
         roomsClock = 0f;
+        roomPlacements.Clear();
     }
 
     void RoomsRunEnded()
@@ -276,6 +331,401 @@ public sealed partial class FrontRoomsInteractablesShowcase
         litCells.Clear();
         ClearRoomFound();
         cardRow = -1;
+        roomPlacements.Clear();
+        placementsRan = false;
+    }
+
+    // ---------- I2: the four placements (81 §5.2 and §8 I2; 90_plan §3 row 4)
+
+    /// <summary>
+    /// MapRunStarted, before any chunk is built (StartRunInPlace calls Begin(playerRoot, false), which builds none, then raises
+    /// MapRunStarted; the stream builds from MapWorld.Update on): each pool module of the map's profile goes into the nearest
+    /// unbuilt chunk round the start door where one turn of it fits, at the kind of spot the game's own module placement takes
+    /// (FitModule). Phase 1 only reads (the generator's pure zones, the carve, the planners), so a throw there leaves the map
+    /// as the game made it. Phase 2 writes:
+    /// the footprint's zones met (Cache.ZoneOf: with the Run! force still off they get no Run! room, ever), then the cache's
+    /// own placement (Cache.Place: data only; the stream's first Build of that chunk stamps it with RoomModuleStamp, the
+    /// generator's own path). Never throws: whatever fails is one line on the list and one console warning, and that stop
+    /// shows only where the game made one.
+    /// </summary>
+    void PlaceRoomModules()
+    {
+        roomPlacements.Clear();
+        placementsRan = true;
+        string failed = null;
+        Exception thrown = null;
+        try
+        {
+            var cache = map.Cache;
+            if (cache == null) failed = "the map has no cache";
+            else
+            {
+                CollectPoolModules(map.Profile);
+                if (placeQueue.Count == 0) failed = "the profile holds no pool module";
+                var door = StartDoorCell();
+                var centre = MapGrid.ChunkOf(door);
+                placeUsed.Clear();
+                placeTouched.Clear();
+                if (cache.Carve != null)
+                    foreach (var c in cache.Carve.Touched) placeTouched.Add(c);
+                // Phase 1: every fit first, in the generator's module order (by name), one module per chunk.
+                for (var k = 0; k < placeQueue.Count; k++)
+                {
+                    var asset = placeQueue[k];
+                    // Our own copy: the stamp normalises the data it is given (RoomModuleStamp.Apply), never the asset's.
+                    var data = asset.data.Clone();
+                    data.Normalize();
+                    var p = new RoomPlacement { name = asset.name };
+                    ModuleStop(data, out p.row, out p.variant);
+                    GridCoord chunk;
+                    RoomModuleData turned;
+                    int x0, y0, ring, turns;
+                    if (FitModule(data, door, centre, out chunk, out turned, out x0, out y0, out ring, out turns))
+                    {
+                        p.fits = true;
+                        p.chunk = chunk;
+                        p.module = turned;
+                        p.rect = new CellRect(x0, y0, turned.width, turned.depth);
+                        p.ring = ring;
+                        p.turns = turns;
+                        var o = MapGrid.ChunkOrigin(chunk);
+                        p.centre = (map.CellCenter(new GridCoord(o.x + x0, o.y + y0))
+                            + map.CellCenter(new GridCoord(o.x + x0 + turned.width - 1, o.y + y0 + turned.depth - 1))) * .5f;
+                        placeUsed.Add(chunk);
+                    }
+                    else p.why = "no unbuilt chunk within " + PlaceRings + " chunks of the start door has room for it";
+                    roomPlacements.Add(p);
+                }
+                // Phase 2: the zones met, then the placement, one module at a time. The force is off while they are met (a
+                // tools run, RunRoomsForTools >= 2, attaches the planner forced): the caller turns it on right after.
+                if (map.RunRooms != null) map.RunRooms.Rules.force = false;
+                for (var k = 0; k < roomPlacements.Count; k++)
+                {
+                    var p = roomPlacements[k];
+                    if (!p.fits) continue;
+                    MeetPlacedZones(p);
+                    cache.Place(p.chunk, p.module, p.rect.x, p.rect.y);
+                    p.placed = true;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            thrown = e;
+            failed = "the placement threw (" + e.GetType().Name + ": " + e.Message + ")";
+        }
+        var placedLog = "";
+        var placedLabels = "";
+        var missed = "";
+        for (var k = 0; k < roomPlacements.Count; k++)
+        {
+            var p = roomPlacements[k];
+            if (p.placed)
+            {
+                placedLog += (placedLog.Length > 0 ? "; " : "") + p.name + " in chunk " + p.chunk + " (ring " + p.ring + ") at "
+                    + p.rect.x + ", " + p.rect.y + ", " + p.rect.w + " x " + p.rect.h + " cells, turned " + p.turns + SpotNote(p);
+                placedLabels += (placedLabels.Length > 0 ? ", " : "") + RoomLabel(p.row, p.variant);
+                continue;
+            }
+            if (p.why == null) p.why = failed ?? "not placed";
+            missed += (missed.Length > 0 ? ", " : "") + RoomLabel(p.row, p.variant);
+        }
+        if (placedLog.Length > 0) Debug.Log("Interactables showcase (rooms): placed " + placedLog + ".");
+        if (failed == null && missed.Length == 0) return;
+        // One line for the list and the console: what failed, what still stands, and that the rest is the game's own.
+        var line = failed != null
+            ? "PLACEMENTS: " + failed + (placedLabels.Length > 0 ? "; placed: " + placedLabels : "") + "; the authored rooms not placed show only where the game made one."
+            : "PLACEMENTS: " + missed + " not placed (no unbuilt chunk within " + PlaceRings + " chunks of the start door has room): only where the game made one.";
+        problem = problem == null ? line : problem + " " + line;
+        Debug.LogWarning("Interactables showcase (rooms): " + line + (thrown != null ? "\n" + thrown : ""));
+    }
+
+    /// <summary>The profile's pool modules (each once, room modules only: no station, no corridor or trigger module, none the
+    /// generator drops), in the generator's own order (by name, FrontRoomsLevelProfile.ModuleData), at most PlaceModulesMax.</summary>
+    void CollectPoolModules(FrontRoomsLevelProfile profile)
+    {
+        placeQueue.Clear();
+        if (profile == null || profile.modules == null) return;
+        for (var k = 0; k < profile.modules.Length && placeQueue.Count < PlaceModulesMax; k++)
+        {
+            var m = profile.modules[k];
+            if (m == null || m.data == null || placeQueue.Contains(m)) continue;
+            if (m.data.IsStation || m.data.placement != ModulePlacement.Room || m.data.trigger != ModuleTrigger.None) continue;
+            // Weight 0 (or NaN, or below) is the generator's "never" (its constructor drops it, FrontRoomsMap.cs:293): a room
+            // retired that way is not placed either. Its tier range is not read: a module moved to later tiers still shows here.
+            if (!(m.data.weight > 0f)) continue;
+            var at = placeQueue.Count;
+            while (at > 0 && string.CompareOrdinal(placeQueue[at - 1].name, m.name) > 0) at--;
+            placeQueue.Insert(at, m);
+        }
+    }
+
+    /// <summary>D, the start door's cell: the floor-1 station's (its layout), else the Run! planner's start, else the stream's focus.</summary>
+    GridCoord StartDoorCell()
+    {
+        if (map.HasStation && !map.StationLayout.floorStation) return map.StationLayout.door;
+        var run = map.RunRooms;
+        if (run != null && run.HasStart) return run.StartDoor;
+        return map.CellOf(map.StreamFocus ?? Feet);
+    }
+
+    /// <summary>The stop a module shows as, as the finder reads a module room: Low R3 C, Tall R4 B, Office R5 C, else R2 C.</summary>
+    static void ModuleStop(RoomModuleData m, out int row, out int variant)
+    {
+        if (m.height == ZoneHeight.Low) { row = 3; variant = 2; }
+        else if (m.height == ZoneHeight.Tall) { row = 4; variant = 1; }
+        else if (m.theme == ZoneTheme.Office) { row = 5; variant = 2; }
+        else { row = 2; variant = 2; }
+    }
+
+    /// <summary>
+    /// 81's FindFit (the census's rule, scene3/rooms/sim_rooms/Program.cs:363-400) with the game's own spot rule first: the
+    /// first chunk in rings 1, 2, then 3 round the start door's chunk (in a ring, south to north, west to east) that no earlier
+    /// placement took, the carve neither pins nor touches, no Run! room uses and nothing has built, with one turn of the module
+    /// whose every footprint cell has the module's height and theme (RoomModuleStamp.Apply refuses any other,
+    /// FrontRoomsRoomModuleStamp.cs:32-43) and none is reserved (the start rooms, X), the station's (its room, C1..N, X) or
+    /// beside the start door. Three passes over rings 1-3 (SpotAllowed), so a farther chunk with the game's kind of spot wins
+    /// over a nearer one without: 0, the spot FrontRoomsMapGenerator.PlaceModules prefers (Spot, FrontRoomsMap.cs:552-580):
+    /// off every chunk border (Apply writes only edges inside the chunk, so on a border side the map's own edges would stand
+    /// for the designer's walls and doorways) and, for Auto columns, on the 6 m column phase the Level Designer preview shows;
+    /// 1, Auto columns only: on that phase, a border allowed (the game's own choice when a room leaves no inner spot); 2, any
+    /// spot (rare: the room then differs from its design on that side or in its columns, said by SpotNote). Reads only.
+    /// </summary>
+    bool FitModule(RoomModuleData module, GridCoord door, GridCoord centre, out GridCoord chunk, out RoomModuleData turned, out int x0, out int y0, out int ringOut, out int turnsOut)
+    {
+        chunk = default;
+        turned = null;
+        x0 = y0 = 0;
+        ringOut = turnsOut = -1;
+        const int n = MapGrid.ChunkCells;
+        var cache = map.Cache;
+        var gen = cache.Generator;
+        var run = map.RunRooms;
+        placeTurns.Clear();
+        for (var t = 0; t < (module.allowRotate ? 4 : 1); t++)
+        {
+            var m = module.Rotated(t);
+            m.Normalize();
+            placeTurns.Add(m);
+        }
+        for (var pass = 0; pass < 3; pass++)
+        {
+            // Pass 1 differs from pass 2 only for Auto columns.
+            if (pass == 1 && module.columns != ModuleColumns.Auto) continue;
+            for (var ring = 1; ring <= PlaceRings; ring++)
+            for (var dy = -ring; dy <= ring; dy++)
+            for (var dx = -ring; dx <= ring; dx++)
+            {
+                if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != ring) continue;
+                var c = new GridCoord(centre.x + dx, centre.y + dy);
+                var o = MapGrid.ChunkOrigin(c);
+                if (placeUsed.Contains(c) || placeTouched.Contains(c) || cache.IsPinned(c) || map.IsChunkBuiltAt(o)) continue;
+                if (run != null && run.RoomsIn(c).Count > 0) continue;
+                // Never X's (and N's) chunk: the EXIT was chosen on that chunk's data (a dead end, the chunk whole without X,
+                // FrontRoomsExitPlanner), which a stamp there could undo. On floor 1 it is the carve's anyway; this keeps a start
+                // without a station safe too.
+                if (map.HasExitArea && (MapGrid.ChunkOf(map.ExitCell) == c || MapGrid.ChunkOf(map.ExitFrontCell) == c)) continue;
+                for (var t = 0; t < placeTurns.Count; t++)
+                {
+                    var m = placeTurns[t];
+                    for (var y = 0; y + m.depth <= n; y++)
+                    for (var x = 0; x + m.width <= n; x++)
+                    {
+                        if (!SpotAllowed(pass, m, x, y) || !FootprintFits(gen, m, o, x, y, door)) continue;
+                        chunk = c;
+                        turned = m;
+                        x0 = x;
+                        y0 = y;
+                        ringOut = ring;
+                        turnsOut = t;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// FitModule's passes as a test of one chunk-local start of a turned module, by the generator's own spot rule
+    /// (FrontRoomsMapGenerator.Spot and Pick, FrontRoomsMap.cs:572-589): pass 0, off every chunk border (x, y >= 1 and the far
+    /// side <= 7) and, for Auto columns, at an even distance from (8 - side) / 2 on both axes (the phase the Level Designer
+    /// preview shows, RoomModuleData.AutoColumnAt); pass 1, that phase only; pass 2, any start.
+    /// </summary>
+    static bool SpotAllowed(int pass, RoomModuleData m, int x, int y)
+    {
+        const int n = MapGrid.ChunkCells;
+        if (pass >= 2) return true;
+        if (m.columns == ModuleColumns.Auto && (((x - (n - m.width) / 2) & 1) != 0 || ((y - (n - m.depth) / 2) & 1) != 0)) return false;
+        return pass == 1 || (x >= 1 && y >= 1 && x + m.width <= n - 1 && y + m.depth <= n - 1);
+    }
+
+    /// <summary>"" for a placement at the game's own kind of spot; else what differs from the design this run (the console's
+    /// placed line, the finder's detail): a side on a chunk border (the map's edges there), columns off the designer's grid.</summary>
+    static string SpotNote(RoomPlacement p)
+    {
+        if (p == null || p.module == null) return "";
+        const int n = MapGrid.ChunkCells;
+        var r = p.rect;
+        var border = r.x == 0 || r.y == 0 || r.x + r.w == n || r.y + r.h == n;
+        var offGrid = !SpotAllowed(1, p.module, r.x, r.y);
+        if (!border && !offGrid) return "";
+        return " (this run " + (border ? "on a chunk border: that side is the map's" : "") + (border && offGrid ? "; " : "")
+            + (offGrid ? "its columns off the designer's grid" : "") + ")";
+    }
+
+    bool FootprintFits(FrontRoomsMapGenerator gen, RoomModuleData m, GridCoord o, int x, int y, GridCoord door)
+    {
+        for (var j = 0; j < m.depth; j++)
+        for (var i = 0; i < m.width; i++)
+        {
+            var cell = new GridCoord(o.x + x + i, o.y + y + j);
+            var zone = gen.ZoneOf(cell);
+            if (zone.height != m.height || zone.theme != m.theme) return false;
+            if (map.IsReserved(cell) || InStationArea(cell)) return false;
+            // The start door's cell and the ring round it stay as the map dresses them (inside the station on floor 1 anyway).
+            if (Mathf.Abs(cell.x - door.x) <= 1 && Mathf.Abs(cell.y - door.y) <= 1) return false;
+        }
+        return true;
+    }
+
+    // Every zone a placed footprint's cells belong to, met now through the cache (it records the zone's tier and hands it to the
+    // Run! planner's Meet): with the force off and the first send not out, the planner decides "none" for it and refuses every
+    // later corridor touching it (ZonesStillOk). Nothing to meet with Run! rooms off.
+    void MeetPlacedZones(RoomPlacement p)
+    {
+        if (map.RunRooms == null) return;
+        var o = MapGrid.ChunkOrigin(p.chunk);
+        for (var j = 0; j < p.rect.h; j++)
+        for (var i = 0; i < p.rect.w; i++)
+            map.Cache.ZoneOf(new GridCoord(o.x + p.rect.x + i, o.y + p.rect.y + j));
+    }
+
+    /// <summary>Each scan: a placed room whose chunk the cache has generated since either stands in its data or does not (said once).</summary>
+    void CheckPlacements()
+    {
+        if (floor > 1 || map == null || map.Cache == null) return;
+        for (var k = 0; k < roomPlacements.Count; k++)
+        {
+            var p = roomPlacements[k];
+            if (!p.placed || p.stamped != 0) continue;
+            MapChunk data;
+            if (!map.Cache.TryGetGenerated(p.chunk, out data) || data == null) continue;
+            p.stamped = HoldsRoom(data, p.rect) ? 1 : -1;
+            if (p.stamped > 0) continue;
+            var line = "PLACEMENT LEFT OUT: " + RoomLabel(p.row, p.variant) + " (" + p.name + ") in chunk " + p.chunk + ": the map's stamp refused it; it shows only where the game made one.";
+            problem = problem == null ? line : problem + " " + line;
+            Debug.LogWarning("Interactables showcase (rooms): " + line);
+        }
+    }
+
+    static bool HoldsRoom(MapChunk data, CellRect rect)
+    {
+        if (data.rooms == null) return false;
+        for (var r = 0; r < data.rooms.Length; r++)
+            if (SameRect(data.rooms[r], rect) && data.ModuleOf(r) != null) return true;
+        return false;
+    }
+
+    static bool SameRect(CellRect a, CellRect b) => a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+
+    /// <summary>The placement behind a module room of this floor (the scan's detail line), by chunk and footprint, or null.</summary>
+    RoomPlacement PlacedRoomFor(GridCoord chunk, CellRect rect)
+    {
+        if (floor > 1) return null;
+        for (var k = 0; k < roomPlacements.Count; k++)
+        {
+            var p = roomPlacements[k];
+            if (p.placed && p.chunk == chunk && SameRect(p.rect, rect)) return p;
+        }
+        return null;
+    }
+
+    // The placed footprint holding a map cell, or null (a pile's detail line).
+    RoomPlacement PlacedRoomAt(GridCoord cell)
+    {
+        if (floor > 1) return null;
+        for (var k = 0; k < roomPlacements.Count; k++)
+        {
+            var p = roomPlacements[k];
+            if (!p.placed || MapGrid.ChunkOf(cell) != p.chunk) continue;
+            var o = MapGrid.ChunkOrigin(p.chunk);
+            if (p.rect.Contains(cell.x - o.x, cell.y - o.y)) return p;
+        }
+        return null;
+    }
+
+    // The module a variant leans on: R2 C, R3 C, R4 B, R5 C are the modules themselves; R6 B stands in the bullpen (its columns),
+    // R6 C in the pillar hall, R7 in the pillar hall (its fill Pile). False: a variant no placement guarantees.
+    static bool PlacedStop(int row, int v, out int moduleRow, out int moduleVariant)
+    {
+        moduleRow = row;
+        moduleVariant = v;
+        if ((row == 2 && v == 2) || (row == 3 && v == 2) || (row == 4 && v == 1) || (row == 5 && v == 2)) return true;
+        if (row == 6 && v == 1) { moduleRow = 5; moduleVariant = 2; return true; }
+        if (row == 6 && v == 2) { moduleRow = 4; moduleVariant = 1; return true; }
+        if (row == 7) { moduleRow = 4; moduleVariant = 1; return true; }
+        return false;
+    }
+
+    static bool IsModuleStop(int row, int v) => (row == 2 && v == 2) || (row == 3 && v == 2) || (row == 4 && v == 1) || (row == 5 && v == 2);
+
+    /// <summary>This floor's placement behind a variant: a placed one first, then the nearest; null on the floors below, with
+    /// none tried, or for a variant no placement guarantees.</summary>
+    RoomPlacement PlacementFor(int row, int v)
+    {
+        int mr, mv;
+        if (floor > 1 || !PlacedStop(row, v, out mr, out mv)) return null;
+        RoomPlacement best = null;
+        var feet = Feet;
+        for (var k = 0; k < roomPlacements.Count; k++)
+        {
+            var p = roomPlacements[k];
+            if (p.row != mr || p.variant != mv) continue;
+            if (best == null || (p.placed && !best.placed)
+                || (p.placed == best.placed && Vector3.Distance(feet, p.centre) < Vector3.Distance(feet, best.centre))) best = p;
+        }
+        return best;
+    }
+
+    /// <summary>A placed room to point at while the scan has no example of the variant: placed, not refused by the stamp; for
+    /// the columns and the pile only while that room is not built round the player yet (then the scan says what it holds).</summary>
+    RoomPlacement PlacedHint(int row, int v)
+    {
+        var p = PlacementFor(row, v);
+        if (p == null || !p.placed || p.stamped < 0) return null;
+        if ((row == 6 || row == 7) && map != null && map.IsChunkBuiltAt(MapGrid.ChunkOrigin(p.chunk)) && InScanRange(p.chunk)) return null;
+        return p;
+    }
+
+    /// <summary>The card's line for a variant a placement stands behind while the scan has no example of it: where the placed
+    /// room is and which way, or why there is none (no fit, the stamp left it out, a floor below). Null: say what the scan says.</summary>
+    string PlacedLine(int row, int v)
+    {
+        var own = IsModuleStop(row, v);
+        if (floor > 1) return own && placementsRan ? "The tour places it on floor 1 only: on this floor only where the game made one; walk on." : null;
+        var p = PlacementFor(row, v);
+        if (p == null) return null;
+        if (!p.placed) return own ? "Not placed this run (" + p.why + "): only where the game made one; walk on." : null;
+        if (p.stamped < 0) return own ? "Placed in chunk " + p.chunk + ", but the map's stamp left it out: only where the game made one." : null;
+        var hint = PlacedHint(row, v);
+        if (hint == null) return null;
+        // R7: the hall's pile is FrontRoomsFurniturePile's own pick (and stands where PileSpot finds room): no tableau named.
+        var what = row == 6 ? "In the placed " + (v == 1 ? "bullpen" : "pillar hall") + ", its columns" : row == 7 ? "In the placed pillar hall, a pile (its tableau shows once seen)" : "Placed by the tour";
+        var built = map != null && map.IsChunkBuiltAt(MapGrid.ChunkOrigin(hint.chunk));
+        return what + ": " + Mathf.RoundToInt(Vector3.Distance(Feet, hint.centre)) + " m, " + Bearing(hint.centre)
+            + (built ? ", built  ·  walk that way: once it is round you, the list jumps you in." : ", not built yet  ·  walk that way: it builds as you come near.");
+    }
+
+    int ScanRadius => map != null ? Mathf.Clamp(map.BuildRadius, 1, 3) : 1;
+
+    // A chunk the scan reads (within ScanRadius chunks of the player's).
+    bool InScanRange(GridCoord chunk)
+    {
+        if (map == null || player == null) return false;
+        var here = MapGrid.ChunkOf(map.CellOf(Feet));
+        var radius = ScanRadius;
+        return Mathf.Abs(chunk.x - here.x) <= radius && Mathf.Abs(chunk.y - here.y) <= radius;
     }
 
     /// <summary>Every lamp L lit back to the map's own (Auto). On L, on leaving the patch, F2 and OnDestroy.</summary>
@@ -338,6 +788,13 @@ public sealed partial class FrontRoomsInteractablesShowcase
                 ShowRoomVariant(row, v);
                 return;
             }
+        // Nothing to stand at yet: a placed room's card (where it is, which way), else the first variant's.
+        for (var v = 0; v < VariantCount(row); v++)
+            if (row >= 2 && row <= 6 && PlacedHint(row, v) != null)
+            {
+                ShowRoomVariant(row, v);
+                return;
+            }
         ShowRoomVariant(row, row == 13 && roomsDesk ? 1 : 0);
     }
 
@@ -353,6 +810,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
         {
             var v = (roomsVariant + k) % n;
             if (!Showable(roomsRow, v)) continue;
+            // A variant only a placement makes showable (its card, no example yet) waits until this one's examples are walked.
+            if (roomsRow >= 2 && roomsRow <= 6 && JumpTarget(roomsRow, v, 0) == null && roomsIndex + 1 < JumpableCount(roomsRow, roomsVariant)) continue;
             roomsIndex = 0;
             ShowRoomVariant(roomsRow, v);
             return;
@@ -368,7 +827,9 @@ public sealed partial class FrontRoomsInteractablesShowcase
         if (row == 11 && v == 1) return RoomList(11, 0).Count > 0;
         if (row == 12 && v == 1) return map != null && map.HasExitArea;
         if (row == 12 && v == 2) return floor > 1;
-        return JumpTarget(row, v, 0) != null;
+        if (JumpTarget(row, v, 0) != null) return true;
+        // A placed room not built (or not near) yet still has its card: J shows where it is (R7's tableau only once seen).
+        return row != 7 && PlacedHint(row, v) != null;
     }
 
     /// <summary>The index-th example of a variant to stand at (wrapping), or null: none found, or one the guide never jumps into.</summary>
@@ -401,7 +862,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
     {
         roomsRow = row;
         roomsVariant = v;
-        var label = RoomLabel(row, v);
+        var label = CardLabel(row, v);
         var r = RoomRowAt(row);
         if (row == 12 && v == 1)
         {
@@ -442,8 +903,14 @@ public sealed partial class FrontRoomsInteractablesShowcase
                 if (floor <= 1) return "On B1: K takes you to the stair key, then the EXIT; N on the title picks which station.";
                 return map != null && map.HasStation && map.StationLayout.floorStation ? "This floor holds the other kind; N on floor 1's title picks." : "No station on this floor (A35): its EXIT is open.";
         }
-        if ((row == 2 && v == 2) || (row == 3 && v == 2) || (row == 4 && v == 1) || (row == 5 && v == 2))
-            return "None the game made round you: walk on (placing one for sure is a later increment).";
+        // The authored rooms and what stands in them (R6 B, C, R7): the placed one's way, or why there is none.
+        int mr, mv;
+        if (PlacedStop(row, v, out mr, out mv))
+        {
+            var placedLine = PlacedLine(row, v);
+            if (placedLine != null) return placedLine;
+        }
+        if (IsModuleStop(row, v)) return "None the game made round you: walk on.";
         return "None round you yet: walk on, the floor builds as you go.";
     }
 
@@ -741,9 +1208,11 @@ public sealed partial class FrontRoomsInteractablesShowcase
     {
         ClearRoomFound();
         if (map == null || map.Cache == null || player == null) return;
+        // The placed rooms whose chunks the cache generated since the last scan: stamped, or said once.
+        CheckPlacements();
         var feet = Feet;
         var here = MapGrid.ChunkOf(map.CellOf(feet));
-        var radius = Mathf.Clamp(map.BuildRadius, 1, 3);
+        var radius = ScanRadius;
         // The piles first: a plain room is one without a pile.
         ScanPiles(feet);
         for (var cy = here.y - radius; cy <= here.y + radius; cy++)
@@ -908,7 +1377,9 @@ public sealed partial class FrontRoomsInteractablesShowcase
                 stand = c;
             }
             var e = NewStop(row, v, centre, stand, centre + Vector3.up * 1.2f, feet);
-            e.detail = rect.w + " x " + rect.h + " cells" + (module != null ? ", authored" : "");
+            var placedHere = module != null ? PlacedRoomFor(data.coord, rect) : null;
+            e.detail = rect.w + " x " + rect.h + " cells"
+                + (module == null ? "" : placedHere != null ? ", authored, placed by the tour" + SpotNote(placedHere) : ", authored, the game's own");
             AddStop(e);
         }
     }
@@ -1005,7 +1476,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
                 pileAt.Add(at);
                 var e = NewStop(7, TableauOf(pileName), at, at, at + Vector3.up, feet);
                 e.ring = 4f;
-                e.detail = pileName;
+                var host = PlacedRoomAt(map.CellOf(at));
+                e.detail = pileName + (host != null ? ", in the placed " + host.name : "");
                 AddStop(e);
             }
         }
@@ -1160,6 +1632,13 @@ public sealed partial class FrontRoomsInteractablesShowcase
                 if (floor <= 1) return "ON B1 (" + (roomsDesk ? "DESK" : "WAITING") + ")";
                 if (!map.HasStation || !map.StationLayout.floorStation) return "NO STATION HERE";
                 break;
+            case 7:
+            {
+                // No pile seen yet, but the placed pillar hall holds one (its tableau shows once it is seen).
+                var hall = PileSeen() ? null : PlacedHint(7, 0);
+                if (hall != null) return "PILLAR HALL ~" + Mathf.RoundToInt(Vector3.Distance(Feet, hall.centre)) + " M";
+                break;
+            }
         }
         var s = "";
         var n = VariantCount(row);
@@ -1168,7 +1647,13 @@ public sealed partial class FrontRoomsInteractablesShowcase
             var list = RoomList(row, v);
             if (v > 0) s += "  ";
             if (row == 10 && v == 1) s += "B " + (litCells.Count > 0 ? "LIT" : "L");
-            else s += (char)('A' + v) + " " + (list.Count > 0 ? Mathf.RoundToInt(list[0].distance).ToString() : "-");
+            else if (list.Count > 0) s += (char)('A' + v) + " " + Mathf.RoundToInt(list[0].distance);
+            else
+            {
+                // A placed room not on the scan yet: its distance, marked ~ (walk there; it is not built or not near).
+                var placed = row != 7 ? PlacedHint(row, v) : null;
+                s += (char)('A' + v) + " " + (placed != null ? "~" + Mathf.RoundToInt(Vector3.Distance(Feet, placed.centre)) : "-");
+            }
         }
         return s;
     }
@@ -1176,7 +1661,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
     bool RowFound(int row)
     {
         if (row == 12) return RoomList(12, 0).Count > 0;
-        for (var v = 0; v < VariantCount(row); v++) if (RoomList(row, v).Count > 0) return true;
+        for (var v = 0; v < VariantCount(row); v++) if (RoomList(row, v).Count > 0 || PlacedHint(row, v) != null) return true;
         return false;
     }
 
@@ -1206,13 +1691,14 @@ public sealed partial class FrontRoomsInteractablesShowcase
             var alpha = any ? 1f : .5f;
             var marked = roomsRow == row;
             if (marked) Fill(new Rect(x - 14f * s, y + 6f * s, 4f * s, 14f * s), Accent);
-            Text(new Rect(x, y, 30f * s, 26f * s), key == 10 ? "0" : key.ToString(), nameStyle, any ? Accent : Paper, alpha);
-            Text(new Rect(x + 34f * s, y, w - 300f * s, 26f * s), r.code + "  " + r.name, nameStyle, Paper, alpha);
+            // The key and the R code in Plex Mono Medium, the name in Bayon (RowLabel, .Plan.cs).
+            RowKey(x, y, key == 10 ? "0" : key.ToString(), any ? Accent : Paper, alpha);
+            RowLabel(x + 34f * s, y, r.code, r.name, 52f * s, Paper, alpha);
             Text(new Rect(x + w - 262f * s, y + 5f * s, 262f * s, 22f * s), RowStatus(row), statusStyle, Paper, any ? .9f : .55f);
             y += 28f * s;
             if (!marked) continue;
-            y = Para(x + 34f * s, y - 2f * s, w - 34f * s, RoomLabel(row, roomsVariant) + "  ·  " + r.tryLine, smallStyle, Paper, .85f, 2f * s);
-            y = Para(x + 34f * s, y, w - 34f * s, Decide(DecideOf(r, roomsVariant)), zhSmallStyle, Accent, .9f, 6f * s);
+            y = Para(x + 34f * s, y - 2f * s, w - 34f * s, CardLabel(row, roomsVariant) + "  ·  " + r.tryLine, smallStyle, Paper, .85f, 2f * s);
+            y = RowDecide(x + 34f * s, y, w - 34f * s, DecideOf(r, roomsVariant), .9f, 6f * s);
         }
     }
 
@@ -1242,18 +1728,15 @@ public sealed partial class FrontRoomsInteractablesShowcase
         RoomCardBlock(0, 0, x, y + 40f * s, w, s);
     }
 
-    // Placard C on screen: code and name, Try, touch, what it is, what Red decides, the small line, the live line.
+    // Placard C on screen in the placard type (DrawCard, .Plan.cs): the code chip ("R2 B", "R7" while no pile is seen) and the
+    // name, KEYS, TOUCH, what it is, 要你决定, the small line in grey and the live line in accent at the foot.
     void RoomCardBlock(int row, int v, float x, float y, float w, float s)
     {
         var r = RoomRowAt(row);
         if (r == null) return;
-        Text(new Rect(x, y, w, 40f * s), RoomLabel(row, v), titleStyle, Accent);
-        y += 40f * s;
-        y = Para(x, y, w, "TRY  " + r.tryLine, lineStyle, Paper, .95f, 2f * s);
-        y = Para(x, y, w, "TOUCH  " + r.touch, smallStyle, Paper, .8f, 6f * s);
-        y = Para(x, y, w, r.what, zhLineStyle, Paper, 1f, 4f * s);
-        y = Para(x, y, w, Decide(DecideOf(r, v)), zhLineStyle, Accent, 1f, 6f * s);
-        y = Para(x, y, w, r.small, smallStyle, Paper, .7f, 4f * s);
-        Para(x, y, w, LiveLine(row, v), smallStyle, Accent, .95f, 0f);
+        string code, name;
+        SplitLabel(CardLabel(row, v), out code, out name);
+        DrawCard(x, y + 8f * s, w, 1f, true, code, name, TryLabel, r.tryLine, TouchLabel, r.touch, r.what, DecideOf(r, v), r.small,
+            LiveLine(row, v), null, null);
     }
 }

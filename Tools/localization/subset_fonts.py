@@ -38,6 +38,13 @@ def tiny(sources):
 
 def table_characters(root, code):
     chars = set(chr(c) for c in range(0x20, 0x7F)) | set(EXTRA)
+    # Text that is not in a table but is set in this language's faces (the showcase scenes' placards): one file per language,
+    # extra_chars/<code>.txt beside this script, every character in it is cut in. Lines starting with # are skipped.
+    extra = os.path.join(os.path.dirname(os.path.abspath(__file__)), "extra_chars", code + ".txt")
+    if os.path.exists(extra):
+        for line in open(extra, encoding="utf-8"):
+            if not line.startswith("#"):
+                chars |= set(line.rstrip("\n"))
     for line in open(f"{root}/Assets/Resources/Language/{code}.txt", encoding="utf-8"):
         if line.startswith("#"):
             continue

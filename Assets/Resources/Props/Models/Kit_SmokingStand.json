@@ -1,0 +1,79 @@
+{
+ "name": "Kit_SmokingStand",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.31,
+    0.0
+   ],
+   "size": [
+    0.33,
+    0.62,
+    0.33
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "bowl",
+   "pos": [
+    0.0,
+    0.6,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "station",
+  "smoking"
+ ],
+ "lodDistances": [
+  4.0,
+  10.0,
+  40.0
+ ],
+ "budget": [
+  3000,
+  1000,
+  150
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 bs4-hero-kits",
+  "origin": "floor, centred",
+  "note": "front +Z (one rest faces front); stands 0.17 m off the S wall in the module"
+ },
+ "boundsMin": [
+  -0.16519999504089355,
+  0.0,
+  -0.16519999504089355
+ ],
+ "boundsMax": [
+  0.16519999504089355,
+  0.6152999997138977,
+  0.16519999504089355
+ ],
+ "triangles": 3876,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_Chrome",
+  "Prop_AshSand",
+  "Prop_Cork",
+  "Prop_Paper"
+ ],
+ "trianglesLod1": 796,
+ "trianglesLod2": 112,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.33,
+  0.33
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.665
+}

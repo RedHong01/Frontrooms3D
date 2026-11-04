@@ -1,28 +1,53 @@
 # Level space · 71 · The Run! room: order, length, the receding end, the red light, what it means
 
-Date: 2026-11-03. Line: 夸张结构调研与设计 (`level_space`), login B, session `local_42b400e5`, continuing login G's session `local_012d68f4` (stopped by G's 5-hour limit at 19:23). Stage: design, workflow `levelspace_continue2` (`wf_34ae5778-063`): the one writer of this page and of the `SOURCES.md` rows from LS201.
+Date: 2026-11-03. Line: 夸张结构调研与设计 (`level_space`), login B, session `local_42b400e5`, continuing login G's session `local_012d68f4` (stopped by G's 5-hour limit at 19:23). Stage: design, workflow `levelspace_continue2` (`wf_34ae5778-063`): the one writer of this page and of the `SOURCES.md` rows from LS201. Then checked the same night by an adversarial critic (login B to its limit, then login G in `run-room-71-finish`), which corrected claims and numbers in place; every finding and edit is logged in `~/FrontRoomsVisualWork/level_space/drafts/run/critic71.txt`. A coverage check against Red's two messages followed; its findings were applied in place (log: `~/FrontRoomsVisualWork/level_space/drafts/run/coverage71.txt`). Red answered §8 on 11-03 at 23:18 ("全部按推荐"); a stage of login G's session `local_012d68f4` recorded the answer (§0.1; marks in §0 and §8; final cards in §9; SP7 agreed in §10) and brought the page's status notes up to date (log: `~/FrontRoomsVisualWork/level_space/drafts/run/apply_decisions.txt`). On 11-04 a cross-check stage of the same run pointed §0.1, §9 and §10 at `70` §9, where SP7 now stands, and corrected one owner note in §9 (same log).
 
 **Inputs.** The six research drafts of the Run! rethink, all marked DONE, in `~/FrontRoomsVisualWork/level_space/drafts/run/`: `today.txt` (the room as built, with paths), `pacing.txt` (order and length), `endless.txt` (the unreachable end), `motion.txt` (the model transition), `red_light.txt` (the red atmosphere), `story.txt` (meaning, entry, reward). Each section below names the draft section it rests on; every game or film is tied to a source row in §11.
 
-**What this page is.** A proposal. This line proposes; 关卡设计 (map, generator, lengths), 游戏视觉 with 灯具适配 (look, lamps, model animation), 叙事设计 (meaning, strings), 系统设计 (gates, reward, fairness) and 声音设计 (events) decide and build, through 总控 (RULES rule 3). Nothing here changes game code.
+**What this page is.** A proposal, decided by Red on 11-03 (§0.1). This line proposes; 关卡设计 (map, generator, lengths), 游戏视觉 with 灯具适配 (look, lamps, model animation), 叙事设计 (meaning, strings), 系统设计 (gates, reward, fairness) and 声音设计 (events) decide how and build, through 总控 (RULES rule 3), from the cards in §9. Nothing here changes game code.
 
 **Not done.** No code, no Unity, no clone, no download, no git, nothing played aloud (rule 24). Nothing was rendered: every number about light, time and distance is arithmetic from the code and the drafts, to be measured in the one combined test (rule 25) and walked in scene 4 (rule 5b). The web sources were read by this workflow's research stages on logins G and B; this writer did not fetch them again (§11 gives each row's mark). Inference is marked as inference.
 
 **Reused, not redone.** `room_visuals/03_run_research.md` (10-03), `10_run_directions.md`, `20_run_red_ward.md`, `21_run_fix_1014.md`, `40_for_red.md` (B picked 10-21), `50_alarm_zone_tell.md`, `run_b_production/10_plan.md`, `20_build.md`, `60_production_66.md` (Run! B as built); this folder's `10` §6 (RN-1 to RN-5), `20` V6 and V7, `40` §7.3 and §11, `63` §3.1 and §3.6, `70` §7 (SP5). `progress.py docs find run room` lists the Run! pages above; none covers order, length, a receding end or what the room means, and `docs find run room receding pacing` found nothing, so this is a new page with the name the brief gave it. It does not replace them.
 
-**Reading map** (the page is about 160 KB; read it by section with `sed -n`): §0 line 15 · §1 27 · §2 55 · §3 93 · §4 200 · §5 305 · §6 395 · §7 485 · §8 (Chinese, for Red) 563 · §9 702 · §10 745 · §11 786 · §12 850.
+**Reading map** (the page is about 195 KB; read it by section with `sed -n`): §0 line 15 · §0.1 (Red's decisions) 27 · §1 52 · §2 81 · §3 119 · §4 228 · §5 334 · §6 424 · §7 514 · §8 (Chinese, for Red) 592 · §9 759 · §10 815 · §11 856 · §12 920.
 
 ## 0. Short answer
 
-1. **Run! today** is built, landed and switched off (`runRooms` false): one fixed straight of 9 cells (27 m), placed by a dice roll per zone from tier 2, cool white while armed, warm battery pools once tripped. No player has walked it. The lamp chase Red likes is most likely its RESET re-strike (§2.5; Red confirms in §8, decision 6).
-2. **Length grows with depth, in whole cells:** 7 (the run's first Run!), 9 (today's), 12 (late), 14 (deepest, where it fits). Time is the reason: a full sprint bar is 5 s = 27.5 m, so early rooms are crossed on one breath and late rooms end the breath in sight of the door. **The cap is 14 cells (42 m)**, where the planner's chunk rule, the 46 m far plane and the Relay's earliest arrival meet. It cannot be infinite as a corridor; it can *feel* endless for seconds (§3).
-3. **Order:** the tier keys set pieces and the floor keys structure. First Run! at tier 2 (7 cells, plain); the Run! ramp from tier 3 (1:8, at most 24 m and 3.0 m down, never a storey); a door entrance from tier 3; long and receding rooms from tier 4 and floor B2. At most one Run! a floor, dealt from a deck that holds "nothing", with a calm zone beyond its door (§3).
-4. **The receding end, recommended: THE STRETCH (§4).** The map plans the room at 12 or 14 cells; the end stands at 27 m. Crossing a third of that first length (9 m, at the first fire-door frame) trips the alarm, and the end backs away 9 or 15 m: a two-cell flinch, steps, a heavy final seat, and a 6 m/s glide whenever a runner closes in. From the trip a full bar still reaches a 12-cell door. Then the door is real, it stays where it stopped, and at the reset the white re-strike walks the whole length. Nothing in it reads the Relay.
-5. **The model (§5):** a T1 后退 head (the whole end rolls back on an overhead track) on every tier, carrying a T2 重组 body on desktop and iPad (the end wall comes apart and re-stacks around the door, the door break's own method). T3 伸缩 (telescoping sleeves) is the deep-floor alternative; T4 折叠 (accordion fire doors) waits for a pattern-safety capture.
-6. **Red (§6):** one red-coated tube in each R-B strip, on the battery circuit; never an EXIT sign, never a grade. **Look B, ALARM PULSE, recommended:** the trip runs a dark band to the door and leaves the corridor crimson; then a slow dark pulse runs to the door every 2.5 s, 12 at most. Fallback A (the same without the pulse); C (RED TIDE) is the narrative alternative. The white RESET re-strike stays as built. Inside WCAG 2.x by the numbers; the Harding FPA or PEAT capture decides.
-7. **Meaning (§7):** Run! is a fire compartment already on the alarm, not a punishment room. Room one's "WALK, DO NOT RUN." fails here; its "CLOSE DOORS BEHIND YOU." saves you. The prize already exists in the director: shut the goal door before the Relay sees or hears you, it sweeps an empty compartment and withdraws, and the floor goes calm. Red's deceiving door works as an honest door that fools a habit, never as a forced trap.
-8. **For Red:** eight decisions in Chinese in §8 ("全部按推荐" answers all). A scene-4 district, SP7 (§10), lets Red walk the lengths, the receding end, the bodies and the red looks.
-9. **Flags:** the red tube changes the R-B strip Red approved on 11-03 ("就这样"); the receding variant moves its trip from 1.5 m to 9 m; diving into a receding room while chased costs about 2-5 m of lead (to be measured with bots); `70` SP5 still carries three conflicts with Red's calls (EXIT signs, the retired RN-X goal door, wraps instead of R-B strips).
+1. **Run! today** is built, landed and switched off (`runRooms` false): one fixed straight of 9 cells (27 m), placed by a dice roll per zone from tier 2, cool white while armed, warm battery pools once tripped. No player has walked it. The lamp chase Red likes is most likely its RESET re-strike (§2.5; Red confirms in §8, decision 7). **Decided 11-03: the RESET segment** (decision 7).
+2. **Length grows with depth, in whole cells:** 7 (the run's first Run!), 9 (today's), 12 (late), 14 (deepest, where it fits). Time is the reason: a full sprint bar is 5 s = 27.5 m, so early rooms are crossed on one breath and late rooms end the breath in sight of the door. **The cap is 14 cells (42 m)**, where the planner's chunk rule, the 46 m far plane and the Relay's earliest arrival meet. It cannot be infinite as a corridor; it can *feel* endless for seconds (§3). **Decided 11-03** (decision 3).
+3. **Order:** of this line's five levels (Level 0, Office, Run!, Pool, the well) the game has two, Level 0 and Office, as the zone kinds of every floor; in the game Run! is a room inside them, and where Pool and the well come in a run is open (§3.4; Red, §8 decision 1). Within a floor the tier keys set pieces and the floor keys structure. First Run! at tier 2 (7 cells, plain); the Run! ramp from tier 3 (1:8, at most 24 m and 3.0 m down, never a storey); a door entrance from tier 3; long and receding rooms from tier 4 and floor B2. At most one Run! a floor, dealt from a deck that holds "nothing", with a calm zone beyond its door (§3). **Decided 11-03** (decisions 1, 2, 8b; no changed door in T5's deck, since 8c is reading one; where Pool and the well come in a run stays open).
+4. **The receding end, recommended: THE STRETCH (§4).** The map plans the room at 12 or 14 cells; the end stands at 27 m. Crossing a third of that first length (9 m, at the first fire-door frame) trips the alarm, and the end backs away 9 or 15 m: a two-cell flinch, steps, a heavy final seat, and a 6 m/s glide whenever a runner closes in. A walker sees the gap grow only in the flinch; one 6 m/s glide would flee from every player but hide T2's re-stack, so Red picks (§8 decision 4). From the trip a full bar still reaches a 12-cell door. Then the door is real, it stays where it stopped, and at the reset the white re-strike walks the whole length. Nothing in it reads the Relay. **Decided 11-03:** the stretch, stepped, tripping at 9 m (decision 4); 系统设计's chase-dive bot round comes first (§4.7).
+5. **The model (§5):** a T1 后退 head (the whole end rolls back on an overhead track) on every tier, carrying a T2 重组 body on desktop and iPad (the end wall comes apart and re-stacks around the door, the door break's own method). T3 伸缩 (telescoping sleeves) is the deep-floor alternative; T4 折叠 (accordion fire doors) waits for a pattern-safety capture. **Decided 11-03** (decision 5).
+6. **Red (§6):** one red-coated tube in each R-B strip, on the battery circuit; never an EXIT sign, never a grade. **Look B, ALARM PULSE, recommended:** the trip runs a dark band to the door and leaves the corridor crimson; then a slow dark pulse runs to the door every 2.5 s, 12 at most. Fallback A (the same without the pulse); C (RED TIDE) is the narrative alternative. The white RESET re-strike stays as built. Inside WCAG 2.x by the numbers; the Harding FPA or PEAT capture decides. **Decided 11-03:** look B, A as the fallback, C in scene 4 only (decision 6); **the red tube itself is not yet agreed to be built:** Red first sees one still of the armed strip with it and says yes or no (§9, 灯具适配 1).
+7. **Meaning (§7):** Run! is a fire compartment already on the alarm, not a punishment room. Room one's "WALK, DO NOT RUN." fails here; its "CLOSE DOORS BEHIND YOU." saves you. The prize already exists in the director: shut the goal door before the Relay sees or hears you, it sweeps an empty compartment and withdraws, and the floor goes calm. Red's deceiving door works as an honest door that fools a habit, never as a forced trap. **Decided 11-03** (decision 8: 8a-8e as recommended; the deceiving door is reading one, D1).
+8. **For Red:** nine decisions in Chinese in §8 ("全部按推荐" answers all but the red tube, which waits for Red to see one still). A scene-4 district, SP7 (§10), lets Red walk the lengths, the receding end, the bodies and the red looks. **Answered 11-03 at 23:18: "全部按推荐"** (§0.1); SP7 is agreed for scene 4 (decision 9).
+9. **Flags:** the red tube changes the R-B strip Red approved on 11-03 ("就这样"), so it still waits for Red's yes on one still; the receding variant moves its trip from 1.5 m to 9 m (agreed 11-03); diving into a receding room while chased costs about 2-5 m of lead (to be measured with bots); `70` SP5 carried three conflicts with Red's calls (EXIT signs, the retired RN-X goal door, wraps instead of R-B strips), fixed by this line on 11-03 22:5x (§10.1).
+
+### 0.1 Red's decisions, 2026-11-03
+
+Red's answer to §8, verbatim (a plain user turn in this line's chat, 2026-11-03 at 23:18 PST; transcript `7da6f3fe`, 07:18:27Z on 11-04, checked under rule 15):
+
+> 全部按推荐
+
+§8's own reading rule says what that means: every recommendation is agreed, including the two changes to earlier calls (decision 4: the receding room trips at the 9 m frame; decision 8c: reading one, the Run door entrance); decision 7 reads as the RESET segment; decision 6's third red tube waits for one still. Where §2-§7 say Red picks, decides or confirms, the matching line below is the answer; their reasoning stands as written. Under rule 5b a new structure (the receding end, the Run door entrance, the red looks) is built inert and enters the game only after Red has walked it in scene 4 and said so.
+
+- **1 · Order:** a deck per floor by §3.4's tier table: at most one Run! a floor, "nothing" in every deck, a plain Run! before any twist, a calm zone beyond the goal door; no changed door in T5's deck (8c). Still open: where Pool and the well come in a run (关卡设计 proposes, Red picks).
+- **2 · Ramps:** public 1:12 ramps first, in quiet zones; the Run! ramp from T3, 1:8, at most 24 m and 3.0 m down, never a storey; it waits for per-cell levels.
+- **3 · Length:** 7 cells for each run's first Run!, then 9, 12 from T4, 14 at T5 where it fits; cap 14 cells (42 m); by depth, never by performance.
+- **4 · The receding end:** M1, the stretch, deep floors only (9 → 12 from T4 on B2 or deeper; 9 → 14 at T5 on B3 or deeper), stepped (a two-cell flinch, one-cell steps, a heavy final seat, the 6 m/s keep-away glide), not the single 6 m/s glide. **Agreed change to an earlier call:** it trips at the 9 m frame (FD1), not 1.5 m in. 系统设计's bot round of chase dives comes first (§4.7 (c)).
+- **5 · The model:** the T1 后退 head on every tier and platform, carrying T2 重组 on desktop and iPad (phones: half-course strips; WebGL: T1 alone); T3 伸缩 the deep-floor alternative, not built now; T4 折叠 held for a pattern-safety capture.
+- **6 · Red:** look B, ALARM PULSE; A (no pulse) if B's Harding FPA or PEAT capture fails; C in scene 4 only. **Agreed 11-04, after the stills (below):** the dark oxblood third tube in the R-B strip Red approved on 11-03 ("就这样"), every look's red source, at the brighter HDR level.
+  - **Still delivered, 11-04:** 灯具适配's card 1 sheet `research/zone_lamps/sheets/zone_lamps_run_redtube.jpg` (06:00: R-B as built / + the red tube armed / under the alarm, eye 1.62 m and 0.35 m, cost row; clone-only mock-up, kit and rig in main unchanged). Red, 11-04 06:0x in the 灯具适配 chat (a plain user turn, checked under rule 15): "目前是有HDR的你可以思考一下更亮的红光"; its answer is `zone_lamps_run_redtube_hdr.jpg` (06:12: two HDR levels, REC BRIGHTER). **Answered 11-04:** Red, in 灯具适配's chat: "加，用更亮档" (a plain user turn, checked under rule 15 in this line's session), then "用这个点位吧" on the brightest column of the HDR sheet (as 灯具适配 records it, LANDINGS 11-04 06:33). So the third tube is built at the brighter level: 灯具适配 landed it in main at 06:33 (`ZL_STRIP_Red`, `FrontRoomsRunRig` `redTubeLinear` (3, 0, .012)); `70` SP7 shows it on arrival. Look B stays the look, A its fallback if B's Harding or PEAT capture fails.
+- **7 · The lamp chase:** the RESET segment (17.9-22.5 s of the 10-31 film), the white light coming back cell by cell from the entrance; it stays as built.
+- **8a · Meaning:** a fire compartment already on the alarm (EGRESS), not a punishment room; no new string.
+- **8b · When:** after the first send, from T2 (about 150 new cells), a short plain Run! first; counted by new cells walked, never by doors opened.
+- **8c · The deceiving door:** reading one (D1), an honest Run door (RN-F + F5, the tell at the door, the trip about 2.5 m in), from T3 after one plain Run!. **Agreed change to an earlier call:** Run! B today is entered by an arch. The changed door (D4) is not built.
+- **8d · Entering by choice:** yes, when it pays (under pursuit, in a hurry, for the escape and calm); Run! stays optional, never forced. Nothing to build.
+- **8e · Reward:** R2, escape and calm: shut the goal door before the Relay sees or hears you, it sweeps and withdraws, and the floor is calm (90 s at T2 down to 60 s at T5); watched through the lite (系统设计 checks rule 11); bots measure how often it works. R3, a rest room beyond the door, later and rare.
+- **9 · Scene 4:** SP7 agreed, built per §10 (greybox, inert for the game); written into `70` as its §9 on 11-04, the spec scene 4 builds.
+
+Not answered by "全部按推荐", since they asked for facts (none blocks a card): which Little Nightmares "隧道" Red meant (decision 4), which fan game's red (decision 6; Escape the Backrooms is this page's inference), how message 2 ends (decision 8).
 
 ## 1. Red's ask, and what was and was not done
 
@@ -42,6 +67,7 @@ What Red asks, and where this page answers it:
 
 | Red's question | Owners Red names | Here |
 |---|---|---|
+| The fusion with 关卡设计 must be precise ("你们之间的融合应该是一个非常精密的那种融合"), starting from the level design as it is ("按照现在的国家设计它是怎样的"; 国家设计 = 关卡设计) | 关卡设计 | §2 (the room and its planner as built), §3.6 (every rule as whole-cell integers the generator holds), §9 cards |
 | The order in which level types appear; when a ramp appears and how long it is | 关卡设计 | §3.4, §3.5 |
 | Shorter early, longer late; how long at most; "它可以无限长吗" | 关卡设计 | §3.2, §3.3 |
 | The never-reached end ("永远到达不了的彼岸", Little Nightmares) | — | §4.1, §4.2 |
@@ -72,11 +98,11 @@ From `today.txt` §1-§9 (code and docs read 2026-11-03; paths from `Frontrooms3
 | Warn | The map's stage-1/2 burst: every lamp dips together, not in a chase. |
 | Reset | Heads out in one change; one flick per strip rippling from the entrance at 0.025 s a cell; dark; then the **re-strike sweeps from 0.45 s at 0.15 s a cell** (a front at 20 m/s), each lamp a 0.40 s rise. About 2.4 s. Within 30 m of the viewer only. |
 
-**2.5 The effect Red likes** ("一个一个灯光熄灭，一个一个灯光在亮") is most likely the RESET re-strike as Red saw it in the film (frames 538-675, 17.9-22.5 s): seen from the goal end, a line of light walks cell by cell down the tunnel toward the camera. The sprint through the tripped pools (one pool every 6 m at 5.5 m/s, the RUN segment 10.4-15.9 s) is the only other candidate; it is not settled (`today.txt` §3a). In the fiction the reset is the restoral, the all-clear: the effect Red praises is today used for the moment the danger ends.
+**2.5 The effect Red likes** ("一个一个灯光熄灭，一个一个灯光在亮") is most likely the RESET re-strike as Red saw it in the film (frames 538-675, 17.9-22.5 s): seen from the goal end, a line of light walks cell by cell down the tunnel toward the camera. The sprint through the tripped pools (one pool every 6 m at 5.5 m/s, the RUN segment 10.4-15.9 s) is the only other candidate; it was not settled (`today.txt` §3a) until Red's answer of 11-03, read as the RESET (§0.1, decision 7). In the fiction the reset is the restoral, the all-clear: the effect Red praises is today used for the moment the danger ends.
 
 **2.6 Why it is white.** Red was in the concept from week 1 (Red's course slide, as quoted in `03_run_research.md` §1.2: "A red corridor. The hunter behind. Nothing to read."). A red direction, A · RED WARD, was built and measured: at the Relay's 2.05 m size it read 2.97 : 1 against a 4 : 1 bar, with 32 % of the frame saturated red and a +3.2 EV adaptation hack (`21_run_fix_1014.md`). Red picked B on 10-21 ("全部按推荐", `40_for_red.md`:3), whose rule was "Red stays on the EXIT signs and fire gear"; then C41 (10-31) removed every EXIT sign from Run! rooms, and with them the canon's red source. What red is left inside is small objects (`today.txt` §6), the only red light is the AC ON pilots, which go out at the trip, and the Run_B grade cools and desaturates the frame (saturation −10, white balance −6, `Resources/Rendering/FrontRoomsPost_Run_B.asset`; `red_light.txt` §1.1). The gap Red names is real.
 
-**2.7 What it means today.** `system_design/systems.json` L7: "Stepping in calls the Relay, and the sprint to the door is the reward." Run! is the tier-2 trigger kind (RELAY_PURSUIT_REDESIGN.md §6, §12). Devices are "readable before you commit": from 2 m outside the player sees the ALARM ZONE card and the red-banded detector base; "the room arms 1.5 m inside"; "No route is ever a forced call" (RELAY :356-373). The fiction is EGRESS (Red's pick, 10-03): the Relay is the stage of the fire alarm that trips; ARMED reads as mains power, TRIP as the mains dropping, TRIPPED as emergency power, RESET as restoral (`research/relay_pursuit/30_narrative.md` §1-§2). Room one's placard: "IN CASE OF FIRE: WALK, DO NOT RUN. CLOSE DOORS BEHIND YOU." Player text never says RUN or "relay" (`handoff/narrative.md`:48). There is no reward, no ordering, no early or late length and no deception: a rational player walks past, and the calm-route arrows add 30 m to avoid it (systems.json A54).
+**2.7 What it means today.** `system_design/systems.json` L7: "Stepping in calls the Relay, and the sprint to the door is the reward." Run! is the tier-2 trigger kind (RELAY_PURSUIT_REDESIGN.md §6, §12). Devices are "readable before you commit": from 2 m outside the player sees the ALARM ZONE card and the red-banded detector base; "the room arms 1.5 m inside"; "No route is ever a forced call" (RELAY :356-373). The fiction is EGRESS (Red's pick, 10-03): the Relay is the stage of the fire alarm that trips; ARMED reads as mains power, TRIP as the mains dropping, TRIPPED as emergency power, RESET as restoral (`research/relay_pursuit/30_narrative.md` §1-§2 for the frame; the light states read this way in Run! B's own direction, `room_visuals/10_run_directions.md` B and its state table). Room one's placard: "IN CASE OF FIRE: WALK, DO NOT RUN. CLOSE DOORS BEHIND YOU." Player text never says RUN or "relay" (`handoff/narrative.md`:48). There is no reward, no ordering, no early or late length and no deception: a rational player walks past, and the calm-route arrows add 30 m to avoid it (systems.json A54).
 
 **2.8 Red's Run! decisions that bind** (verbatim where the files hold the words; `today.txt` §7, `handoff/level_space.md` §5):
 - 10-21: Run! look = B Emergency Power ("全部按推荐").
@@ -88,7 +114,7 @@ From `today.txt` §1-§9 (code and docs read 2026-11-03; paths from `Frontrooms3
 - 11-03 ~18:3x (module sizes, `40` §11.9): whole modules on one strict 3D grid, whole cells, levels in 0.30 m steps.
 - Red's PT4 rule keeps Run! off in the playtest snapshot (as recorded by 关卡设计 and 系统设计; Red's own words not found, `today.txt` §7).
 
-**2.9 This line's earlier Run! work.** `10` §6 RN-1 to RN-5 (the service spine; fire-door frames every 3 cells held open on magnets; compartments every 9 m; a bright release at the goal; a racetrack for later tiers), `20` V6 (the ramp, stills h1 and h2 kept) and V7 (the moving structure, "deep floors only"), `63` RN-SPINE (1 x 3 to 1 x 9 cells), `70` §7 SP5 (the 27 m corridor as a 1:8 ramp falling 3.0 m through fire-door walls FD1 at z 9 and FD2 at z 18 to a loading dock). SP5 as written still carries three conflicts with Red's calls (§10.1).
+**2.9 This line's earlier Run! work.** `10` §6 RN-1 to RN-5 (the service spine; fire-door frames every 3 cells held open on magnets; compartments every 9 m; a bright release at the goal; a racetrack for later tiers), `20` V6 (the ramp, stills h1 and h2 kept) and V7 (the moving structure, "deep floors only"), `63` RN-SPINE (1 x 3 to 1 x 9 cells), `70` §7 SP5 (the 27 m corridor as a 1:8 ramp falling 3.0 m through fire-door walls FD1 at z 9 and FD2 at z 18 to a loading dock). SP5 as first written carried three conflicts with Red's calls; this line fixed them in `70` on 11-03 22:5x (§10.1).
 
 ## 3. Order and length, with 关卡设计
 
@@ -150,6 +176,8 @@ Three ways the room can feel endless (`pacing.txt` D3, `endless.txt` D6-D7):
 ### 3.4 Order: when Run!, ramps, drops and moving structure appear
 
 Two keys: the **tier** for set pieces (as today) and the **floor** for structural vocabulary. Where both are named, a piece needs both, so a player who wanders to T4 on LEVEL 0 still meets no moving structure there: LEVEL 0 is where the honest building is learned. Red already chose "更深的楼层用更“不可能”的结构：错层、会移动的结构" (2.8). (`pacing.txt` E2, adjusted with `story.txt` E2 for the door entrance.)
+
+**Red's "不同类型的 level".** This line's levels are Level 0, Office, Run!, Pool and the well (`40` §7). Today's game has two of them, as the two zone kinds the generator mixes on every floor (`ZoneTheme { Level0, Office }`, FrontRoomsMap.cs:16; floors LEVEL 0, B1, B2, ... down STAIR A, MAP_GENERATION.md "Level transitions" and "Floors"). In the game Run! is a room those zones host (2.3), not a floor of its own, and the Pool level and the well are not in the generator. In scene 4, `70` SP2 stacks four floors round the well (Level 0 on top, then an Office floor, a Run! service floor and the pool hall about 17 m down): a study for judging depth, not a run's order. Where the pool and the well come in a run is not settled here: 关卡设计 proposes and Red decides (§8 decision 1; Escape the Backrooms puts its Run level after the Poolrooms, just before The End, [LS232]). The table below orders what this page owns: the Run! variants and the vertical devices inside the Level 0 and Office zones of every floor.
 
 | When | Run! (the floor's one Run!, dealt from the deck) | Ramps | Drops (V2) | Moving structure (V7) |
 |---|---|---|---|---|
@@ -269,6 +297,7 @@ Order T is this page's synthesis of the three drafts: it keeps pacing's single s
 
 - **Speed in perspective:** real accordion fire doors close at 0.15-0.61 m/s under NFPA 80 ([LS222]); by `motion.txt` R5's own rule (peak = step length / (travel − 0.175 s)) the T2 body peaks at 3.6-6.5 m/s in a step (the final step 3.6, a cell step 4.8, the flinch 6.5) and the T1 body at 4.1-10.4 m/s (its 0.75 s flinch 10.4), and the glide runs at 6 m/s: six to seventeen times the fastest real fire hardware (0.61 m/s). The parts are real; the speed is the impossible (`motion.txt` M7).
 - **Against a sprinter no stepped schedule holds the gap** (that needs a cell every 0.55 s, under every body's minimum period); the glide is what makes the door flee from a runner. The flinch is what a walker sees flee.
+- **For Red's "越退越远":** the end's place always moves back (27 → 36 or 42 m), but the gap to a walking player grows only in the flinch; only a slow (Shift) walker sees it grow throughout. A single 6 m/s move (`pacing.txt` D3) would make the door flee from every player while it moves (walker: the gap 18 → about 21 m at R 9 or 24 m at R 15, with the 0.25 s tell; sprinter: the gap grows 0.5 m a second) but leaves T2 no time to re-stack (5.3), so 越退越远 and 重组 trade against each other at these speeds; §8 decision 4 put it to Red, who took the steps on 11-03 (§0.1).
 
 ### 4.6 How it ends
 
@@ -399,7 +428,7 @@ From `red_light.txt` §1-§8 and its design notes 1-12. Red: today's light "普�
 ### 6.1 What the research found
 
 - **The fan games, not the canon text, hold the look Red remembers.** The canon's Level ! is lit by "a dim, red lightning which is emitted by exit signs" (A-Sync fan copy of the Fandom page). Escape the Backrooms makes every ceiling lens a flat saturated red panel, one row receding to a vanishing point, small greenish-white EXIT signs down the centre line (and one white downlight over the nearest) the only other lights, walls and floor near black-red; its guide adds "bright red lights and a continuous siren" (a frame on this disk, `room_visuals/images/run_ref_etb_levelbang_0094.jpg`, looked at; [LS232]). The public memory is "flashing red lights and blaring alarms" (Nerdist, [LS232]): the one version we may not ship. **What Red misses is exactly where ETB has it: on the ceiling, as a procession, after the trip.** Run! B already owns a lamp in every 3 m cell and a red line overhead (the sprinkler main), so red can return as light without changing the room (G1/G2 holds).
-- **Film's solemn red is functional and comes from the set's own fixtures.** Das Boot: red was the boat's general-alarm and night light, from its own lamps, chosen by function (Vacano, [LS240]). Aliens: the colony's power dies and the scene plays in red emergency light; bars of light pass rhythmically over Ripley in the descending lift ([LS241]). The Hunt for Red October: the hushed American control room at battle stations in red (a bent rule: real submarines rig for red at night, [LS242]). Alien's flashing finale now carries a photosensitivity advisory ([LS243]). The Terminator and The Abyss, listed from memory in `03_run_research.md` §3.6, show no verified red danger light in the texts read; their lesson is the same practical-source rule ([LS244]). Lesson: red reads grave when it has a job and a source; a grade with no fixture reads cheap.
+- **Film's solemn red is functional and comes from the set's own fixtures.** Das Boot: red was the boat's general-alarm and night light, from its own lamps, chosen by function (Vacano, [LS240]). Aliens: the colony's power dies and the scene plays in red emergency light; in the shooting script "Bars of light move rhythmically across her" as Ripley rides the freight lift down ([LS241]). The Hunt for Red October: the American boat's control room in red, one colour per boat (blue, red, green) so the cutting stays legible; a bent rule, since a submarine "would only 'rig for red' if it was going to periscope depth" ([LS242]). Alien's flashing finale now carries a photosensitivity advisory ([LS243]). The Terminator and The Abyss, listed from memory in `03_run_research.md` §3.6, show no verified red danger light in the texts read; their lesson is the same practical-source rule ([LS244]). Lesson: red reads grave when it has a job and a source; a grade with no fixture reads cheap.
 - **A real 1990 US building lit no corridor red.** Every red it owned was a signal or a threshold: EXIT letters (banned in Run!, C41), red pre-ADA alarm flashers (the 1991 rule made new ones white strobes at 1-3 Hz, [LS239]), the darkroom safelight (a 15 W bulb behind deep red glass, [LS245]), the roof's obstruction beacon (deep red, 20-40 flashes a minute, [LS245]), battery "AC ON" pilots, fire-gear paint. A red corridor is film and fan language, chosen knowingly.
 - **What makes red solemn, not cheap.** One continuous red that means "something is present" (the sanctuary lamp, [LS248]); dark red in low light against a neutral surround (Rothko's Seagram murals shown in reduced light, [LS248]); slow and regular (the beacon's 0.5 Hz); a procession on the centre line. Cheap: red over everything at high level, red flashing, red from no fixture, random flicker, big red bloom.
 - **Our pipeline punishes bright red.** Bright red drifts toward yellow (Bezold-Brücke) and saturated colours look brighter than they are (Helmholtz-Kohlrausch) ([LS249]); through URP's ACES tonemapper, pure red at 2x scene level already renders orange-red and today's AC ON pilot (2.6, .20, .10) renders salmon, about (255, 137, 86) (`red_light.txt` §5.5, a port of the package source; [LS249]). A deep red must stay near-primary and moderate; it can be big, not hot.
@@ -451,11 +480,11 @@ On-screen values come from a line-for-line port of the URP Run_B grade and ACES 
 
 - **The RESET re-strike stays as built:** at its start the red tubes go out with the heads in one step; then the flick ripple, dark, and the white re-strike from the entrance at 0.15 s a cell (`red_light.txt` 8.0). In the fiction it is the restoral; a player who escaped and watches back through the goal door's lite sees the white line walk toward them: the building lets go.
 - **Its danger twin is new:** A's and B's band, B's pulse, C's tide, each running from the trip end toward the goal door, the way out. A light running toward the goal is a real signal: airport approach lights flash in sequence toward the runway, "the rabbit", to mean "this way" ([LS247]). Same grammar, two meanings: in red, toward the door while you are inside = the alarm and the way out; in white, after = the all-clear. Every front and pulse ends at the goal door, never at a window or other glass (rule 11).
-- If Red meant the sprint through the pools rather than the reset (2.5, open), all three looks still work: the pools stay as built.
+- If Red meant the sprint through the pools rather than the reset (2.5; read as the reset since Red's answer of 11-03, §0.1), all three looks still work: the pools stay as built.
 
 ### 6.7 Photosafety, as numbers (`red_light.txt` §7, 8.5)
 
-The limits ([LS250]): WCAG 2.2 SC 2.3.1, no more than three general and three red flashes in any 1 s unless the combined flashing area is under 0.006 sr (25 % of any 10° field); a general flash is a pair of opposing changes of at least 10 % of maximum relative luminance with the darker state below 0.80; a red flash (WCAG 2.2 Note 3) needs a change of more than 0.2 in u'v' to or from a saturated red (R/(R+G+B) ≥ 0.8); the older metric that Harding FPA and Xbox Accessibility Guideline 118 apply counts a red change when (R − G − B) x 320 exceeds 20. ITU-R BT.1702-3 exempts a pattern that flows smoothly one way and warns that sequences longer than about 5 s may be a risk even when they comply. After the 1997 "Denno Senshi Porygon" broadcast, Japanese broadcasters limited red flashing to three a second ([LS250]).
+The limits ([LS250]): WCAG 2.2 SC 2.3.1, no more than three general and three red flashes in any 1 s unless the combined flashing area is under 0.006 sr (25 % of any 10° field); a general flash is a pair of opposing changes of at least 10 % of maximum relative luminance with the darker state below 0.80; a red flash (WCAG 2.2 Note 3) needs a change of more than 0.2 in u'v' to or from a saturated red (R/(R+G+B) ≥ 0.8); the older metric that Harding FPA and Xbox Accessibility Guideline 118 apply counts a red flash when the change in (R − G − B) x 320 exceeds 20 (with either state a saturated red). ITU-R BT.1702-3 exempts a pattern that flows smoothly one way and warns that sequences longer than about 5 s may be a risk even when they comply. After the 1997 "Denno Senshi Porygon" broadcast, Japanese broadcasters limited red flashing to three a second ([LS250]).
 
 | Place and change | Display Y | Red excess (linear) | Verdict |
 |---|---|---|---|
@@ -488,10 +517,10 @@ From `story.txt` Parts B-E and its design notes 1-10. Red: "从叙事设计角�
 
 ### 7.1 The message: "the building's first rule fails here, and its second rule saves you"
 
-- **Frame (EGRESS, Red's pick 10-03):** Run! is a fire compartment already on the alarm. Stepping in is "Full alarm, locked to your compartment" (`30_narrative.md` §2). The building does what an honest building does: it puts the compartment on emergency power and lights the way out to the one door at the end. The sweep is coming to account for whoever is inside. **Not a punishment room: a gamble with a visible price and a real prize** (7.4).
-- **The message:** room one posts the building's two rules, "WALK, DO NOT RUN." and "CLOSE DOORS BEHIND YOU." (`30_narrative.md` §6-§7). Run! is the one room where the first rule fails (walking is what gets an occupant accounted for: "This makes walking unsafe but gives a committed sprint a chance to create space", LEVELS_AND_ENTITIES.md:65-69), and its end is the second rule: pull the goal door shut and you are out. No sign ever says RUN (`handoff/narrative.md`:48): the lights say it.
-- **What each light means, in EGRESS words:** armed = the compartment on normal power; the trip = the panel puts it on emergency power and releases its held-open doors; the red band and pulse running to the door = the alarm showing the way out (§6.6); the receding end = the alarm's hardware pulling the compartment's end away (§5.5's reading, literal for T4, a reading for T1-T3); the reset's white re-strike = restoral, seen from safety. The information is always about the place (this compartment is alarmed, its way out is that door, now), never about where the hunter is: "No light reacts to where the Relay is" (`10_run_directions.md` §1).
-- **Option for 叙事设计 (no new string):** hang room one's placard again a few cells inside the corridor, so the player reads "WALK, DO NOT RUN." in the second the lamps tell them to go. As the player feels it: a cold, solemn irony. Cost: one placard prop. Flaw: some will obey and walk; walking is the riskier way to the same door, and the warning ladder still gives at least 3 s before any lock-on (systems.json glossary, the G3 gate).
+- **Frame (EGRESS, Red's pick 10-03):** Run! is a fire compartment already on the alarm. Stepping in trips one of the alarm's initiating devices, a detector room ("An initiating device trips in a zone", CALLED in `30_narrative.md` §2; "Full alarm, locked to your compartment" is the later CHASE state, when the Relay has seen you). The building does what an honest building does: it puts the compartment on emergency power and lights the way out to the one door at the end. The sweep is coming to account for whoever is inside. **Not a punishment room: a gamble with a visible price and a real prize** (7.4).
+- **The message:** room one posts the building's two rules, "WALK, DO NOT RUN." and "CLOSE DOORS BEHIND YOU." (`30_narrative.md` §6-§7). Run! is the one room where the first rule fails (walking is the riskier way: LEVELS_AND_ENTITIES.md:65-69 says of the title stream's Run, where the Relay is always awake, "This makes walking unsafe but gives a committed sprint a chance to create space"; on the map a walker who keeps moving still shuts a 14-cell door before a Relay called from Away arrives, 3.2 (c)), and its end is the second rule: pull the goal door shut and you are out. No sign ever says RUN (`handoff/narrative.md`:48): the lights say it.
+- **What each light means, in EGRESS words:** armed = the compartment on normal power; the trip = the panel puts it on emergency power and releases its held-open doors (in a Run! only the end's hold-open magnets let go, §5.7; the compartment frames ahead stay open, since nothing may slow the runner, §4.8 item 8); the red band and pulse running to the door = the alarm showing the way out (§6.6); the receding end = the alarm's hardware pulling the compartment's end away (§5.5's reading, literal for T4, a reading for T1-T3); the reset's white re-strike = restoral, seen from safety. The information is always about the place (this compartment is alarmed, its way out is that door, now), never about where the hunter is: "No light reacts to where the Relay is" (`10_run_directions.md` §1).
+- **Option for 叙事设计 (no new string):** hang room one's placard again a few cells inside the corridor, so the player reads "WALK, DO NOT RUN." in the second the lamps tell them to go. As the player feels it: a cold, solemn irony. Cost: one placard prop. Flaw: some will obey and walk; walking is the riskier way to the same door, and the warning ladder still gives at least 3 s before a lock-on, touching distance (1.5 m) excepted (systems.json glossary, the G3 gate).
 
 ### 7.2 When the player meets it, and the door that deceives
 
@@ -504,11 +533,11 @@ From `story.txt` Parts B-E and its design notes 1-10. Red: "从叙事设计角�
 | Option | As the player feels it | Rules | Verdict |
 |---|---|---|---|
 | **D1 · An honest door, a fooled habit** (reading a) | A jolt ("this is not the room I expected"), then a choice. The second time they read the window first | The door is a Run door: RN-F with set A's 15 x 15 in window, the shared tell (red-banded detector base, ALARM ZONE card) at the door, the corridor's light in the window and under the door. The trip lies beyond the door's swing and the 0.15 s barge carry, about 2.5 m in (系统设计 sets it): opening and stopping costs nothing; barging through at a sprint pays a call, exactly what the placard warned | **Recommended** (from T3, after one plain Run!) |
-| D2 · A hidden door-count dial | Nothing: an invisible rule reads as luck | Fights the map's determinism; an unarmed room with a tell would be a "harmless detector prop", which the vocabulary forbids (systems.json A54) | Not recommended |
+| D2 · A hidden door-count dial | Nothing: an invisible rule reads as luck | Fights the map's determinism; an unarmed room with a tell would be a "harmless detector prop", which the vocabulary forbids ("No harmless detector props anywhere", RELAY :372) | Not recommended |
 | D3 · A forced trap (the door trips it, or shuts behind you) | Betrayal with no choice; being caught ends the run (C22) | Breaks "readable before you commit", "the room arms 1.5 m inside", "No route is ever a forced call" (RELAY :356-373) | Never |
 | D4 · The changed door (reading b) | "The building changed this door": on a revisit, a door used before now has the square Run window and the tell | Needs 系统设计 to bend the stability rule and 叙事设计 to own a building that lies about itself (`narrative/40` §1: "The building is honest about itself"); this line keeps "the building lying" for deep floors (`10` L0-7) | Only if Red meant (b): T5, floor ≥ B3, after two honest Run! rooms, at most once a floor (`pacing.txt` E3) |
 
-Precedents: Dark Souls' Mimic lies, but three tells are always there and a cheap item reveals it; fooled once, the player learns to look ([LS235]). Hades marks each exit door with the kind of chamber behind it ([LS228]): doors that tell the truth are what make one surprising door legible, and set A's windows already do that here. The Exit 8's deceptions are fair because the rules are posted in room one and the corridor is learned by heart ([LS214]). The Backrooms canon already holds Red's idea with a lying sign: "Doors marked with a red exit sign lead here" ([LS232]); C41 forbids the lying sign, so ours keeps the surprise and moves the lie from the sign to the player's hope: the far door's glowing square promises a way out and is only the next compartment (`story.txt` E2).
+Precedents: Dark Souls' Mimic lies, but three tells are always there (its chain, its breathing, its paler colour) and a thrown Lloyd's Talisman opens it without waking it; fooled once, the player learns to look ([LS235]). Hades marks each exit door with the kind of chamber behind it ([LS228]): doors that tell the truth are what make one surprising door legible, and set A's windows already do that here. The Exit 8's deceptions are fair because the rules are posted in room one and the corridor is learned by heart ([LS214]). The Backrooms canon already holds Red's idea with a lying sign: "Doors marked with a red exit sign lead here" ([LS232]); C41 forbids the lying sign, so ours keeps the surprise and moves the lie from the sign to the player's hope: the far door's glowing square promises a way out and is only the next compartment (`story.txt` E2).
 D1's bonus: a Run! met from its goal end today makes the player run toward an arch with no door to shut (the room arms from either opening); with a Run door at both ends the race is the same whichever end is met first (关卡设计 to confirm how the lamps behave in that reverse case).
 D1's flaw: a sprinting player barges doors faster than the project's 0.6 s reaction delay (RELAY :239), so the Run door must be readable from at least 5 m, not only 2 m (3.3 m covered at a sprint before acting).
 
@@ -523,7 +552,7 @@ D1's flaw: a sprinting player barges doors faster than the project's 0.6 s react
 | V3 · Forced | Betrayal; it costs the run | never |
 | V4 · Chosen under pursuit (exists, nothing to build) | A desperate gamble that pays: in a chase a device trip is only a noise, and the corridor is a long straight to a door you can shut | the strongest use of Run!; needs the hunter never to arrive from the goal side (§4.8 item 4); see §4.7 for the receding variant |
 
-Precedents for a voluntary trigger: Lethal Company's Apparatus (a visible prize, a known price: pulling it turns the lights out and is said to spawn monsters; players take it last, prepared) ([LS237]); Pacific Drive (the player chooses when the storm starts; the escape and the reward are the same act) ([LS236]).
+Precedents for a voluntary trigger: Lethal Company's Apparatus (a visible prize, a known price: pulling it turns the lights out and is said to spawn monsters; the guide's advice is to prepare first, hands empty, a teammate watching from the ship, then run for the nearest exit) ([LS237]); Pacific Drive (the player chooses when the storm starts; the escape and the reward are the same act) ([LS236]).
 
 ### 7.4 Reward, or pure punishment
 
@@ -531,13 +560,13 @@ Precedents for a voluntary trigger: Lethal Company's Apparatus (a visible prize,
 |---|---|---|---|
 | R0 · Pure punishment | Forced: the building cheated. Voluntary: "never go there", and the room becomes scenery | — | not recommended. Spelunky's ghost is lethal, but gems it touches turn to diamonds: "risky business, but a good way to make cash" ([LS234]) |
 | R1 · Distance | "Worth it when I'm in a hurry": a straight through two chunks against a calm route 30 m longer | exists | keep; weak alone |
-| **R2 · Escape and calm** | "If I make it, it loses me", then a breath | exists in the director: a goal door shut before the Relay sees or hears it is a wall to it (door licence); it sweeps the empty compartment, withdraws, and RELAX follows, 100 s at T1 and 60 s at T5 (systems.json glossary) | **recommended core**; make it legible (below) |
+| **R2 · Escape and calm** | "If I make it, it loses me", then a breath | exists in the director: a goal door shut before the Relay sees or hears it is a wall to it (door licence); it sweeps the empty compartment, withdraws, and RELAX follows, 100 s at T1 and 60 s at T5 (systems.json glossary; 90 s at T2, where Run! starts: `relaxSeconds` 100 / 90 / 80 / 70 / 60, RELAY :286) | **recommended core**; make it legible (below) |
 | R3 · A rest beyond the door | The strongest prize: a guaranteed rest earned by a sprint | needs dead-circuit rooms (systems.json L3) | later, rare (at most once a floor) |
 | R4 · Knowledge beyond the door | A posted evacuation plan, a view (SP5's dock and the night street) | dressing | as dressing only; never marks trigger rooms, never the only place of the key |
 | R5 · A hidden system relief | Nothing, unless shown | — | no |
 
-**Making R2 legible without a HUD:** behind the goal door the player can peek back through its square window (peeks are live, C36: the Relay cannot see through it but can hear the player). They watch it search the red corridor while they hold still; then, when it withdraws, the corridor re-strikes white (the reset, v2 with director.Away). It reports a state the player has just survived, not a position; 系统设计 confirms that under rule 11. A bot round measures how often a sprint that reaches the door also escapes (systems.json A54 (c)).
-Precedents for priced rooms: The Binding of Isaac's curse-room door wears spikes and hurts on the way in and out; Hades' Infernal Gates and Dead Cells' timed doors state their price or clock on the door ([LS238]). In all three, failing costs the bonus, not the run; here failing costs the run (C22), which is why Run! stays optional and winnable (§4.8, 7.6).
+**Making R2 legible without a HUD:** behind the goal door the player can peek back through its square window (peeks are live, C36: the Relay cannot see through it but can hear the player). They watch it search the red corridor while they hold still; then, when it withdraws, the corridor re-strikes white (the reset, v2 with director.Away). It reports a state the player has just survived, not a position; 系统设计 confirms that under rule 11. A bot round, proposed here, measures how often a sprint that reaches the door also escapes (A54 (c) schedules only the 100-seed Run! check with runRooms on; this would ride on it).
+Precedents for priced rooms: The Binding of Isaac's curse-room door wears spikes and hurts on the way in and out; Hades' Infernal Gates and Dead Cells' timed doors state their price or clock on the door ([LS238]; those two seen in search only). In all three, failing costs the bonus, not the run; here failing costs the run (C22), which is why Run! stays optional and winnable (§4.8, 7.6).
 
 ### 7.5 Signals before it (part of the place, constant, never reacting to the hunter, never on the HUD)
 
@@ -560,11 +589,43 @@ F1 telegraph readable before commit, in the taught vocabulary, from at least 5 m
 - **Will they choose to enter** ("会不会主动选择去进到这个房间"): yes, when it pays: under pursuit, in a hurry, and for the escape and calm it buys.
 - **Pure punishment** ("它是一个纯惩罚性的房间吗"): no; a gamble with a visible price and a real prize.
 
-## 8. 给 Red（中文，按你读的顺序）
+## 8. 给 Red（中文，按你问的顺序）
 
-**怎么读、怎么回：** 下面有 8 个决定，按你问的顺序排。每个决定先说背景，再说几个选项玩家玩起来是什么感觉、要花什么，最后是推荐和它诚实的缺点。你可以回"全部按推荐"，也可以逐条回，比如"1 推荐，4 选 T1，5 选 C"。没回的不会卡住别的工作。这些都还只是方案：游戏代码一行没改，也还没有渲染图。想亲眼看，就去场景 4 走 SP7（决定 8）。
+**你怎么回的（11 月 3 日 23:18）：** 下面 9 个决定按你问的顺序排：每个先说背景，再说选项玩起来的感觉和代价，最后是推荐和它诚实的缺点。你回了"全部按推荐"。按这里事先写好的读法，就是同意每一条的推荐，包括两件会改动你以前认可过的东西：会退的房间在 9 米那道防火门框触发（决定 4），和 Run 门入口（决定 8c 的理解一）。决定 7 按 RESET 那一段理解：警报解除后，白光从入口一格一格亮回来。只有一件还没定：在你 11 月 3 日说"就这样"的 R-B 灯架里加第三根暗红灯管（决定 6）。灯具适配先做一张图给你看：今天的灯架、加了暗红灯管的同一个灯架、红灯管在警报时亮起来的样子，三个并排，同一个镜头、同一个曝光，玩家眼高 1.62 米看一张、近看一张；你说可以才做，在那之前灯架不改。下面每条推荐都标了"11 月 3 日已定"，背景、选项和理由照原样留着。新结构照规则 5b，先在场景 4 的 SP7 里走过、你说可以，才进游戏。英文记录在 §0.1，发给各条线的任务在 §9。
 
-### 决定 1 · Run! 的长度：早期短、晚期长，最长多少，能不能无限长
+### 决定 1 · 出现的次序：哪种关卡、哪种结构，什么时候出现
+
+**背景：** 你问"不同类型的 level 它出现的一个次序"。这条线说的关卡有五种：Level 0、Office、Run!、泳池、井（穿过整栋楼的那口竖井，场景 4 的 SP2）。现在游戏里只有 Level 0 和 Office 两种，是每一层楼里混在一起的两种区域；Run! 在游戏里是这些区域里的一个房间，不是单独的一层；泳池和井还没有进生成器。今天 Run! 是每个区域单独掷骰子决定的。
+
+**两把钥匙：** "档" = 这一局走过的新格子数，每 150 格升一档，最多 5 档，只升不降，玩家看不到，它管 Run!、坡道和下沉区什么时候出现；"楼层"（LEVEL 0、B1、B2……）管会动的结构。两个都写了的，两个都要满足：在 LEVEL 0 上就算到了第 4 档，也不会有会动的结构。
+
+**两种发法（玩家感受）：**
+- 今天的掷骰子：每个区域单独掷，越深越容易掷中；一层里可能连着出两个 Run!，第二个就没那么吓人了。
+- 每层一副牌（推荐，11 月 3 日已定）：一层最多一个，牌里有"这次没有"，同一种不连着两层出；每次遇到都有一点不一样。
+
+**推荐的次序（11 月 3 日已定）：**
+- 第 1 档（前约 3 分钟）：没有 Run!；只有普通坡道（1:12），每个 Level 0 区域最多一个地形模块。
+- 第 2 档（约 3-5.5 分钟）：这一局第一个 Run!：7 格、普通、拱门入口；之后 9 格普通。加下沉休息区、办公坑（1.2 米）。
+- 第 3 档（约 5.5-8 分钟）：每层的 Run! 从一副牌里抽：9 格普通 / 9 格下坡 / 9 格门入口 / 这次没有。加错层套间（2.4 米，两条路上去）。下坡要等关卡设计做出"每格地面高度"（决定 2）。
+- 第 4 档（约 8 分钟起）：牌是 12 格普通 / 9 格下坡 / 9 格门入口 / 9→12 会退（至少 B2 层，不够深就是 12 格普通）/ 这次没有。
+- 第 5 档（约 11 分钟起）：牌是 12 或 14 格普通（14 格放得下才放）/ 9 格下坡 / 9 格门入口 / 9→12 或 9→14 会退（14 要至少 B3 层）/ 变了的门（只有你在 8c 选了"理解二"才有；8c 已定理解一，这张牌不放）/ 这次没有。
+- 每层最多一个 Run!；同一种不连着两层出，会退的也不连着两层出；一间里最多一种变化（坡道、会退、门入口三选一）；这一局先遇到一个普通的，才有变化；Run! 所在的区域和它尽头门后面的区域不放别的触发房间，关上门就能喘口气。分钟数是一个机器人跑出来的，真人会更慢。
+
+**还没定的（不在这一页）：** 泳池和井排在一局的第几层。这条线给场景 4 的方案 SP2 把它们叠在一起：最上面是 Level 0，往下是办公层、Run! 设备层，大约 17 米下面是泳池；那是为了让你判断深度，不是一局里的次序。由关卡设计提出、你来选。（《Escape the Backrooms》把它的 Run 关放在泳池关之后、最后一关之前。）
+
+**代价：** 关卡设计改生成器：把每个区域掷骰子改成每层一副牌，再加一个"这一局已经遇到过普通 Run!"的记号。
+
+**缺点：** 每层最多一个，Run! 会比今天少。这是有意的：追逐重复多了就不吓人（做 Amnesia 的 Thomas Grip 的经验）。
+
+### 决定 2 · 坡道（ramp）什么时候出现、多长
+
+**背景：** "什么时候应该出现 ramp，究竟有多长"有两种读法：一是 Run! 的下坡版本（SP5 那条 1:8 的坡道）；二是语音把"run"听成了"ramp"。第二种在决定 3 回答了，这里回答第一种。
+
+**推荐（11 月 3 日已定）：** 先在安静的区域出现普通坡道（1:12，每段最长约 9 米、最多升高 0.76 米，段与段之间有 1.5 米的平台），让玩家先认识坡道。Run! 里的下坡从第 3 档（大约 5 分半）开始：1:8，最长 24 米，最多下降 3 米（按地图 0.3 米一级的地面高度算是 10 级，主要是坡，不是 10 级楼梯），永远不到一层楼高，因为往下一层只走 STAIR A。走廊更长时，多出来的部分保持水平。
+
+**代价和缺点：** 游戏里现在每一格地面都是平的，要等关卡设计做"每格地面高度"才能进游戏。在那之前只能在场景 4 的 SP5 里走。
+
+### 决定 3 · Run! 的长度：早期短、晚期长，最长多少，能不能无限长
 
 **背景：** 现在 Run! 只有一种长度：9 格，27 米（一格 3 米）。这个长度是按冲刺算的：体力条满格能冲 5 秒，每秒 5.5 米，正好 27.5 米。所以今天的 Run! 是"一口气刚好跑到门口，还剩 0.4 秒"。
 
@@ -574,75 +635,69 @@ F1 telegraph readable before commit, in the taught vocabulary, from at least 5 m
 - 12 格 36 米：体力在门前 7 米用完，门就在眼前，要喘一下再冲。第一次让玩家觉得"一口气不够"。
 - 14 格 42 米：要冲两段，中间被迫喘气。
 
-**推荐：** 按深度给长度。一局里第一个 Run! 是 7 格；之后 9 格；第 4 档（按机器人的速度大约 8 分钟后）起出现 12 格；第 5 档最长 14 格（地图放得下才放）。长度只看深度，永远不看玩家表现好坏。
+**推荐（11 月 3 日已定）：** 按深度给长度。一局里第一个 Run! 是 7 格；之后 9 格；第 4 档（按机器人的速度大约 8 分钟后）起出现 12 格；第 5 档最长 14 格（地图放得下才放）。长度只看深度，永远不看玩家表现好坏。这里的"早期""晚期"指一局里的早晚（走得多深），不是新玩家的头几局：每一局的第一个 Run! 都是 7 格。
 
 **为什么最长 14 格（42 米）：** 三条限制正好都卡在这里。一是地图分块：Run! 只能跨一条区块边界，最多 14 格。二是视距：相机远裁剪面 46 米，14 格时站在入口外 2 米还能看见尽头的门，15 格就被裁掉了。三是时间：Relay 从地图外被叫来，最早约 20 秒才到；14 格走路 12.6 秒，走得完。
 
-**能不能无限长：** 作为一条真的走廊不行。但能"感觉"无限长几秒钟：就是决定 3 的"门往后退"。另外两种（推开尽头的门又回到同一条走廊；地图外一条无限生成的走廊）都不适合 Run!，原因在 §3.3。
+**能不能无限长：** 作为一条真的走廊不行。但能"感觉"无限长几秒钟：就是决定 4 的"门往后退"。另外两种（推开尽头的门又回到同一条走廊；地图外一条无限生成的走廊）都不适合 Run!，原因在 §3.3。
 
-**代价：** 关卡设计改生成器：长度从常量变成按档位的表；每层最多一个 Run!；用"一副牌"发 Run! 的变体，牌里有"这次没有"，同一种不连着出。12 和 14 格要先在 100 个种子上测能放下多少。
+**代价：** 关卡设计改生成器：长度从常量变成按档位的表（次序和发牌见决定 1）。12 和 14 格要先在 100 个种子上测能放下多少。
 
 **缺点：** 7 格也许太短，灯光的"隧道感"出不来，要你在场景 4 走过才知道。
 
-### 决定 2 · 坡道（ramp）什么时候出现、多长
+### 决定 4 · 门往后退：怎么退
 
-**背景：** "什么时候应该出现 ramp，究竟有多长"有两种读法：一是 Run! 的下坡版本（SP5 那条 1:8 的坡道）；二是语音把"run"听成了"ramp"。第二种在决定 1 回答了，这里回答第一种。
-
-**推荐：** 先在安静的区域出现普通坡道（1:12，每段最多升高 0.76 米），让玩家先认识坡道。Run! 里的下坡从第 3 档（大约 5 分半）开始：1:8，最长 24 米，最多下降 3 米（10 个 0.3 米的台阶），永远不到一层楼高，因为往下一层只走 STAIR A。走廊更长时，多出来的部分保持水平。
-
-**代价和缺点：** 游戏里现在每一格地面都是平的，要等关卡设计做"每格地面高度"才能进游戏。在那之前只能在场景 4 的 SP5 里走。
-
-### 决定 3 · 门往后退：怎么退
-
-**背景：** 你想要：走到原本长度的三分之一，门往后退，越退越远，而且是模型本身在动，不只是镜头。我们查到最接近的：《鬼驱人》（Poltergeist，1982）里妈妈跑向孩子的房门，走廊被拉长，门一直在画面正中、一直亮着；《寂静岭 3》里一面墙在追逐中移动一次；《Control》的烟灰缸迷宫里建筑在玩家眼前重组。没有找到哪个第一人称游戏在追逐中让远处的门作为模型往后退：这是新的组合，要走过才知道好不好。（《小小梦魇 2》里走不到的那扇门，是被人物拉回来，不是走廊变长；我们读到的资料都没说走廊会伸长。）
+**背景：** 你想要：走到原本长度的三分之一，门往后退，越退越远，而且是模型本身在动，不只是镜头。我们查到最接近的：《鬼驱人》（Poltergeist，1982）里妈妈跑向孩子的房门，走廊被拉长，门一直在画面正中、一直亮着；《寂静岭 3》里一面墙在追逐中移动一次；《Control》的烟灰缸迷宫里建筑在玩家眼前重组。没有找到哪个第一人称游戏在追逐中让远处的门作为模型往后退：这是新的组合，要走过才知道好不好。（《小小梦魇 2》里走不到的那扇门，是被人物拉回来，不是走廊变长；我们读到的资料都没说走廊会伸长。）你说的《小小梦魇》里的"隧道"，我们没找到能对上的具体场景；如果你记得是哪一作、哪一段，告诉我们，我们再去查。
 
 **四种做法（玩家感受）：**
-- M1 拉长（推荐）：门往后退一次，然后停住，玩家最后能跑到。
+- M1 拉长（推荐，11 月 3 日已定）：门往后退一次，然后停住，玩家最后能跑到。
 - M2 循环：推开尽头的门又回到同一条走廊。不适合 Run!：Relay 正被叫到这里，多绕一圈等于送死；"关上门就安全"这条规则也会失效。
-- M3 彼岸：门退了，这一间里永远到不了；旁边一扇一直都在的门亮起来，从那里出去。适合以后做成故事的回报（很后期终于走到那扇门），现在不推荐。
+- M3 彼岸：门退了，这一间里永远到不了；旁边一扇一直都在的门亮起来，从那里出去。适合以后做成故事的回报（很后期终于走到那扇门）。现在不推荐：它和你 10 月 31 日定的规则冲突（Run! 尽头那扇门就是出口、永远不锁），而且门退走的那一刻，玩家会有一瞬间不知道出口在哪。
 - M4 地图外的无尽走廊：能真的无限，但 Relay 跟不进去，等于安全区。只适合某一层一次性的特殊下楼方式，不是 Run!。
 
-**推荐的 M1 具体是：**
+**推荐的 M1 具体是（11 月 3 日已定）：**
 - 只在深层：第 4 档并且至少 B2 层，从 9 格退到 12 格；第 5 档并且至少 B3 层，退到 14 格。一局里第一个 Run! 永远不退；不和坡道、门入口出现在同一间。
 - 触发点就是你说的三分之一：27 米的三分之一是 9 米，正好是第一道防火门框的位置（这道框要新做）。玩家面朝走廊时才开始，不会在背后偷偷动；一直不看的话，走到 18 米也会开始。
-- 关键改动：这种房间的警报不在入口 1.5 米触发，而在这道 9 米的门框触发。跨过门框的那一刻，警报响、门开始退，是同一件事："这一段防火分区进入警报，尽头被拉走了。"这样从触发开始，满体力冲刺正好够到 12 格的门（还剩 0.1 秒），和今天的承诺一样；14 格要多跑 5 米多，是深层的难度。
-- 怎么退：先猛地一缩，一下退 2 格（6 米），再一格一格退，最后一下很重地落位。走路的人看到门越退越远（距离从 18 米拉到将近 20 米）。冲刺的人如果靠近到 12 米以内，剩下的距离就以每秒 6 米（比冲刺快一点）一口气滑到底：玩家永远追不上一扇正在动的门，因为门不锁，半路抓住就会露出后面还没出现的走廊。
+- 关键改动：这种房间的警报不在入口 1.5 米触发，而在这道 9 米的门框触发。跨过门框的那一刻，警报触发、门开始退，是同一件事："这一段防火分区进入警报，尽头被拉走了。"这样从触发开始，满体力冲刺正好够到 12 格的门（还剩 0.1 秒），和今天的承诺一样；14 格要多跑 5 米多，是深层的难度。另一种是照今天在入口 1.5 米就触发，跨过 9 米时门才开始退：最吓人（体力在逃走的门前约 7 米或 13 米用完），但只有 Relay 是从地图外被叫来时才公平；要保证这一点，门就得"看" Relay 在哪，违反规则 11，所以不推荐。
+- 怎么退：先猛地一缩，一下退 2 格（6 米），再一格一格退，最后一下很重地落位。"越退越远"要说清楚：门的位置一直往后退（从 27 米退到 36 米或 42 米，12 格分 2 下，14 格分 4 下）；可是离你的距离只在第一下猛缩时变远（走路的人从 18 米拉到将近 20 米），之后人走得比门退得快，最后落位时走路的人离门约 16 米（12 格）或 13.6 米（14 格）；只有按住 Shift 慢走的人会看到门一直越来越远（14 格时从 21.8 米到 24.3 米）。冲刺的人如果靠近到 12 米以内，剩下的距离就以每秒 6 米（比冲刺快一点）一口气滑到底：玩家永远追不上一扇正在动的门，因为门不锁，半路抓住就会露出后面还没出现的走廊。
+- 另一种退法（你来选；11 月 3 日按推荐定了一步一步退，不用这种）：一口气滑走。门在预兆之后以每秒 6 米连续退到底，12 格用 1.5 秒，14 格用 2.5 秒（研究阶段的另一个方案）。这样退的时候门对谁都在变远：走路的人从 18 米拉到约 21 米（12 格）或 24 米（14 格），冲刺的人也看到它每秒再远约 0.5 米，然后门停住。代价：决定 5 里 T2 的砖块每一下至少要 0.8 秒才看得清拆开再砌回，一口气滑走时整面墙只能像 T1 一样整体滑走，你要的"重组"几乎看不到。所以在这个速度下，"越退越远"和"重组"要二选一：我们推荐一步一步退（保住重组和每一下的节拍）；如果你更想要"越退越远"，就选一口气滑走，模型用决定 5 的 T1。
 - 怎么结束：最后一下落位后，门是真门，能推开；这一层里这条走廊一直保持变长后的样子；门停过的地方留下一圈干净的"印子"；不会再退第二次。警报解除时，你喜欢的白光从入口一盏盏亮到尽头，覆盖整条变长的走廊。
 - 绝不读 Relay：门退不退、什么时候退，只看玩家走到哪、看向哪、离门多远，永远不看 Relay 在哪（规则 11）。
 
-**代价：** 关卡设计一开始就按最长长度规划走廊，后面几格先藏起来；尽头的墙和门做成能整体移动的部件；每次落位时打开那一格的碰撞和 Relay 路网。游戏视觉做模型和灯光（决定 4、5）。
+**代价：** 关卡设计一开始就按最长长度规划走廊，后面几格先藏起来；尽头的墙和门做成能整体移动的部件；每次落位时打开那一格的碰撞和 Relay 路网。游戏视觉做模型和灯光（决定 5、6）。
 
 **诚实的缺点：**
 - 这种房间在 9 米才触发，和别的 Run! 不一样。玩家会学到"会退的房间触发得晚"（能学会，所以公平）。
-- 被追着冲进一间会退的房间最吃亏：按我们的计算，比冲进普通 9 格房间少 2 到 5 米的领先距离。推荐先让系统设计用机器人测一轮：如果领先 8 米冲进去仍然逃得掉，就照现在做；逃不掉，就改成"只有走着跨过三分之一时才退"（冲刺进来的人得到普通房间）。
+- 被追着冲进一间会退的房间最吃亏：按我们的计算，比冲进普通 9 格房间少 2 到 5 米的领先距离。推荐（11 月 3 日已定）先让系统设计用机器人测一轮：如果领先 8 米冲进去仍然逃得掉，就照现在做；逃不掉，就改成"只有走着跨过三分之一时才退"（冲刺进来的人得到普通房间）。
 - 从另一头先到的人，会在门的位置看到一个封死的门洞。这是关卡设计要处理的细节；我们觉得一个"封死的门洞"本身就是安静、诚实的异样。
 
-### 决定 4 · 后退的 3D 模型动画（T1 后退 / T2 重组 / T3 伸缩 / T4 折叠）
+### 决定 5 · 后退的 3D 模型动画（T1 后退 / T2 重组 / T3 伸缩 / T4 折叠）
 
 **背景：** 你说"不只是 motion transition，也是模型上面……像那个可破坏的门……重组或者向后退避"。四种都用同一个"头"：尽头的墙、门、门上的小方窗、推杆、门上方跟着走的应急灯，挂在天花板两角的轨道上，用电磁门吸固定。门吸松开就是每一步的预兆："咔哒"两声，墙往玩家这边一震（1.5 厘米）。从入口就能看见天花板角上的轨道，细心的人能猜到"这面墙会动"。
 
 **选项（玩家感受）：**
-- **T1 后退：** 整面尽头墙像舞台车一样笔直往后滑，原地留下一圈更干净的油漆和没磨过的地蜡，像柜子挪走后墙上的印子。最好读，最"机械"，但模型感最弱。所有平台都用它做底；手机和网页版只用它。
-- **T2 重组（推荐，电脑和 iPad）：** 尽头的砌块墙从上往下一层层拆开，砖块沿两侧墙和天花板分成左右两股往后流；中间那扇门不拆，亮着、立着，自己往后滑；到了新位置，砖块再从下往上一层层落回去把门围住，灰浆的粉末在门灯里发光。就是可破坏门那套做法（预先做好碎块、提前烘焙路径、缝里掉粉）倒着放。
+- **T1 后退：** 整面尽头墙像舞台车一样笔直往后滑，原地留下一圈更干净的油漆和没磨过的地蜡，像柜子挪走后墙上的印子。最好读，最"机械"，但模型感最弱。所有平台都用它做底；网页版只用它，手机在 T2 撑不住时也退回它。
+- **T2 重组（推荐，11 月 3 日已定；电脑和 iPad；手机上砖块合并成半层的长条，约 28 块，没有粉末）：** 尽头的砌块墙从上往下一层层拆开，砖块沿两侧墙和天花板分成左右两股往后流；中间那扇门不拆，亮着、立着，自己往后滑；到了新位置，砖块再从下往上一层层落回去把门围住，灰浆的粉末在门灯里发光。就是可破坏门那套做法（预先做好碎块、提前烘焙路径、缝里掉粉）倒着放。
 - **T3 伸缩：** 最后一格本来就是五层套在一起的钢套筒，像登机桥；触发后一节节伸出来，每节停下时"当"一声，每 3 米一圈亮着的钢环。1958 年就有的真机器，只是不该出现在办公楼里。
 - **T4 折叠：** 两侧墙里藏着防火折叠门，触发后从墙洞里拉出两道波纹钢板墙，跟着尽头往后展开。最像 1990 年的真实消防设备（警报真的会让这种门动），但细密的条纹一起动，是最典型的光敏风险，要先过测试；墙也变成了钢板。
 
-**代价（电脑版，估计）：** T1 约 9 千三角面、8 个绘制；T2 再加约 5.4 千面、1-3 个绘制；T3 约 8.5 千面、15 个绘制；T4 约 1.1 万面、4 个绘制；新贴图都在 4 MB 以内。
+**代价（电脑版，估计）：** T1 约 9 千三角面、8 个绘制；在这个"头"之上，T2 再加约 5.4 千面、1-3 个绘制；T3 再加约 8.5 千面、15 个绘制；T4 再加约 1.1 万面、4 个绘制；新贴图都在 4 MB 以内。
 
-**推荐：** T1 的"头"所有平台都用；电脑和 iPad 上加 T2 的重组。深层如果想让走廊本身动，用 T3。T4 等光敏测试通过再说。
+**推荐（11 月 3 日已定）：** T1 的"头"所有平台都用；电脑和 iPad 上加 T2 的重组，手机用半层长条的简化重组，网页版只用 T1。深层如果想让走廊本身动，用 T3。T4 等光敏测试通过再说。
 
 **诚实的缺点：** T2 看不到机器，是"大楼自己在重新排列"，偏超自然；砖块一起动属于"运动图案"，要过光敏测试；冲刺的人只看得到第一下重组，后面变成整面墙滑走。如果你更想要"看得懂的真机器"，就选 T1，深层再加 T3。T3 和 T4 会让走廊最后一段的材料或截面变掉，可能碰到你"不能改变房间性质"的那条（G1/G2）。
 
-### 决定 5 · 红色的氛围
+### 决定 6 · 红色的氛围
 
-**背景：** 今天的 Run! 触发后一点红光都没有，只有暖色的应急光池。你记得的是《Escape the Backrooms》触发后天花板上一排排红灯朝远处排过去的画面。我们以前做过"红色病房"版本（A），量下来 Relay 和背景的对比只有 2.97:1（要求 4:1）：红色铺满画面就看不清 Relay，所以当时选了 B。这次的做法：红色只做第二层，暖色光池照样切开它，尽头的门永远最亮。
+**背景：** 今天的 Run! 触发后一点红光都没有，只有暖色的应急光池。你说的是"后世同人的这个游戏"，没说是哪一个。我们推断是《Escape the Backrooms》：天花板上一排排红灯朝远处排过去，还有不停的警报声（那一关从头到尾都是红的，不是触发后才变红）；如果你想的是别的游戏，告诉我们是哪一个，我们再去查。我们以前做过"红色病房"版本（A），量下来 Relay 和背景的对比只有 2.97:1（要求 4:1）：红色铺满画面就看不清 Relay，所以当时选了 B。这次的做法：红色只做第二层，暖色光池照样切开它，尽头的门永远最亮。
 
 **红色从哪来：** 每个 R-B 灯架里加一根红色灯管，接在应急电池回路上。平时不亮：两根白灯管中间夹一根暗红色的灯管，本身就是"这条走廊有警报回路"的提示；警报时才亮。不用 EXIT 灯（你定过 Run! 里不放 EXIT），也不用调色滤镜。1989 年已经有红色荧光灯管（暗房用）和电池供电的荧光灯；把它接到警报上是电影的做法，我们是有意这么选。
 
-**三种看法（玩家感受）：**
+**三种灯光方案（玩家感受）：**
 - **A 警报回路：** 一踏进去，一道暗带从脚下跑向尽头的门，暗带后面每根灯管变成深红，应急灯打出暖色光池；2 秒后整条走廊静止。最庄严；危险感只在那两秒。
-- **B 警报脉冲（推荐）：** 在 A 的基础上，每 2.5 秒有一个暗脉冲沿灯管一根根熄灭又亮起，跑向尽头的门；每分钟 24 次，比楼顶航空障碍灯常见的每分钟 30 次还慢，最多 12 次。它是这栋楼"无声警报"的心跳，也就是你喜欢的"一个一个熄灭、一个一个亮"在危险时的红色版本。
+- **B 警报脉冲（推荐，11 月 3 日已定）：** 在 A 的基础上，每 2.5 秒有一个暗脉冲沿灯管一根根暗下去（降到约三分之一亮度，不是全灭）又亮回来，跑向尽头的门；地上的暖色光池、尽头的门和门后的光一直不变；每分钟 24 次，比楼顶航空障碍灯常见的每分钟 30 次还慢，最多 12 次。它是这栋楼"无声警报"的心跳，也就是你喜欢的"一个一个熄灭、一个一个亮"在危险时的红色版本。
 - **C 红潮：** 红色从你进来的入口以走路的速度一盏一盏追上来，前方还是白光。走路，红色一直在你身后 2.3 米；跑，就把它甩开。"WALK, DO NOT RUN"在这里失效。缺点：跑的时候眼前多半是白光；玩家可能把红潮当成追兵的位置，那就等于雷达，要拿掉。
+- **按你说的"庄严"和"危险"来比：** A 最庄严，危险只靠颜色；B 也庄严，危险靠颜色加节拍；C 庄严一般，危险靠颜色加"从后面追上来"。
 
 **你喜欢的效果不会丢：** 警报解除时，白光从入口一盏盏重新亮起（今天已经做好的），意思是"大楼放过你了"。红色的暗带和脉冲是它的"危险版双胞胎"，方向都朝着出口那扇门，就像机场跑道灯一串串朝跑道方向闪，意思是"往这边走"。
 
@@ -650,45 +705,45 @@ F1 telegraph readable before commit, in the taught vocabulary, from at least 5 m
 
 **代价：** 每间 9 根红灯管（每根约 150 面，一个共用材质，没有新贴图），不加新灯光、不加阴影；代码只在 Run! 的灯光脚本里（游戏视觉的）。
 
-**推荐：** B；如果 B 的光敏实测不过，就用 A（同一套，关掉脉冲）。C 在场景 4 里可以切换着试。
+**推荐（11 月 3 日已定，红灯管除外）：** B；如果 B 的光敏实测不过，就用 A（同一套，关掉脉冲）。C 在场景 4 里可以切换着试。第三根红灯管还没定：先看图，你说可以才做（§9 灯具适配 1）。
 
 **诚实的缺点：** B 放宽了我们自己"红光必须稳定"的规则；而且要在你 11 月 3 日说"就这样"的 R-B 灯架里多加一根红灯管。所以先给你看一张"平时状态下带一根暗红灯管的灯架"，你同意了再做。
 
-### 决定 6 · 你喜欢的那段灯光是哪一段（只要确认）
+### 决定 7 · 你喜欢的那段灯光是哪一段（只要确认）
 
 你说"我很喜欢……一个一个灯光熄灭，一个一个灯光在亮"。10 月 31 日那段 28.5 秒的视频里有两段可能是：
-- RESET 段（17.9-22.5 秒）：警报解除，白光从入口一格一格亮到尽头，像一个脉冲穿过隧道。我们认为是这段。
+- RESET 段（17.9-22.5 秒）：警报解除，白光从入口一格一格亮到尽头，像一个脉冲穿过隧道。我们认为是这段。**11 月 3 日已定：就是这段。**
 - RUN 段（10.4-15.9 秒）：冲刺穿过一个个暖色光池。
 
-不管是哪段，决定 5 的三种看法都保留它。只是确认一下，免得理解反了。
+不管是哪段，决定 6 的三种灯光方案都保留它。只是确认一下，免得理解反了。
 
-### 决定 7 · Run! 的意义、什么时候遇到、"被骗的门"、奖励还是惩罚
+### 决定 8 · Run! 的意义、什么时候遇到、"被骗的门"、会不会主动进去、奖励还是惩罚（8a-8e 可以分开回）
 
 **背景：** 现在 Run! 一进去就叫来 Relay，唯一的"奖励"是一条直路通向一扇能关的门。理性的玩家会绕开它。
 
-**意义（推荐）：** 在我们的 EGRESS 故事里，Run! 不是惩罚房间，而是一段已经接上警报的防火分区。一踏进去，大楼把这一段切到应急电源，灯一路指向尽头那扇门，告诉你出口在哪；警报派来的东西会来"清点"还留在里面的人。它传达的信息是：大楼的第一条规矩"WALK, DO NOT RUN"在这里失效，第二条规矩"CLOSE DOORS BEHIND YOU"在尽头救你。不需要新的文字；可以选择在走廊里几格的地方再挂一次第一个房间的告示牌，形成一种冷冷的讽刺。
+**8a 意义（推荐，11 月 3 日已定）：** 在我们的 EGRESS 故事里，Run! 不是惩罚房间，而是一段已经接上警报的防火分区。一踏进去，大楼把这一段切到应急电源，灯一路指向尽头那扇门，告诉你出口在哪；警报派来的东西会来"清点"还留在里面的人。它传达的信息是：大楼的第一条规矩"WALK, DO NOT RUN"在这里失效，第二条规矩"CLOSE DOORS BEHIND YOU"在尽头救你。不需要新的文字；可以选择在走廊里几格的地方再挂一次第一个房间的告示牌，形成一种冷冷的讽刺。
 
-**什么时候遇到：** Relay 第一次被派出之后，从第 2 档（大约走过 150 个新格子）开始；不在第一个区域，不在起点门附近。先遇到一个短的普通 Run!，之后才有坡道、门入口、会退的门。你说的"打开的门太多、进入的区域太多"，游戏里已经有对应：档位就是走过的新格子数；开门的声音会累积 Relay 的注意力。
+**8b 什么时候遇到（11 月 3 日已定）：** Relay 第一次被派出之后，从第 2 档（大约走过 150 个新格子）开始；不在第一个区域，不在起点门附近。先遇到一个短的普通 Run!，之后才有坡道、门入口、会退的门（次序见决定 1）。你说的"打开的门太多、进入的区域太多"，游戏里已经有对应：档位就是走过的新格子数；开门的声音会累积 Relay 的注意力。所以你的想法成立，只是用"走过的新地方"来数，不数开门次数：这一局走过约 300 个新格子（第 3 档）、并且已经遇到过一个普通 Run! 之后，一扇门才可能把你"骗"进 Run!（见 8c 的理解一）。
 
-**"被欺骗的门"有两种理解：**
-- 理解一（推荐）：玩家以为推开的是普通房间，门后却是 Run! 走廊。门本身不说谎：它有 Run 门特有的 15×15 英寸小方窗，门边有红色探测器底座和 ALARM ZONE 牌子，门缝下透出走廊的光。被骗的只是"不看门就冲进去"的习惯。触发线在门里面大约 2.5 米，开门看见了还可以退出去；但如果冲刺撞门进去，就会触发，正好应了第一条规矩。第二次玩家就会先看窗。从第 3 档开始出现。
-- 理解二：一扇以前通向普通房间的门，回来时变成通向 Run!（大楼改了这扇门）。这违反现在"触发房间位置固定、重访不变"的规则，也等于让大楼"说谎"。如果你指的是这个，可以只放在很深的层（第 5 档、B3 以后，见过两次普通 Run! 之后，每层最多一次），门上同样换成 Run 门的小方窗，让细心的人看得出来。
+**8c "被欺骗的门"有两种理解：**
+- 理解一（推荐，11 月 3 日已定）：玩家以为推开的是普通房间，门后却是 Run! 走廊。门本身不说谎：它有 Run 门特有的 15×15 英寸小方窗，门边有红色探测器底座和 ALARM ZONE 牌子，门缝下透出走廊的光。被骗的只是"不看门就冲进去"的习惯。触发线在门里面大约 2.5 米，开门看见了还可以退出去；但如果冲刺撞门进去，就会触发，正好应了第一条规矩。第二次玩家就会先看窗。从第 3 档开始出现。
+- 理解二（11 月 3 日没有选，不做）：一扇以前通向普通房间的门，回来时变成通向 Run!（大楼改了这扇门）。这违反现在"触发房间位置固定、重访不变"的规则，也等于让大楼"说谎"。如果你指的是这个，可以只放在很深的层（第 5 档、B3 以后，见过两次普通 Run! 之后，每层最多一次），门上同样换成 Run 门的小方窗，让细心的人看得出来。
 
-**不推荐：** 偷偷数开门次数来决定（玩家只会觉得是运气）；强制陷阱（被抓就结束整局，强制进入等于一次没有选择的死亡）。
+**不推荐：** 偷偷数开门次数来决定（玩家只会觉得是运气）；强制陷阱（玩家没有选择就被卷进追逐，而被抓就结束整局）。
 
-**会不会主动进去：** 会，当它值得的时候。被追的时候冲进去最刺激（追逐中触发只算一个噪音，换来一条直路和一扇能关的门），今天的规则已经支持。
+**8d 会不会主动进去（11 月 3 日已定）：** 会，当它值得的时候。被追的时候冲进去最刺激（追逐中触发只算一个噪音，换来一条直路和一扇能关的门），今天的规则已经支持，大多数玩家也会先这样发现它；赶时间的时候它是一条近路（绕开要多走约 30 米）。没被追、也不赶时间的谨慎玩家多半会绕开：看不到好处，绕开又只多走 30 米。这没关系，Run! 一直是可选的；要让他们也愿意进去，就靠下面 8e 的奖励。
 
-**奖励（推荐）：** 冲到尽头，在它看见或听见你之前把门关上，那扇门对它就是一面墙。它会在空走廊里搜一圈然后撤走，整层安静一段时间（第 1 档 100 秒，第 5 档 60 秒）。你可以隔着门上的小方窗看它找不到你（它看不见你，但听得见，所以要安静），然后走廊的灯恢复白色。以后有"断电安全房"时，可以放在少数 Run! 的尽头，作为更大的奖励。
+**8e 奖励（推荐，11 月 3 日已定）：** 冲到尽头，在它看见或听见你之前把门关上，那扇门对它就是一面墙。它会在空走廊里搜一圈然后撤走，整层安静一段时间（越深越短：第 2 档 90 秒，到第 5 档 60 秒）。你可以隔着门上的小方窗看它找不到你（它看不见你，但听得见，所以要安静），然后走廊的灯恢复白色。以后有"断电安全房"时，可以放在少数 Run! 的尽头，作为更大的奖励。
 
 **代价：** 大多是已有的系统。门入口要关卡设计和游戏视觉做；"隔窗看着它撤走"要系统设计确认不算雷达。
 
 **诚实的缺点：** 奖励到底成不成立（冲到门口的人有多少真能甩掉它）还没测，要机器人跑一轮。你的第二条消息停在"就比如说玩家进入到这个"，后面的问题我们不知道；如果还有，请补一句。
 
-### 决定 8 · 先在场景 4 走一遍（SP7）
+### 决定 9 · 先在场景 4 走一遍（SP7）
 
 **背景：** 你定过：所有新结构先放进场景 4，你走过再决定哪些进游戏。
 
-**推荐：** 在场景 4 加一个区域 SP7"会退的门"：一条按 Run! B 做的 14 格走廊。可以用按键切换长度（7、9、12、14 格，普通或会退）、模型（T1 或 T2）、红色看法（今天的、A、B、C）、入口（拱门或 Run 门）、"减少闪烁"开关，还有重置。走廊里放一个不会动的 Relay 替身，用来检查红光下能不能看清它。
+**推荐（11 月 3 日已定）：** 在场景 4 加一个区域 SP7"会退的门"：一条按 Run! B 做的 14 格走廊。可以用按键切换长度（7、9、12、14 格，普通或会退）、模型（T1 或 T2）、红色方案（今天的、A、B、C）、入口（拱门或 Run 门）、"减少闪烁"开关，还有重置。走廊里放一个不会动的 Relay 替身，用来检查红光下能不能看清它。
 
 **做不到的：** 场景 4 里没有会动的 Relay，所以"追逐公不公平"要在游戏里用机器人测，场景 4 里感受不到；也没有声音。
 
@@ -696,55 +751,70 @@ F1 telegraph readable before commit, in the taught vocabulary, from at least 5 m
 
 ### 另外告诉你（不需要决定）
 
-- 70 里的 SP5 还和你之前的三个决定冲突：放了 EXIT 灯（你定过 Run! 里没有 EXIT）；尽头门用了已经退役的 RN-X；灯具是旧的灯罩，不是你选的 R-B 灯架和 TA+TB 应急灯。这次没有改 70，这条线下一步会改。
-- 红色灯管、门入口、9 米触发这三件事会改动你以前认可过的东西，所以都单独标出来，等你点头。
+- 70 里的 SP5 原来和你之前的三个决定冲突：放了 EXIT 灯（你定过 Run! 里没有 EXIT）；尽头门用了已经退役的 RN-X；灯具是旧的灯罩，不是你选的 R-B 灯架和 TA+TB 应急灯。11 月 3 日 22:5x 已改好 70：去掉 EXIT，换成 RN-F 门（带 F5 小方窗、永不上锁），平时 R-B 灯架、触发后 TA 和 TB 应急灯。
+- 和关卡设计怎么"精密地融合"：Run! 的每一条规则都写成生成器能直接用的整数：长度按整格（7、9、12、14，最多 14）；会退的从 9 格退到 12 或 14 格，触发在第 3 格末（9 米），门每次都停在整格上；坡道的高度按地图 0.3 米一级算；每层最多一个、按档发牌（§3.6 那张表）。这些由关卡设计写进生成器，我们只提方案，经过总控。分工：游戏视觉（加灯具适配）做尽头会动的"头"、T2 的砖块、红灯管和灯光状态；关卡设计做藏起来的格子、碰撞和 Relay 路网；系统设计定出现的门槛、9 米触发和奖励的规则；叙事设计定意义和文字；声音设计只接事件。
+- 你说得对，Run! 还没进可玩的版本：Run! B 已经做好、合进了主工程，但总开关（runRooms）默认是关的，正常游戏里遇不到，还没有玩家走过；关卡设计要等合并测试之后才打开。所以"玩家会不会主动进去"还没有人真的试过：场景 4 只能看样子，机器人只能测逃不逃得掉，愿不愿意进去要等打开以后的试玩。
+- 红色灯管、门入口、9 米触发这三件事会改动你以前认可过的东西。后两件回"全部按推荐"就算同意；红色灯管先给你看一张图再定。11 月 3 日你回了"全部按推荐"：门入口和 9 米触发已同意；红色灯管的图交给灯具适配做（§9）。
 
 ## 9. Asks to the owning lines (cards, through 总控)
 
-Each card is a proposal; the owner decides. Nothing here was sent: the parent session routes the cards through 总控. Measurements that need no decision (the fit rates, the bot rounds) can start at once; builds that change something Red approved (the red tube, the door entrance, the 9 m trip) wait for Red's answer to §8.
+**Final, 11-03.** Red answered §8 at 23:18 ("全部按推荐", §0.1), so every card below is final and can be sent now; the parent session routes them through 总控 (this page sent nothing). Each card names its owner (files by RULES rule 3; 叙事设计's strings and 系统设计's rules by their own docs), what to do, the decision it rests on and the section that argues it. Red has decided what; each owner decides how. **One card waits for Red: 灯具适配 1**, the red tube's still (WAIT-RED); every item that needs the tube (游戏视觉 3, the red checks in 游戏视觉 5, 系统设计 6, the tube hum in 声音设计 2) waits for Red's yes on it. New structures land inert: under rule 5b the receding end, the Run door entrance and the red looks enter the game only after Red has walked SP7 in scene 4 and said so. Measurements (the fit rates, the bot rounds) start at once.
 
-**关卡设计 (map; `FrontRoomsMap/*`, `FrontRooms3DGame*.cs`)**
-1. Length per room from a table by tier: 7 (the run's first), 9, 12, 14 (where it fits); cap 14 cells. Measure 12 and 14 on 100 seeds with `-autopilotRunRooms` first (§3.2).
-2. At most one Run! a floor; a per-floor deck by tier with "nothing" in it; no variant twice running; the receding end never two floors running; a run flag (a plain Run! met before any twist); one twist per room (§3.4).
-3. A trigger-free zone beyond the goal door. Validator: no Relay entry inside or just beyond a Run! room, the goal door never on its route (F4); never the only route, never the key alone (F5); no chains (F7).
-4. The receding variant: reserve L_max at plan time; build the hidden cells with renderers, lights, colliders and graph edges off until each seat; the end wall and RN-F as one movable GoalHead; the goal point and normal per seat; the trip line at 9 m for this variant; the release side's blind doorway and swap; persist the steps done (§4).
-5. The door entrance: a Run door (RN-F + F5) on the entrance edge, as at the goal edge; confirm what the lamps and the "door behind" do when a room is met from its goal end (§7.2).
-6. The Run! ramp waits for per-cell levels (`40` §11.7).
+**Answers from the lines, 11-04** (cross-session messages to this line; the files they name are the record):
+- **叙事设计**, `research/narrative/96_run_room_meaning.md` (no new strings): card 1 signed, and room one's placard is *not* hung again inside the corridor ("a plan posted where obeying it costs you would teach players to distrust every plan"; the ALARM ZONE card is the room's sign); card 2 signed, D1 only, D4 not built; card 3 signed (the recede is the alarm's hardware, never the Relay; B's pulse is the silent alarm made visible, pointing out; the reset is restoral); with 声音设计 4: no siren, the trip plays the door-holder thunk without the chime. Peer question P1 (may a fire-door frame behind the runner swing shut at the trip): **no**, the frames behind stay open, only the goal end's hold-open magnets let go.
+- **系统设计**, `systems.json` A60 (Red's 全部按推荐) and A61 (its rulings), RELAY §6 and its Decided block: cards 1 and 2 adopted (the receding variant arms at the 9 m frame; §4.8 and F1-F10 in RELAY §6); card 4 the Run door trips 2.5 m inside and reads from 5 m (starting values); card 5 rule 11 holds (the reset re-strike lights only the Run! room's lamps and only on Away; the glide reads the player's position only; C's tide may never follow the Relay's reach); card 6 the teaching room yes (the run's first Run! with the pulse off, look A), waiting on the tube; card 3 the bot rounds sent to 关卡设计调研, not run yet. Peer question P3 (door loudness at T5): **confirmed**, under v2 a slam carries 27 m x 1.3 = 35.1 m along the path against at least 49 m: a 14 m margin.
+- **灯具适配**, card 1: the still delivered 06:00 and an HDR follow-up 06:12 on Red's comment (§0.1, decision 6).
 
-**游戏视觉 with 灯具适配 (`Scripts/Rendering`, kits)**
-1. Run! B's rig and dress parametric in cells (a strip every cell, heads every two, compartment frames every three, the goal assembly at the end) for 7-14 cells.
-2. After Red approves one still: one red T12 tube per R-B strip on the battery circuit; in `FrontRoomsRunRig.cs` a per-strip red level, the trip front (A, B), the pulse (B), the slow front (C), the tripped ambient tint, the Reduce Flashing variants (§6).
-3. The recede: `RunRigState.Recede` from one trigger time (flinch, steps, heavy seat; the keep-away glide; the gaze gate); the GoalHead kit (track, trolleys, magnets, sweeps, a carried twin-head, C42 in a light box, ghost bands); T2's block pieces and two baked clips with contact lists; grit by `54`'s GPU path; the compartment frame at 9 m (§5).
-4. Combined test: the Relay read at 2.05 m under red with protan (≥ 4 : 1); T9 over the trip, the pulse train, the recede and the reset; Harding FPA or PEAT on that capture; the T2 pattern; the dark reds on the phone tier.
+**关卡设计** (owner of `Scripts/FrontRoomsMap/*`, `FrontRooms3DGame*.cs`, `Editor/FrontRoomsMap/*`, `Assets/Levels`; rule 3)
+1. **Length by depth.** A per-room length table by tier: 7 cells for the run's first Run!, then 9, 12 from T4, 14 at T5 where it fits; cap 14 cells; never by the player's performance. First measure the 12- and 14-cell fit rates on 100 seeds with `-autopilotRunRooms`. Rests on decision 3. Source §3.2, §3.6.
+2. **One Run! a floor, from a deck.** Replace the per-zone roll with a per-floor deck by tier (§3.4's table), "nothing" in every deck; no variant on two floors running, the receding end never on two floors running; one twist per room; the run flag (a plain Run! met before any twist); no changed door in T5's deck. Rests on decisions 1, 8b, 8c. Source §3.4, §3.6.
+3. **A calm beyond the door.** No other trigger kind in the Run!'s host zone or in the zone beyond its goal door. Validator: no Relay entry inside or just beyond a Run! room, the goal door never on its route (F4); never the only route, never the key alone (F5); no chains (F7). Rests on decisions 1, 8e. Source §3.4, §4.7, §7.6.
+4. **The receding variant** (9 → 12 from T4 on floor B2 or deeper; 9 → 14 at T5 on B3 or deeper where it fits, else 12). Reserve L_max at plan time; build the hidden cells with renderers, lights, colliders and graph edges off until each seat; the end wall and RN-F as one movable GoalHead; the goal point and normal per seat; the trip line at the 9 m frame (FD1) for this variant only; no side doors inside; the release side's blind doorway and swap; persist the steps done. Rests on decision 4. Source §3.6, §4.3-§4.8, §5.9.
+5. **The Run door entrance** (D1; from T3, after one plain Run!). A Run door (RN-F with set A's F5 lite) on the entrance edge, as at the goal edge, the trip about 2.5 m in (系统设计 4 sets the depth); confirm what the lamps and the "door behind" do when a room is met from its goal end. Rests on decision 8c. Source §7.2, §3.6.
+6. **Ramps.** Public 1:12 ramps first, in quiet zones; the Run! ramp (1:8, at most 24 m and 3.0 m down, never a storey, extra cells level) from T3, once the map holds per-cell levels (`40` §11.7). Rests on decision 2. Source §3.5.
+7. **Pool and the well in a run.** Propose to Red where the pool level and the well come in a run; decision 1 leaves it open (`70` SP2's stack is a depth study, not an order). Rests on decision 1, its open part. Source §3.4.
 
-**叙事设计**
-1. The frame and message (§7.1); whether room one's placard hangs inside Run!.
-2. Which deception Red meant (D1 the honest door, or D4 the changed door), with 系统设计.
-3. What the recede means: the alarm's hardware pulling the compartment's end away, never the Relay.
-4. The ALARM ZONE card's sign-off is still open (`CardFaceIsStandIn` true, `today.txt` §4).
+**游戏视觉, with 灯具适配 for the lamps** (游戏视觉 owns `Scripts/Rendering`, with `FrontRoomsRunRig.cs` and `AlarmTell/`, `Resources/{Surfaces,Rendering,Props}` and `Tools/Blender/frontrooms_kit`; rule 3)
+1. **The rig in cells.** Run! B's rig and dress parametric in cells for 7-14 cells: a strip every cell, heads every two, compartment frames every three, the goal assembly at the end; the RESET re-strike over the current length. Rests on decisions 3, 7. Source §3.2, §6.6, §10.
+2. **The recede, head first.** `RunRigState.Recede` from one trigger time: the stepped schedule (a two-cell flinch, one-cell steps, a heavy final seat), the keep-away glide at 6 m/s within 12 m, the gaze gate (35°, fallback at 18 m), events for 声音设计; the GoalHead kit (track, trolleys, magnets, sweeps, the carried twin-head with 灯具适配, C42 in a light box, ghost bands) and the compartment frame at 9 m (FD1, the trigger plane); then T2's block pieces and two baked clips with contact lists (phones: half-course strips, no grit; WebGL: T1 alone); grit by `54`'s GPU path; the hidden cells' strips (with 灯具适配) striking once as each cell seats (§5.7); §5.8's engine notes. T3 is not built now; T4 waits for a pattern-safety capture. Rests on decisions 4, 5. Source §4.5, §5.1-§5.9.
+3. **WAIT-RED (灯具适配 1) · The red looks.** After Red's yes on the still: 灯具适配 adds one red T12 tube per R-B strip, on the battery circuit, to the strip kit; 游戏视觉 adds to `FrontRoomsRunRig.cs` a per-strip red level beside the white, the trip front (A, B), B's pulse (every 2.5 s from 3.0 s after the trip, 12 at most), the tripped ambient tint and the Reduce Flashing variants, tuned to §6.3's targets on a capture. B is the look and A (the pulse off) its fallback; C stays in SP7's scene-4 driver. If Red says no, nothing red is built. Rests on decision 6. Source §6.2-§6.9.
+4. **The Run door's tell.** For the door entrance: the ALARM ZONE card and the red-banded detector base at the door (`AlarmTell/FrontRoomsAlarmTell.cs`), the corridor's armed light in the 15 x 15 in lite and under the door, readable from at least 5 m (with 关卡设计 5). Rests on decision 8c. Source §7.2, §7.5.
+5. **The combined test** (rule 25, one run, silent): the Relay read at 2.05 m under red with protan (at least 4 : 1); T9 over the trip, the pulse train, the recede and the reset; Harding FPA or PEAT on that capture; the T2 pattern; the dark reds on the phone tier; one sheet per look along the film's camera path. Its red items wait for 灯具适配 1. Rests on decisions 4, 5, 6. Source §5.7, §6.7-§6.9.
 
-**系统设计**
-1. The gates by tier and floor, the deck and one Run! a floor; length follows depth, never performance (§3.4).
-2. Order T: the receding variant trips at 9 m (bends RELAY :371); adopt §4.8 and §7.6 into RELAY §6.
-3. Bot rounds with `runRooms` on: how often a sprint that reaches the door also escapes (R2); chase dives into receding rooms at T4-T5 (§4.7 options a and b); trips with the Relay on the map.
-4. The Run door's trip depth (about 2.5 m) and readable distance (≥ 5 m).
-5. Rule 11 checks: the restoral watched through the goal window; C's tide read as the hunter's reach (playtest); the variant decided when the zone is decided.
-6. Optional: the teaching room with the pulse off (A), B after.
-7. Confirm v2's door loudness at T5 (`pacing.txt` G10: 31.5 m against 31 m in the v1 audit).
+**灯具适配** (the zone_lamps line, which built and landed the R-B strip kit, `W/apply/zone_lamps_run`, 11-03, in 游戏视觉's paths by rule 3: `Resources/Props/Lamps`, `Scripts/Rendering`; with 游戏视觉 for the Run rig's light states)
+1. **WAIT-RED · The red tube's still (decision 6).** One Shot-format sheet (`W/tools/shotframe/shotframe.py`, the FRONTROOMSSS mark, chip WAIT-RED; VISUAL_STANDARD §2.2-§2.3). Columns: TODAY, the armed R-B strip as built, the strip Red approved on 11-03 ("就这样", `research/zone_lamps/sheets/zone_lamps_run_armed_asbuilt.jpg`); the same strip with one dark oxblood third tube (a red-coated T12, 1.22 m x Ø 38 mm, inside the wire guard beside the two white tubes, on the battery circuit, unlit); and that strip in its lit alarm state (the whites out, the red tube at §6.3's core level, about (186, 6, 23) on screen, the strip's Light recoloured red at 1.15, the T-A and T-B heads as built). Same camera and exposure in every column, only the tube and its state change; rows at player eye 1.62 m and close up (about 0.35 m, LOD0); a COST row (about 150 tris a tube, one shared emissive material, no new texture, +0 Lights, +0 shadow maps, 9 tubes in a 9-cell room); the header sentence gives the recommendation (the tube is look B's red source) and its flaw (it changes the strip Red approved on 11-03); the fit check. Rendered in a clone the line already has (no new clone, VISUAL_STANDARD §6); nothing lands. 总控 puts it to Red (总控 2). **No change to the strip kit before Red says yes.** Rests on decision 6, its one exception. Source §6.2, §6.3, §6.9, §8 decision 6.
 
-**声音设计** (we play nothing, rule 24)
-1. Bind the recede's events per body (§5.10) and the red looks' partners: a relay click per cell as a front passes, the red tubes' ballast hum, the reset's clunks.
-2. The trip's sound: the door-holder thunk without the lock-on chime, or a device sound of its own; never thunk plus chime (§7.5 S4).
-3. Whether a siren-like partner joins the red (EGRESS's building alarm is silent), with 叙事设计.
+**叙事设计** (meaning and strings)
+1. **The frame and the message.** Run! is a fire compartment already on the alarm (EGRESS): room one's "WALK, DO NOT RUN." fails here and "CLOSE DOORS BEHIND YOU." saves you; no new string. Your call: whether room one's placard hangs again a few cells inside. Rests on decision 8a. Source §7.1.
+2. **The deception is D1.** An honest Run door that fools a habit (its lite, its tell and its light tell the truth); no new string; the changed door (D4) is not built, so "the building lying" stays a deep-floor idea (`10` L0-7). Rests on decision 8c. Source §7.2.
+3. **What the recede and the red say.** The recede is the alarm's hardware pulling the compartment's end away, never the Relay; B's pulse is EGRESS's silent alarm made visible, running to the door; the white reset is the restoral. Whether a siren joins the red: with 声音设计 4. Rests on decisions 4, 6, 7. Source §5.5, §6.4, §6.6, §7.1.
+Nothing open on the ALARM ZONE card: its face is final, wording signed by 叙事设计 on 11-01, `CardFaceIsStandIn` false (`FrontRoomsAlarmTell.cs`:41-43; `today.txt` §4 read an older note).
+
+**系统设计** (gates, reward and fairness: RELAY §6, `systems.json`)
+1. **Gates and the deck.** The gates by tier and floor, the deck and one Run! a floor; length follows depth, never performance. Rests on decisions 1, 3, 8b. Source §3.4, §3.6, §7.2.
+2. **Order T.** The receding variant trips at the 9 m frame (it bends RELAY :371); adopt §4.8 and §7.6 into RELAY §6. Rests on decision 4. Source §4.4, §4.8, §7.6.
+3. **Bot rounds with `runRooms` on** (now). How often a sprint that reaches the door also escapes (R2); chase dives into receding rooms at T4-T5, then (a) as designed if a dive with an 8 m lead still escapes, else (b) recede only when the third is crossed at a walk; trips with the Relay on the map. Rests on decisions 4, 8e. Source §4.7, §7.4.
+4. **The Run door's numbers.** Its trip depth (about 2.5 m) and readable distance (at least 5 m). Rests on decision 8c. Source §7.2.
+5. **Rule 11 checks.** The restoral watched through the goal lite; the keep-away glide (it reads the player's position only); C's tide read as the hunter's reach (a playtest question only if C leaves scene 4); the variant decided when the zone is decided. Rests on decisions 4, 6, 8e. Source §4.5, §4.7, §6.4, §7.4.
+6. **Optional, your call: the teaching room.** The run's first Run! with the pulse off (A), B after; it waits for 灯具适配 1 like every red item. Rests on decision 6. Source §6.9.
+7. **Door loudness at T5.** Confirm v2's (`pacing.txt` G10: 31.5 m against 31 m in the v1 audit). On paper v2 answers it: hearing runs along the path, a slam carries 27 m x 1.3 = 35.1 m at T5 (RELAY :400, :407), short of the at least 49 m of path in `pacing.txt` D2 (c). Rests on decisions 3, 8e. Source §3.2 (c).
+
+**声音设计** (owner of `Scripts/Audio/*`, `FMOD/`, `Tools/audio/`; rule 3; we play nothing, rule 24)
+1. **The recede's events.** Bind T1's and T2's events (§5.10); T3's and T4's wait with their bodies. Rests on decisions 4, 5. Source §5.10.
+2. **The light's partners.** A relay click per cell as a front passes, the reset's clunks, and the red tubes' ballast hum once Red has said yes to the tube (灯具适配 1). Rests on decisions 6, 7. Source §5.10, §6.6.
+3. **The trip's sound.** The door-holder thunk without the lock-on chime, or a device sound of its own; never thunk plus chime (it would lie about sight). Rests on decisions 4, 8a. Source §7.5 (S4).
+4. **A siren, or none.** Whether a siren-like partner joins the red (EGRESS's building alarm is silent), with 叙事设计. Rests on decision 6. Source §6.8.
 
 **总控**
-1. Put §8 to Red in one Chinese message, with the film's RESET and RUN segments side by side for decision 6.
-2. Scene 4: SP7 per §10 once Red has read §8 (or now, as a greybox, if 总控 prefers to let Red decide by walking).
-3. Note for this line's next step: `70` SP5 still carries three conflicts (§10.1).
+1. **Route the cards.** Send each owner its cards above, with Red's answer quoted (§0.1). Rests on Red's answer of 11-03.
+2. **The still to Red.** When 灯具适配 1's sheet is ready, put it to Red in one Chinese message, yes or no to the third tube; the answer goes into §0.1, decision 6. Rests on decision 6.
+3. **Scene 4.** Build SP7 per `70` §9 (§10 below with Red's answer, written into `70` by this line on 11-04: the spec scene 4 builds) with the structures workflow (rule 5b: main's scene 4, greybox, inert for the game; Roslyn gate, CLAIM and LANDED). Rests on decision 9. Source `70` §9, §10.
 
-## 10. A district for scene 4: SP7 · Run!: the door that backs away (candidate)
+Done, no longer cards: §8 was put to Red and answered on 11-03 (the old 总控 1); `70` SP5's three conflicts were fixed by this line on 11-03 22:5x (the old 总控 3, §10.1); this line's own step, not a card, is done too: §10 went into `70` as its §9, SP7, on 11-04.
 
-Rule 5b (Red 11-03): new structures go to scene 4 `FrontRoomsStructures.unity` first, inert for the game. This district walks the recommended version of §3-§6. It is written in `70`'s format so that, once Red has decided, it becomes `70`'s SP7 (or replaces SP5's Run! content); `70` is not edited here. `70` §1 (global frame: cells, placement, hub, signs, stand-ins, honesty, assets) and §2 (look rules) apply unchanged.
+## 10. A district for scene 4: SP7 · Run!: the door that backs away (agreed for scene 4, 11-03)
+
+Rule 5b (Red 11-03): new structures go to scene 4 `FrontRoomsStructures.unity` first, inert for the game. This district walks the recommended version of §3-§6. It is written in `70`'s format so that, once Red has decided, it becomes `70`'s SP7 (or replaces SP5's Run! content); `70` is not edited here. `70` §1 (global frame: cells, placement, hub, signs, stand-ins, honesty, assets) and §2 (look rules) apply unchanged. **Agreed 11-03** (decision 9; Red: "全部按推荐", §0.1): SP7 goes into scene 4 as written below, built by 总控's structures workflow (§9, 总控 3), and becomes `70`'s SP7, beside SP5 and its ramp, at this line's next edit of `70`. Red walks the agreed version and may still change it; under rule 5b nothing in it enters the game until Red has walked it and said so. Its red tube is a scene-4 greybox stand-in: the strip kit's tube and the game rig's red states wait for Red's yes on 灯具适配 1's still (§0.1, decision 6), and a no takes the stand-in and looks A-C out of SP7 too. **Done 11-04:** `70` §9 is SP7, composed from this section with Red's answer; scene 4 builds `70` §9, and where the two differ (the items it marks composed, and the red tube on its own key, off on arrival) `70` §9 is the spec.
 
 **What Red gets:** Run! B's service corridor at 14 cells (42 m) with a movable end. One key sets the variant: plain at 7, 9, 12 or 14 cells (the end placed at that cell line) or receding 9 → 12 / 9 → 14 (the end at 27 m backs away when Red crosses the frame at 9 m). Other keys switch the body (T1, T2), the light (today's Run! B, A, B, C), the entrance (arch or Run door) and Reduce Flashing. A static Relay stand-in for the look back under red. The corridor stays a corridor: no catwalk, no ramp here (SP5 has it), no side doors.
 
@@ -761,27 +831,27 @@ Rule 5b (Red 11-03): new structures go to scene 4 `FrontRoomsStructures.unity` f
 - **Release hall** (i −1…1, j 14…16; z 42…51): 3 x 3 cells, Tall 5.4, RunB surfaces, lit like SP5's dock (one Run! B strip per cell at x1.6, LMS §4 Tall) so its light shows in the goal lite: the brightest thing at the end (RN-4). Its south wall holds the real goal frame on the axis; while the head stands short of z 42 the frame holds a blind block panel (the "blind doorway" of §4.6), swapped when the head seats.
 - **Relay stand-in** (static, `70` §1): x −0.6, z 6.0, facing north: the look back from the goal end under each light, the 2.05 m read under red.
 
-**The variants (key L cycles; a small plate beside the sign shows the current one):** plain 7 (end at z 21), plain 9 (z 27, today's room), plain 12 (z 36), plain 14 (z 42), receding 9 → 12, receding 9 → 14. Plain rooms arm 1.5 m in. Receding rooms arm at the FD1 plane (z 9) and run §4.5's schedule from the trip: gaze gate 35°, fallback at z 18; S1 a two-cell flinch, one-cell steps, a heavy final seat; the keep-away glide at 6 m/s when the walker is within 12 m of the head between steps; the record stays until key Y. In a plain room shorter than 14 cells the goal door does not open in scene 4 (only the length and the sprint are being tried; in the game the door is never locked, C38); the sign says so.
+**The variants (key L cycles; a small plate beside the sign shows the current one):** plain 7 (end at z 21), plain 9 (z 27, today's room), plain 12 (z 36), plain 14 (z 42), receding 9 → 12, receding 9 → 14. Plain rooms arm 1.5 m in. Receding rooms arm at the FD1 plane (z 9) and run §4.5's schedule from the trip: gaze gate 35°, fallback at z 18; S1 a two-cell flinch, one-cell steps, a heavy final seat; the keep-away glide at 6 m/s when the walker is within 12 m of the head between steps; the record stays until key Y. In any variant that ends short of 14 cells (plain 7, 9 or 12, receding 9 → 12) the goal door does not open in scene 4 (only the length and the sprint are being tried; in the game the door is never locked, C38); the sign says so.
 
 **Other keys** (district-scoped; if 总控's Plan has fixed other keys, they replace these): 7 arrival (the hub's next district key); T trip / reset by hand (as SP5); B body T1 / T2; C light: today's Run! B → A → B → C (§6.4); G entrance: arch / Run door; V Reduce Flashing on / off; Y put the head back at its rest line and re-arm (R stays SP1's).
 
 **Light and timing** (a structures-only driver, scene 4 only; production is 游戏视觉's): the armed and tripped states as Run! B's rig; the reset re-strike with the rig's own timing (`RunRigLayout`: ripple 0.025 s a cell, start 0.45 s, 0.15 s a cell, 0.40 s rise), over the current length; looks A, B, C with §6.3-6.4's numbers; in receding rooms §5.7's grammar (the magnets drop at the trip, the band from the entrance reaches the end as the flinch seats, revealed strips strike once in red, the goal head and C42 never change, B's pulses after the final seat); Reduce Flashing as §6.7. Light budget: SP7's strips and heads stay on whenever the walker is in SP7 (its main view is 42 m deep, `70` §2).
 
-**Main view on arrival:** (0, 1.62, −2.0) facing north: the arch with its card and detector; the corridor in armed white, the strips receding on the centre line, each with its dark red tube; FD1 and FD2 open; the end wall at 27 m with the goal lite lit by the hall behind; in the receding variants the two track lines in the soffit corners running from FD1 to the end wall.
+**Main view on arrival:** (0, 1.62, −2.0) facing north: the arch with its card and detector; the corridor in armed white, the strips receding on the centre line, each with its dark red tube; FD1 and FD2 open; the end wall at 27 m with the goal lite lit by C42's box behind it (the hall's own light reaches the lite only when the head stands at z 42); in the receding variants the two track lines in the soffit corners running from FD1 to the end wall.
 
 **Greybox and honesty:** the red tube is an emissive cylinder; T2's blocks follow simple programmed paths (top out, two streams along the walls, bottom in) instead of rigid bakes; track, trolleys, magnets, sweeps and the guide slot are plain steel shapes; ghost bands are a paint strip; no grit. The structures-only driver imitates the rig's states; the game's rig has none of the red or recede states yet. No moving Relay and no sound in scene 4: chase fairness (§4.7) and the sound questions (§7.5) are tested elsewhere. `BUILD_LOG.md` gets tris, renderers, draws, lights and texture MB, desktop Editor only (`70` §1).
 
 Sign (SP7):
 > **SP7 · Run!：会往后退的门**
-> 游戏里的 Run!（Run! B 的设备走廊），一共 14 格、42 米。按 L 切换：普通的 7 / 9 / 12 / 14 格，或者"会退"的 9→12 / 9→14 格。会退的版本里，走到 9 米那道防火门框时警报响，尽头的墙和门开始往后退：先猛地缩两格，再一格一格退，最后很重地停住，门就是真门。按 B 切换后退的方式：T1 整面墙滑走；T2 砖块拆开再砌回去。按 C 切换灯光：今天的样子、A 警报回路、B 警报脉冲、C 红潮。按 G 切换入口：拱门或带 15×15 英寸小方窗的 Run 门。按 V 开关"减少闪烁"。按 T 手动触发或恢复，按 Y 把门放回原位再试一次。
+> 游戏里的 Run!（Run! B 的设备走廊），一共 14 格、42 米。按 L 切换：普通的 7 / 9 / 12 / 14 格，或者"会退"的 9→12 / 9→14 格。会退的版本里，走到 9 米那道防火门框时警报触发，尽头的墙和门开始往后退：先猛地缩两格，再一格一格退，最后很重地停住，门就是真门。按 B 切换后退的方式：T1 整面墙滑走；T2 砖块拆开再砌回去。按 C 切换灯光：今天的样子、A 警报回路、B 警报脉冲、C 红潮。按 G 切换入口：拱门或带 15×15 英寸小方窗的 Run 门。按 V 开关"减少闪烁"。按 T 手动触发或恢复，按 Y 把门放回原位再试一次。
 > 灰盒占位：红色灯管（用发光圆柱代替）；砖块重组的路径（用简单的程序动画代替烘焙）；轨道、门吸、密封条；墙上的"印子"；灯光状态由场景 4 专用的脚本模拟，正式效果要等游戏视觉做；没有声音。长度不到 14 格时，尽头的门在这里打不开（游戏里门永远不锁）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。
-> 要你决定：1 长度（7、9、12、14 格）走起来对吗？7 格会不会太短？ 2 退的方式：T1 还是 T2？ 3 红色：A、B 还是 C？灯架里多一根暗红灯管可以吗？ 4 在 9 米触发、门往后退的节奏（先猛缩两格，再一格一格，最后重重落位）对吗？ 5 入口用 Run 门（"被骗的门"）可以吗？ 6 回头看时，红光下看得清 Relay 替身吗？
+> 走过后告诉我们（11 月 3 日已按推荐定下，走过以后还能改）：1 长度（7、9、12、14 格）走起来对吗？7 格会不会太短？ 2 退的方式：T1 还是 T2？ 3 红色：A、B 还是 C？灯架里多一根暗红灯管可以吗？ 4 在 9 米触发、门往后退的节奏（先猛缩两格，再一格一格，最后重重落位）对吗？ 5 入口用 Run 门（"被骗的门"）可以吗？ 6 回头看时，红光下看得清 Relay 替身吗？
 
-**Walk tests** (for the Review stage, as `70` §10): the end line is always on a whole cell; nothing moving ever enters the walk volume or passes the walker; the goal lite stays the brightest thing in every look and every state; the Relay stand-in reads against what is behind it under every look (with a protan check); no light runs toward a window or glass; FD1 and FD2 leave 2.0 x 2.1 m clear (the Relay's 2.05 m passes).
+**Walk tests** (for the Review stage, as `70` §11): the end line is always on a whole cell; nothing moving ever enters the walk volume or passes the walker; the goal lite stays the brightest thing in every look and every state; the Relay stand-in reads against what is behind it under every look (with a protan check); no light runs toward a window or glass; FD1 and FD2 leave 2.0 x 2.1 m clear (the Relay's 2.05 m passes).
 
 ### 10.1 SP5 as written conflicts with three of Red's calls (for this line's next edit of `70`; not changed here)
 
-From `today.txt` §9, checked against `70` §7 as it stands (lines 210-254): (1) "EXIT flag at z 13.5 on the west wall… the wall EXIT over the goal door" and "EXIT steady" break C41 (no EXIT sign anywhere in a Run! room); (2) the goal door "Run! B's RN-X" is retired: the goal is RN-F with set A's F5 lite, never locked (C38, systems.json A54 (a)); (3) "wraps on the soffit" and twin-heads at z 3.3 / 15 / 21 break Red's "run选择R-B" and "这里应该是TA和TB相结合" (landed 11-03, "就这样"). The "EXIT steady" words sit in SP5's trip-key text, not on its Chinese sign. If scene 4 is built from `70` as it stands, Red walks a Run! that contradicts three of Red's own decisions; SP7 above avoids all three.
+From `today.txt` §9, checked against `70` §7 as it stands (lines 211-255): (1) "EXIT flag at z 13.5 on the west wall… the wall EXIT over the goal door" and "EXIT steady" break C41 (no EXIT sign anywhere in a Run! room); (2) the goal door "Run! B's RN-X" is retired: the goal is RN-F with set A's F5 lite, never locked (C38, systems.json A54 (a)); (3) "wraps on the soffit" and twin-heads at z 3.3 / 15 / 21 break Red's "run选择R-B" and "这里应该是TA和TB相结合" (landed 11-03, "就这样"). The "EXIT steady" words sit in SP5's trip-key text, not on its Chinese sign. If scene 4 is built from `70` as it stands, Red walks a Run! that contradicts three of Red's own decisions; SP7 above avoids all three. **Done 11-03 22:5x (this line, login G):** `70` SP5 now has no EXIT sign (C41), the RN-F goal door with its F5 lite, never locked (C38), R-B strips armed and T-A twin-heads with T-B remote heads tripped.
 
 ## 11. Sources
 
@@ -830,10 +900,10 @@ The rows below are also in `SOURCES.md` (section "The Run! room (71_run_room.md)
 | LS239 | The alarm machinery of a 1990 building: Wikipedia, "Electromagnetic door holder", https://en.wikipedia.org/wiki/Electromagnetic_door_holder ; US Access Board, ADAAG 1991, https://www.access-board.gov/adaag-1991-2002.html ; 1991 ADA Standards, §4.28.3 and A4.28.3, https://www.ada.gov/assets/pdfs/1991-design-standards.pdf (further sections to [LS47]) | 1991 | On alarm the panel cuts power to door holders and the closers shut the doors; new visual alarms are white xenon strobes, 1-3 Hz, pulses of 0.2 s at most | READ (story C9, red_light 4.1); NFPA 72 "door release service" [search] |
 | LS240 | J. Vacano, "Photography for Das Boot", *American Cinematographer*, Dec 1982 (web 2023), https://theasc.com/articles/das-boot | 1982 | The boat's own lamps; red the general-alarm and night light, chosen by function | READ (red_light 3.1) |
 | LS241 | *Aliens*: shooting script, https://imsdb.com/scripts/Aliens.html ; N. Oseman, "10 Clever Camera Tricks in Aliens", https://neiloseman.com/?p=11290 | 1986 | Mains die, then red emergency light; bars of light passing over a moving figure | READ (red_light 3.2) |
-| LS242 | *The Hunt for Red October*: 100 Films, https://100films.co.uk/2018/08/31/the-hunt-for-red-october-1990/ ; W. Carroll, We Are The Mighty, https://www.wearethemighty.com/articles/20-technical-mistakes-and-3-fun-facts-in-the-hunt-for-red-october/ | 1990; 2018 | One colour per boat; the US boat in red at battle stations (a bent rule) | READ (red_light 3.3); Moviemistakes [search] |
+| LS242 | *The Hunt for Red October*: 100 Films, https://100films.co.uk/2018/08/31/the-hunt-for-red-october-1990/ ; W. Carroll, We Are The Mighty, https://www.wearethemighty.com/articles/20-technical-mistakes-and-3-fun-facts-in-the-hunt-for-red-october/ | 1990; 2018 | One colour per boat (blue, red, green) so the cutting stays legible; the US boat in red, a bent rule (a boat rigs for red only to go to periscope depth) | READ (red_light 3.3); Moviemistakes [search] |
 | LS243 | *Alien*: "Behind the Scenes of Alien", *American Cinematographer*, Aug 1979 (web 2023), https://theasc.com/?p=10545 ; Disney+ listing, https://www.disneyplus.com/en-gb/movies/-/3gmwPpcKMkwS ; O'Bannon's early draft, https://imsdb.com/scripts/Alien.html | 1979 | The set's own fixtures as the light; a photosensitivity advisory on the flashing finale; the finale's colours unverified | READ (red_light 3.4); British Cinematographer [search, 403] |
 | LS244 | *The Terminator*, *The Abyss*: Wikipedia, https://en.wikipedia.org/wiki/The_Terminator , https://en.wikipedia.org/wiki/The_Abyss | 1984; 1989 | No red emergency light described; practical light sources | READ (red_light 3.5, in part); *Lighting Design + Application*, Oct 1989 [search] |
-| LS245 | Red light a building owned: Kodak, "Safelight Recommendations", https://www.kodak.com/content/products-brochures/Film/Safelight-Recommendations.pdf ; D. Larzelere, "What is an FAA L-864 obstruction light", https://flightlight.com/what-is-an-faa-l-864-obstruction-light/ ; Wikipedia, "Aviation obstruction lighting", https://en.wikipedia.org/wiki/Aviation_obstruction_lighting | practices before 1990; texts 2006-2026 | Darkroom red filters on a 15 W bulb; red roof beacons at 20-40 a minute | READ (red_light 4.2, 4.3); FAA listings, studio "on air" lamps, nurse-call domes, a red gel's 4 % transmission [search] |
+| LS245 | Red light a building owned: Kodak, "Safelight Recommendations", https://www.kodak.com/content/products-brochures/Film/Safelight-Recommendations.pdf ; D. Larzelere, "What is an FAA L-864 obstruction light", https://flightlight.com/what-is-an-faa-l-864-obstruction-light/ ; Wikipedia, "Aviation obstruction lighting", https://en.wikipedia.org/wiki/Aviation_obstruction_lighting | practices before 1990; texts 2006-2026 | Darkroom red filters on a 15 W bulb; red roof beacons at 30 a minute (±3, the current FAA circular, as read; 20-40 in older listings, search) | READ (red_light 4.2, 4.3); FAA listings, studio "on air" lamps, nurse-call domes, a red gel's 4 % transmission [search] |
 | LS246 | Red and battery fluorescent tubes before 1990: US 4,988,914 (GTE, filed 1989-04-24), https://patents.google.com/patent/US4988914 ; US 5,004,953 (The Bodine Company, filed 1989-06-30), https://patents.google.com/patent/US5004953 | 1989 | Red-emitting fluorescent lamps for darkrooms already known; fluorescent lamps run on battery through an inverter already known | READ (red_light 8.6); current one-lamp 90-minute packs [search] |
 | LS247 | Wikipedia, "Approach lighting system", https://en.wikipedia.org/wiki/Approach_lighting_system | from c. 1956 | Sequenced flashers running toward the runway, "the rabbit": a travelling light that means "this way" | READ (red_light 8.6); FAA AIM 2-1-1 [search, 403] |
 | LS248 | Solemn red: Code of Canon Law, can. 940, https://www.vatican.va/archive/cod-iuris-canonici/eng/documents/cic_lib4-cann879-958_en.html ; Wikipedia, "Sanctuary lamp", https://en.wikipedia.org/wiki/Sanctuary_lamp ; Tate St Ives, https://www.tate.org.uk/visit/tate-st-ives/display/mark-rothko-the-seagram-murals ; Tate Liverpool, https://www.tate.org.uk/whats-on/tate-liverpool/mark-rothko-seagram-murals | 1983 (code); murals 1958-59 | One continuous red lamp; dark reds in reduced light against grey walls, "solemn and meditative" | READ (red_light 5.1, 5.2); *Tate Etc.* 7 [search] |
@@ -851,11 +921,11 @@ The rows below are also in `SOURCES.md` (section "The Run! room (71_run_room.md)
 
 - **Nothing was built, rendered or measured.** Times and distances are arithmetic from the code's constants (sprint 5.5 m/s, walk 3.2 m/s, a 5 s bar, chase 4.2-4.4 m/s); gait changes are taken as instant (the controller's acceleration was not re-read, `pacing.txt` G5). The tier minutes extrapolate one bot run (seed 2554). The 12- and 14-cell fit rates are not measured (§3.2). Light values come from a port of the URP grade with assumed albedos and no shadows or bounce: targets, not settings. The motion bodies' minimum travel times and piece counts (T2's 90 blocks, T4's 280 pleats, the pocket depth) are estimates.
 - **The chase-dive numbers (§4.7)** assume a full bar at the arch and the Relay running the same straight line; the real exposure needs 系统设计's bot round. Whether R2's escape happens with today's v2 numbers is not measured either.
-- **Sources.** This writer did not fetch the web sources again; the marks are the research stages'. Not reached or only searched: the original Level ! page and backrooms.fandom.com, the Hades chamber pages, how Remedy animated Control's shifts, the GMTK Clockwork Mansion transcript (via [LS37]), the broadcast pattern thresholds in the Ofcom note, a 1990 accordion fire door's stack depth, Alien's and The Terminator's red frames (no download), 1990 nurse-call domes, Poltergeist's actual rig, Inception's corridor length, RE4's pacing beyond an encyclopaedia and an editorial. No page pinned the "隧道" Red remembers from Little Nightmares to a scene; if Red meant a specific tunnel, it is worth asking which.
-- **Red's words.** Message 2 is cut off ("就比如说玩家进入到这个"); "ramp" has two readings; which lamp effect Red likes (RESET or the pools) is unconfirmed; "被欺骗" has two readings; Red's own words for the PT4 rule were not found.
+- **Sources.** This writer did not fetch the web sources again; the marks are the research stages'. The critic stages (logins B and G, 11-03 21:4x-23:xx) re-read the WCAG 2.2 glossary, XAG 118, ITU-R BT.1702-3, Booth's slides, Grip's blog, Boris the Brave, the two ETB guides, Nerdist, the Wikipedia pages on Little Nightmares II and Poltergeist, Pocket Gamer, Game Informer's Miyazaki interview, Fextralife's Mimic page, ESTNN and Destructoid, looked again at the ETB frame and the code, and corrected the claims they did not support (log: `~/FrontRoomsVisualWork/level_space/drafts/run/critic71.txt`). Not reached or only searched: the original Level ! page and backrooms.fandom.com, the Hades chamber pages, how Remedy animated Control's shifts, the GMTK Clockwork Mansion transcript (via [LS37]), the broadcast pattern thresholds in the Ofcom note, a 1990 accordion fire door's stack depth, Alien's and The Terminator's red frames (no download), 1990 nurse-call domes, Poltergeist's actual rig, Inception's corridor length, RE4's pacing beyond an encyclopaedia and an editorial. No page pinned the "隧道" Red remembers from Little Nightmares to a scene; §8 decision 4 asks Red which. Red named no fan game for the red; ETB is this page's inference, and §8 decision 6 asks.
+- **Red's words.** Message 2 is cut off ("就比如说玩家进入到这个"); "ramp" has two readings; which lamp effect Red likes (RESET or the pools) was unconfirmed until Red's answer of 11-03, read as RESET (§0.1); "被欺骗" has two readings; Red's own words for the PT4 rule were not found.
 - **This page's own synthesis** (no single draft proposed it): Order T (the receding room trips at 9 m); the head's track as a tell before commit; the blind doorway on the release side; the band and the magnets at the trip in a receding room (§5.7); the door entrance from tier 3 (between `story.txt`'s tier 2 and `pacing.txt`'s tier 5); the teaching room with the pulse off as an option; SP7's movable end as the length key.
-- **Cross-draft tensions settled here, with reasons:** `pacing.txt`'s single 6 m/s move against `motion.txt`'s steps (steps, with the 6 m/s glide when a runner closes in); `pacing.txt` D4's "only when the Relay is Away" gate (dropped under rule 11); `story.txt`'s honest-machinery rule against T2 (left to Red, T2 recommended on T1's visible machine); `motion.txt` M9 against `red_light.txt` on red dips (`red_light.txt`'s reading, with M9's one-way fades kept for the recede); `story.txt`'s outdated tier rule (corrected to the code).
+- **Cross-draft tensions settled here, with reasons:** `pacing.txt`'s single 6 m/s move against `motion.txt`'s steps (steps recommended, with the 6 m/s glide when a runner closes in; the single move stays Red's alternative in §8 decision 4, since at these speeds 越退越远 and 重组 trade against each other); `pacing.txt` D4's "only when the Relay is Away" gate (dropped under rule 11); `story.txt`'s honest-machinery rule against T2 (left to Red, T2 recommended on T1's visible machine); `motion.txt` M9 against `red_light.txt` on red dips (`red_light.txt`'s reading, with M9's one-way fades kept for the recede); `story.txt`'s outdated tier rule (corrected to the code).
 - **Rule 11 judgments left to 系统设计:** the restoral watched through the goal window; C's tide; the keep-away glide (it reads the player's position only).
-- **Not changed here:** `70` (SP5's three conflicts, §10.1); no game code; no other line's files. No sound was played or designed beyond event lists.
+- **Not changed here:** `70` (SP5's three conflicts, §10.1, were fixed in `70` itself by this line on 11-03 22:5x, and SP7 entered it as §9 on 11-04); no game code; no other line's files. No sound was played or designed beyond event lists.
 - **Photosafety** is arithmetic until the capture: Look B and the T2 and T4 bodies stand or fall on the Harding FPA or PEAT measurement.
 

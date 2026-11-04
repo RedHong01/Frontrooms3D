@@ -15,6 +15,9 @@ public static class FrontRoomsModuleGUI
     // A slider is held or a field typed in: its module rebuilds the preview when it is let go, as after a plan drag.
     static FrontRoomsRoomModule held;
 
+    // The Theme popup's entries, as EnumPopup labelled them before ZoneTheme grew (ObjectNames.NicifyVariableName).
+    static readonly GUIContent[] ThemeOptions = { new GUIContent("Level 0"), new GUIContent("Office") };
+
     /// <summary>
     /// A slider is held, or a text or number field has the keyboard. The
     /// focus counts too: a field that is no longer drawn (another marker was
@@ -72,7 +75,10 @@ public static class FrontRoomsModuleGUI
         EditorGUI.BeginChangeCheck();
         var width = EditorGUILayout.IntSlider(new GUIContent("Width (cells, X)", "3 m each"), m.width, 1, RoomModuleData.MaxCells);
         var depth = EditorGUILayout.IntSlider(new GUIContent("Depth (cells, Z)", "3 m each"), m.depth, 1, RoomModuleData.MaxCells);
-        var theme = (ZoneTheme)EditorGUILayout.EnumPopup(new GUIContent("Theme", "Level 0 paper and carpet, or a Level 4 office (Standard height only)"), m.theme);
+        // Exactly the two entries the designer has always offered (structures scene, RULES 5b): the pool themes appended to
+        // ZoneTheme are never listed here, and a module in one of them keeps it.
+        var themeIndex = EditorGUILayout.Popup(new GUIContent("Theme", "Level 0 paper and carpet, or a Level 4 office (Standard height only)"), m.theme == ZoneTheme.Office ? 1 : 0, ThemeOptions);
+        var theme = m.theme == ZoneTheme.Level0 || m.theme == ZoneTheme.Office ? (themeIndex == 1 ? ZoneTheme.Office : ZoneTheme.Level0) : m.theme;
         var height = theme == ZoneTheme.Office ? ZoneHeight.Standard : (ZoneHeight)EditorGUILayout.EnumPopup(new GUIContent("Ceiling", "Low 2.4 m, Standard 2.9 m, Tall 5.4 m"), m.height);
         var fill = (ModuleFill)EditorGUILayout.EnumPopup(new GUIContent("Fill", "Auto: as a generated room. Office: the Office kit fills round your props. Pile: a furniture pile."), m.fill);
         var columns = (ModuleColumns)EditorGUILayout.EnumPopup(new GUIContent("Columns", "Auto: the map's 6 m grid rule where the room lands. Custom: click inner corners in the plan."), m.columns);

@@ -498,3 +498,84 @@ The video below is a look for Red, not one of these gates.
    - **平面视觉:** the six STAND-IN plate / stencil faces (`62_for_graphic.md`; the unit legend is final); the ALARM ZONE card wording, signed off by 叙事设计 (`CardFaceIsStandIn` stays true).
    - **声音设计:** `61_for_sound.md` (CR-S1/S2, the wraparound hum CR-S4, and the new re-strike timings in its 12:3x update).
 6. Not built: the WebGL tier's leaks (its own track), the ungated `_ADDITIONAL_LIGHTS_VERTEX` path, glass and emissive materials taking map lamps (C.7 4).
+
+---
+
+## Run! rethink · card 1: the rig in cells (2026-11-04)
+
+游戏视觉, account G, workflow `visual-run-rethink` (parent session local_1fc9f09c), stage "Rig in cells". The card is 71 §9, 游戏视觉 1 (`research/level_space/71_run_room.md`, 关卡设计 / level_space's page, read only). Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐" (71 §0.1). It rests on two decisions:
+- **decision 3:** lengths by depth in whole cells, 7 for the run's first Run!, then 9, 12 from T4, 14 at T5 where it fits; the cap is 14 cells (42 m);
+- **decision 7:** the RESET segment, the white re-strike from the entrance, as built.
+
+Card 3 (the red looks) waits for Red's yes on 灯具适配 1's still, so nothing red was built. Rule 5b holds: frames, the receding end and the Run door enter the game only after Red has walked SP7 in scene 4. What was not done: no render, nothing on main, one EditMode batch in `C`, nothing heard.
+
+### R.1 What changed (3 files; `W/apply/run_rig_cells.sh`, DRY RUN OK, not applied)
+
+| File (base → payload) | Change |
+|---|---|
+| `Scripts/Rendering/FrontRoomsRunRig.cs` 9e964b3b → 48ae4e5e | `RunRigLayout.Corridor(int cells, archWidth, doorWidth, frames)` builds 7 to 14 cells by the rules in R.2. Any other count is refused with a warning and built at 9. `Corridor1x9(...)` is now `Corridor(9, ...)`. New: `CellLength`, `TodayCells` / `MinCells` / `MaxCells`, `Cells`, `ValidCells`, and three fields with empty defaults: `probeBake`, `probeCubes` (probes by segment) and `compartmentFrames` (only when asked; nothing builds them yet). `BuildProbes` loads each box's reused cube. `ResetDuration` is public |
+| `Scripts/Rendering/FrontRoomsRunRigBinder.cs` 1136e0ae → 969fef2e | `CellsOf(room)` reads `room.Cells.Length`, 9 without one. The goal cell is the last cell, not `Cells[8]`. The animated-reset reach is 30 m + half the length past 27 m. A warning fires if the map's goal door is not at 3 m × the cells. The layout keeps its bake name before the binder renames it |
+| `Editor/Rendering/FrontRoomsRunRigTests.cs` a95799bf → 69cac3c5 | R18 (today unchanged) and R19 (7 to 14 cells). `TodayCorridor1x9` is a frozen verbatim copy of the landed preset |
+
+`FrontRoomsRunDress.cs` is unchanged: it is a function of the layout.
+
+### R.2 The rules (`RunRigLayout.Corridor`; every value from the cell count, never by scaling)
+
+- **Strips.** A strip every cell, at z 1.8 + 3k, all shadowed (F7). The stutter tube is in cell 5 at every length (SP7's z 13.8).
+- **Units, heads every two cells.**
+  - Units sit on the odd cell lines from the entrance, z 3, 9, 15 and so on, on alternate walls with the entry unit on the right.
+  - The goal unit is always two cells before the goal wall (z L − 6), so the goal head lights the door from 6 m, as call 4 tuned it.
+  - At an even count the last interval is three cells (9 m). A one-cell interval would double T10's 0.92 Hz pool rhythm.
+  - T-A units at both ends, T-B remote heads between, F12's trim on the near pool.
+- **Obstacles.** One in every pool but the goal's: the chair dolly, the janitor cart and the hand truck in turn, on alternate walls, mirrored on the other wall.
+- **Side doors.** ELECTRICAL ROOM in cell 1 on the right (z 5); NOT AN EXIT two cells before the goal on the right (z L − 4); STAFF ONLY in cell 5 on the left (z 17) when it stands a cell or more short of NOT AN EXIT, so not at 7 cells.
+- **Fire gear.** The pull station and the bell stay at the entrance. Extinguisher cabinets go on the left at z 10.2, plus z 31.2 from 12 cells, by NFPA 10's 75 ft (22.86 m) travel distance.
+- **Probes by segment (71 §5.8).** One 9.6 m box per three cells: the entrance box at z 4.5, the middle ones every 9 m after it, the goal box at L − 4.54. Each reuses the 9-cell bake's entrance, middle or goal cube. No cube ships today, so `ProbeCount` stays 0.
+- **The rest of the room.** The post box, floor, services and runs cover 0 to L; the goal assembly (goal point, face and door gap, goal unit) sits at L.
+- **The reset.** The same re-strike from the entrance, 0.15 s per cell, over the current length: 0.45 + n × 0.15 + 0.40 + 0.2 s.
+
+| Cells | Units (z, wall) | Obstacles | Doors | Cabinets | Probes | Lights armed / tripped (shadowed) | Reset | Tris LOD0 / LOD1 / LOD2 | Renderer slots |
+|---|---|---|---|---|---|---|---|---|---|
+| 7 | 3R 9L 15R | 2 | 2 | 1 | 3 | 8 (7) / 7 (6) | 2.10 s | 226,597 / 85,282 / 20,686 | 445 |
+| 8 | 3R 9L 18R | 2 | 3 | 1 | 3 | 9 (8) / 7 (6) | 2.25 s | 264,367 / 99,976 / 24,664 | 504 |
+| **9 (today)** | 3R 9L 15R 21L | 3 | 3 | 1 | 3 | 10 (9) / 9 (8) | 2.40 s | 301,689 / 114,160 / 28,160 | 582 |
+| 10 | 3R 9L 15R 24L | 3 | 3 | 1 | 4 | 11 (10) / 9 (8) | 2.55 s | 319,013 / 120,784 / 29,752 | 624 |
+| 11 | 3R 9L 15R 21L 27R | 4 | 3 | 1 | 4 | 12 (11) / 11 (10) | 2.70 s | 364,175 / 137,440 / 33,220 | 701 |
+| 12 | 3R 9L 15R 21L 30R | 4 | 3 | 2 | 4 | 13 (12) / 11 (10) | 2.85 s | 384,099 / 145,064 / 35,054 | 747 |
+| 13 | 3R 9L 15R 21L 27R 33L | 5 | 3 | 2 | 5 | 14 (13) / 13 (12) | 3.00 s | 424,252 / 159,798 / 38,534 | 827 |
+| 14 | 3R 9L 15R 21L 27R 36L | 5 | 3 | 2 | 5 | 15 (14) / 13 (12) | 3.15 s | 441,388 / 166,322 / 40,102 | 867 |
+
+How the cost columns were measured: R19 in Unity on the desktop tier, the whole room (dress + rig) as built in the clone. A renderer in a LOD group counts at its level; one outside counts at every level. "Renderer slots" is renderers × materials before batching. Frame time was not measured. The narrowest free lane beside an obstacle is 1.77 m at every length (rule: at least 1.4 m). The worst reset window is 1 flash/s at every length (bar 3; T9 still measures it on screen in the combined test).
+
+### R.3 Today unchanged: the proof
+
+- **Offline, no Unity.** `W/run_rethink/tmp/rig_cells/eqcheck/run.sh` compiles a small program with Unity 6000.6.3f1's own csc and dotnet 8.0.21. The program executes two compiled `Assembly-CSharp.dll`s by reflection: main as it is (from `roslyn_check`, so today's `Corridor1x9`) and main with our three files as overrides. Result: 2388 leaf values in 6 builds (3 width pairs × `Corridor(9)` and `Corridor1x9`), 0 differences, floats bit for bit. The three new fields hold their class defaults at 9 cells. Output: `eqcheck_out.txt`.
+- **In Unity** (`C`, one batch, `FrontRoomsRunRigTests.RunBatch`): 21 passed, 0 failed.
+  - R18: 2793 values in 7 builds, 0 differences against the frozen copy. The dress and rig built from each are identical piece for piece: 1343 pieces with the look-dev shell, 1354 with the map skin. Their lights match armed and tripped.
+  - R19: the rules above at 7 to 14 cells, built and measured; 6 and 15 cells refused at 9 with the warning.
+  - Log: `W/run_rethink/logs/rigcells_tests/` (tests.json d8927180).
+
+### R.4 Gate
+
+- Roslyn macOS and iOS on main with the three files as overrides (zsh array, read back from the `.rsp`): 0 errors. Warnings are 43 / 38, the same as main's, none in our files.
+- The same with the contract applied: 0 errors, 7 overrides.
+- Package: DRY RUN OK on main. A rehearsal `--apply` on a scratch copy gave MANIFEST OK, and a second run reported ALREADY APPLIED.
+- Logs: `W/run_rethink/logs/gate_rig_cells/`.
+
+### R.5 Contract for 关卡设计 (`W/apply/run_rethink_contract/`)
+
+The README says what the rig reads, and `CONTRACT_map.diff` is an inert diff of 10 hunks in 4 of their files (`patch --dry-run` OK). Inert means `Cells.Length` is 9 in every record today, so no value changes.
+- **Now:** nothing to do. The rig reads `room.Cells.Length`.
+- **When the map sends another length:**
+  - `Cells` holds exactly the room's cells, 7 to 14;
+  - `LengthMetres`, `RunEntrance` and the goal cell follow the record;
+  - the diff adds `LengthCells` and `GoalCell` to the record and replaces the nine `Cells[FrontRoomsRunRooms.Length - 1]` uses.
+- **Later (card 2, after Red walks SP7):** the receding seats on the record.
+
+### R.6 What the next stage must know
+
+1. **Frames against units.** Compartment frames are data only (`Corridor(n, frames: true)`, z 9, 18, 27, 36 inside the room). The frame lines at z 9 and z 27 fall on the unit lines at z 9 (the remote head, left) and z 27 (unit 4 at 11 or more cells). FD1 at 9 m is the recede's trigger (decision 4), so card 2 must move that head onto the frame's jamb or beside it when it builds the frame kit.
+2. **The recede (card 2)** builds on `Corridor(L_max)`: the hidden cells' strips, units and probes are already laid out by the same rules. The probe boxes "move with their segment" there: the goal segment's box rides the head.
+3. **Light budget at long lengths.** At 14 cells the room carries 14 shadowed strips armed (today 9) and 12 shadowed heads tripped (today 8). Every strip stays shadowed (F7: no light through the long walls). The shadow atlas is 设置菜单's call; check it in the combined test.
+4. **Two choices Red can see in SP7:** the 9 m last interval at even counts, and a 7-cell room without STAFF ONLY. Either is a small change in `CorridorUnits` or `Corridor`.
+5. Everything stays inert until 关卡设计 sends other lengths, and Run! itself until `runRooms` is on.

@@ -87,9 +87,10 @@ public struct RunObstacle
 /// <summary>
 /// The geometry and values one Run! B room needs, in rig space: x = 0 on the room's axis, +Z from the entry
 /// to the goal, y = 0 on the floor; z = 0 is the entrance wall's centre line (the map's cell line) and z = length the goal
-/// wall's. A plain data class with one preset: Corridor1x9 (the map's Run_AlarmCorridor_1x9, FrontRoomsRunRooms). The
-/// StreamRoom preset left with the RoomStream hunk (call 6 / C40, 2026-10-31). Values marked SP in the plan are starting
-/// points, tuned against the VL338-VL341 gates in the combined test.
+/// wall's. A plain data class built in whole cells by Corridor(cells) (the map's Run! corridor, 7 .. 14 cells, 71 s.9 card 1);
+/// Corridor1x9 is Corridor(9), today's Run_AlarmCorridor_1x9 (FrontRoomsRunRooms). The StreamRoom preset left with the
+/// RoomStream hunk (call 6 / C40, 2026-10-31). Values marked SP in the plan are starting points, tuned against the
+/// VL338-VL341 gates in the combined test.
 /// </summary>
 [Serializable]
 public sealed class RunRigLayout
@@ -161,6 +162,15 @@ public sealed class RunRigLayout
     /// R-B sheet's 2.6). False, or without the kit: the landed wraps.</summary>
     public bool bareStrips = true;
     public Color stripLensEmission = new Color(.90f, .95f, 1f) * 2.6f;
+    /// <summary>Card zone_lamps 1 (Red 2026-11-04 said yes to the red tube at the BRIGHTEST level): each strip's middle tube is
+    /// red-coated, on the battery circuit (research/level_space/71_run_room.md s.6.2). Armed it is unlit, its coating showing the
+    /// two lit tubes beside it (the engine has no light between emitters): redTubeBounce x the white tubes' level, as typed. Under
+    /// the alarm it strikes with the heads (their relay and rise, Reduce Flashing included) at redTubeLinear, a near-pure deep red
+    /// that ACES keeps red (a bluer red went magenta, the research's alarm red leans orange). Out at the reset with the heads. The
+    /// room's red light (the strip Lights turned red, red soffit halos, the tinted tripped ambient) and the A / B fronts are the
+    /// game visual line's (71 s.9, card 3).</summary>
+    public Color redTubeBounce = new Color(.40f, .045f, .05f);
+    public Color redTubeLinear = new Color(3f, 0f, .012f);
     public Color haloColor = new Color(.45f, .47f, .50f);
 
     [Header("Stage-1 / 2 warning on the rig's own wraps (CR-4; the map's burst envelope, FrontRoomsWarnLamps M3)")]
@@ -193,6 +203,11 @@ public sealed class RunRigLayout
 
     [Header("Reflections, post, culling")]
     public RunProbeBox[] probes = new RunProbeBox[0];
+    /// <summary>Probes by segment (71 s.5.8): the layout whose baked cubes the boxes load (null: this layout's name), and for each
+    /// box the cube it reuses (empty: box i loads cube i). A corridor of another length reuses the 9-cell bake's three cubes
+    /// (entrance, middle, goal), moved with their segments: no new bake per length.</summary>
+    public string probeBake;
+    public int[] probeCubes = new int[0];
     public float probeBlend = .15f;
     public int probeImportance = 2;
     /// <summary>F7 / C39 (stage C): the Run_B grade stays out of the neighbours. The main box runs between the long walls'
@@ -246,6 +261,10 @@ public sealed class RunRigLayout
     public RunWallItem[] wallItems = new RunWallItem[0];
     public RunSideDoor[] sideDoors = new RunSideDoor[0];
     public RunObstacle[] obstacles = new RunObstacle[0];
+    /// <summary>The compartment frames' lines (z), every third cell line inside the room (71 s.10; 10 RN-2: a 0.16 m block wall on
+    /// the line, a pair of 1.0 m leaves in a 2.0 x 2.1 m frame held open on magnets). A new structure (rule 5b): empty unless
+    /// Corridor is asked for frames, and nothing builds them yet (the frame kit comes with the recede, card 2).</summary>
+    public float[] compartmentFrames = new float[0];
 
     /// <summary>T-B: the unit whose battery feeds the remote heads (RunUnitDef.remote), the self-contained unit nearest the entrance
     /// (lowest z): the rig's RelayPoint and the dress's remote circuit start at its cabinet. -1 when every unit is remote.</summary>
@@ -265,86 +284,219 @@ public sealed class RunRigLayout
         return new RunWallFace { start = start, along = along, length = length, normal = normal, gaps = gaps };
     }
 
-    /// <summary>The map's Run! corridor (FrontRoomsRunRooms, CR-1): 1 x 9 cells, 27 m between the end walls' centre lines,
-    /// faces at x +-1.42 and z 0.08 / 26.92, soffit 2.9; the entrance arch <paramref name="archWidth"/> wide (1.4, top 2.2)
-    /// and the goal door <paramref name="doorWidth"/> wide (1.0, top 2.1), both centred (the r8 corridor, 11_run_dir_emergency_power.md s.2).</summary>
-    public static RunRigLayout Corridor1x9(float archWidth = 1.4f, float doorWidth = 1f)
+    // ---------------------------------------------------------------- the corridor in whole cells (71 s.9, game visual card 1)
+    /// <summary>A cell of the map's grid (MapGrid.CellSize): a Run! corridor is whole cells long.</summary>
+    public const float CellLength = 3f;
+    /// <summary>Today's room (CR-1: FrontRoomsRunRooms.Length, 27 m) and the lengths card 1 builds (71 s.3.2, decision 3: 7 for the
+    /// run's first Run!, 9, 12 from T4, 14 at T5 where it fits). The cap is 14 cells, 42 m: there the planner's chunk rule, the 46 m
+    /// far plane and the Relay's earliest arrival meet.</summary>
+    public const int TodayCells = 9, MinCells = 7, MaxCells = 14;
+    /// <summary>The bake every length reuses (71 s.5.8: one box-projected set a segment, moved with it, never baked again).</summary>
+    public const string ProbeBakeName = "Corridor1x9";
+    /// <summary>The extinguisher cabinets (left wall): the first at z 10.2, one more every 7 cells while the last one's reach (75 ft,
+    /// NFPA 10, 1990: the farthest travel to an extinguisher) stops short of the goal wall; each face gap is the box (+-0.16).</summary>
+    const float CabinetFirstZ = 10.2f, CabinetPitch = 21f, CabinetReach = 22.86f, CabinetHalfGap = .16f;
+
+    /// <summary>The corridor's length in whole cells.</summary>
+    public int Cells => Mathf.RoundToInt(length / CellLength);
+
+    /// <summary>True for a length card 1 builds (MinCells .. MaxCells).</summary>
+    public static bool ValidCells(int cells) => cells >= MinCells && cells <= MaxCells;
+
+    /// <summary>Today's room as landed (CR-1: 1 x 9 cells, 27 m): Corridor(9), field for field the preset it replaces.</summary>
+    public static RunRigLayout Corridor1x9(float archWidth = 1.4f, float doorWidth = 1f) => Corridor(TodayCells, archWidth, doorWidth);
+
+    /// <summary>
+    /// The map's Run! corridor (FrontRoomsRunRooms, CR-1) in whole cells: 1 x <paramref name="cells"/> (7 .. 14; anything else is
+    /// refused with a warning and built at 9), 3 m a cell between the end walls' centre lines (L), faces at x +-1.42 and z 0.08 /
+    /// L - 0.08, soffit 2.9; the entrance arch <paramref name="archWidth"/> wide (1.4, top 2.2) and the goal door
+    /// <paramref name="doorWidth"/> wide (1.0, top 2.1), both centred (the r8 corridor, 11_run_dir_emergency_power.md s.2). Every
+    /// position comes from the cell count by the rules the 9-cell preset was built to, never by scaling, so Corridor(9) is that
+    /// preset field for field (FrontRoomsRunRigTests R18):
+    /// - a strip every cell (z 1.8 + 3k), every one shadowed (F7); the stutter tube in cell 5 at every length (SP7's z 13.8);
+    /// - heads every two cells: units on the odd cell lines from the entrance (z 3, 9, 15 ...), on alternate walls from the entry
+    ///   unit (right); the goal unit always two cells before the goal wall (z L - 6), its +Z head the goal head, lighting the door
+    ///   from 6 m as call 4 tuned it. With an even count the one three-cell interval is the last, before the goal unit (a one-cell
+    ///   interval would double T10's 0.92 Hz pool rhythm). T-A at both ends, T-B remote heads between; F12's near-pool trim on
+    ///   unit 0 +Z and unit 1 -Z;
+    /// - an obstacle in every pool but the goal's (midway between two units: every obstacle sits in a pool, darkness is never
+    ///   cover), the chair dolly, the janitor cart and the hand truck in turn, on alternate walls from the right; a kit on its
+    ///   other wall is mirrored (x, yaw);
+    /// - the locked side doors 2 m into their cell: ELECTRICAL ROOM in cell 1 on the right (z 5, by the entry unit), NOT AN EXIT
+    ///   two cells before the goal on the right (z L - 4), STAFF ONLY in cell 5 on the left (z 17) when it stands a cell or more
+    ///   short of NOT AN EXIT (so not at 7 cells);
+    /// - the fire gear by the entrance (pull station and bell at z 1, right), extinguisher cabinets on the left from z 10.2 (a
+    ///   second at z 31.2 from 12 cells: CabinetReach), the NOTICE plate on the host face right of the arch;
+    /// - probes by segment (71 s.5.8): one 9.6 m box a three-cell segment, the entrance segment's at z 4.5, the middle ones every
+    ///   9 m on, the goal segment's at L - 4.54, each reusing the 9-cell bake's entrance, middle or goal cube (probeBake,
+    ///   probeCubes): no new bake for a length;
+    /// - the post box, floor, services and runs over 0 .. L, the goal assembly (goal point, goal face and door, goal unit) at L;
+    /// - <paramref name="frames"/>: the compartment frames' lines, every third cell line inside the room (z 9, 18, 27, 36). A new
+    ///   structure (rule 5b): for scene 4 and, once Red has walked SP7, the recede; today's game never asks for them.
+    /// </summary>
+    public static RunRigLayout Corridor(int cells, float archWidth = 1.4f, float doorWidth = 1f, bool frames = false)
     {
+        if (!ValidCells(cells))
+        {
+            Debug.LogWarning("[RunRig] a Run! corridor of " + cells + " cells is outside " + MinCells + ".." + MaxCells + " (the cap is " + MaxCells + " cells, " + (MaxCells * 3) + " m): built at " + TodayCells + " cells");
+            cells = TodayCells;
+        }
+        var n = cells;
+        var len = CellLength * n;
         var w = 1.42f;
         const float wh = .08f;
         var ah = archWidth * .5f;
         var dh = doorWidth * .5f;
         var l = new RunRigLayout
         {
-            name = "Corridor1x9",
-            halfWidth = w, length = 27f, height = 2.9f,
-            units = new[]
-            {
-                // F12 (stage C): the near pool (z 6) read .220 x armed against r8's .169 (+30 %): its two heads x 0.77.
-                // Zone lamps (Red 2026-10-31, T-A + T-B): the self-contained units stay at the entry and the goal ends; the two
-                // between are remote heads on brackets, fed from the entry unit along both walls. Heads, aims and pools unchanged.
-                new RunUnitDef { z = 3f, side = 1f, autoAim = true, trimPlus = -.23f },
-                new RunUnitDef { z = 9f, side = -1f, autoAim = true, trimMinus = -.23f, remote = true },
-                new RunUnitDef { z = 15f, side = 1f, autoAim = true, remote = true },
-                new RunUnitDef { z = 21f, side = -1f, autoAim = true, goalPlus = true },
-            },
-            goalPoint = new Vector3(0f, 1.05f, 27f),
+            name = "Corridor1x" + n,
+            halfWidth = w, length = len, height = 2.9f,
+            units = CorridorUnits(n),
+            goalPoint = new Vector3(0f, 1.05f, len),
             stutterLamp = 4,
-            // F7 (stage C): every wrap shadowed, so none lights the neighbours through the long walls (6 of 9 did, up to
-            // 143 levels on the Office wall in the preview). Armed now carries 9 shadowed spots, tripped 8: the peak is
-            // the tripped set's, plus one. WebGL keeps its one (ownLampShadows[0]).
-            ownLampShadows = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 },
             archHalf = ah, archTop = 2.2f, goalHalf = dh, goalTop = 2.1f, goalLiteX = 0f,
-            probes = new[]
-            {
-                new RunProbeBox { centre = new Vector3(0f, 1.45f, 4.5f), size = new Vector3(3.16f, 3.22f, 9.6f) },
-                new RunProbeBox { centre = new Vector3(0f, 1.45f, 13.5f), size = new Vector3(3.16f, 3.22f, 9.6f) },
-                new RunProbeBox { centre = new Vector3(0f, 1.45f, 22.46f), size = new Vector3(3.16f, 3.22f, 9.6f) },
-            },
-            postCentre = new Vector3(0f, 1.45f, 13.5f), postSize = new Vector3(3f, 2.9f, 27f),
+            postCentre = new Vector3(0f, 1.45f, len * .5f), postSize = new Vector3(3f, 2.9f, len),
             buildShell = true,
-            floorX0 = -w, floorX1 = w, floorZ0 = 0f, floorZ1 = 27f,
+            floorX0 = -w, floorX1 = w, floorZ0 = 0f, floorZ1 = len,
             laneHalf = .45f, accentRowsX = new[] { -.6f, .6f },
-            mainX = .55f, trayX = -.60f, emtWallX = -w, runZ0 = 0f, runZ1 = 27f,
+            mainX = .55f, trayX = -.60f, emtWallX = -w, runZ0 = 0f, runZ1 = len,
         };
-        l.ownLamps = new Vector3[9];
-        for (var k = 0; k < 9; k++) l.ownLamps[k] = new Vector3(0f, 2.9f, 1.8f + 3f * k);
-        // Long faces run the full 27 m (their first and last 0.08 m lie inside the end walls); the side-door gaps are the
-        // leaf (+-0.5) plus 45 mm under the F4 casing (+-0.549), so the lower tone tucks under the casing and the rail stops clear.
+        // A strip every cell. F7 (stage C): every one shadowed, so none lights the neighbours through the long walls (6 of 9 did, up
+        // to 143 levels on the Office wall in the preview): armed carries a shadowed spot a cell, tripped one a head. WebGL keeps
+        // its one (ownLampShadows[0]).
+        l.ownLamps = new Vector3[n];
+        l.ownLampShadows = new int[n];
+        for (var k = 0; k < n; k++)
+        {
+            l.ownLamps[k] = new Vector3(0f, 2.9f, 1.8f + 3f * k);
+            l.ownLampShadows[k] = k;
+        }
+        l.probes = CorridorProbes(n, len, out var cubes);
+        if (n != TodayCells)
+        {
+            l.probeBake = ProbeBakeName;
+            l.probeCubes = cubes;
+        }
+        // The locked side doors (RN-K props), 2 m into their cell.
+        var stencilZ = CellLength * (n - 2) + 2f;
+        var staffZ = CellLength * 5 + 2f;
+        var doors = new System.Collections.Generic.List<RunSideDoor> { new RunSideDoor { z = CellLength * 1 + 2f, side = 1f, face = "electrical" } };
+        if (staffZ <= stencilZ - CellLength) doors.Add(new RunSideDoor { z = staffZ, side = -1f, face = "staff" });
+        doors.Add(new RunSideDoor { z = stencilZ, side = 1f, face = "stencil" });
+        l.sideDoors = doors.ToArray();
+        var cabinets = new System.Collections.Generic.List<float> { CabinetFirstZ };
+        while (cabinets[cabinets.Count - 1] + CabinetReach < len) cabinets.Add(cabinets[cabinets.Count - 1] + CabinetPitch);
+        // Long faces run the full length (their first and last 0.08 m lie inside the end walls). Their gaps: each side door's leaf
+        // (+-0.5) plus 45 mm under the F4 casing (+-0.549), so the lower tone tucks under the casing and the rail stops clear, and
+        // each cabinet's box on the left.
         const float dg = .545f;
-        var goal = Face(new Vector3(-w, 0f, 27f - wh), Vector3.right, w * 2f, Vector3.back, new Vector2(w - dh, w + dh));
+        var leftGaps = new System.Collections.Generic.List<Vector2>();
+        var rightGaps = new System.Collections.Generic.List<Vector2>();
+        for (var i = 0; i < cabinets.Count; i++) leftGaps.Add(new Vector2(cabinets[i] - CabinetHalfGap, cabinets[i] + CabinetHalfGap));
+        for (var i = 0; i < l.sideDoors.Length; i++)
+        {
+            var d = l.sideDoors[i];
+            (d.side > 0f ? rightGaps : leftGaps).Add(new Vector2(d.z - dg, d.z + dg));
+        }
+        leftGaps.Sort((p, q) => p.x.CompareTo(q.x));
+        rightGaps.Sort((p, q) => p.x.CompareTo(q.x));
+        var goal = Face(new Vector3(-w, 0f, len - wh), Vector3.right, w * 2f, Vector3.back, new Vector2(w - dh, w + dh));
         goal.gapTops = new[] { 2.1f };
         var entry = Face(new Vector3(-w, 0f, wh), Vector3.right, w * 2f, Vector3.forward, new Vector2(w - ah, w + ah));
         entry.gapTops = new[] { 2.2f };
         l.walls = new[]
         {
-            Face(new Vector3(-w, 0f, 0f), Vector3.forward, 27f, Vector3.right, new Vector2(10.04f, 10.36f), new Vector2(17f - dg, 17f + dg)),
-            Face(new Vector3(w, 0f, 0f), Vector3.forward, 27f, Vector3.left, new Vector2(5f - dg, 5f + dg), new Vector2(23f - dg, 23f + dg)),
+            Face(new Vector3(-w, 0f, 0f), Vector3.forward, len, Vector3.right, leftGaps.ToArray()),
+            Face(new Vector3(w, 0f, 0f), Vector3.forward, len, Vector3.left, rightGaps.ToArray()),
             entry,
             goal,
         };
-        l.wallItems = new[]
+        var items = new System.Collections.Generic.List<RunWallItem>
         {
             new RunWallItem { kit = "Kit_PullStation", point = new Vector3(w, 1.2f - .09f, 1f), normal = Vector3.left },
             new RunWallItem { kit = "Kit_FireBell", point = new Vector3(w, 2.3f, 1f), normal = Vector3.left },
-            new RunWallItem { kit = "Kit_ExtinguisherCabinet", point = new Vector3(-w, 1.1f - .305f, 10.2f), normal = Vector3.right },
-            // The NOTICE plate on the host side of the entrance wall (its outside face, z -0.08: F8, it was buried in the
-            // wall), right of the arch seen from outside; the ALARM ZONE card goes on the left (FrontRoomsRunRigBinder).
-            new RunWallItem { kit = "Kit_SafetyPlate_10x7", point = new Vector3(Mathf.Min(ah + .40f, w - .15f), 1.5f, -wh), normal = Vector3.back },
         };
-        l.sideDoors = new[]
+        for (var i = 0; i < cabinets.Count; i++)
+            items.Add(new RunWallItem { kit = "Kit_ExtinguisherCabinet", point = new Vector3(-w, 1.1f - .305f, cabinets[i]), normal = Vector3.right });
+        // The NOTICE plate on the host side of the entrance wall (its outside face, z -0.08: F8, it was buried in the wall), right of
+        // the arch seen from outside; the ALARM ZONE card goes on the left (FrontRoomsRunRigBinder).
+        items.Add(new RunWallItem { kit = "Kit_SafetyPlate_10x7", point = new Vector3(Mathf.Min(ah + .40f, w - .15f), 1.5f, -wh), normal = Vector3.back });
+        l.wallItems = items.ToArray();
+        // An obstacle in every pool but the goal's, the kits in turn, on alternate walls from the right; mirrored on its other wall.
+        var pools = l.units.Length - 1;
+        l.obstacles = new RunObstacle[pools];
+        for (var p = 0; p < pools; p++)
         {
-            new RunSideDoor { z = 5f, side = 1f, face = "electrical" },
-            new RunSideDoor { z = 17f, side = -1f, face = "staff" },
-            new RunSideDoor { z = 23f, side = 1f, face = "stencil" },
-        };
-        l.obstacles = new[]
+            var o = PoolObstacles[p % PoolObstacles.Length];
+            var centre = (l.units[p].z + l.units[p + 1].z) * .5f;
+            var mirror = Mathf.Sign(o.position.x) != (p % 2 == 0 ? 1f : -1f);
+            l.obstacles[p] = new RunObstacle
+            {
+                kit = o.kit,
+                position = new Vector3(mirror ? -o.position.x : o.position.x, 0f, centre + o.position.z),
+                yaw = mirror ? -o.yaw : o.yaw,
+            };
+        }
+        if (frames)
         {
-            new RunObstacle { kit = "Kit_ChairDolly8", position = new Vector3(1.0f, 0f, 6.4f), yaw = 90f },
-            new RunObstacle { kit = "Kit_JanitorCart", position = new Vector3(-.63f, 0f, 12.0f), yaw = 90f },
-            new RunObstacle { kit = "Kit_HandTruck_Cartons", position = new Vector3(1.05f, 0f, 18.2f), yaw = -90f },
-        };
+            var lines = new System.Collections.Generic.List<float>();
+            for (var line = 3; line < n; line += 3) lines.Add(CellLength * line);
+            l.compartmentFrames = lines.ToArray();
+        }
         return l;
+    }
+
+    /// <summary>The pool obstacles as the 9-cell preset placed them, relative to their pool's centre, on their own wall's side
+    /// (lane >= 1.4 m, 10_plan s.2.4; F2's dark albedo).</summary>
+    static readonly RunObstacle[] PoolObstacles =
+    {
+        new RunObstacle { kit = "Kit_ChairDolly8", position = new Vector3(1.0f, 0f, .4f), yaw = 90f },
+        new RunObstacle { kit = "Kit_JanitorCart", position = new Vector3(-.63f, 0f, 0f), yaw = 90f },
+        new RunObstacle { kit = "Kit_HandTruck_Cartons", position = new Vector3(1.05f, 0f, .2f), yaw = -90f },
+    };
+
+    /// <summary>Heads every two cells (Corridor): unit u on cell line 2u + 1, the last, the goal unit, on line cells - 2.</summary>
+    static RunUnitDef[] CorridorUnits(int cells)
+    {
+        var count = (cells - 1) / 2;
+        var units = new RunUnitDef[count];
+        for (var u = 0; u < count; u++)
+        {
+            var goal = u == count - 1;
+            units[u] = new RunUnitDef
+            {
+                z = CellLength * (goal ? cells - 2 : 2 * u + 1),
+                side = u % 2 == 0 ? 1f : -1f,
+                autoAim = true,
+                goalPlus = goal,
+                // Zone lamps (Red 2026-10-31, T-A + T-B): the self-contained units stay at the entry and the goal ends; those between
+                // are remote heads on brackets, fed from the entry unit along both walls. Heads, aims and pools unchanged.
+                remote = u > 0 && !goal,
+            };
+        }
+        // F12 (stage C): the near pool (z 6) read .220 x armed against r8's .169 (+30 %): its two heads x 0.77.
+        units[0].trimPlus = -.23f;
+        units[1].trimMinus = -.23f;
+        return units;
+    }
+
+    /// <summary>Probes by segment (71 s.5.8): (cells + 2) / 3 boxes of 3.16 x 3.22 x 9.6 m (0.16 m over the shell, VL195), the
+    /// entrance segment's at z 4.5 (from 0.3 m before the entrance line), the middle ones every 9 m on, the goal segment's at
+    /// L - 4.54 (to 0.26 m past the goal line). <paramref name="cubes"/>: the 9-cell bake's cube each reuses (0 the entrance's,
+    /// 1 the middle's, 2 the goal's).</summary>
+    static RunProbeBox[] CorridorProbes(int cells, float len, out int[] cubes)
+    {
+        var count = (cells + 2) / 3;
+        var boxes = new RunProbeBox[count];
+        cubes = new int[count];
+        for (var i = 0; i < count; i++)
+        {
+            var last = i == count - 1;
+            var z = last ? (float)(len - 4.54) : 4.5f + 9f * i;
+            boxes[i] = new RunProbeBox { centre = new Vector3(0f, 1.45f, z), size = new Vector3(3.16f, 3.22f, 9.6f) };
+            cubes[i] = i == 0 ? 0 : last ? 2 : 1;
+        }
+        return boxes;
     }
 }
 
@@ -354,7 +506,9 @@ public sealed class RunRigLayout
 /// owns the armed ceiling lamps.
 ///   Zone lamps (Red 2026-10-31, research/zone_lamps): the ceiling lamps are R-B's bare strips with wire guards (the
 ///   wraparound only without the kit; every "wrap" below is such a lamp), and the two middle units are T-B remote heads
-///   on brackets (RunUnitDef.remote), fed by the dress's remote circuit from the entry unit; the end units stay T-A.
+///   on brackets (RunUnitDef.remote), fed by the dress's remote circuit from the entry unit; the end units stay T-A. Each
+///   strip's middle tube is red-coated on the battery circuit (card zone_lamps 1): dark oxblood armed, struck with the heads
+///   at the trip (RedTube); the room's red light and the alarm fronts are the game visual line's card 3.
 ///   Armed: wraparounds on (cell 5 stutters dim), red AC ON pilots lit, heads off, cool bounce ambient.
 ///   Trip (t 0): the mains drop (every wrap 1 -> 0 in 0.06 s, lens afterglow 0.03 decaying tau 0.5 s), pilots out,
 ///   0.35 s of black, then each head rises 0 -> 1 over 0.18 s (ease-in) from 0.35 + 0.004 z: hard warm pools.
@@ -446,6 +600,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         public Color lensColor;
         /// <summary>R-B: the lens is the bare tubes, so the stutter tube's lens follows its light (a wrap's lens kept its level).</summary>
         public bool bare;
+        /// <summary>The strip's red tube (card zone_lamps 1) as SetLens takes it, or null for a strip or wrap without one.</summary>
+        public Renderer[] red;
+        public int[] redIndex;
         /// <summary>The intensity the state wants (before the cull's weight) and whether the state has it on.</summary>
         public float drive;
         public bool lit;
@@ -485,6 +642,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     const float WrapHalfLength = .6175f;
     /// <summary>The remote mounts built (T-B, RunUnitDef.remote); a remote unit without the kit keeps its cabinet.</summary>
     public int RemoteMountCount { get; private set; }
+    /// <summary>The strips built with their red tube (card zone_lamps 1).</summary>
+    public int RedTubeCount { get; private set; }
     public int ProbeCount => (armedProbes == null ? 0 : armedProbes.Length) + (trippedProbes == null ? 0 : trippedProbes.Length);
     /// <summary>True when this rig was built in the handheld tier (step 9).</summary>
     public bool Handheld { get; private set; }
@@ -512,7 +671,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     /// (IsRemoteHead) has no relay at its position: its relay is the entry unit's, at RelayPoint.</summary>
     public event Action<int, Vector3> TransferRelay;
 
-    /// <summary>T-B (声音设计 2026-11-03: one click per relay, at the entry cabinet): true when head i hangs on a remote mount, so
+    /// <summary>T-B (the sound line, 2026-11-03: one click per relay, at the entry cabinet): true when head i hangs on a remote mount, so
     /// the relay that switches it sits in the entry unit's cabinet (RelayPoint), not at the head.</summary>
     public bool IsRemoteHead(int i) => heads != null && i >= 0 && i < heads.Length && heads[i].remote;
 
@@ -1084,14 +1243,22 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             frame.SetParent(transform, false);
             frame.localPosition = p;
             var w = new Wrap { z = p.z, level = k == Layout.stutterLamp ? Layout.stutterLevel : 1f };
-            // R-B: the strip's channel top on the soffit, its long axis along the corridor (Z); its lens is the two tubes.
-            var strip = strips ? FrontRoomsLampKit.Build(FrontRoomsLampKit.Family.Strip, frame, Vector3.zero, Quaternion.identity, "run b strip tubes", phoneLamps) : null;
+            // R-B: the strip's channel top on the soffit, its long axis along the corridor (Z); its lens is the white tubes, and its
+            // red tube (card zone_lamps 1) the kit's second renderer.
+            MeshRenderer strip = null, redTube = null;
+            if (strips) strip = FrontRoomsLampKit.Build(FrontRoomsLampKit.Family.Strip, frame, Vector3.zero, Quaternion.identity, "run b strip tubes", phoneLamps, out redTube);
             if (strip != null)
             {
                 w.lens = new Renderer[] { strip };
                 w.lensIndex = new[] { 0 };
                 w.lensColor = Layout.stripLensEmission;
                 w.bare = true;
+                if (redTube != null)
+                {
+                    w.red = new Renderer[] { redTube };
+                    w.redIndex = new[] { 0 };
+                    RedTubeCount++;
+                }
             }
             else
             {
@@ -1139,10 +1306,13 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         var na = 0; var nt = 0;
         var armed = new ReflectionProbe[Layout.probes.Length];
         var tripped = new ReflectionProbe[Layout.probes.Length];
+        // Probes by segment (71 s.5.8): each box loads the cube its segment reuses (today's layouts: its own, box i cube i).
+        var bake = string.IsNullOrEmpty(Layout.probeBake) ? Layout.name : Layout.probeBake;
         for (var i = 0; i < Layout.probes.Length; i++)
         {
-            var a = Resources.Load<Texture>("Rendering/Reflections/RunB_" + Layout.name + "_armed_" + i);
-            var t = Resources.Load<Texture>("Rendering/Reflections/RunB_" + Layout.name + "_tripped_" + i);
+            var cube = Layout.probeCubes != null && i < Layout.probeCubes.Length ? Layout.probeCubes[i] : i;
+            var a = Resources.Load<Texture>("Rendering/Reflections/RunB_" + bake + "_armed_" + cube);
+            var t = Resources.Load<Texture>("Rendering/Reflections/RunB_" + bake + "_tripped_" + cube);
             if (a != null) armed[na++] = Probe("run b probe armed " + i, Layout.probes[i], a);
             if (t != null) tripped[nt++] = Probe("run b probe tripped " + i, Layout.probes[i], t);
         }
@@ -1511,6 +1681,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     public float HeadStart(float z) => Reduced ? Layout.reducedHeadDelay : Layout.headDelay + Layout.headStagger * z;
     float TripEnd => Reduced ? Layout.reducedHeadDelay + Layout.reducedEnvelope + .1f : HeadStart(maxHeadZ) + Layout.headRise + .1f;
     float ResetEnd => Layout.resetRiseStart + Layout.resetCellSeconds * Mathf.Ceil(Layout.length / Mathf.Max(.1f, Layout.resetCellLength)) + Layout.resetRise + .2f;
+    /// <summary>The animated reset's length (s): the re-strike sweeps the current length, resetCellSeconds a cell from the entrance
+    /// (decision 7, as built), so a corridor of n cells takes n x resetCellSeconds of sweep (tests).</summary>
+    public float ResetDuration => ResetEnd;
 
     /// <summary>Armed wrap (mains) level at trip time t (t &lt; 0 armed).</summary>
     public float WrapLevel(float t)
@@ -1644,7 +1817,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             wr.drive = Layout.wrapIntensity * wrapScale * level;
             wr.lit = level > .0005f;
             ApplyWrapLight(wr);
-            SetLens(wr.lens, wr.lensIndex, wr.lensColor * (lensLevel * wm * lens));
+            var white = lensLevel * wm * lens;
+            SetLens(wr.lens, wr.lensIndex, wr.lensColor * white);
+            if (wr.red != null) SetLens(wr.red, wr.redIndex, RedTube(white, t < 0f ? 0f : HeadLevel(t, wr.z)));
             if (wr.halo != null)
             {
                 wr.halo.enabled = level > .0005f;
@@ -1661,7 +1836,28 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         wr.lit = level > .0005f;
         ApplyWrapLight(wr);
         SetLens(wr.lens, wr.lensIndex, wr.lensColor * (wr.level * level));
+        // The reset: the red tubes went out with the heads in one step; the coating only shows the white re-strike.
+        if (wr.red != null) SetLens(wr.red, wr.redIndex, RedTube(wr.level * level, 0f));
         if (wr.halo != null) { wr.halo.enabled = level > .0005f; block.Clear(); block.SetFloat(DensityId, wr.level * level); wr.halo.SetPropertyBlock(block); }
+    }
+
+    Color redTubeTyped;
+    bool redTubeReady;
+
+    /// <summary>A red tube's emission as SetLens takes it (typed): the white tubes' light on its coating (white = their level) or,
+    /// on the battery circuit, its own burn (alarm = the heads' rise, 0..1), whichever is the greater (card zone_lamps 1).</summary>
+    Color RedTube(float white, float alarm)
+    {
+        if (!redTubeReady)
+        {
+            redTubeTyped = Layout.redTubeLinear.gamma;
+            redTubeReady = true;
+        }
+        var b = Layout.redTubeBounce;
+        var r = Mathf.Max(b.r * white, redTubeTyped.r * alarm);
+        var g = Mathf.Max(b.g * white, redTubeTyped.g * alarm);
+        var bl = Mathf.Max(b.b * white, redTubeTyped.b * alarm);
+        return new Color(r, g, bl, 1f);
     }
 
     /// <summary>The stutter tube (cell 5): the stream's Unstable model (two incommensurate waves, Perlin drop-outs at

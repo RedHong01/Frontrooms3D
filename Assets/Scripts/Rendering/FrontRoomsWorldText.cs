@@ -19,9 +19,10 @@ using UnityEngine.Rendering;
 ///   swap  the base is not readable: materials, kits, property blocks and EXAMINE draw it. While a language other than
 ///         English is in force the base itself holds its copy's pixels (Graphics.CopyTexture on the GPU: same size, format
 ///         and mips), so every renderer shows the language whoever built it and whenever. Back to English, or to a language
-///         without a copy, the base is unloaded and reloads its own pixels from disk on its next use
-///         (Resources.UnloadAsset). No asset is ever written, in the Editor or in a player, and the Editor's play mode ends
-///         back in English.
+///         without a copy, the base is unloaded, loaded again from disk with its own pixels (Resources.UnloadAsset, then
+///         Resources.Load) and set again in every material slot and renderer property block that holds it (Rebind: an
+///         unloaded texture keeps its object but the slots' binding to its GPU texture goes stale and draws blank). No asset
+///         is ever written, in the Editor or in a player, and the Editor's play mode ends back in English.
 ///   patch a swap for a big sheet whose words cover part of it (the evacuation plans: a full copy per language would add
 ///         about 54 MB to the build for 简体中文 alone). The copy holds only the grid cells that differ from English (128
 ///         texels where every platform uses 4 x 4 blocks, 192 where one uses ASTC 6 x 6), packed into power-of-two atlases
@@ -112,6 +113,8 @@ public static class FrontRoomsWorldText
     // landing placards drop their patches).
     static readonly List<UnityEngine.Object> retire = new List<UnityEngine.Object>();
     static int retireFrame = -1;
+    static readonly HashSet<Texture> rebound = new HashSet<Texture>();
+    static MaterialPropertyBlock rebindBlock;
 
     /// <summary>The language whose world text is on screen (English = every base as it is on disk).</summary>
     public static string AppliedCode { get; private set; } = English;
@@ -234,6 +237,7 @@ public static class FrontRoomsWorldText
                 if (Patch(path, k.language.code)) Swapped++; else Refused++;
         }
         AppliedCode = k != null ? code : English;
+        Rebind(scratch);
         Applied?.Invoke();
     }
 
@@ -341,6 +345,62 @@ public static class FrontRoomsWorldText
         return true;
     }
 
+    /// <summary>
+    /// The bases just unloaded (paths), loaded again (English, or the language a patch just went onto) and set again in every
+    /// loaded material and every renderer property block that holds them. Resources.UnloadAsset keeps the texture object, so
+    /// the slots still name it, but their binding to its GPU texture goes stale: in the Editor every such base drew blank
+    /// until its slot was set again (probe 11-03 20:07, W/worldtext/art/tmp/probe: Resources.Load alone did not bring it
+    /// back, SetTexture did). Only on a language change and at Restore.
+    /// </summary>
+    static void Rebind(List<string> paths)
+    {
+        rebound.Clear();
+        foreach (var path in paths)
+        {
+            var t = Resources.Load<Texture2D>(path);
+            if (t != null) rebound.Add(t);
+        }
+        if (rebound.Count == 0) return;
+        foreach (var m in Resources.FindObjectsOfTypeAll<Material>())
+        {
+            if (m == null) continue;
+            foreach (var id in m.GetTexturePropertyNameIDs())
+            {
+                var t = m.GetTexture(id);
+                if (t != null && rebound.Contains(t)) m.SetTexture(id, t);
+            }
+        }
+        rebindBlock ??= new MaterialPropertyBlock();
+        foreach (var r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include))
+        {
+            if (r == null || !r.HasPropertyBlock()) continue;
+            var materials = r.sharedMaterials;
+            // the renderer's own block (-1), then each material's
+            for (var i = -1; i < materials.Length; i++)
+            {
+                if (i < 0) r.GetPropertyBlock(rebindBlock);
+                else r.GetPropertyBlock(rebindBlock, i);
+                if (rebindBlock.isEmpty) continue;
+                var changed = false;
+                foreach (var m in materials)
+                {
+                    if (m == null) continue;
+                    foreach (var id in m.GetTexturePropertyNameIDs())
+                    {
+                        var t = rebindBlock.GetTexture(id);
+                        if (t == null || !rebound.Contains(t)) continue;
+                        rebindBlock.SetTexture(id, t);
+                        changed = true;
+                    }
+                }
+                if (!changed) continue;
+                if (i < 0) r.SetPropertyBlock(rebindBlock);
+                else r.SetPropertyBlock(rebindBlock, i);
+            }
+        }
+        rebound.Clear();
+    }
+
     static bool OnGrid(int[] r, int i, int bw, int bh) =>
         r[i + 1] % bw == 0 && r[i + 2] % bh == 0 && r[i + 3] % bw == 0 && r[i + 4] % bh == 0 && r[i + 5] % bw == 0 && r[i + 6] % bh == 0;
 
@@ -372,10 +432,15 @@ public static class FrontRoomsWorldText
     public static void Restore()
     {
         Flush();
-        foreach (var b in held.Values)
-            if (b != null) Resources.UnloadAsset(b);
+        scratch.Clear();
+        foreach (var pair in held)
+        {
+            scratch.Add(pair.Key);
+            if (pair.Value != null) Resources.UnloadAsset(pair.Value);
+        }
         held.Clear();
         AppliedCode = English;
+        Rebind(scratch);
     }
 
     static void Warn(string message)
@@ -400,6 +465,7 @@ public static class FrontRoomsWorldText
         warned.Clear();
         retire.Clear();
         retireFrame = -1;
+        rebound.Clear();
         AppliedCode = English;
     }
 

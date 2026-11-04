@@ -197,6 +197,9 @@ Rules:
 - **Stairwell (C22) and first room:** stencil floor tokens and two-ply engraved plates in Heros Bold, from `W/info_type/stair_signs/stair_signs.swift` (SPEC v1.2, VL371). The first room's BUSINESS HOURS plate is 18 × 6 in (Red 10-22 15:33); its desk front carries SECURITY in brushed-aluminium letters (`out/first_room/`, README).
 - **Placard legends:** constants in `placard.swift`.
 - **Alarm family** (fire red #B01E18, legend #EEE9DE; red means ALARM and nothing else): the ALARM ZONE card (10 × 6 in, lit, Heros Bold 42.9 mm, two lines) and the C16 alarm door placard (15 × 3 in screen-printed aluminium, not lit, `ALARM WILL SOUND` in Heros Bold Condensed 27.45 mm +0.04 em, a printed keyline 1/16 in at 1/8 in). Both from `stair_signs.swift`; hand-offs in `research/info_type/ALARM_ZONE_CARD_README.md`. Reading distances use one model for every sign: 691 px per metre at 1 m at the screen's centre (1080p, vFOV 76), 18.6′ reads, phone × 0.45 (`W/info_type/stair_signs/placard_read.py`).
+- **Waiting station print** (BS4 hero kits, 2026-11-04; `research/info_type/WAITING_STATION_PRINT_README.md`):
+  - The NO SMOKING plate, 10 x 3 in engraved two-ply. It takes the station key plate's colourway (#E2DDCF letters in a #2B2925 cap) and is set in Heros Bold Condensed, 1 in, +0.02 em, 12 mm clear of its screws. Long Latin phrases go to two rows (VL501).
+  - The rack's four 1989 magazine covers: FLOORPLATE, TRI-COUNTY BUSINESS, WEEKENDS, KEYSTROKE. They use the period type kit, with Playfair Display Black where a Didone must survive 2.4 px/mm. The mastheads stay English; the lines follow the language (VL502).
 - **World text** (Red 11-03, research/narrative/95: the signs follow the language, the building stays a US office of 1990). One sign face per script:
   - zh-Hans: Noto Sans SC Bold (the HUD's own, OFL), agreed with 平面视觉 (`research/localization/WORLD_TYPE.md` §2). zh-Hant, ja and ko take their Noto Sans Bold, from the full localization sources. Latin languages keep Heros, with Heros Bold Condensed as the narrower step.
   - ru takes Roboto Condensed Bold, then 85 %, until PT Sans Bold / Narrow Bold is downloaded (Red's OK, asked by 平面视觉).
@@ -206,6 +209,7 @@ Rules:
 
 ## 5. Log
 
+- 2026-11-04: §4 waiting station print: the NO SMOKING plate and the four magazine covers, ten languages each (VL501, VL502).
 - 2026-11-03: §4 world text (zh-Hans signs, VL494).
 - 2026-11-03: §4 alarm family: the C16 alarm door placard (VL485, VL486); the ALARM ZONE card's reading distances corrected to the screen-centre scale.
 - 2026-10-31: §3 rewritten for the decided terminal (C19 DOS text mode with a CUA lightbar, C20 own 8 × 16 face); the G0 mocks are superseded.

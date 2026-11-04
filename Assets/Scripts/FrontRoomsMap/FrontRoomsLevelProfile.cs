@@ -82,6 +82,11 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     public bool alarmDoor = false;
     [Tooltip("Body-only doors. Off until the combined checks and both body-door robot rounds pass; requires Relay v2. No USE open/shut; unlock leaves a 10 degree crack.")]
     public bool bodyDoors = false;
+    // Structures scene (RULES 5b, scene 4; s67_pool): the pool family's switch, off. Never serialized, so no asset changes a
+    // byte and the Inspector does not show it; only the structures scene's own profile copy turns it on (FrontRoomsStructures),
+    // and only a map built on that copy holds a pool plan (FrontRoomsMapWorld.SetPool). It becomes a serialized switch the day
+    // Red puts the pool in the game.
+    [System.NonSerialized] public bool poolFamily = false;
 
     static FrontRoomsLevelProfile fallback;
 

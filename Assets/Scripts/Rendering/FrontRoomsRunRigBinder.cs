@@ -10,10 +10,13 @@ using UnityEngine;
 /// map object), and only when map.RunRoomsOn (the level profile's runRooms, default off, or the tools' -autopilotRunRooms).
 /// With Run! rooms off nothing is added, nothing subscribes and the game is today's. No map file is edited.
 /// The goal door's place comes from the map: RunEntrance(room, true) (the opening centre on the goal wall line, and its
-/// outward normal) and DoorBetween(Cells[8], Beyond) (the door, its hinge for the card's latch side).
+/// outward normal) and DoorBetween(the last cell, Beyond) (the door, its hinge for the card's latch side).
+/// The length comes from the room's record (71 s.9, card 1: CellsOf, the cells from the entrance to the goal; 9 today, 7 .. 14
+/// built, anything else refused at 9): the rig and the dress are RunRigLayout.Corridor(cells). The map builds only 9-cell rooms
+/// today, so nothing changes until it sends another length (contract: W/apply/run_rethink_contract/README.md).
 /// - RunRoomBuilt (both chunks standing; again after each rebuild or return): a root at RunRoomPoint(room, 0) with
-///   RunRoomRotation(room), the corridor-local frame (z 0 on the entrance cell line, +z to the goal wall at 27, +x right,
-///   y 0 on the floor). Under it: the dress (skinShell: the map built the shell, CR-3), the rig (OwnLamps: the cells are
+///   RunRoomRotation(room), the corridor-local frame (z 0 on the entrance cell line, +z to the goal wall at 3 m a cell, 27
+///   today, +x right, y 0 on the floor). Under it: the dress (skinShell: the map built the shell, CR-3), the rig (OwnLamps: the cells are
 ///   ModuleLamp.Off, CR-4), the shared ALARM ZONE tell at both entrances (RELAY 6: the card outside each opening, the
 ///   red-banded detector inside, clear of the wraparounds), and the goal window light's far-room lamp (C42). The goal
 ///   door is the map's (RN-F + F5, never locked: C38 / M8); the rig only aims at it (RunEntrance). A room rebuilt while its
@@ -21,7 +24,7 @@ using UnityEngine;
 /// - RunRoomDropped (a chunk dropped or rebuilt, the floor changed): the root is destroyed.
 /// - RoomTriggered (Alarm): Trip (the rig raises MainsDropped / TransferRelay for the sound line, CR-S3).
 /// - RoomReset (the zone reset, the Relay's WITHDRAW): the animated re-strike when the viewer is within
-///   AnimatedResetDistance, else back to armed at once.
+///   AnimatedResetDistance of the room's centre (plus half of any length past 27 m), else back to armed at once.
 /// - RunRoomWarned (CR-4): Warn(stage) on the rig's own wraps.
 /// - LateUpdate: every rig's Tick (after the map's own lamp tick).
 /// Office hosts (C39): the same B look whatever the host zone; only the goal window light takes the far zone's lamp colour.
@@ -35,7 +38,8 @@ using UnityEngine;
 [AddComponentMenu("")]
 public sealed class FrontRoomsRunRigBinder : MonoBehaviour
 {
-    /// <summary>The reset re-strike plays only when the viewer is this close to the room (m); farther, it is armed at once.</summary>
+    /// <summary>The reset re-strike plays only when the viewer is this close to the room's centre (m; a 9-cell room's: a longer room
+    /// adds half its extra length, so the reach past its ends stays 16.5 m); farther, it is armed at once.</summary>
     public static float AnimatedResetDistance = 30f;
     /// <summary>Optional (the system-design line's call, open): the tell's LEDs burn steady while the room is tripped (the period latch).</summary>
     public static bool LatchAlarmLed;
@@ -100,6 +104,17 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         binder.Attach(map, viewer);
         return binder;
     }
+
+    /// <summary>
+    /// The room's length in cells (71 s.9, card 1), from its record: CR-1's cells from the entrance (Cells[0]) to the goal (the
+    /// last), so Cells.Length; 9 (RunRigLayout.TodayCells) when the record has none. The map builds 9 today. A length outside
+    /// 7 .. 14 is refused by RunRigLayout.Corridor (a warning, built at 9). The receding variant's seats (card 2) will come from
+    /// the record as well (contract, later).
+    /// </summary>
+    public static int CellsOf(FrontRoomsRunRoom room) => room != null && room.Cells != null && room.Cells.Length > 0 ? room.Cells.Length : RunRigLayout.TodayCells;
+
+    /// <summary>The goal cell (the last of the room's cells; CR-6's goal door is on its far edge, onto Beyond).</summary>
+    static GridCoord GoalCell(FrontRoomsRunRoom room) => room.Cells[room.Cells.Length - 1];
 
     /// <summary>Tools: the rig of a built room, or null.</summary>
     public FrontRoomsRunRig RigOf(FrontRoomsRunRoom room) => room != null && rooms.TryGetValue(room.Id, out var e) ? e.rig : null;
@@ -167,7 +182,7 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         DressTell(e, layout, dress);
         e.rig = FrontRoomsRunRig.Create(e.root.transform, layout, RunRigHost.OwnLamps, null, dress);
         e.rig.SetViewer(Viewer);
-        e.goalDoor = map.DoorBetween(room.Cells[FrontRoomsRunRooms.Length - 1], room.Beyond);
+        e.goalDoor = map.DoorBetween(GoalCell(room), room.Beyond);
         e.rig.SetGoalOpen(GoalOpen(e.goalDoor));
         FarLamps(e);
         var entry = e;
@@ -198,8 +213,10 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     {
         if (room == null || !rooms.TryGetValue(room.Id, out var e) || e.rig == null) return;
         var v = Viewer;
-        var near = v != null && (v.position - e.root.transform.TransformPoint(new Vector3(0f, 0f, room.LengthMetres * .5f))).sqrMagnitude
-            <= AnimatedResetDistance * AnimatedResetDistance;
+        var length = e.rig.Layout.length;
+        var reach = AnimatedResetDistance + (length - RunRigLayout.CellLength * RunRigLayout.TodayCells) * .5f;
+        var near = v != null && (v.position - e.root.transform.TransformPoint(new Vector3(0f, 0f, length * .5f))).sqrMagnitude
+            <= reach * reach;
         if (near) e.rig.StartReset(); else e.rig.ResetImmediate();
         Latch(e, false);
     }
@@ -242,11 +259,14 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     static bool GoalOpen(FrontRoomsMapWorld.Door door) => door == null || door.broken || door.angle > GoalOpenDegrees;
 
     // ------------------------------------------------------------------ the room's layout
-    /// <summary>The map module's layout (Corridor1x9 with the map's arch and door), the goal from the map's door, the far
-    /// zone's lamp for the goal window light (C42).</summary>
+    /// <summary>The map module's layout (Corridor(cells) with the map's arch and door; the cells from the room's record, CellsOf),
+    /// the goal from the map's door, the far zone's lamp for the goal window light (C42).</summary>
     RunRigLayout Layout(FrontRoomsRunRoom room, Transform root)
     {
-        var l = RunRigLayout.Corridor1x9(FrontRoomsRunRooms.ArchWidth, ModuleUnits.DoorWidth);
+        var cells = CellsOf(room);
+        var l = RunRigLayout.Corridor(cells, FrontRoomsRunRooms.ArchWidth, ModuleUnits.DoorWidth);
+        // Probes by segment (71 s.5.8): the room keeps the bake it reuses under its own name (no cube is shipped today).
+        if (string.IsNullOrEmpty(l.probeBake)) l.probeBake = l.name;
         l.name = "Run! room " + room.Id;
         l.wallThickness = ModuleUnits.WallThickness;
         l.buildShell = false;
@@ -254,6 +274,9 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         // The goal door's opening centre (the map's RunEntrance, goal side): the goal head aims at it.
         map.RunEntrance(room, true, out var goalWorld, out var outward);
         var g = root.InverseTransformPoint(goalWorld);
+        // The map's goal door and the record's cells must agree (contract); if not, the rig still aims at the map's door.
+        if (Mathf.Abs(g.z - l.length) > .05f)
+            Debug.LogWarning("[RunRig] Run! room " + room.Id + ": its record holds " + cells + " cells, the rig " + l.Cells + " (" + l.length.ToString("0.0") + " m), but the map's goal door stands at z " + g.z.ToString("0.00") + " (contract: W/apply/run_rethink_contract/README.md)");
         l.goalPoint = new Vector3(g.x, l.goalPoint.y, g.z);
         var back = root.InverseTransformDirection(-outward);
         if (back.sqrMagnitude > .5f) l.goalNormal = new Vector3(back.x, 0f, back.z).normalized;
@@ -269,7 +292,7 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
             l.goalLiteBottom = lr.z;
             l.goalLiteTop = lr.w;
         }
-        var goalDoor = map.DoorBetween(room.Cells[FrontRoomsRunRooms.Length - 1], room.Beyond);
+        var goalDoor = map.DoorBetween(GoalCell(room), room.Beyond);
         if (goalDoor != null && goalDoor.hinge != null)
         {
             var hx = root.InverseTransformPoint(goalDoor.hinge.position).x;
@@ -324,7 +347,7 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     /// <summary>The goal door's latch side in the root's frame (+1: +X): opposite its hinge (the map's door), +1 without one.</summary>
     int GoalLatchSide(FrontRoomsRunRoom room, Transform root, float goalX)
     {
-        var door = map.DoorBetween(room.Cells[FrontRoomsRunRooms.Length - 1], room.Beyond);
+        var door = map.DoorBetween(GoalCell(room), room.Beyond);
         if (door == null || door.hinge == null) return 1;
         var h = root.InverseTransformPoint(door.hinge.position);
         return h.x > goalX ? -1 : 1;

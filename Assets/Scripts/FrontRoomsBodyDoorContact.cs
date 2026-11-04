@@ -28,6 +28,8 @@ public static class FrontRoomsBodyDoorContact
         public bool sideKnown;
         public bool episode;
         public float away;
+        // The leaf's act is a body pushing it back to its frame (push-shut, 11-04): its squeeze, or its eased-out swing.
+        public bool pushed;
     }
 
     public static Vector3 Direction(Vector3 closedDirection, float angle) => Quaternion.AngleAxis(angle, Vector3.up) * closedDirection;
@@ -79,7 +81,11 @@ public static class FrontRoomsBodyDoorContact
 
         var direction = Direction(closedDirection, leaf.angle);
         leaf.away = Distance(feet, hinge, direction, width) > .5f ? leaf.away + dt : 0f;
-        if (leaf.away >= .5f) leaf.episode = false;
+        if (leaf.away >= .5f)
+        {
+            leaf.episode = false;
+            if (!leaf.moving) leaf.pushed = false;
+        }
         var normal = Vector3.Cross(Vector3.up, direction);
         var speed = inputMove.magnitude / dt;
         var moveDirection = speed > .001f ? inputMove.normalized : Vector3.zero;
@@ -116,17 +122,77 @@ public static class FrontRoomsBodyDoorContact
         }
         else leaf.aim = leaf.back = 0f;
 
-        // Open leaves at rest are walls. A partial leaf can be pushed only while crossing its doorway.
-        var partialCrossing = Mathf.Abs(leaf.angle) < 70f && closedAlong >= 0f && closedAlong <= width &&
-            Mathf.Abs(Vector3.Dot(moveDirection, closedNormal)) >= .5f;
-        if (pressing && !leaf.shutting && (Mathf.Abs(leaf.angle) < 3f || partialCrossing))
+        // A partial leaf can be pushed open only while crossing its doorway. Push-shut (Red 2026-11-04, the map doors' rule): a
+        // press on the face a leaf hangs toward takes it back to its frame. SLOW follows it there (it stays where it is left and
+        // clicks shut near the frame), a walk pushes it ahead of the body, a run into its face slams it; a run into the doorway
+        // still goes through. Touch-close (decision 14B): a press on the face the body pushed of a leaf open at rest, facing it,
+        // closes it after the walk's lean (0.30 s slow) as the pull does; with no step hook here the leaf waits on the body.
+        var crossing = closedAlong >= 0f && closedAlong <= width && Mathf.Abs(Vector3.Dot(moveDirection, closedNormal)) >= .5f;
+        var partialCrossing = Mathf.Abs(leaf.angle) < 70f && crossing;
+        var blind = Vector3.Dot(viewForward, moveDirection) < .5f;
+        var barge = !blind && (sprinting || sinceSprint <= .15f && speed >= 3.19f);
+        var ahead = Mathf.Abs(leaf.angle) >= 3f && Ahead(leaf.angle, hinge, closedDirection, feet);
+        var pushShut = pressing && ahead && (leaf.pushed || !leaf.moving && !leaf.shutting && !(barge && crossing));
+        var touchClose = pressing && !ahead && Mathf.Abs(leaf.angle) >= 70f && !leaf.moving && !leaf.following
+            && Vector3.Dot(viewForward, -normal * Mathf.Sign(planeDistance)) >= .5f;
+        if (touchClose)
+        {
+            leaf.offContact = 0f;
+            leaf.lean += dt;
+            if (leaf.lean >= (slow ? .30f : .12f))
+            {
+                var slam = !slow && speed >= 3.19f && leaf.time - leaf.sprintPass <= 2f;
+                Start(leaf, 0f, slam ? .30f : .55f, true);
+                leaf.lean = 0f;
+                leaf.episode = true;
+                verb = slam ? Verb.Slam : Verb.Shut;
+            }
+        }
+        else if (pushShut)
+        {
+            leaf.offContact = 0f;
+            leaf.lean = 0f;
+            if (!leaf.pushed)
+            {
+                verb = barge && !slow ? Verb.Slam : Verb.Shut;
+                leaf.episode = true;
+            }
+            leaf.pushed = true;
+            if (slow && !leaf.moving)
+            {
+                leaf.following = true;
+                var minimum = ClearAngle(leaf.angle, 0f, hinge, closedDirection, width, predicted);
+                leaf.angle = Mathf.MoveTowards(leaf.angle, minimum, 40f);
+                if (Mathf.Abs(leaf.angle) < 3f)
+                {
+                    leaf.angle = 0f;
+                    leaf.following = leaf.pushed = leaf.episode = false;
+                    return Verb.Latched;
+                }
+            }
+            else
+            {
+                if (!leaf.moving)
+                {
+                    // The verb's ease-out back to the frame, quickened when the body's straight path needs it (planned in the
+                    // far side's frame, where the leaf runs from minus its angle up to 0), so the leaf stays ahead of the body.
+                    var leafSide = Mathf.Sign(leaf.angle);
+                    var seconds = PlannedSeconds(leaf.angle, -leafSide, 0f,
+                        Mathf.Max(MinSwingSeconds, (barge ? .30f : .55f) * Mathf.Abs(leaf.angle) / stop),
+                        hinge, closedDirection, width, feet, inputMove / dt, dt);
+                    Start(leaf, 0f, seconds, true);
+                    leaf.pushed = true;
+                }
+                var floor = ClearAngle(leaf.angle, 0f, hinge, closedDirection, width, predicted);
+                if (Mathf.Abs(floor) < Mathf.Abs(leaf.angle)) leaf.angle = floor;
+            }
+        }
+        else if (pressing && !leaf.shutting && (Mathf.Abs(leaf.angle) < 3f || partialCrossing))
         {
             leaf.offContact = 0f;
             if (!leaf.moving)
             {
-                var blind = Vector3.Dot(viewForward, moveDirection) < .5f;
                 var delay = blind ? .40f : slow ? .30f : .12f;
-                var barge = !blind && (sprinting || sinceSprint <= .15f && speed >= 3.19f);
                 leaf.lean += dt;
                 if (barge || leaf.lean >= delay || Mathf.Abs(leaf.angle) >= 3f)
                 {
@@ -176,7 +242,7 @@ public static class FrontRoomsBodyDoorContact
         leaf.seconds = Mathf.Max(.05f, seconds);
         leaf.moving = true;
         leaf.shutting = shutting;
-        leaf.following = false;
+        leaf.following = leaf.pushed = false;
     }
 
     // The longest swing, up to the verb's seconds and down to MinSwingSeconds, whose ease-out from the leaf's angle keeps it past a
@@ -242,10 +308,11 @@ public static class FrontRoomsBodyDoorContact
         if (!leaf.moving) return Verb.None;
         var nextElapsed = Mathf.Min(leaf.seconds, leaf.elapsed + dt);
         var u = nextElapsed / leaf.seconds;
-        var ease = leaf.shutting ? u * u * (3f - 2f * u) : 1f - (1f - u) * (1f - u);
+        // A pull eases in and out; an open and a body's push back to the frame ease out.
+        var ease = leaf.shutting && !leaf.pushed ? u * u * (3f - 2f * u) : 1f - (1f - u) * (1f - u);
         var candidate = Mathf.Lerp(leaf.from, leaf.target, ease);
-        // A predicted opening floor can already be further than this frame's clock.
-        if (!leaf.shutting && Mathf.Abs(leaf.target - candidate) > Mathf.Abs(leaf.target - leaf.angle)) candidate = leaf.angle;
+        // A predicted floor (an open's, or a push-shut's) can already be further than this frame's clock.
+        if ((!leaf.shutting || leaf.pushed) && Mathf.Abs(leaf.target - candidate) > Mathf.Abs(leaf.target - leaf.angle)) candidate = leaf.angle;
         var currentDistance = Distance(feet, hinge, Direction(closedDirection, leaf.angle), width);
         var nextDistance = Distance(feet, hinge, Direction(closedDirection, candidate), width);
         if (leaf.shutting && nextDistance < Reach && nextDistance < currentDistance - .0001f) return Verb.None;
@@ -255,7 +322,15 @@ public static class FrontRoomsBodyDoorContact
         leaf.angle = leaf.target;
         leaf.moving = false;
         if (!leaf.shutting) return Verb.None;
-        leaf.shutting = false;
+        // Latched: pressing on into it is a new act (its lean, then an open with its own verb).
+        leaf.shutting = leaf.pushed = leaf.episode = false;
         return Verb.Latched;
+    }
+
+    // The face a leaf out of the frame hangs toward: the body's bearing from the hinge is past the leaf's angle, on its side.
+    static bool Ahead(float angle, Vector3 hinge, Vector3 closedDirection, Vector3 feet)
+    {
+        var bearing = Vector3.SignedAngle(closedDirection, Flat(feet - hinge), Vector3.up);
+        return angle > 0f ? bearing > angle : bearing < angle;
     }
 }

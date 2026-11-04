@@ -1,0 +1,99 @@
+{
+ "name": "Kit_StationCounter_Ledge120",
+ "supports": [
+  {
+   "name": "ledge",
+   "centre": [
+    0.0,
+    1.07,
+    0.175
+   ],
+   "size": [
+    1.16,
+    0.28
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.535,
+    0.165
+   ],
+   "size": [
+    1.2,
+    1.07,
+    0.33
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "register",
+   "pos": [
+    -0.22,
+    1.07,
+    0.165
+   ]
+  },
+  {
+   "name": "tent_card",
+   "pos": [
+    0.36,
+    1.07,
+    0.2
+   ]
+  }
+ ],
+ "tags": [
+  "station",
+  "counter"
+ ],
+ "lodDistances": [
+  4.0,
+  10.0,
+  60.0
+ ],
+ "budget": [
+  3000,
+  1200,
+  150
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 bs4-hero-kits",
+  "origin": "wall face plane at floor level, centred on the run",
+  "note": "front (+Z) = the visitor face; Station_Desk_3x3 W wall middle (x 0.08, z 4.50, yaw 90) with Kit_RegisterBook and Kit_TentCard on the anchors"
+ },
+ "boundsMin": [
+  -0.6000000238418579,
+  0.0,
+  -8.654780685901642e-05
+ ],
+ "boundsMax": [
+  0.6000000238418579,
+  1.0700000524520874,
+  0.33000001311302185
+ ],
+ "triangles": 2044,
+ "slots": [
+  "Prop_WoodOak",
+  "Prop_PVCEdge",
+  "Prop_LaminateGrey",
+  "Prop_Vinyl"
+ ],
+ "trianglesLod1": 156,
+ "trianglesLod2": 36,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.165
+ ],
+ "footprintSize": [
+  1.2,
+  0.33
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.12
+}

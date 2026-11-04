@@ -1,6 +1,6 @@
 # Language charms: flag keychains on the key
 
-平面视觉, 2026-10-31, flags since 2026-11-01. Figma section `3862:9229`, LANGUAGE CHARMS (page 2099:76): LC00 rules and motion, LC01 the charms (still the v3 objects until the daily Figma batch), LC02 the desktop row, LC03 the storyboard. The flag tags come from option C, section `3834:8767`.
+平面视觉, 2026-10-31, flags since 2026-11-01. Figma section `3862:9229`, LANGUAGE CHARMS (page 2099:76): LC00 rules and motion, LC01 the charms as in game (redrawn 11-03 22:5x: eight flags, zh-Hans and zh-Hant on their 10-31 charms until VL490), LC02 the desktop row, LC03 the storyboard. The flag tags come from option C, section `3834:8767`.
 
 ## Red's asks
 

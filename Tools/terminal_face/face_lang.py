@@ -225,9 +225,9 @@ CYR['№'] = art(2, '#..#.### ##.#.#.# #.##.### #..#.... #..#.### ' + '#..#.... 
 CYR['°'] = LATIN['°']
 CYR['·'] = LATIN['·']
 
-CP850_ORDER = 'ÀÁÂÃÄÇÈÉÊËÍÎÏÑÓÔÕÖÙÚÛÜàáâãäçèéêëíîïñóôõöùúûüÿß°ºª«»¿¡·§'
+CP850_ORDER = 'ÀÁÂÃÄÇÈÉÊËÍÎÏÑÓÔÕÖÙÚÛÜàáâãäçèéêëíîïñóôõöùúûüÿß°ºª«»¿¡·§\u00a0'   # NBSP last (0xFF in CP850 and CP866): a blank slot, so a word can be held to the next
 CP866_ORDER = ('АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
-               'абвгдеёжзийклмнопрстуфхцчшщъыьэюя№°·§')   # § is CP866's 0x15 too; the memos use it
+               'абвгдеёжзийклмнопрстуфхцчшщъыьэюя№°·§\u00a0')   # § is CP866's 0x15 too; the memos use it
 
 
 # ------------------------------------------------------------------ big type (41 section 3.3, W18)
@@ -363,6 +363,8 @@ FACES = {'de': CP850_ORDER, 'fr': CP850_ORDER, 'es': CP850_ORDER, 'pt-BR': CP850
 
 
 def glyph(ch):
+    if ch == '\u00a0':
+        return [BLANK] * 16
     return LATIN.get(ch) or CYR[ch]
 
 
@@ -407,7 +409,7 @@ def check():
             continue
         if ch != '№' and any(r[7] == '#' for r in rows):
             problems.append(f'{ch}: ink in column 7')
-        if not any('#' in r for r in rows):
+        if ch != '\u00a0' and not any('#' in r for r in rows):
             problems.append(f'{ch}: empty')
     for code in FACES:
         for role, glyphs in big_bands(code):

@@ -29,7 +29,10 @@ public static class FrontRoomsMobileInteractionEvents
         InspectOpened,
         // A sash latch pried (C12, V7a; 2026-11-01): the hold's beats and the give.
         SashPryBeat,
-        SashPried
+        SashPried,
+        // A body door's fast swings by the player (V5, 2026-11-03): a barge open, a slam shut.
+        DoorBarged,
+        DoorSlammed
     }
 
     /// <summary>
@@ -91,6 +94,20 @@ public static class FrontRoomsMobileInteractionEvents
     {
         FrontRoomsMobileHaptics.SashPried();
         Emit(Kind.SashPried);
+    }
+
+    /// <summary>The player's body barged a door open (V5's fast swing).</summary>
+    public static void DoorBarged()
+    {
+        FrontRoomsMobileHaptics.DoorBarged();
+        Emit(Kind.DoorBarged);
+    }
+
+    /// <summary>The player slammed a door shut (V5's fast close).</summary>
+    public static void DoorSlammed()
+    {
+        FrontRoomsMobileHaptics.DoorSlammed();
+        Emit(Kind.DoorSlammed);
     }
 
     public static void DoorLatched()

@@ -1,0 +1,106 @@
+{
+ "name": "Kit_MagazineRack",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "pocket_1",
+   "pos": [
+    0.151,
+    1.42211,
+    0.055115000000000004
+   ]
+  },
+  {
+   "name": "pocket_2",
+   "pos": [
+    -0.151,
+    1.42211,
+    0.055115000000000004
+   ]
+  },
+  {
+   "name": "pocket_3",
+   "pos": [
+    0.151,
+    1.20611,
+    0.055115000000000004
+   ]
+  },
+  {
+   "name": "pocket_4",
+   "pos": [
+    -0.151,
+    1.20611,
+    0.055115000000000004
+   ]
+  },
+  {
+   "name": "pocket_5",
+   "pos": [
+    0.151,
+    0.99011,
+    0.055115000000000004
+   ]
+  },
+  {
+   "name": "pocket_6",
+   "pos": [
+    -0.151,
+    0.99011,
+    0.055115000000000004
+   ]
+  }
+ ],
+ "tags": [
+  "wall_decor",
+  "station",
+  "paper"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "budget": [
+  3000,
+  1000,
+  150
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 bs4-hero-kits",
+  "origin": "wall face plane at floor level, centred",
+  "note": "front +Z; wire 0.98-1.64 m, top magazines to about 1.69 m"
+ },
+ "boundsMin": [
+  -0.30489179491996765,
+  0.9801081418991089,
+  -0.0
+ ],
+ "boundsMax": [
+  0.30489179491996765,
+  1.6900699138641357,
+  0.10956147313117981
+ ],
+ "triangles": 2876,
+ "slots": [
+  "Prop_Chrome",
+  "Prop_MagazineCover",
+  "Prop_Paper"
+ ],
+ "trianglesLod1": 744,
+ "trianglesLod2": 80,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.054780736565589905
+ ],
+ "footprintSize": [
+  0.6097835898399353,
+  0.10956147313117981
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.74
+}

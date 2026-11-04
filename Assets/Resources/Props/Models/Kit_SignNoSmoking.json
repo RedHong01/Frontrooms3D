@@ -1,0 +1,56 @@
+{
+ "name": "Kit_SignNoSmoking",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_decor",
+  "station",
+  "sign"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  25.0
+ ],
+ "budget": [
+  200,
+  60,
+  12
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 bs4-hero-kits",
+  "origin": "wall face plane at floor level, centred",
+  "note": "front +Z; plate centre 1.55 m; art by \u5e73\u9762\u89c6\u89c9 \u00b7 \u4fe1\u606f\u8bbe\u8ba1"
+ },
+ "boundsMin": [
+  -0.12700000405311584,
+  1.5119999647140503,
+  -0.0
+ ],
+ "boundsMax": [
+  0.12700000405311584,
+  1.587999939918518,
+  0.004799999762326479
+ ],
+ "triangles": 166,
+ "slots": [
+  "Prop_SignNoSmoking",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 10,
+ "trianglesLod2": 2,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.0023999998811632395
+ ],
+ "footprintSize": [
+  0.2540000081062317,
+  0.004799999762326479
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 1.638
+}

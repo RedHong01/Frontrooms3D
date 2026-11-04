@@ -43,6 +43,14 @@ using UnityEngine.Rendering.Universal;
 ///       does, and SMH / film grain / chromatic aberration with the global look's values (a Level 0 host is unchanged).
 ///   R17 F8 + F9 + F2 + F6 (stage C): the NOTICE plate under the room root on the host face, the overhead services cast no
 ///       shadow, the chair and cart albedo well under the floor's, the five LOD groups switching at the new distances.
+///   R18 card 1 (71 s.9, the rig in cells): today's room unchanged: Corridor(9) and Corridor1x9 equal the preset as it landed
+///       (frozen below) field for field, bit for bit, in three width pairs; the dress (look-dev shell and the map skin) and the
+///       rig built from each place the same pieces and lights; the binder's CellsOf reads 9 from today's record and by default.
+///   R19 card 1, 7 .. 14 cells: a strip every cell, units every 6 m from z 3 (one 9 m interval, the last, at an even count), the
+///       goal unit at L - 6, the goal at L, probes by segment covering 0 .. L on the 9-cell bake, an obstacle in every pool but
+///       the goal's (lane >= 1.4 m), the side doors and cabinets by rule, frames only when asked (every third cell line), the
+///       lights (armed n + 1 / n shadowed, tripped 2U + 1 / 2U), the trip and the reset photosafe, the reset n x 0.15 s of sweep
+///       from the entrance (ticked); 6 and 15 cells refused at 9. The COST line per length goes to log.txt.
 ///   (S1 / S2 / S3, the title-stream checks, were dropped with the RoomStream hunk: call 6 / C40, 2026-10-31.)
 ///   W1  the WebGL tier is off in the editor (the FRONTROOMS_WEBGL_PREVIEW compile is checked outside Unity).
 ///   W2  step 9 (stage C): the handheld tier (ForceHandheldForTools) builds 5 head + 5 wrap Lights, hard shadows, no beams,
@@ -89,6 +97,8 @@ public static class FrontRoomsRunRigTests
             Run("R15 step 10 + C39: the light gate on every Run! renderer", R15Gate);
             Run("R16 F7 + C39: the Run_B grade stays in the room, host-neutral", R16Post);
             Run("R17 F8 F9 F2 F6: plate outside, overhead unshadowed, dark obstacles, LOD distances", R17Dress);
+            Run("R18 card 1: Corridor(9) is today's room, field for field and piece for piece", R18TodayUnchanged);
+            Run("R19 card 1: 7 .. 14 cells by rule, photosafe, reset n x 0.15 s", R19Cells);
             Run("W1 WebGL tier off in the editor", W1Gate);
             Run("W2 step 9: the handheld tier, desktop unchanged", W2Handheld);
         }
@@ -1004,6 +1014,487 @@ public static class FrontRoomsRunRigTests
         finally { FrontRoomsRunRig.ForceHandheldForTools = before; }
         Require(desktopA == desktopB, "the desktop build differs before and after a handheld build");
         return detail + "; desktop signature identical before and after (" + desktopA.Length + " chars)";
+    }
+
+    // ------------------------------------------------------------------ card 1: the rig in cells (71 s.9, decisions 3 and 7)
+    /// <summary>Today's preset as it landed in main (FrontRoomsRunRig.cs 9e964b3b, 2026-11-03), frozen verbatim: the reference R18
+    /// holds Corridor(9) to, field for field. Never edit it to follow the factory.</summary>
+    static RunRigLayout TodayCorridor1x9(float archWidth = 1.4f, float doorWidth = 1f)
+    {
+        var w = 1.42f;
+        const float wh = .08f;
+        var ah = archWidth * .5f;
+        var dh = doorWidth * .5f;
+        var l = new RunRigLayout
+        {
+            name = "Corridor1x9",
+            halfWidth = w, length = 27f, height = 2.9f,
+            units = new[]
+            {
+                // F12 (stage C): the near pool (z 6) read .220 x armed against r8's .169 (+30 %): its two heads x 0.77.
+                // Zone lamps (Red 2026-10-31, T-A + T-B): the self-contained units stay at the entry and the goal ends; the two
+                // between are remote heads on brackets, fed from the entry unit along both walls. Heads, aims and pools unchanged.
+                new RunUnitDef { z = 3f, side = 1f, autoAim = true, trimPlus = -.23f },
+                new RunUnitDef { z = 9f, side = -1f, autoAim = true, trimMinus = -.23f, remote = true },
+                new RunUnitDef { z = 15f, side = 1f, autoAim = true, remote = true },
+                new RunUnitDef { z = 21f, side = -1f, autoAim = true, goalPlus = true },
+            },
+            goalPoint = new Vector3(0f, 1.05f, 27f),
+            stutterLamp = 4,
+            // F7 (stage C): every wrap shadowed, so none lights the neighbours through the long walls (6 of 9 did, up to
+            // 143 levels on the Office wall in the preview). Armed now carries 9 shadowed spots, tripped 8: the peak is
+            // the tripped set's, plus one. WebGL keeps its one (ownLampShadows[0]).
+            ownLampShadows = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 },
+            archHalf = ah, archTop = 2.2f, goalHalf = dh, goalTop = 2.1f, goalLiteX = 0f,
+            probes = new[]
+            {
+                new RunProbeBox { centre = new Vector3(0f, 1.45f, 4.5f), size = new Vector3(3.16f, 3.22f, 9.6f) },
+                new RunProbeBox { centre = new Vector3(0f, 1.45f, 13.5f), size = new Vector3(3.16f, 3.22f, 9.6f) },
+                new RunProbeBox { centre = new Vector3(0f, 1.45f, 22.46f), size = new Vector3(3.16f, 3.22f, 9.6f) },
+            },
+            postCentre = new Vector3(0f, 1.45f, 13.5f), postSize = new Vector3(3f, 2.9f, 27f),
+            buildShell = true,
+            floorX0 = -w, floorX1 = w, floorZ0 = 0f, floorZ1 = 27f,
+            laneHalf = .45f, accentRowsX = new[] { -.6f, .6f },
+            mainX = .55f, trayX = -.60f, emtWallX = -w, runZ0 = 0f, runZ1 = 27f,
+        };
+        l.ownLamps = new Vector3[9];
+        for (var k = 0; k < 9; k++) l.ownLamps[k] = new Vector3(0f, 2.9f, 1.8f + 3f * k);
+        // Long faces run the full 27 m (their first and last 0.08 m lie inside the end walls); the side-door gaps are the
+        // leaf (+-0.5) plus 45 mm under the F4 casing (+-0.549), so the lower tone tucks under the casing and the rail stops clear.
+        const float dg = .545f;
+        var goal = TodayFace(new Vector3(-w, 0f, 27f - wh), Vector3.right, w * 2f, Vector3.back, new Vector2(w - dh, w + dh));
+        goal.gapTops = new[] { 2.1f };
+        var entry = TodayFace(new Vector3(-w, 0f, wh), Vector3.right, w * 2f, Vector3.forward, new Vector2(w - ah, w + ah));
+        entry.gapTops = new[] { 2.2f };
+        l.walls = new[]
+        {
+            TodayFace(new Vector3(-w, 0f, 0f), Vector3.forward, 27f, Vector3.right, new Vector2(10.04f, 10.36f), new Vector2(17f - dg, 17f + dg)),
+            TodayFace(new Vector3(w, 0f, 0f), Vector3.forward, 27f, Vector3.left, new Vector2(5f - dg, 5f + dg), new Vector2(23f - dg, 23f + dg)),
+            entry,
+            goal,
+        };
+        l.wallItems = new[]
+        {
+            new RunWallItem { kit = "Kit_PullStation", point = new Vector3(w, 1.2f - .09f, 1f), normal = Vector3.left },
+            new RunWallItem { kit = "Kit_FireBell", point = new Vector3(w, 2.3f, 1f), normal = Vector3.left },
+            new RunWallItem { kit = "Kit_ExtinguisherCabinet", point = new Vector3(-w, 1.1f - .305f, 10.2f), normal = Vector3.right },
+            // The NOTICE plate on the host side of the entrance wall (its outside face, z -0.08: F8, it was buried in the
+            // wall), right of the arch seen from outside; the ALARM ZONE card goes on the left (FrontRoomsRunRigBinder).
+            new RunWallItem { kit = "Kit_SafetyPlate_10x7", point = new Vector3(Mathf.Min(ah + .40f, w - .15f), 1.5f, -wh), normal = Vector3.back },
+        };
+        l.sideDoors = new[]
+        {
+            new RunSideDoor { z = 5f, side = 1f, face = "electrical" },
+            new RunSideDoor { z = 17f, side = -1f, face = "staff" },
+            new RunSideDoor { z = 23f, side = 1f, face = "stencil" },
+        };
+        l.obstacles = new[]
+        {
+            new RunObstacle { kit = "Kit_ChairDolly8", position = new Vector3(1.0f, 0f, 6.4f), yaw = 90f },
+            new RunObstacle { kit = "Kit_JanitorCart", position = new Vector3(-.63f, 0f, 12.0f), yaw = 90f },
+            new RunObstacle { kit = "Kit_HandTruck_Cartons", position = new Vector3(1.05f, 0f, 18.2f), yaw = -90f },
+        };
+        return l;
+    }
+
+    static RunWallFace TodayFace(Vector3 start, Vector3 along, float length, Vector3 normal, params Vector2[] gaps)
+    {
+        return new RunWallFace { start = start, along = along, length = length, normal = normal, gaps = gaps };
+    }
+
+    static string Bits(float f) { return f.ToString("R", CultureInfo.InvariantCulture); }
+    static string Bits(Vector3 v) { return Bits(v.x) + "," + Bits(v.y) + "," + Bits(v.z); }
+    static string Bits(Quaternion q) { return Bits(q.x) + "," + Bits(q.y) + "," + Bits(q.z) + "," + Bits(q.w); }
+
+    /// <summary>Every field of a and b, recursively: arrays element by element, structs and classes field by field, floats bit for
+    /// bit. Returns the number of leaf values compared; every difference goes to diffs.</summary>
+    static int SameFields(object a, object b, string path, List<string> diffs)
+    {
+        if (a == null || b == null)
+        {
+            if (a != null || b != null) diffs.Add(path + ": " + (a == null ? "null" : "set") + " / " + (b == null ? "null" : "set"));
+            return 1;
+        }
+        var t = a.GetType();
+        if (t != b.GetType()) { diffs.Add(path + ": " + t.Name + " / " + b.GetType().Name); return 1; }
+        if (t == typeof(float))
+        {
+            if (BitConverter.ToInt32(BitConverter.GetBytes((float)a), 0) != BitConverter.ToInt32(BitConverter.GetBytes((float)b), 0))
+                diffs.Add(path + ": " + Bits((float)a) + " / " + Bits((float)b));
+            return 1;
+        }
+        if (t.IsPrimitive || t.IsEnum || t == typeof(string))
+        {
+            if (!a.Equals(b)) diffs.Add(path + ": " + a + " / " + b);
+            return 1;
+        }
+        if (t.IsArray)
+        {
+            var x = (Array)a;
+            var y = (Array)b;
+            if (x.Length != y.Length) { diffs.Add(path + ": length " + x.Length + " / " + y.Length); return 1; }
+            var n = 0;
+            for (var i = 0; i < x.Length; i++) n += SameFields(x.GetValue(i), y.GetValue(i), path + "[" + i + "]", diffs);
+            return n;
+        }
+        var count = 0;
+        foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            count += SameFields(f.GetValue(a), f.GetValue(b), path + "." + f.Name, diffs);
+        return count;
+    }
+
+    /// <summary>Every piece under root, in hierarchy order: name, local transform (to the bit), mesh and its vertex count, materials
+    /// and shadow mode, box colliders, lights. Two builds with the same signature placed the same pieces.</summary>
+    static string PieceSignature(Transform root, out int pieces)
+    {
+        var sb = new StringBuilder();
+        pieces = 0;
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+        {
+            if (t == root) continue;
+            pieces++;
+            sb.Append(t.name).Append('|').Append(Bits(t.localPosition)).Append('|').Append(Bits(t.localRotation)).Append('|').Append(Bits(t.localScale));
+            var mf = t.GetComponent<MeshFilter>();
+            if (mf != null) sb.Append("|m ").Append(mf.sharedMesh != null ? mf.sharedMesh.name + " " + mf.sharedMesh.vertexCount : "-");
+            var r = t.GetComponent<Renderer>();
+            if (r != null)
+            {
+                sb.Append("|r ").Append(r.shadowCastingMode).Append(' ').Append(r.enabled ? 1 : 0);
+                foreach (var m in r.sharedMaterials) sb.Append(' ').Append(m != null ? m.name : "-");
+            }
+            foreach (var bc in t.GetComponents<BoxCollider>()) sb.Append("|c ").Append(Bits(bc.center)).Append(' ').Append(Bits(bc.size));
+            var lt = t.GetComponent<Light>();
+            if (lt != null)
+                sb.Append("|l ").Append(lt.type).Append(' ').Append(Bits(lt.range)).Append(' ').Append(Bits(lt.spotAngle)).Append(' ').Append(Bits(lt.innerSpotAngle))
+                  .Append(' ').Append(Bits(lt.intensity)).Append(' ').Append(lt.shadows).Append(' ').Append(lt.enabled ? 1 : 0).Append(' ').Append(lt.cookie != null ? lt.cookie.name : "-");
+            sb.Append('\n');
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>A room (dress + rig) from a layout under a root at the tests' place; the caller destroys the root.</summary>
+    static Transform BuildRoom(string label, RunRigLayout layout, out FrontRoomsRunRig rig)
+    {
+        var root = new GameObject(label).transform;
+        root.position = new Vector3(4992f, 0f, 4992f);
+        var dress = FrontRoomsRunDress.Build(root, layout);
+        rig = FrontRoomsRunRig.Create(root, layout, RunRigHost.OwnLamps, null, dress);
+        return root;
+    }
+
+    static string R18TodayUnchanged()
+    {
+        // 1. The layout, field for field, bit for bit: the factory's defaults, the binder's arguments (the map's arch and door) and
+        //    a third pair (the arch and door widths are the factory's only inputs besides the cells).
+        var diffs = new List<string>();
+        var leaves = 0;
+        var widths = new[] { new[] { 1.4f, 1f }, new[] { FrontRooms.Map.FrontRoomsRunRooms.ArchWidth, FrontRooms.Map.ModuleUnits.DoorWidth }, new[] { 1.2f, .9f } };
+        foreach (var p in widths)
+        {
+            leaves += SameFields(TodayCorridor1x9(p[0], p[1]), RunRigLayout.Corridor(9, p[0], p[1]), "Corridor(9, " + F(p[0]) + ", " + F(p[1]) + ")", diffs);
+            leaves += SameFields(TodayCorridor1x9(p[0], p[1]), RunRigLayout.Corridor1x9(p[0], p[1]), "Corridor1x9(" + F(p[0]) + ", " + F(p[1]) + ")", diffs);
+        }
+        leaves += SameFields(TodayCorridor1x9(), RunRigLayout.Corridor1x9(), "Corridor1x9()", diffs);
+        Require(diffs.Count == 0, diffs.Count + " differences against today's preset, first: " + (diffs.Count > 0 ? diffs[0] : ""));
+        var detail = "Corridor(9) = today's Corridor1x9: " + leaves + " values in 7 builds, 0 differences";
+        // 2. The pieces: the dress and the rig from today's preset and from Corridor(9), look-dev shell and the map skin (the binder's
+        //    layout), piece by piece and light by light.
+        for (var skin = 0; skin < 2; skin++)
+        {
+            var a = TodayCorridor1x9();
+            var b = RunRigLayout.Corridor(9);
+            if (skin == 1)
+            {
+                a.buildShell = false; a.skinShell = true;
+                b.buildShell = false; b.skinShell = true;
+            }
+            FrontRoomsRunRig ra, rb;
+            var rootA = BuildRoom("TEST run b today", a, out ra);
+            var rootB = BuildRoom("TEST run b cells 9", b, out rb);
+            try
+            {
+                int pa, pb;
+                var sa = PieceSignature(rootA, out pa);
+                var sb = PieceSignature(rootB, out pb);
+                if (sa != sb)
+                {
+                    var la = sa.Split('\n');
+                    var lb = sb.Split('\n');
+                    var k = 0;
+                    while (k < la.Length && k < lb.Length && la[k] == lb[k]) k++;
+                    throw new Exception((skin == 1 ? "map skin" : "shell") + ": piece " + k + " differs: " + (k < la.Length ? la[k] : "-") + " / " + (k < lb.Length ? lb[k] : "-"));
+                }
+                ra.Evaluate(3f); rb.Evaluate(3f);
+                Require(Signature(ra) == Signature(rb), "the rigs' lights differ tripped");
+                ra.Evaluate(-1f); rb.Evaluate(-1f);
+                Require(Signature(ra) == Signature(rb), "the rigs' lights differ armed");
+                Require(Mathf.Abs(ra.ResetDuration - rb.ResetDuration) < 1e-6f, "reset " + F(ra.ResetDuration) + " / " + F(rb.ResetDuration));
+                detail += "; " + (skin == 1 ? "map skin" : "shell") + " " + pa + " pieces identical";
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(rootA.gameObject);
+                UnityEngine.Object.DestroyImmediate(rootB.gameObject);
+            }
+        }
+        // 3. The binder reads the room's cells from its record, 9 by default.
+        var room = new FrontRooms.Map.FrontRoomsRunRoom { Cells = new FrontRooms.Map.GridCoord[9] };
+        Require(FrontRoomsRunRigBinder.CellsOf(room) == 9 && FrontRoomsRunRigBinder.CellsOf(null) == 9 && FrontRoomsRunRigBinder.CellsOf(new FrontRooms.Map.FrontRoomsRunRoom()) == 9, "CellsOf: not 9 for today's record or none");
+        return detail + "; the binder's CellsOf 9 (record), 9 (none)";
+    }
+
+    /// <summary>R14's frame windows over one animated reset (the whole corridor, every 3 neighbouring wraps with the heads): the worst
+    /// flashes a second, the most flicks a wrap makes before its sweep, and the reset's length as ticked.</summary>
+    static float ResetWindows(FrontRoomsRunRig rig, out int worstFlicks, out string worstName, out float seconds)
+    {
+        var wraps = Named(rig, "run b wrap light");
+        var heads = Named(rig, "head light");
+        rig.Trip();
+        for (var k = 0; k < 240; k++) rig.Tick(Dt);
+        var series = new List<float[]>();
+        var times = new List<float>();
+        rig.StartReset();
+        var t = 0f;
+        for (var k = 0; k < 240 * 15; k++)
+        {
+            var row = new float[wraps.Length + 1];
+            for (var i = 0; i < wraps.Length; i++) row[i] = wraps[i].enabled ? wraps[i].intensity : 0f;
+            var h = 0f;
+            foreach (var l in heads) h += l.enabled ? l.intensity : 0f;
+            row[wraps.Length] = h;
+            series.Add(row); times.Add(t);
+            if (rig.State != RunRigState.Resetting) break;
+            rig.Tick(1f / 240f); t += 1f / 240f;
+        }
+        seconds = t;
+        worstFlicks = 0;
+        for (var i = 0; i < wraps.Length; i++)
+        {
+            var edges = 0; var prev = 0f;
+            for (var k = 0; k < series.Count && times[k] < rig.Layout.resetRiseStart - .01f; k++) { if (series[k][i] > 0f && prev <= 0f) edges++; prev = series[k][i]; }
+            worstFlicks = Mathf.Max(worstFlicks, edges);
+        }
+        var worst = 0f; worstName = "-";
+        for (var w = -1; w + 2 < wraps.Length; w++)
+        {
+            var a = w < 0 ? 0 : w; var b = w < 0 ? wraps.Length - 1 : w + 2;
+            var mean = new float[series.Count];
+            var max = 0f;
+            for (var k = 0; k < series.Count; k++)
+            {
+                var v = series[k][wraps.Length];
+                for (var i = a; i <= b; i++) v += series[k][i];
+                mean[k] = v; max = Mathf.Max(max, v);
+            }
+            if (max <= 0f) continue;
+            var fc = new FlashCounter(mean[0] / max);
+            for (var k = 0; k < series.Count; k++) fc.Add(times[k], mean[k] / max);
+            var f = fc.MaxFlashesPerSecond();
+            if (f > worst) { worst = f; worstName = w < 0 ? "whole corridor" : "wraps " + a + "-" + b; }
+        }
+        return worst;
+    }
+
+    static int Tris(Mesh m)
+    {
+        if (m == null) return 0;
+        long n = 0;
+        for (var s = 0; s < m.subMeshCount; s++) n += m.GetIndexCount(s);
+        return (int)(n / 3);
+    }
+
+    /// <summary>COST: triangles at LOD0 / LOD1 / LOD2 (a renderer outside any LOD group counts at every level; a group with fewer
+    /// levels shows its last), renderer slots (renderers x materials) at LOD0, and lights.</summary>
+    static string Cost(Transform root)
+    {
+        var inGroup = new HashSet<Renderer>();
+        var tris = new long[3];
+        long slots = 0;
+        foreach (var g in root.GetComponentsInChildren<LODGroup>(true))
+        {
+            var lods = g.GetLODs();
+            for (var level = 0; level < 3; level++)
+            {
+                var lod = lods[Mathf.Min(level, lods.Length - 1)];
+                foreach (var r in lod.renderers)
+                {
+                    if (r == null) continue;
+                    var mf = r.GetComponent<MeshFilter>();
+                    tris[level] += Tris(mf != null ? mf.sharedMesh : null);
+                    if (level == 0) slots += r.sharedMaterials.Length;
+                }
+            }
+            foreach (var lod in lods) foreach (var r in lod.renderers) if (r != null) inGroup.Add(r);
+        }
+        foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+        {
+            if (inGroup.Contains(r) || !r.enabled) continue;
+            var mf = r.GetComponent<MeshFilter>();
+            var n = Tris(mf != null ? mf.sharedMesh : null);
+            for (var level = 0; level < 3; level++) tris[level] += n;
+            slots += r.sharedMaterials.Length;
+        }
+        return "tris " + tris[0] + "/" + tris[1] + "/" + tris[2] + ", " + slots + " renderer slots";
+    }
+
+    static string R19Cells()
+    {
+        var sb = new StringBuilder();
+        var reset9 = 0f;
+        var hw = 1.42f;
+        for (var n = RunRigLayout.MinCells; n <= RunRigLayout.MaxCells; n++)
+        {
+            var l = RunRigLayout.Corridor(n);
+            var len = 3f * n;
+            var tag = n + " cells: ";
+            Require(l.Cells == n && l.length == len && l.name == "Corridor1x" + n, tag + "length " + F(l.length) + ", " + l.Cells + " cells, " + l.name);
+            // A strip every cell, every one shadowed; the stutter tube in cell 5.
+            Require(l.ownLamps.Length == n && l.ownLampShadows.Length == n && l.stutterLamp == 4, tag + l.ownLamps.Length + " strips");
+            for (var k = 0; k < n; k++)
+                Require(l.ownLamps[k] == new Vector3(0f, 2.9f, 1.8f + 3f * k) && l.ownLampShadows[k] == k, tag + "strip " + k + " at z " + F(l.ownLamps[k].z));
+            // Heads every two cells; the goal unit two cells before the goal wall; at most one 9 m interval (even counts), the last.
+            var u = l.units;
+            var count = (n - 1) / 2;
+            Require(u.Length == count, tag + u.Length + " units, want " + count);
+            Require(u[0].z == 3f && u[0].side > 0f && !u[0].remote && !u[0].goalPlus && u[0].trimPlus == -.23f && u[1].trimMinus == -.23f, tag + "the entry unit");
+            Require(u[count - 1].z == len - 6f && u[count - 1].goalPlus && !u[count - 1].remote, tag + "the goal unit at z " + F(u[count - 1].z));
+            var nine = 0;
+            for (var i = 1; i < count; i++)
+            {
+                var gap = u[i].z - u[i - 1].z;
+                if (gap == 9f) nine++;
+                Require(gap == 6f || (gap == 9f && i == count - 1), tag + "units " + (i - 1) + "-" + i + " " + F(gap) + " m apart");
+                Require(u[i].side == -u[i - 1].side && u[i].autoAim, tag + "unit " + i + " not on the other wall");
+                Require(u[i].remote == (i < count - 1) && u[i].goalPlus == (i == count - 1), tag + "unit " + i + " remote / goal");
+                if (i > 1) Require(u[i].trimMinus == 0f && u[i].trimPlus == 0f, tag + "unit " + i + " trimmed");
+            }
+            Require(nine == (n % 2 == 0 ? 1 : 0), tag + nine + " intervals of 9 m");
+            // The goal assembly at the end; the faces, floor, services, post over 0 .. L.
+            Require(l.goalPoint == new Vector3(0f, 1.05f, len) && l.goalNormal == Vector3.back, tag + "goal point " + l.goalPoint);
+            Require(l.walls.Length == 4 && l.walls[0].length == len && l.walls[1].length == len && l.walls[2].start.z == .08f && Mathf.Abs(l.walls[3].start.z - (len - .08f)) < 1e-5f, tag + "faces");
+            Require(l.floorZ1 == len && l.runZ1 == len && l.postCentre.z == len * .5f && l.postSize.z == len, tag + "floor / runs / post");
+            // Probes by segment: (n + 2) / 3 boxes covering the corridor, the goal box at L - 4.54, the 9-cell bake's cubes.
+            var segs = (n + 2) / 3;
+            Require(l.probes.Length == segs, tag + l.probes.Length + " probe boxes, want " + segs);
+            Require(l.probes[0].centre.z == 4.5f && Mathf.Abs(l.probes[segs - 1].centre.z - (len - 4.54f)) < 1e-4f, tag + "end probes");
+            var reach = -1f;
+            for (var i = 0; i < segs; i++)
+            {
+                var c = l.probes[i].centre.z; var h = l.probes[i].size.z * .5f;
+                Require(l.probes[i].size == new Vector3(3.16f, 3.22f, 9.6f) && c - h <= Mathf.Max(0f, reach) + 1e-4f, tag + "probe " + i + " leaves a gap");
+                if (i > 0 && i < segs - 1) Require(c == 4.5f + 9f * i, tag + "probe " + i + " at z " + F(c));
+                reach = Mathf.Max(reach, c + h);
+            }
+            Require(reach >= len, tag + "the probes stop at z " + F(reach));
+            if (n == RunRigLayout.TodayCells) Require(string.IsNullOrEmpty(l.probeBake) && l.probeCubes.Length == 0, tag + "probe bake set");
+            else
+            {
+                Require(l.probeBake == RunRigLayout.ProbeBakeName && l.probeCubes.Length == segs && l.probeCubes[0] == 0 && l.probeCubes[segs - 1] == 2, tag + "probe cubes");
+                for (var i = 1; i < segs - 1; i++) Require(l.probeCubes[i] == 1, tag + "probe cube " + i);
+            }
+            // An obstacle in every pool but the goal's, on alternate walls.
+            Require(l.obstacles.Length == count - 1, tag + l.obstacles.Length + " obstacles");
+            for (var p = 0; p < l.obstacles.Length; p++)
+            {
+                var o = l.obstacles[p];
+                var pool = (u[p].z + u[p + 1].z) * .5f;
+                Require(Mathf.Abs(o.position.z - pool) <= .5f && Mathf.Sign(o.position.x) == (p % 2 == 0 ? 1f : -1f), tag + "obstacle " + p + " at " + o.position + ", pool " + F(pool));
+            }
+            // Side doors: ELECTRICAL in cell 1 (right), NOT AN EXIT two cells before the goal (right), STAFF ONLY in cell 5 (left) when
+            // a cell short of it; each 1.2 m or more from a unit on its wall and clear of every other door and cabinet there; gapped.
+            var doors = l.sideDoors;
+            var staff = 17f <= len - 7f;
+            Require(doors.Length == (staff ? 3 : 2) && doors[0].z == 5f && doors[0].side > 0f && doors[0].face == "electrical", tag + doors.Length + " side doors");
+            Require(doors[doors.Length - 1].z == len - 4f && doors[doors.Length - 1].side > 0f && doors[doors.Length - 1].face == "stencil", tag + "NOT AN EXIT at z " + F(doors[doors.Length - 1].z));
+            if (staff) Require(doors[1].z == 17f && doors[1].side < 0f && doors[1].face == "staff", tag + "STAFF ONLY");
+            var cabinets = new List<float>();
+            foreach (var it in l.wallItems) if (it.kit == "Kit_ExtinguisherCabinet") cabinets.Add(it.point.z);
+            foreach (var d in doors)
+            {
+                foreach (var unit in u) if (unit.side == d.side) Require(Mathf.Abs(d.z - unit.z) >= 1.2f, tag + "door at z " + F(d.z) + " on the unit at z " + F(unit.z));
+                foreach (var e in doors) if (e.z != d.z && e.side == d.side) Require(Mathf.Abs(e.z - d.z) >= 3f, tag + "doors at z " + F(d.z) + " and " + F(e.z));
+                if (d.side < 0f) foreach (var c in cabinets) Require(Mathf.Abs(c - d.z) >= .7f, tag + "door at z " + F(d.z) + " on the cabinet at z " + F(c));
+                var face = l.walls[d.side > 0f ? 1 : 0];
+                var gapped = false;
+                foreach (var g in face.gaps) if (Mathf.Abs(g.x - (d.z - .545f)) < 1e-4f && Mathf.Abs(g.y - (d.z + .545f)) < 1e-4f) gapped = true;
+                Require(gapped, tag + "no face gap for the door at z " + F(d.z));
+            }
+            // Extinguisher cabinets on the left: every point of the corridor within 75 ft (22.86 m) of one; each gapped.
+            Require(cabinets.Count == (len > 10.2f + 22.86f ? 2 : 1) && cabinets[0] == 10.2f, tag + cabinets.Count + " cabinets");
+            for (var z = 0f; z <= len; z += .5f)
+            {
+                var near = float.MaxValue;
+                foreach (var c in cabinets) near = Mathf.Min(near, Mathf.Abs(z - c));
+                Require(near <= 22.86f, tag + "z " + F(z) + " is " + F(near) + " m from a cabinet");
+            }
+            // Compartment frames: none unless asked; asked, every third cell line inside the room.
+            Require(l.compartmentFrames.Length == 0, tag + "frames without being asked");
+            var framed = RunRigLayout.Corridor(n, 1.4f, 1f, true);
+            Require(framed.compartmentFrames.Length == (n - 1) / 3, tag + framed.compartmentFrames.Length + " frames");
+            for (var i = 0; i < framed.compartmentFrames.Length; i++) Require(framed.compartmentFrames[i] == 9f * (i + 1) && framed.compartmentFrames[i] < len, tag + "frame " + i);
+            // The binder reads the length from the room's record.
+            Require(FrontRoomsRunRigBinder.CellsOf(new FrontRooms.Map.FrontRoomsRunRoom { Cells = new FrontRooms.Map.GridCoord[n] }) == n, tag + "CellsOf");
+            // Built: lights, the lanes, the trip and the reset over the current length.
+            FrontRoomsRunRig rig;
+            var root = BuildRoom("TEST run b cells " + n, l, out rig);
+            try
+            {
+                var wraps = Named(rig, "run b wrap light");
+                var heads = Named(rig, "head light");
+                Require(wraps.Length == n && heads.Length == 2 * count, tag + wraps.Length + " wraps, " + heads.Length + " heads");
+                int total, on, sh;
+                rig.Evaluate(-1f); rig.CountLights(out total, out on, out sh);
+                var armed = on + "/" + sh;
+                Require(on == n + 1 && sh == n, tag + "armed " + armed);
+                rig.Evaluate(3f); rig.CountLights(out total, out on, out sh);
+                var tripped = on + "/" + sh;
+                Require(on == 2 * count + 1 && sh == 2 * count, tag + "tripped " + tripped);
+                var lane = float.MaxValue;
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (!t.name.StartsWith("run b obstacle ", StringComparison.Ordinal)) continue;
+                    float x0 = float.MaxValue, x1 = float.MinValue;
+                    foreach (var bc in t.GetComponentsInChildren<BoxCollider>(true))
+                        for (var c = 0; c < 8; c++)
+                        {
+                            var corner = bc.center + Vector3.Scale(bc.size * .5f, new Vector3((c & 1) == 0 ? -1f : 1f, (c & 2) == 0 ? -1f : 1f, (c & 4) == 0 ? -1f : 1f));
+                            var x = root.InverseTransformPoint(bc.transform.TransformPoint(corner)).x;
+                            x0 = Mathf.Min(x0, x); x1 = Mathf.Max(x1, x);
+                        }
+                    if (x0 <= x1) lane = Mathf.Min(lane, Mathf.Max(x0 + hw, hw - x1));
+                }
+                Require(l.obstacles.Length == 0 || lane >= 1.4f, tag + "lane " + F(lane) + " m beside an obstacle");
+                var trip = new LampTrace(Lights(rig));
+                for (var ms = -100; ms <= 3000; ms += 2) { rig.Evaluate(ms / 1000f); trip.Sample(ms / 1000f); }
+                string worstLamp; var tf = trip.WorstFlashes(out worstLamp);
+                Require(tf <= 3f, tag + "trip " + F(tf) + " flashes/s on " + worstLamp);
+                // The reset: n x resetCellSeconds of sweep from the entrance; the last strip rises once, from its cell's start.
+                var want = l.resetRiseStart + n * l.resetCellSeconds + l.resetRise + .2f;
+                Require(Mathf.Abs(rig.ResetDuration - want) < 1e-4f, tag + "reset " + F(rig.ResetDuration) + " s, want " + F(want));
+                if (n == RunRigLayout.TodayCells) reset9 = rig.ResetDuration;
+                var lastZ = l.ownLamps[n - 1].z;
+                var lastStart = l.resetRiseStart + (n - 1) * l.resetCellSeconds;
+                rig.ResetImmediate();
+                Require(rig.RestrikeLevel(lastStart - .01f, lastZ) == 0f && rig.RestrikeLevel(lastStart + .2f, lastZ) > .35f, tag + "the last strip does not rise at " + F(lastStart) + " s");
+                int flicks; string window; float seconds;
+                var rf = ResetWindows(rig, out flicks, out window, out seconds);
+                Require(rig.State == RunRigState.Armed && Mathf.Abs(seconds - want) <= 2f / 240f, tag + "the reset ticked " + F(seconds) + " s, want " + F(want));
+                Require(flicks == 1 && rf <= 3f, tag + "reset " + F(rf) + " flashes/s (" + window + "), " + flicks + " flicks a strip");
+                sb.Append(n).Append(" cells ").Append(F(len)).Append(" m: units ");
+                for (var i = 0; i < count; i++) sb.Append(i > 0 ? "," : "").Append(F(u[i].z)).Append(u[i].side > 0f ? "R" : "L");
+                sb.Append("; doors ").Append(doors.Length).Append(", obstacles ").Append(l.obstacles.Length).Append(", cabinets ").Append(cabinets.Count)
+                  .Append(", probes ").Append(segs).Append("; lights armed ").Append(armed).Append(", tripped ").Append(tripped)
+                  .Append("; reset ").Append(F(rig.ResetDuration)).Append(" s, ").Append(F(rf)).Append(" flashes/s; lane ").Append(F(lane)).Append(" m; ")
+                  .Append(Cost(root)).Append(" | ");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root.gameObject); }
+        }
+        // A corridor outside 7 .. 14 cells is refused (a warning) and built at 9.
+        Require(RunRigLayout.Corridor(6).Cells == 9 && RunRigLayout.Corridor(15).Cells == 9 && !RunRigLayout.ValidCells(6) && !RunRigLayout.ValidCells(15), "6 or 15 cells not refused");
+        Require(Mathf.Abs(reset9 - 2.4f) < 1e-4f, "today's reset " + F(reset9) + " s, not 2.4");
+        Log.AppendLine("R19 COST " + sb);
+        return sb.Append("6 and 15 cells refused (built at 9)").ToString();
     }
 
     static string W1Gate()

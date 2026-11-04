@@ -1,0 +1,150 @@
+{
+ "name": "Kit_TandemBeam2Table",
+ "supports": [
+  {
+   "name": "seat_1",
+   "centre": [
+    0.0,
+    0.445,
+    0.04
+   ],
+   "size": [
+    0.44,
+    0.4
+   ]
+  },
+  {
+   "name": "seat_2",
+   "centre": [
+    0.65,
+    0.445,
+    0.04
+   ],
+   "size": [
+    0.44,
+    0.4
+   ]
+  },
+  {
+   "name": "table",
+   "centre": [
+    -0.65,
+    0.47,
+    0.0
+   ],
+   "size": [
+    0.46,
+    0.42
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.42,
+    -0.01
+   ],
+   "size": [
+    2.01,
+    0.84,
+    0.62
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "sit_1",
+   "pos": [
+    0.0,
+    0.445,
+    0.04
+   ]
+  },
+  {
+   "name": "back_top_1",
+   "pos": [
+    0.0,
+    0.83,
+    -0.29
+   ]
+  },
+  {
+   "name": "sit_2",
+   "pos": [
+    0.65,
+    0.445,
+    0.04
+   ]
+  },
+  {
+   "name": "back_top_2",
+   "pos": [
+    0.65,
+    0.83,
+    -0.29
+   ]
+  },
+  {
+   "name": "ashtray",
+   "pos": [
+    -0.65,
+    0.47,
+    0.08
+   ]
+  }
+ ],
+ "tags": [
+  "station",
+  "seat",
+  "waiting"
+ ],
+ "lodDistances": [
+  6.0,
+  15.0,
+  60.0
+ ],
+ "budget": [
+  8000,
+  2700,
+  500
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 bs4-hero-kits",
+  "origin": "floor under the middle seat position (x 0)",
+  "note": "front +Z; beam seating, beam table at x -0.65, seats at x 0 / +0.65"
+ },
+ "boundsMin": [
+  -1.0019999742507935,
+  0.0,
+  -0.31439611315727234
+ ],
+ "boundsMax": [
+  1.0019999742507935,
+  0.8400477170944214,
+  0.30000001192092896
+ ],
+ "triangles": 8991,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_PlasticBlack",
+  "Prop_VinylSlate",
+  "Prop_WoodOak",
+  "Prop_Chrome",
+  "Prop_AshSand"
+ ],
+ "trianglesLod1": 2034,
+ "trianglesLod2": 228,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.010000000000000009
+ ],
+ "footprintSize": [
+  2.01,
+  0.62
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.89
+}

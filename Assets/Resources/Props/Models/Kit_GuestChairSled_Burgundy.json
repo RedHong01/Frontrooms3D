@@ -1,0 +1,99 @@
+{
+ "name": "Kit_GuestChairSled_Burgundy",
+ "supports": [
+  {
+   "name": "seat",
+   "centre": [
+    0.0,
+    0.457,
+    0.02
+   ],
+   "size": [
+    0.44,
+    0.4
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.42,
+    -0.015
+   ],
+   "size": [
+    0.584,
+    0.84,
+    0.57
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "sit",
+   "pos": [
+    0.0,
+    0.457,
+    0.02
+   ]
+  },
+  {
+   "name": "back_top",
+   "pos": [
+    0.0,
+    0.835,
+    -0.27
+   ]
+  }
+ ],
+ "tags": [
+  "station",
+  "seat",
+  "office"
+ ],
+ "lodDistances": [
+  5.0,
+  12.0,
+  50.0
+ ],
+ "budget": [
+  5000,
+  1700,
+  350
+ ],
+ "station": {
+  "line": "\u6e38\u620f\u89c6\u89c9 bs4-hero-kits",
+  "origin": "floor, footprint centre",
+  "note": "front (+Z) = the sitter's facing; Station_Desk_3x3 P23, P24 (W wall, yaw 90); colour S-A teal (REC), S-B burgundy variant"
+ },
+ "boundsMin": [
+  -0.29500001668930054,
+  0.0,
+  -0.29988226294517517
+ ],
+ "boundsMax": [
+  0.29500001668930054,
+  0.839142918586731,
+  0.2699728012084961
+ ],
+ "triangles": 5176,
+ "slots": [
+  "Prop_Chrome",
+  "Prop_PlasticBlack",
+  "Prop_VinylBurgundy"
+ ],
+ "trianglesLod1": 1192,
+ "trianglesLod2": 360,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.015000000000000013
+ ],
+ "footprintSize": [
+  0.584,
+  0.57
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.889
+}

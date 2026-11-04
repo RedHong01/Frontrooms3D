@@ -3163,7 +3163,8 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
     /// </summary>
     IEnumerator X2Teaching(FrontRoomsTouchLayout L, Vector2 origin)
     {
-        const string Slow = "SLOW · UNHEARD";
+        // The stick's slow word follows the body doors, as the view's SlotEnglish does (DL2): SLOW · QUIET STEPS with them on.
+        var Slow = FrontRooms3DGame.BodyDoorsActive ? "SLOW · QUIET STEPS" : "SLOW · UNHEARD";
         FrontRoomsTouchControls.SetTaught(true, false);
         FrontRoomsTouchControls.SetTaught(false, false);
         SetReleased(false);

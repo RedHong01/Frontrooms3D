@@ -19,7 +19,12 @@ Nothing here is urgent for the playtest: every screen still works and names its 
 - `Set(params Prompt[])` / `Set(IList<Prompt>)`: cheap when nothing changed, so call it every frame. `Tick()` every frame
   while shown: it follows the device in hand (keys, Xbox, PlayStation, Nintendo; a rebind) and fills a chip while its
   button is held (1 px drop, none under Reduce Motion). Your screen still acts on the press itself.
-- `Hold(int chip, float amount)`: a ring round chip `chip`'s glyph, 0 to 1 (HOLD USE · BREAK GLASS).
+- `Hold(int chip, float amount)`: a ring round chip `chip`'s glyph, 0 to 1 (D4's HOLD USE · BREAK GLASS ring). No screen
+  calls it: the HUD keeps the yellow hold bar (§2 G8).
+- `Hud = true`: every part of every chip at full strength (edge, legend, marks, d-pad arms, words), for 游戏视觉's HUD USE
+  line over the lit world (G8 step 2, with `Keyline` on); wins over `Solid` (.85 edge). A press looks as always, its paper
+  fill full already; at rest a glyph's shape stays unfilled, as on every bar, so a filled shape still means a press. A
+  `live` false chip still draws at 40 %: its button does nothing here.
 - `Prompt(Role role, string verb, bool live = true)`: `verb` is a table key; "{0}  VERB" puts the glyph where {0} is,
   a plain key ("CLOSER") puts it before the word, null draws the glyph alone. `live` false = 40 % (the button does nothing
   here). Roles: Confirm, Back, Reset, Extra, Defaults, Tabs, TabPrev, TabNext, Choose, Change, ChooseAll, Menu, Restart,
@@ -39,9 +44,9 @@ Nothing here is urgent for the playtest: every screen still works and names its 
    own names: A, CROSS, a Nintendo pad's B).
 2. Glyph (D1): draw the control as a chip and keep your verb: a bar with `Prompt.Bound(Bind.Use, Bind.PadUse, null)` (glyph
    only) before your "·  UNLOCK" text, or the whole line as `Prompt.Bound(Bind.Use, Bind.PadUse, "{0}  USE")`-style keys
-   from your table. HOLD USE · BREAK GLASS: `bar.Hold(0, held01)`. Over the lit world the bar has no keyline of its own:
-   parent it under the HUD and give it your FrontRoomsHudStyle keyline (an Outline on its Text children; for the glyph
-   masks a dark copy one px down), or ask 交互设计 for a keyline option in the bar.
+   from your table. HOLD USE · BREAK GLASS: no `Hold` ring on the HUD: the yellow hold bar stays the only progress
+   (游戏视觉, 11-04). Over the lit world: `bar.Keyline = true` (the HUD's keyline round every glyph and word) and
+   `bar.Hud = true` (every part at full strength, §1).
 
 **Close-up hints** (`FrontRoomsInspectCatalog.HintBack` "E  ·  BACK", `HintCloser` "SCROLL  ·  CLOSER", touch variants;
 the handheld pad words come from `FrontRooms3DGame.Mobile.cs` ~l.108, 交互设计's, which hands you

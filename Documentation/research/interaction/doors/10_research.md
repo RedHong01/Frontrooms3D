@@ -12,7 +12,7 @@ Research for FrontRooms 交互设计 (interaction design): double-acting wooden 
 - Everything is paraphrased except Red's words in section 1 and one short developer quote in The Last of Us block.
 - No video was watched, so there are no video timestamps.
 - These sites were blocked for the fetcher, so claims from them are [S]: Steam community threads for mature games (age gate, not bypassed), all Fandom wikis, GameSpot, Polygon, The Verge, IGN, X/Twitter, StrategyWiki, the Valve Developer Community, PC Gamer article bodies, Twinfinite and Prima.
-- Numbers on "Sources" lines point to the numbered list at the end.
+- Numbers on "Sources" lines point to the numbered list at the end. [R1]–[R50] (added 2026-11-04, Resident Evil Requiem and the RE games around it) point to `SOURCES.md` in this folder.
 
 ## 1. Why this page
 
@@ -197,22 +197,35 @@ An extra AAA reference, all from wiki.gg [V].
 - **Not in the notes.** Speed variants, close, slam, feedback.
 - **Sources.** 79, 80, 82.
 
+#### Resident Evil Requiem (2026)
+
+Added 2026-11-04 for Red's ask in the 交互设计 chat: “我希望你能够重点研究最新的生化危机游戏安魂曲里的门的交互是怎么做的，然后优化现有的门的交互。” (study how doors work in the newest Resident Evil, Requiem, then improve ours). The written record is thin. No source gives door timings, the door animation, door sound or door haptics, and no video was watched.
+- **Open.** The published control lists have no open, close, peek or lean binding, only a generic Interact plus movement [R34, V]. A gentle push opens a door partway, so the player sets how far it opens. A guide advises pushing a door a crack to look in before entering [R1, V] [R17, V]. Every source describes pushing; none describes a pull. Whether the stick alone does it, or Interact and then walking: not in the sources. In the 2025 demo a writer reopened a door carefully after hiding behind it [R2, V].
+- **Close.** One tap of Interact in front of an open door closes it at once, a trick the guide says the game never teaches: “Tap the A button in front of an open door to quickly close it.” [R1, V; Switch 2 layout]. No source says doors close by themselves [U]. Pushing a door shut by walking into it: not found.
+- **Slam and enemies.** No source has the player slamming a door into an enemy, or a door kick. Leon pries warped doors and closets open with his hand axe, a canned move after one prompt; Grace only gets a "warped" message [R7, V] [R13, V]. In the 2025 demo a shut door kept the stalker out: four write-ups of one demo beat [R2–R5, V]. In the final game she smashes through at least one door; two walkthroughs say it is scripted once you hold the Screwdriver, a third calls it conditional [R8–R10, V; they disagree]. Light, not doors, is the hard barrier: she recoils at a lit doorway, but she can put the lights out [R3, R10, R11, V]. Big zombies block doorways [R12, V].
+- **Noise and AI.** The stalker reacts to light and sound, and a trolley's noise draws her in [R9, R14, V]. No source tests whether door noise does [U]. "Opening a door too fast gives you away" rests on one low-reliability page [R19].
+- **Camera, sound, haptics.** No door-specific camera move is described. First-person camera shake can be reduced, and there is a camera-wobble slider [R12, R15, V]. The creaks in the 2025 demo come from floors and lamps, not doors [R2, V]. Capcom's DualSense list (the grip and bite, per-weapon trigger resistance, reloads, a gem puzzle) has no door entry [R6, V].
+- **Reading for FrontRooms [U].** Requiem keeps RE7's push door, where how far it opens follows the player, and the RE2 remake's crack-to-look. It makes closing a quick, deliberate act at the open door. Its close is a button, which Red's 1C rules out. The body version is the push-shut in `20_design.md` §2b, built 11-04. The button version, and a touch-to-close on the face you pushed, are decision 14 in `30_for_red_zh.md`.
+- **Sources.** R1–R38 in `SOURCES.md`.
+
 #### Resident Evil 2 (2019 remake)
 
+- **Open, close and AI (official tips, 11-04).** Leaning slowly into an unlocked door cracks it open only a little and does not alert zombies. Zombies follow you and burst through shut doors; a rattling door warns of it, and standing next to it knocks you back when it bursts. Zombies whose arms are shot off can no longer break doors (PlayStation.Blog, 2019-01-25) [R41, V] [R42, V]. Doors stopped being loading screens and hard barriers [R43, R44, V].
 - **Speed variants, noise and AI.** Slamming doors open, running and gunshots are noises that draw Mr. X, and quieter play slows him (GameRevolution, 2019-02-28) [V, guide]. Steam players say walking, and opening doors while walking, do not alert him [S]. InvertMouse thinks Mr. X ignores doors [V]. These sources disagree, so Mr. X's reaction to doors is marked UNCERTAIN.
 - **Not in the notes.** Close, slam shut, feedback.
 - **Sources.** 81–83.
 
 #### Resident Evil 7
 
-- **Open.** A review in the search results (outlet not identified) says you press up against a door and it creaks open slowly [S].
+- **Open.** A review in the search results (outlet not identified) says you press up against a door and it creaks open slowly [S]. Confirmed 11-04: USE opens a door partway by itself, or you walk into it and push. Ethan's hand shows on the door and pushes or eases off with your input, so you set the speed. You can back through a door, and sturdy double doors can be barged (Kotaku, Kirk Hamilton, 2017-01-31) [R39, V].
 - **Close.** The Baker doors are weighted to close on their own, though closing them yourself is still advised (cheatcc guide) [S]. A review describes a door you forgot to close shutting itself with an audible click (Twinfinite) [S].
 - **Not in the notes.** Speed variants, slam, noise and AI. Feedback appears only as the creak and the click above.
 - **Sources.** 84, 85. Source 86 (a GameWatcher review) is listed in the notes, but no claim cites it.
 
 #### Resident Evil Village
 
-- Nothing found [U].
+- Nothing found [U] (10-31). 11-04: Lady Dimitrescu follows you through doors and stoops through small doorframes (Shacknews, 2021-04-19) [R46, V]. A forum user says Village's doors are physics doors that swing shut afterwards [R40, weak].
+- RE3 remake and RE4 (11-04, contrast): Capcom kept true safe rooms Nemesis cannot enter [R45, V]. In RE4 (2005) a single tap opens a door quietly, and a double tap kicks it open, noisily, hurting whoever stands behind it [R47, R48, V]. The RE4 remake has no door kick; a PC mod adds one [R50, snippet only].
 
 #### Classic Resident Evil
 

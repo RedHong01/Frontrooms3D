@@ -83,7 +83,7 @@ The table rows already used by the HUD and the TEXT panel win: the world reuses 
 
 | English (signed) | zh-Hans | zh-Hant | ja | ko | de | fr | es | pt-BR | ru |
 |---|---|---|---|---|---|---|---|---|---|
-| `EXIT` | 安全出口 | 緊急出口 | 非常口 | 비상구 | NOTAUSGANG (short: AUSGANG) | SORTIE | SALIDA | SAÍDA | ВЫХОД |
+| `EXIT` | 出口 (signed short form, see below; full form 安全出口) | 緊急出口 | 非常口 | 비상구 | NOTAUSGANG (short: AUSGANG) | SORTIE | SALIDA | SAÍDA | ВЫХОД |
 | `NOT AN EXIT` | 非出口 | 非出口 | 出口ではありません | 비상구 아님 | KEIN AUSGANG | PAS UNE SORTIE | NO ES SALIDA | NÃO É SAÍDA | НЕ ВЫХОД |
 | `AREA OF RESCUE ASSISTANCE` | 救援等候区 | 救援等候區 | 救助待機場所 | 구조 대기 구역 | WARTEBEREICH FÜR RETTUNG | ZONE D'ATTENTE DES SECOURS | ÁREA DE ESPERA DE RESCATE | ÁREA DE ESPERA DE RESGATE | ЗОНА ОЖИДАНИЯ СПАСАТЕЛЕЙ |
 | `NO ROOF ACCESS` | 不通屋顶 | 不通屋頂 | 屋上出入不可 | 옥상 출입 불가 | KEIN ZUGANG ZUM DACH | PAS D'ACCÈS AU TOIT | SIN ACCESO A LA AZOTEA | SEM ACESSO À COBERTURA | ВЫХОДА НА КРЫШУ НЕТ |
@@ -103,6 +103,11 @@ The table rows already used by the HUD and the TEXT panel win: the world reuses 
 | `SPARE` | 备用 | 備用 | 予備 | 예비 | RESERVE | RÉSERVE | RESERVA | RESERVA | РЕЗЕРВ |
 | `SPRINKLER FLOW` | 喷淋水流 | 灑水水流 | スプリンクラー流水 | 스프링클러 유수 | SPRINKLER-DURCHFLUSS | DÉBIT SPRINKLEURS | FLUJO ROCIADORES | FLUXO SPRINKLER | ПОТОК СПРИНКЛЕРОВ |
 | `STAY TUNED.` | 敬请锁定。 | 敬請鎖定。 | チャンネルはそのまま。 | 채널 고정! | BLEIBEN SIE DRAN. | RESTEZ À L'ÉCOUTE. | NO SE VAYA. | NÃO SAIA DAÍ. | ОСТАВАЙТЕСЬ С НАМИ. |
+
+**zh-Hans EXIT = 出口, signed 2026-11-04 (叙事设计).** Red chose C in 游戏视觉's chat, 11-04 08:07: "按推荐选 C" (verified in that transcript). C is the die-cut legend 出口 at EXIT's ink height (`research/exit_sign/80_world_text_options.md` §0). 安全出口 is the full form and fits the kept box only at 40 % of the rule size. So, as de's AUSGANG for NOTAUSGANG, the short form is signed (WORLD_TYPE §3's step two).
+- Why it holds: EXIT itself only says "way out", and 出口 says the same. Hong Kong's bilingual signs read 出口 EXIT. It is a real sign word, not a coinage. It stays distinct from `NOT AN EXIT` 非出口, which a player sees as the same word negated.
+- **One word for one door:** in zh-Hans, every place that names the stair door says 出口. That covers the sign (游戏视觉, `W/apply/world_text_exit_zh`), the 24 evacuation sheets and the legend's STAIR (EXIT) (平面视觉 re-prints, EXIT_SHORT), and the table rows. The table rows `EXIT (over the stair door)` and its padlocked twin, both LEGEND rows and the world row `EXIT` are 出口 (landed 叙事设计 11-04 08:08; no 安全出口 left in zh-Hans.txt).
+- zh-Hant keeps 緊急出口 until its own sign is built and measured. The same short-form step (出口) is pre-signed for it if the box needs it.
 
 **YOU ARE HERE (平面视觉's question, 2026-11-03).** The plan prints it twice, beside the dot and in the legend, so both must match. The standalone rows win: zh-Hans `您所在位置` (the usual wording on a Chinese evacuation plan), zh-Hant `您在此處`. The `LEGEND: …` rows in those two tables change from `你在这里` and `你在這裡`. The other seven languages already match.
 
@@ -226,6 +231,43 @@ The sign-off notice (`30` §4.1) is not on screen yet; it is translated when it 
   2. `Wrap` counts cells, not chars. CJK body lines are written at ≤ 76 cells so they never wrap, but `Put`'s clip widths and `PutRight` must count cells too;
   3. the memo index pads the name to 18 cells, not chars (built in the files);
   4. the drill tokens in the language. CJK: `{DRILL_MONTH}` as a number and `{DRILL_WEEKDAY}` as 星期三 / 水曜日 / 수요일. de, fr, es, pt-BR, ru: month and weekday names in lower case as each language writes them (ru month in the genitive: `сентября`).
+
+### 5.6 Magazine covers (BS4 waiting-room rack, `Kit_MagazineRack`; asked by 信息设计 2026-11-04)
+
+**Signed English, with checks:**
+- **Mastheads** are proper names. They stay English, and the dates follow `station/01` §5 (1989).
+  - `FLOORPLATE`, `TRI-COUNTY BUSINESS` and `WEEKENDS`: no magazine of those exact titles turned up in a search (2026-11-04). `TRI-COUNTY BUSINESS` uses the world's market name on purpose (WTCZ's `TRI-COUNTY`).
+  - `KEYSTROKE`: no magazine found, but `KEYSTROKE` was a 1983 software trademark (Brock Software Products; trademarks.justia.com). It is accepted only because its masthead is always hidden behind C1. If the rack ever shows it, rename it.
+- **Every cover line is signed as drafted.**
+  - `THE EMPTY FLOOR` stays: the 1989 office glut is real, and the echo is the quiet kind the building allows.
+  - `Still waiting?` is the right deck.
+  - None of the lines gives advice, names the threat or uses the game's words.
+- **Kept in every language:** mastheads, prices, the year, `19%`, `$60`, `25`, `12`, `50`, `'85`-`'90` on the chart.
+- A fallback after "/" is only for where the line runs over about 1.4 × the English.
+
+| Slot | zh-Hans | zh-Hant | ja | ko | de | fr | es | pt-BR | ru |
+|---|---|---|---|---|---|---|---|---|---|
+| `NOVEMBER 1989` | 1989年11月 | 1989年11月 | 1989年11月号 | 1989년 11월호 | NOVEMBER 1989 | NOVEMBRE 1989 | NOVIEMBRE 1989 | NOVEMBRO 1989 | НОЯБРЬ 1989 |
+| `DECEMBER 1989` | 1989年12月 | 1989年12月 | 1989年12月号 | 1989년 12월호 | DEZEMBER 1989 | DÉCEMBRE 1989 | DICIEMBRE 1989 | DEZEMBRO 1989 | ДЕКАБРЬ 1989 |
+| `OCTOBER 1989` | 1989年10月 | 1989年10月 | 1989年10月号 | 1989년 10월호 | OKTOBER 1989 | OCTOBRE 1989 | OCTUBRE 1989 | OUTUBRO 1989 | ОКТЯБРЬ 1989 |
+| `SEPTEMBER 1989` | 1989年9月 | 1989年9月 | 1989年9月号 | 1989년 9월호 | SEPTEMBER 1989 | SEPTEMBRE 1989 | SEPTIEMBRE 1989 | SETEMBRO 1989 | СЕНТЯБРЬ 1989 |
+| C0 `THE EMPTY FLOOR` | 空置的楼层 | 空置的樓層 | 空室のフロア | 텅 빈 층 | DIE LEERE ETAGE | L'ÉTAGE VIDE | EL PISO VACÍO | O ANDAR VAZIO | ПУСТОЙ ЭТАЖ |
+| C0 `Downtown vacancy tops 19%. Who will fill the new towers?` | 市中心空置率突破 19%。新大楼谁来填满？ | 市中心空置率突破 19%。新大樓誰來填滿？ | 都心の空室率が19%を突破。新しいビルは誰が埋めるのか？ | 도심 공실률 19% 돌파. 새 빌딩은 누가 채울까? | Leerstand in der Innenstadt über 19 %. Wer füllt die neuen Türme? | Plus de 19 % de bureaux vides en ville. Qui remplira les nouvelles tours ? | La desocupación en el centro supera el 19%. ¿Quién llenará las torres nuevas? | Vacância no centro passa de 19%. Quem vai ocupar as novas torres? | В центре пустует более 19% офисов. Кто заполнит новые башни? |
+| C0 `OPEN PLAN AT 25` | 开放式办公 25 年 | 開放式辦公 25 年 | オープンプラン25年 | 개방형 사무실 25년 | 25 JAHRE GROSSRAUMBÜRO | LE BUREAU PAYSAGER A 25 ANS / PAYSAGER : 25 ANS | LA OFICINA ABIERTA, 25 AÑOS | ESCRITÓRIO ABERTO: 25 ANOS | ОТКРЫТОЙ ПЛАНИРОВКЕ 25 ЛЕТ / 25 ЛЕТ БЕЗ СТЕН |
+| C0 `CARPET TILE: A BUYER'S GUIDE` | 地毯砖选购指南 | 方塊地毯選購指南 | タイルカーペット購入ガイド | 카펫 타일 구매 가이드 | TEPPICHFLIESEN: DER KAUFRATGEBER / TEPPICHFLIESEN IM TEST | DALLES DE MOQUETTE : LE GUIDE D'ACHAT / GUIDE DES DALLES | LOSETAS DE ALFOMBRA: GUÍA DE COMPRA | CARPETE EM PLACAS: GUIA DE COMPRA | КОВРОВАЯ ПЛИТКА: КАК ВЫБРАТЬ |
+| C1 `THE 1990 OUTLOOK` | 1990 年展望 | 1990 年展望 | 1990年の展望 | 1990년 전망 | AUSBLICK 1990 | PERSPECTIVES 1990 | PANORAMA 1990 | PERSPECTIVAS 1990 | ПРОГНОЗ НА 1990 |
+| C1 `Twelve forecasts for the year ahead` | 来年的十二项预测 | 來年的十二項預測 | 新しい年への12の予測 | 새해를 내다보는 열두 가지 전망 | Zwölf Prognosen für das neue Jahr | Douze prévisions pour l'année qui vient | Doce pronósticos para el año que viene | Doze previsões para o ano que vem | Двенадцать прогнозов на будущий год |
+| C1 `TOP 50 EMPLOYERS` | 五十大雇主 | 五十大雇主 | 雇用主トップ50 | 50대 고용주 | DIE 50 GRÖSSTEN ARBEITGEBER / TOP-50-ARBEITGEBER | LES 50 PREMIERS EMPLOYEURS | LOS 50 MAYORES EMPLEADORES / TOP 50 EMPLEADORES | OS 50 MAIORES EMPREGADORES / TOP 50 EMPREGADORES | 50 КРУПНЕЙШИХ РАБОТОДАТЕЛЕЙ / ТОП-50 РАБОТОДАТЕЛЕЙ |
+| C1 `RETAIL: THE MALL VS. MAIN STREET` | 零售：购物中心对决主街 | 零售：購物中心對決大街 | 小売：モール対メインストリート | 소매: 쇼핑몰 대 중심가 | HANDEL: MALL GEGEN HAUPTSTRASSE | COMMERCE : GALERIE OU CENTRE-VILLE ? | COMERCIO: EL MALL CONTRA LA CALLE MAYOR | VAREJO: SHOPPING CONTRA RUA PRINCIPAL | ТОРГОВЛЯ: МОЛЛ ПРОТИВ ГЛАВНОЙ УЛИЦЫ |
+| C2 `LAKE COUNTRY` | 湖区 | 湖區 | 湖水地方 | 호수 지방 | SEENLAND | AU PAYS DES LACS | TIERRA DE LAGOS | TERRA DOS LAGOS | КРАЙ ОЗЁР |
+| C2 `Twelve quiet weekends within three hours of home` | 离家三小时内的十二个安静周末 | 離家三小時內的十二個安靜週末 | 家から3時間以内、静かな週末12選 | 집에서 세 시간 안, 조용한 주말 열두 곳 | Zwölf ruhige Wochenenden, keine drei Stunden von zu Hause | Douze week-ends au calme à moins de trois heures de chez vous | Doce fines de semana tranquilos a menos de tres horas de casa | Doze fins de semana tranquilos a menos de três horas de casa | Двенадцать тихих выходных не дальше трёх часов от дома |
+| C2 `INNS UNDER $60 A NIGHT` | 每晚 $60 以下的旅店 | 每晚 $60 以下的旅店 | 1泊$60以下の宿 | 1박 $60 이하 숙소 | GASTHÖFE UNTER $60 DIE NACHT | AUBERGES À MOINS DE $60 LA NUIT | POSADAS POR MENOS DE $60 | POUSADAS ATÉ $60 A DIÁRIA | ГОСТИНИЦЫ ДО $60 ЗА НОЧЬ |
+| C3 `THE PAPERLESS OFFICE` | 无纸化办公室 | 無紙化辦公室 | ペーパーレスオフィス | 종이 없는 사무실 | DAS PAPIERLOSE BÜRO | LE BUREAU SANS PAPIER | LA OFICINA SIN PAPEL | O ESCRITÓRIO SEM PAPEL | БЕЗБУМАЖНЫЙ ОФИС |
+| C3 `Still waiting?` | 还在等？ | 還在等？ | まだ待ちますか？ | 아직도 기다리나요? | Warten Sie noch? | Toujours en attente ? | ¿Sigue esperando? | Ainda esperando? | Всё ещё ждёте? |
+| C3 `12 LAPTOPS TESTED` | 12 款膝上电脑评测 | 12 款膝上型電腦評測 | ラップトップ12機種テスト | 랩톱 12종 테스트 | 12 LAPTOPS IM TEST | 12 PORTABLES À L'ESSAI | 12 PORTÁTILES A PRUEBA | 12 LAPTOPS TESTADOS | 12 ПОРТАТИВНЫХ ПК В ТЕСТЕ |
+| C3 `NETWORKING A SMALL OFFICE` | 小型办公室联网 | 小型辦公室聯網 | 小さなオフィスのネットワーク | 작은 사무실 네트워크 | NETZWERK FÜRS KLEINE BÜRO | METTRE UN PETIT BUREAU EN RÉSEAU | UNA RED PARA LA OFICINA PEQUEÑA | REDE PARA O ESCRITÓRIO PEQUENO | СЕТЬ ДЛЯ НЕБОЛЬШОГО ОФИСА |
+
+The cards use the era's words on purpose: zh `膝上电脑` and zh-Hant `膝上型電腦` (1989), not today's `笔记本`. They are AI drafts (Red 10-31), and 简体中文 is the column Red can read.
 
 ## 6. Decisions for Red: answered 2026-11-03, 叙事设计 chat, "全部按推荐"
 

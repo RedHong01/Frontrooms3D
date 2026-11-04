@@ -94,6 +94,12 @@ namespace FrontRooms.Map
         public int index;
         /// <summary>The arch's width in metres, 0 = the map's own width. The map honours it on a station's edges only (FrontRoomsMapCarve, ArchOpening; BS4's E1 and E2).</summary>
         public float archWidth;
+        // Pool family (structures scene, RULES 5b; s67_pool C5, C9, C10; appended): the edge's pool style, a round arch's crown
+        // (metres above the module's base) and its trim (bit 1 keystone, 2 pilasters). Never serialized, so no asset changes a
+        // byte; only the pool modules built in code carry them (FrontRoomsPoolModules). Zero on every other record.
+        [NonSerialized] public PoolEdgeStyle style;
+        [NonSerialized] public float crown;
+        [NonSerialized] public byte trim;
     }
 
     /// <summary>
@@ -162,6 +168,16 @@ namespace FrontRooms.Map
         /// service). In a Low zone its cells hang the 4 ft wraparound instead of L03 (FrontRoomsLampKit.ForCell); elsewhere it
         /// changes nothing. False keeps every existing module as it was.</summary>
         public bool backOfHouse;
+
+        /// <summary>
+        /// Pool family (structures scene, RULES 5b; s67_pool C2, appended): per cell water, floors and connectors, the room's
+        /// skin, lamp kit and stand-ins. Null on every module but the pool modules built in code (FrontRoomsPoolModules); never
+        /// serialized, so no asset changes a byte. Read it null-safe (PoolRules.SkinOf).
+        /// </summary>
+        [NonSerialized] public ModulePool pool;
+
+        /// <summary>A pool module: one of the three pool themes appended to ZoneTheme. False for every existing module.</summary>
+        public bool IsPool => PoolRules.IsPool(theme);
 
         /// <summary>A Corridor module's longest side (CR-1: the Run! corridor's 9 cells cross one chunk border; a Room module stays within MaxCells).</summary>
         public const int MaxCorridorCells = 9;
@@ -299,6 +315,7 @@ namespace FrontRooms.Map
             c.props = (ModuleProp[])props?.Clone();
             c.markers = (ModuleMarker[])markers?.Clone();
             c.lamps = (ModuleLamp[])lamps?.Clone();
+            c.pool = pool?.Clone();   // pool family (null on every other module)
             return c;
         }
 

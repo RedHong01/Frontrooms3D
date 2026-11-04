@@ -108,6 +108,24 @@ public sealed partial class FrontRoomsKeyMapView
     // The words' scale, 1 on the desktop; the touch sheet's map sets its labels at the touch sizes (17 / 11 pt), and their pads and
     // offsets with them.
     readonly float ts;
+    bool showNotes = true;
+
+    /// <summary>Each callout's note line (what the button does; PRESS A BUTTON while it listens), or the action word alone with
+    /// the note read elsewhere (ChosenNote): the iPhone's map fits the list's height that way (平面视觉 VL498).</summary>
+    public bool ShowNotes
+    {
+        get => showNotes;
+        set
+        {
+            if (showNotes == value) return;
+            showNotes = value;
+            foreach (var c in callouts) LayoutLabel(c);
+            Refresh(false);
+        }
+    }
+
+    /// <summary>The chosen callout's note as its label shows it (a flash, PRESS A BUTTON while it listens).</summary>
+    public string ChosenNote => Chosen.Note ?? string.Empty;
     // The reveal's clock and where it stands (UpdateReveal).
     float revealAt = -100f, keysIn = 1f, fillsIn = 1f, leadersIn = 1f, calloutsIn = 1f;
     HashSet<string> bound = new HashSet<string>();
@@ -356,11 +374,12 @@ public sealed partial class FrontRoomsKeyMapView
     {
         c.Note = NoteFor(c);
         c.NoteText.text = c.Note;
+        c.NoteText.enabled = showNotes;
         var anchor = c.OnRight ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
         c.ActionText.alignment = anchor;
         c.NoteText.alignment = anchor;
         var aw = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(c.Action), ActionSize * ts, false) + 2f;
-        var nw = FrontRoomsSettingsMenu.TextWidth(c.Note, Mathf.Max(11, Mathf.RoundToInt(NoteSize * ts)), true) + 2f;
+        var nw = showNotes ? FrontRoomsSettingsMenu.TextWidth(c.Note, Mathf.Max(11, Mathf.RoundToInt(NoteSize * ts)), true) + 2f : 0f;
         var w = Mathf.Max(aw, nw);
         // The label's anchor scales with the drawing; its words stay their size.
         var x = Mathf.Round(c.LabelX * k);
@@ -370,7 +389,7 @@ public sealed partial class FrontRoomsKeyMapView
         Place(c.NoteText.rectTransform, c.OnRight ? x : x - nw, y + 25f * ts, nw, 18f * ts);
         // The bar: 14 px past the words at each side, 6 over and 8 under them (the mock's pads, around Bayon's own leading).
         var left = c.OnRight ? x : x - w;
-        var bar = new Rect(left - 14f * ts, y - 4f * ts, w + 28f * ts, 53f * ts);
+        var bar = new Rect(left - 14f * ts, y - 4f * ts, w + 28f * ts, BarHeight);
         Place(c.Under.rectTransform, bar.x, bar.y, bar.width, bar.height);
         c.Hit = new Rect(bar.x / k, bar.y / k, bar.width / k, bar.height / k);
         // The changed dot (settings' rule: a changed row shows a dot before its control) and the padlock sit before the action word.
@@ -454,6 +473,8 @@ public sealed partial class FrontRoomsKeyMapView
         foreach (var m in mouse) PlaceUnits(m.Image.rectTransform, m.Rect);
         foreach (var part in padParts) if (part.Decoration) PlaceUnits(part.Edge.rectTransform, part.Home);
         foreach (var c in callouts) LayoutLabel(c);
+        // Touch: where the smaller drawing makes labels meet they go down, and their leaders are routed again (Declutter).
+        if (ts < 1f) { Refresh(false); return; }
         Animate();
     }
 
@@ -565,6 +586,7 @@ public sealed partial class FrontRoomsKeyMapView
         }
         if (padBoard) RefreshPads(chosen, target);
         var moved = AssignSlots();
+        if (ts < 1f && Declutter()) moved = true;
         // Every label in its new place, and every leader about to move cleared, before any leader is routed: the router
         // walls in labels and leaders as they will be, never as they were (USE on F right after the E/R swap: END RUN's
         // old label and leader still sat in USE's slot, walled its start in, and USE fell back to an L through E and D).
@@ -629,6 +651,47 @@ public sealed partial class FrontRoomsKeyMapView
             if (s != c.Slot) moved = true;
             c.Slot = s;
             c.LabelX = s.OwnX; c.LabelY = s.OwnY; c.OnRight = s.OwnOnRight; c.From = s.OwnFrom; c.To = s.OwnTo;
+        }
+        return moved;
+    }
+
+    // A label's bar, 6 over and 8 under its words: two lines (the action, its note) or the action alone.
+    float BarHeight => (showNotes ? 53f : 36f) * ts;
+
+    /// <summary>
+    /// Touch (ts < 1, 平面视觉 VL498): the words keep their size while the drawing shrinks, so labels one above the other on a
+    /// side can meet (BACK's note sat on USE's bar). Each side's labels (one column, one alignment), top to bottom, go down to at
+    /// least the label above's bar foot + 4·ts, the start of their leader with them; the type stays its size. From the slots'
+    /// own places (AssignSlots), at the drawing's scale now. True when a label moved.
+    /// </summary>
+    bool Declutter()
+    {
+        var moved = false;
+        var columns = new Dictionary<string, List<Callout>>();
+        foreach (var c in callouts)
+        {
+            var key = (c.OnRight ? "R" : "L") + Mathf.RoundToInt(c.LabelX);
+            if (!columns.TryGetValue(key, out var column)) columns[key] = column = new List<Callout>();
+            column.Add(c);
+        }
+        foreach (var column in columns.Values)
+        {
+            column.Sort((a, b) => a.LabelY.CompareTo(b.LabelY));
+            var foot = float.NegativeInfinity;
+            foreach (var c in column)
+            {
+                var y = Mathf.Round(c.LabelY * k);
+                var need = foot + 4f * ts - (y - 4f * ts);
+                if (need > 0f)
+                {
+                    var d = need / Mathf.Max(.01f, k);
+                    c.LabelY += d;
+                    c.From = new Vector2(c.From.x, c.From.y + d);
+                    y += need;
+                    moved = true;
+                }
+                foot = y - 4f * ts + BarHeight;
+            }
         }
         return moved;
     }

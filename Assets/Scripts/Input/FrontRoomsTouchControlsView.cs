@@ -48,6 +48,9 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     FrontRoomsKeyMapView padMap;
     bool padMapShown;
     float padMapFitW = -1f;
+    // The phone's map shows its callouts' action words alone; the chosen one's note is this line under the drawing (VL498).
+    Text padCaption;
+    const float PadCaptionGap = 6f, PadCaptionH = 14f;
     object padMapFitLang;
     const float PadMapTextScale = 17f / 22f, PadMapPad = 8f;
     readonly Dictionary<FrontRoomsTouchControls.Button, float> chipWords = new Dictionary<FrontRoomsTouchControls.Button, float>();
@@ -2455,6 +2458,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             padClip = Node("controller map clip", cardViewportRight, Vector2.zero, false);
             padClip.gameObject.AddComponent<RectMask2D>();
             padMap = FrontRoomsKeyMapView.CreatePad(padClip, bayon, plex, Paper, Ink, Accent, PadMapTextScale);
+            // The phone fits the whole drawing in the list (平面视觉 VL498): its callouts read the action word alone, the chosen
+            // one's note goes under the drawing. A tablet keeps both lines on every callout.
+            padMap.ShowNotes = FrontRoomsHandheld.IsTablet;
+            padCaption = Txt("controller map caption", padClip, string.Empty, plex, 11, WithAlpha(Paper, .8f), TextAnchor.UpperCenter, new Vector2(400f, PadCaptionH));
+            var ct = padCaption.rectTransform;
+            ct.anchorMin = ct.anchorMax = new Vector2(0f, 1f);
+            ct.pivot = new Vector2(.5f, 1f);
             controls.PadMap = padMap;
         }
         if (controls.MapUnfolded != padMapShown)
@@ -2470,13 +2480,18 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         {
             padMapFitW = list.width;
             padMapFitLang = FrontRoomsLanguage.Current;
+            // The phone fits the height too (VL498): the drawing, its pads and its caption within the list under the row's head.
+            var caption = padMap.ShowNotes ? 0f : PadCaptionGap + PadCaptionH;
+            var tall = padMap.ShowNotes ? float.PositiveInfinity
+                : controls.SettingsScrollViewport.height - L.SettingsBottomInset - slot.Rest - 2f * PadMapPad - caption;
             padMap.SetScale(1f);
-            for (var i = 0; i < 2; i++)
+            for (var i = 0; i < 3; i++)
             {
-                var bw = padMap.Bounds.width;
-                if (bw > 1f) padMap.SetScale(Mathf.Clamp(padMap.Scale * (list.width - 8f) / bw, .3f, 1.45f));
+                var fit = padMap.Bounds;
+                if (fit.width <= 1f || fit.height <= 1f) break;
+                padMap.SetScale(Mathf.Clamp(padMap.Scale * Mathf.Min((list.width - 8f) / fit.width, tall / fit.height), .3f, 1.45f));
             }
-            controls.PadMapHeight = Mathf.Ceil(padMap.Bounds.height + 2f * PadMapPad);
+            controls.PadMapHeight = Mathf.Ceil(padMap.Bounds.height + 2f * PadMapPad + caption);
         }
         var b = padMap.Bounds;
         // The row's top on screen; the clip is its unfolded part, from under its head down to its foot as it is now.
@@ -2488,6 +2503,16 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var origin = new Vector2(Mathf.Round(list.x + (list.width - b.width) * .5f - b.x), Mathf.Round(top - slot.Rest - PadMapPad + b.y));
         padMap.PlaceAt(origin.x - clip.xMin, clip.yMax - origin.y);
         padMap.Animate();
+        // The chosen callout's note under the drawing on the phone, brighter while it listens.
+        padCaption.enabled = !padMap.ShowNotes;
+        if (padCaption.enabled)
+        {
+            var note = padMap.ChosenNote;
+            if (padCaption.text != note) padCaption.text = note;
+            padCaption.color = WithAlpha(Paper, padMap.Capturing ? 1f : .8f);
+            padCaption.rectTransform.sizeDelta = new Vector2(list.width, PadCaptionH);
+            padCaption.rectTransform.anchoredPosition = new Vector2(list.center.x - clip.xMin, -(clip.yMax - (origin.y - (b.y + b.height)) + PadCaptionGap));
+        }
         var view = controls.SettingsScrollViewport;
         controls.PadMapRect = Rect.MinMaxRect(clip.xMin, Mathf.Max(clip.yMin, view.yMin), clip.xMax, Mathf.Min(clip.yMax, view.yMax));
         controls.PadMapOrigin = origin;

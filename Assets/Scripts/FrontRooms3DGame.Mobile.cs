@@ -91,9 +91,9 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
         var mode = mobileTouch != null ? mobileTouch.Mode : FrontRoomsTouchControls.InputMode.Touch;
         if (FrontRoomsHandheld.Active ? mode == FrontRoomsTouchControls.InputMode.Gamepad : FrontRoomsInput.PadInUse) return PadPrompt(text);
         // Desktop: the USE key as the player bound it (CONTROLS / KEYBOARD & MOUSE): "E  ·  OPEN DOOR" → "F  ·  OPEN DOOR".
-        if (!FrontRoomsHandheld.Active) return FrontRoomsInput.WithKeyNames(PromptWords(text));
+        if (!FrontRoomsHandheld.Active) return LeadWords(FrontRoomsInput.WithKeyNames(PromptWords(text)));
         // A keyboard on a phone or an iPad names its key as bound (E unless remapped); touch drops it (USE and the stick carry it).
-        if (mode == FrontRoomsTouchControls.InputMode.Keyboard) return FrontRoomsInput.WithKeyNames(PromptWords(text));
+        if (mode == FrontRoomsTouchControls.InputMode.Keyboard) return LeadWords(FrontRoomsInput.WithKeyNames(PromptWords(text)));
         var words = PromptWords(text);
         if (words.StartsWith("E  ·  ")) return words.Substring(6);
         if (words.StartsWith("HOLD E  ·  ")) return FrontRoomsLanguage.T("HOLD") + "  ·  " + words.Substring(11);
@@ -117,6 +117,16 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
 
     /// <summary>"E  ·  OPEN DOOR": the words after the control go through the table, and the control before them stays for the
     /// lines above to read; a word in its place (LOCKED) is translated too. In English nothing changes.</summary>
+    /// <summary>Keyboard prompts: the lead word of "HOLD E  ·  …" / "TAP E  ·  …" goes through the table too (按住 E  ·  打碎玻璃),
+    /// after WithKeyNames has put the bound key in; the key and the verb keep their places. In English nothing changes.</summary>
+    static string LeadWords(string text)
+    {
+        if (FrontRoomsLanguage.IsEnglish || string.IsNullOrEmpty(text)) return text;
+        if (text.StartsWith("HOLD ", System.StringComparison.Ordinal)) return FrontRoomsLanguage.T("HOLD") + text.Substring(4);
+        if (text.StartsWith("TAP ", System.StringComparison.Ordinal)) return FrontRoomsLanguage.T("TAP") + text.Substring(3);
+        return text;
+    }
+
     static string PromptWords(string text)
     {
         if (FrontRoomsLanguage.IsEnglish) return text;
@@ -552,6 +562,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             world.GlassCracked += OnMobileGlassCracked;
             world.SashPryProgress += OnMobileSashPryProgress;
             world.SashPried += OnMobileSashPried;
+            world.DoorSwingStarted += OnMobileDoorSwing;
         }
         if (hunter != null)
         {
@@ -575,6 +586,7 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
             mobileHapticMap.GlassCracked -= OnMobileGlassCracked;
             mobileHapticMap.SashPryProgress -= OnMobileSashPryProgress;
             mobileHapticMap.SashPried -= OnMobileSashPried;
+            mobileHapticMap.DoorSwingStarted -= OnMobileDoorSwing;
         }
         if (mobileHapticRelay != null)
         {
@@ -588,6 +600,15 @@ public sealed partial class FrontRooms3DGame : IFrontRoomsTouchHost
     }
 
     bool NearPlayer(Vector3 p) => playerRoot != null && Flat(p - playerRoot.position).sqrMagnitude <= DoorJoltRange * DoorJoltRange;
+
+    // A body door's fast swing near the player (V5): a barge thumps once with the leaf's kick, a slam hits harder. An ease is felt
+    // at its latch (OnMobileDoorLatched); the Relay's barges, the key turn and the world's swings are not the player's.
+    void OnMobileDoorSwing(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorSwingKind kind)
+    {
+        if (this == null || door == null || !NearPlayer(door.position)) return;
+        if (kind == FrontRoomsMapWorld.DoorSwingKind.Barge) FrontRoomsMobileInteractionEvents.DoorBarged();
+        else if (kind == FrontRoomsMapWorld.DoorSwingKind.Slam) FrontRoomsMobileInteractionEvents.DoorSlammed();
+    }
 
     void OnMobileDoorLatched(FrontRoomsMapWorld.Door door, Vector3 p)
     {

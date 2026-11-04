@@ -12,8 +12,13 @@ namespace FrontRooms.Map
     /// </summary>
     public enum ZoneHeight : byte { Low, Standard, Tall }
 
-    /// <summary>What a zone is dressed as: Level 0 paper and carpet, or a Level 4 office.</summary>
-    public enum ZoneTheme : byte { Level0, Office }
+    /// <summary>
+    /// What a zone is dressed as: Level 0 paper and carpet, or a Level 4 office. Appended (structures scene, RULES 5b; s67_pool
+    /// C1): the pool family's club, level and dark zone. Nothing generates them: they exist only where a pool plan forces
+    /// them (FrontRoomsMapCache.SetPool, which only a map on a profile with poolFamily accepts), and every existing test of
+    /// Office or Level0 reads them as not-Office, that is as Level 0.
+    /// </summary>
+    public enum ZoneTheme : byte { Level0, Office, PoolClub, PoolLevel, PoolDark }
 
     /// <summary>A rectangle of cells inside one chunk, in local cell coordinates.</summary>
     [Serializable]
@@ -202,6 +207,10 @@ namespace FrontRooms.Map
         public RoomModuleData[] roomModules = new RoomModuleData[0];
         // Per cell (i + j*8): a lamp a module set; Auto rolls it from the seed.
         public ModuleLamp[] lamp = new ModuleLamp[MapGrid.CellsPerChunk];
+        // Pool family (structures scene; s67_pool C2): per cell (i + j*8) the water, floor and connector a pool plan wrote,
+        // and its edge records by MapGrid.EdgeId (in the chunk of the edge's west or south cell). Null with no pool plan.
+        [NonSerialized] public ModuleCell[] pool;
+        [NonSerialized] public Dictionary<long, ModuleEdgeRecord> poolEdges;
 
         /// <summary>The module stamped as room r, or null.</summary>
         public RoomModuleData ModuleOf(int r) => roomModules != null && r >= 0 && r < roomModules.Length ? roomModules[r] : null;
@@ -262,7 +271,7 @@ namespace FrontRooms.Map
     /// chunk's revision only reshuffles its own interior walls, rooms and
     /// columns, which is how a dropped chunk can come back shifted.
     /// </summary>
-    public sealed class FrontRoomsMapGenerator
+    public sealed partial class FrontRoomsMapGenerator
     {
         readonly MapSettings settings;
         readonly Dictionary<GridCoord, ZoneInfo> zones = new Dictionary<GridCoord, ZoneInfo>();
@@ -342,6 +351,8 @@ namespace FrontRooms.Map
         /// <summary>The zone a cell belongs to: the nearest site to the cell centre.</summary>
         public ZoneInfo ZoneOf(GridCoord cell)
         {
+            // Pool family (FrontRoomsMapPool.cs): a pool plan's cells take its synthetic zones; null with no plan.
+            if (zoneOverride != null && zoneOverride.TryGetValue(cell, out var forced)) return forced;
             if (cellZone.TryGetValue(cell, out var id)) return Zone(id);
             var chunk = MapGrid.ChunkOf(cell);
             var cx = (cell.x + .5f) * MapGrid.CellSize;
@@ -413,6 +424,8 @@ namespace FrontRooms.Map
         /// <summary>C33: the edge a-b is a Tall zone's arch to a lower zone (TallExit), from either side.</summary>
         public bool IsTallExit(GridCoord a, GridCoord b)
         {
+            // Pool family: a pool plan's edges are its own (null with no plan).
+            if (zoneOverride != null && (zoneOverride.ContainsKey(a) || zoneOverride.ContainsKey(b))) return false;
             var ha = HeightOf(a);
             var hb = HeightOf(b);
             if (ha == hb || (ha != ZoneHeight.Tall && hb != ZoneHeight.Tall)) return false;
@@ -436,6 +449,9 @@ namespace FrontRooms.Map
             // Run! (CR-1): a planned corridor's crossing edge (null while runRooms is off).
             if (RunBorderOverride != null && RunBorderOverride.TryGetValue(MapGrid.EdgeId(cell, east ? new GridCoord(cell.x + 1, cell.y) : new GridCoord(cell.x, cell.y + 1)), out var run))
                 return run;
+            // Pool family: a pool plan's border edges, so both chunks' copies agree (null with no plan).
+            if (poolBorders != null && poolBorders.TryGetValue(MapGrid.EdgeId(cell, east ? new GridCoord(cell.x + 1, cell.y) : new GridCoord(cell.x, cell.y + 1)), out var poolEdge))
+                return poolEdge;
             var chunk = MapGrid.ChunkOf(cell);
             var seed = settings.seed;
             var local = east ? cell.y - chunk.y * MapGrid.ChunkCells : cell.x - chunk.x * MapGrid.ChunkCells;
@@ -819,7 +835,7 @@ namespace FrontRooms.Map
     /// The chunks currently built, keyed by coordinate. The runtime streams
     /// through this; the debug map and the verification read it the same way.
     /// </summary>
-    public sealed class FrontRoomsMapCache
+    public sealed partial class FrontRoomsMapCache
     {
         readonly Dictionary<GridCoord, MapChunk> chunks = new Dictionary<GridCoord, MapChunk>();
         readonly Dictionary<GridCoord, int> revisions = new Dictionary<GridCoord, int>();
@@ -867,6 +883,8 @@ namespace FrontRooms.Map
             Carve?.Apply(Generator, chunk);
             // Run! (CR-1, CR-3, CR-4): the corridors planned through this chunk, after the carve (null while runRooms is off).
             Run?.Apply(chunk);
+            // Pool family: a pool plan's chunks, last (null with no plan).
+            Pool?.Apply(Generator, chunk);
             chunks[coord] = chunk;
             // Its own zone and every zone its cells belong to are met now, at the chunk's tier (the first record stays).
             if (!zoneTiers.ContainsKey(chunk.ownZone.id)) zoneTiers[chunk.ownZone.id] = tier;
@@ -1012,6 +1030,8 @@ namespace FrontRooms.Map
         public bool ArchOverride(GridCoord a, GridCoord b, out float width, out float center)
         {
             if (Carve != null && Carve.TryArch(a, b, out width, out center)) return true;
+            // Pool family: a pool plan's authored arch widths (null with no plan).
+            if (Pool != null && PoolArch(a, b, out width, out center)) return true;
             // Run! (CR-1): the corridor's entrance arch, 1.4 m and centred (10_run_directions 1.2).
             if (Run != null) return Run.TryArch(a, b, out width, out center);
             width = center = 0f;

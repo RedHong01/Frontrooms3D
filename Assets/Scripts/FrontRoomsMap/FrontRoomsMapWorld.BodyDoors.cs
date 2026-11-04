@@ -51,6 +51,9 @@ public sealed partial class FrontRoomsMapWorld
     const float BodyNeedCapDegrees = 90f;
     // A squeeze keeps its contact this far past the reach, and while the leaf turns away a press within 80 deg of its face.
     const float BodyFollowSlack = .05f, BodyFollowCone = .17f;
+    // Push-shut (Red 2026-11-04: "再去碰门就没有那种能够把门给挤关闭上"): the face a leaf hangs toward, pressed, takes the leaf back
+    // to its frame. A squeeze back clicks shut within this of the frame (every rest is at least 3 deg open, 20_design 1.7).
+    const float BodyShutLatchDegrees = 3f;
 
     // For either parity of a cell, its north/south and east/west leaves choose different corners.
     public static bool BodyDoorReverseHinge(GridCoord a, GridCoord b)
@@ -77,7 +80,9 @@ public sealed partial class FrontRoomsMapWorld
     sealed class BodyContact
     {
         public float nearAt, pressedAt, lean;
-        public bool verb, handle, bump;
+        // shut: this episode's act pushes its leaf back to the frame (push-shut), not open; close: it closes an open leaf from
+        // the face the body pushed (touch-close, decision 14B).
+        public bool verb, handle, bump, shut, close;
         public BodyDoorBump lastBump;
     }
     readonly Dictionary<long, BodyContact> bodyContacts = new Dictionary<long, BodyContact>();
@@ -204,6 +209,7 @@ public sealed partial class FrontRoomsMapWorld
         // Where a barge meets a plain door: BodyDoorBargeLead ahead, so the latch bursts before the shoulder arrives.
         var ahead = input.feet + direction * (speed * Mathf.Max(dt, BodyDoorBargeLead));
         Door contact = null;
+        bool contactShut = false, contactClose = false;
         float best = float.PositiveInfinity;
         foreach (var door in doorByEdge.Values)
         {
@@ -218,7 +224,14 @@ public sealed partial class FrontRoomsMapWorld
             // The Relay's push of a leaf the body was driving keeps clear of the body as before (the player's own swings: StepBodySwings).
             if (door.bodyDriven && door.swingKind == DoorSwingKind.Relay && (door.motion == DoorMotion.Swing || door.motion == DoorMotion.Through))
                 FloorBodyDoor(door, input.feet + input.inputMove, DoorMaxStepDegrees);
-            if (!deliberate || door.angle >= DoorPassableDegrees && door.motion == DoorMotion.None) continue;
+            if (!deliberate) continue;
+            // The face a leaf out of the frame hangs toward (the body ahead of it): a press there pushes the leaf back to its
+            // frame (push-shut). A plain leaf open at rest (70 deg or more) is no longer a wall from either face: from the face
+            // the body pushed a press facing it closes the door (touch-close, decision 14B).
+            var front = !IsLatched(door) && AheadOfLeaf(door, input.feet);
+            var shuttable = front && CanPushShut(door);
+            var openRest = door.angle >= DoorPassableDegrees && door.motion == DoorMotion.None;
+            if (openRest && !CanPushShut(door)) continue;
             var follow = door.motion == DoorMotion.Follow;
             var next = input.feet + input.inputMove;
             var nextDistance = BodyLeafDistance(door, next, out var along);
@@ -231,9 +244,17 @@ public sealed partial class FrontRoomsMapWorld
             if (nextDistance > BodyDoorReach + (follow ? BodyFollowSlack : 0f) || along < .15f || along > LeafLength) continue;
             var normal = BodyLeafNormal(door, input.feet);
             if (Vector3.Dot(direction, -normal) < (follow ? BodyFollowCone : .5f)) continue;
-            // Only a crossing can carry a partially open leaf through the frame.
-            if (!IsLatched(door) && AheadOfLeaf(door, input.feet) && !BodyIntendsCrossing(door, input.feet, next)) continue;
-            if (nextDistance < best) { contact = door; best = nextDistance; }
+            // From the front only a run into the doorway still carries the leaf through the frame (A12 Through); every other
+            // press pushes a plain leaf shut. A leaf no body may push shut moves from the front only for a crossing, as before.
+            var shut = false;
+            if (front)
+            {
+                var crossing = BodyIntendsCrossing(door, input.feet, next);
+                // A leaf already going back under the body keeps that act (a run begun mid-push changes nothing).
+                shut = shuttable && (door.bodyShut || !(barge && crossing));
+                if (!shut && !crossing) continue;
+            }
+            if (nextDistance < best) { contact = door; best = nextDistance; contactShut = shut; contactClose = !front && openRest; }
         }
         bodyScratch.Clear();
         foreach (var pair in bodyContacts)
@@ -250,6 +271,15 @@ public sealed partial class FrontRoomsMapWorld
             bodyContacts.Add(d.edge, episode);
         }
         episode.nearAt = episode.pressedAt = bodyClock;
+        // A press on the other face of a leaf at rest, or for another act (an open, a push-shut, a touch-close), is a new act in
+        // the episode (the body went round the leaf's tip, or the leaf finished the last one).
+        if (episode.verb && (episode.shut != contactShut || episode.close != contactClose) && d.motion == DoorMotion.None)
+        {
+            episode.verb = episode.handle = false;
+            episode.lean = 0f;
+        }
+        if (contactShut) return PushBodyShut(d, episode, input, slow, barge, result);
+        if (contactClose) return CloseBodyDoor(d, episode, input, dt, slow, result);
         if (IsSealedExit(d)) return BodyBlocked(d, episode, BodyDoorBump.Sealed, ref result);
         if (IsBeingBroken(d) || IsHeldForKey(d) || d.motion == DoorMotion.Throw || d.motion == DoorMotion.Bounce
             || d.swingKind == DoorSwingKind.Relay && d.motion != DoorMotion.None)
@@ -309,8 +339,11 @@ public sealed partial class FrontRoomsMapWorld
         if (!episode.verb)
         {
             episode.verb = true;
+            episode.shut = episode.close = false;
             var verb = barge ? DoorSwingKind.Barge : DoorSwingKind.Ease;
-            if (slow) BeginBodyFollow(d, input.feet, episode.handle, verb);
+            // The squeeze's floor only opens a leaf away from a body behind it: a squeeze from the front (crossing a leaf no body
+            // may push shut) goes through the frame as a push does.
+            if (slow && (IsLatched(d) || !AheadOfLeaf(d, input.feet))) BeginBodyFollow(d, input.feet, episode.handle, verb);
             else
             {
                 OpenDoor(d, input.feet, DoorOpenSource.Body, true, verb);
@@ -422,6 +455,149 @@ public sealed partial class FrontRoomsMapWorld
         return Mathf.Clamp(bearing + clearance, 3f, ModuleUnits.DoorSwingDegrees);
     }
 
+    // ---------- Push-shut: the face a leaf hangs toward, pressed (Red 2026-11-04) ----------
+    // A body ahead of a leaf out of the frame pushes it back to its frame, one act per episode with one DoorMoved. SLOW squeezes
+    // it back: it follows the body only as far as it is pushed, stays where it is left (2A) and clicks shut within
+    // BodyShutLatchDegrees of the frame. A walk pushes it back ahead of the body (EASE) and a run into its face slams it (SLAM),
+    // both on the body's planned swing (StepBodySwings: Through with bodyShut) to a latch in the frame. A run into the doorway
+    // still goes through (the contact gate). Pressing on into the latched leaf is a new act: its lean, then an open away.
+
+    // A plain leaf out of the frame a body may push back to it: whole, not the EXIT, not being broken or key-held, no armed bar,
+    // and at rest or already going back under a body.
+    bool CanPushShut(Door d) => !d.broken && !IsExitDoor(d) && !IsBeingBroken(d) && !IsHeldForKey(d) && !IsAlarmArmed(d)
+        && (d.motion == DoorMotion.None || d.bodyShut && (d.motion == DoorMotion.Follow || d.motion == DoorMotion.Through));
+
+    BodyDoorResult PushBodyShut(Door d, BodyContact episode, BodyDoorInput input, bool slow, bool barge, BodyDoorResult result)
+    {
+        if (!episode.verb)
+        {
+            episode.verb = episode.shut = true;
+            episode.close = false;
+            var verb = barge && !slow ? DoorSwingKind.Slam : DoorSwingKind.Ease;
+            BeginBodyShut(d, verb, slow);
+            RaiseDoorMoved(d);
+            result.shut = true;
+            result.verb = verb;
+        }
+        // Pressed again in the same act, with no new noise: a squeeze left at rest follows again, a walk takes a squeeze on to
+        // the frame.
+        else if (d.motion == DoorMotion.None || d.motion == DoorMotion.Follow && !slow) BeginBodyShut(d, d.swingKind, slow);
+        if (d.motion == DoorMotion.Follow)
+        {
+            result.moveScale = .8f;
+            FloorBodyShut(d, input.feet + input.inputMove * .8f, DoorMaxStepDegrees);
+            if (d.motion == DoorMotion.Follow) RememberBodyRest(d);
+        }
+        // The Relay standing in the sweep holds the leaf, and with it the body pressing it (a door that will not move under you).
+        var relay = RelayBody?.Invoke();
+        if (relay.HasValue && !IsLatched(d))
+        {
+            var clear = BodyShutClearAngle(d, input.feet + input.inputMove);
+            if (clear < d.angle - .01f && LimitByBody(d, d.angle, clear, relay.Value, RelayClearance) > clear + .01f)
+                return BodyBlocked(d, episode, BodyDoorBump.Held, ref result);
+        }
+        return result;
+    }
+
+    void BeginBodyShut(Door door, DoorSwingKind verb, bool follow)
+    {
+        BeginVerb(door, verb);
+        bodyRestAngles.Remove(door.edge);
+        door.bodyDriven = door.bodyShut = true;
+        door.bodyFloorActive = false;
+        door.pull = false;
+        door.wait = 0f;
+        if (follow)
+        {
+            // The squeeze back stays Ajar while it follows (RememberBodyRest keeps its sets), as the squeeze open does.
+            door.motion = DoorMotion.Follow;
+            movingDoors.Remove(door);
+        }
+        else
+        {
+            // Back to the frame on the body's planned swing (StepBodySwings; TickSwing's Through, which latches it there).
+            door.open = false;
+            openDoors.Remove(door.edge);
+            ajarDoors.Remove(door.edge);
+            door.motion = DoorMotion.Through;
+            door.from = door.angle;
+            door.clock = 0f;
+            if (!movingDoors.Contains(door)) movingDoors.Add(door);
+        }
+        TouchPassageRevision();
+    }
+
+    // The squeeze back's floor: the leaf turns toward its frame just far enough to clear the body where this frame's move leaves
+    // it, at most maxStep and never into the Relay (it waits on it); within BodyShutLatchDegrees of the frame it latches.
+    void FloorBodyShut(Door door, Vector3 next, float maxStep)
+    {
+        var target = BodyShutClearAngle(door, next);
+        if (target >= door.angle) return;
+        var relay = RelayBody?.Invoke();
+        if (relay.HasValue) target = LimitByBody(door, door.angle, target, relay.Value, RelayClearance);
+        if (target >= door.angle) return;
+        var wasPassable = door.angle >= DoorPassableDegrees;
+        door.angle = Mathf.Max(target, door.angle - maxStep);
+        bodySyncPending = true;
+        if (door.angle <= BodyShutLatchDegrees) { LatchBodyShut(door); return; }
+        PoseDoor(door);
+        if (wasPassable != (door.angle >= DoorPassableDegrees)) TouchPassageRevision();
+    }
+
+    // The most a leaf may stand open and still clear a body ahead of it at this point, BodyDoorReach from the body's centre (along
+    // its face, or at its tip beyond its length), down to the frame; the leaf's own angle where the body cannot touch it (out of
+    // reach, on the hinge, or behind the leaf).
+    static float BodyShutClearAngle(Door door, Vector3 point)
+    {
+        var p = DoorPlan(door, point);
+        var r = p.magnitude;
+        if (r <= BodyDoorReach || r >= LeafLength + BodyDoorReach) return door.angle;
+        var bearing = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
+        if (bearing <= door.angle) return door.angle;
+        var half = r <= LeafLength ? Mathf.Asin(BodyDoorReach / r) * Mathf.Rad2Deg
+            : Mathf.Acos(Mathf.Clamp((LeafLength * LeafLength + r * r - BodyDoorReach * BodyDoorReach) / (2f * LeafLength * r), -1f, 1f)) * Mathf.Rad2Deg;
+        return Mathf.Clamp(bearing - half, 0f, door.angle);
+    }
+
+    // The squeeze back home: the leaf drops into its frame and latches (DoorLatched: an EASE's soft click).
+    void LatchBodyShut(Door door)
+    {
+        door.angle = 0f;
+        door.motion = DoorMotion.None;
+        door.swingLocked = false;
+        door.open = false;
+        openDoors.Remove(door.edge);
+        ajarDoors.Remove(door.edge);
+        PoseDoor(door);
+        TouchPassageRevision();
+        BodySwingCompleted(door, true);
+        DoorLatched?.Invoke(door, door.position);
+    }
+
+    // ---------- Touch-close: the face the body pushed, of an open leaf (decision 14B) ----------
+    // Red 2026-11-04, decision 14 in 30_for_red_zh.md: "要，选 B". A press on the face the body pushed of a plain leaf open at rest
+    // (70 deg or more, where it cannot go further), facing it, closes it after the walk's lean (0.30 s slow) as A12's shut does
+    // (ShutDoor): the leaf swings back to its frame and the game steps the body clear (DoorPulled, A19's step aside); under the
+    // Relay's sight or in a chase there is no step and the leaf waits on the body. Quiet (EASE), or a SLAM after a run through
+    // this door within BodyDoorSlamWindow and a press at a walk or more, as the pull's. Looking away, the leaf stays a wall.
+    BodyDoorResult CloseBodyDoor(Door d, BodyContact episode, BodyDoorInput input, float dt, bool slow, BodyDoorResult result)
+    {
+        if (episode.verb) return result;
+        if (Vector3.Dot(input.viewForward, -BodyLeafNormal(d, input.feet)) < .5f) { episode.lean = 0f; return result; }
+        episode.lean += dt;
+        if (episode.lean + 1e-5f < (slow ? .30f : .12f)) return BodyBlocked(d, episode, BodyDoorBump.Lean, ref result, false);
+        episode.verb = episode.close = true;
+        episode.shut = false;
+        var speed = input.inputMove.magnitude / dt;
+        var slam = !slow && speed >= 3.2f - .01f && bodyPassedEdge == d.edge && bodyPassedSprint
+            && bodyClock - bodyPassedAt <= BodyDoorSlamWindow;
+        var kind = slam ? DoorSwingKind.Slam : DoorSwingKind.Ease;
+        ShutDoor(d, input.feet, kind);
+        result.shut = true;
+        result.verb = kind;
+        return result;
+    }
+
     // ---------- The body's swing: one planned ease-out ----------
     // A barge, a walk's push or a gait change opens the leaf on its verb's ease-out (95 deg in FastSwing's 0.30 s or Open's
     // 0.55 s), but never slower than the body's straight path from here needs: the plan picks the least starting speed whose
@@ -511,6 +687,8 @@ public sealed partial class FrontRoomsMapWorld
         for (var s = s0; s <= s1 + 1e-4f; s += BodyPlanStep)
         {
             var angle = BodySwingAngle(door, omega, s);
+            // A push-shut home in its frame is a shut door: from then on the body meets it as a wall.
+            if (door.bodyShut && angle >= 0f) return true;
             if (angle + .25f < BodyNeed(door, feet + velocity * s, through, angle)) return false;
         }
         return true;
@@ -525,6 +703,8 @@ public sealed partial class FrontRoomsMapWorld
         {
             var toFrame = -start / omega;
             if (s <= toFrame) return start + omega * s;
+            // A push-shut stops in the frame, latched.
+            if (door.bodyShut) return 0f;
             s -= toFrame;
             start = 0f;
         }
@@ -564,7 +744,7 @@ public sealed partial class FrontRoomsMapWorld
     void RestBodyDoor(Door door)
     {
         door.motion = DoorMotion.None;
-        door.bodyFloorActive = false;
+        door.bodyFloorActive = door.bodyShut = false;
         door.swingLocked = false;
         RememberBodyRest(door);
     }
@@ -739,10 +919,16 @@ public sealed partial class FrontRoomsMapWorld
             bodyHeldSeconds.Remove(door.edge);
             bodyHeldReported.Remove(door.edge);
             bodySlamReported.Remove(door.edge);
+            // A body's push-shut is done: pressing on into the latched leaf is a new act (its lean, then an open away from it).
+            if (door.bodyShut && bodyContacts.TryGetValue(door.edge, out var episode))
+            {
+                episode.verb = episode.handle = episode.shut = false;
+                episode.lean = 0f;
+            }
         }
         else if (BodyDoors && !door.broken && door.angle < DoorPassableDegrees && door.angle >= 3f && door.swingKind != DoorSwingKind.Relay)
             RememberBodyRest(door);
-        door.bodyDriven = door.bodyFloorActive = false;
+        door.bodyDriven = door.bodyFloorActive = door.bodyShut = false;
         door.bodySeconds = 0f;
     }
 }
