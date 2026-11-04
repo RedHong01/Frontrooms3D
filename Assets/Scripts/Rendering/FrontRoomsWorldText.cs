@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 /// <summary>
 /// World text follows the language (Red, 2026-11-03: "所有的diegetic narratives 需要adapt 语言的变化";
@@ -13,20 +15,29 @@ using UnityEngine;
 /// (Editor/Rendering/FrontRoomsWorldTextImport) gives every copy its base's import settings and lists it in
 /// Resources/WorldText/manifest.json. With no copies there is no manifest and nothing here runs.
 ///
-/// Two kinds, decided by the base's import settings:
+/// Three kinds, decided by the base's import settings and the copy's form:
 ///   swap  the base is not readable: materials, kits, property blocks and EXAMINE draw it. While a language other than
 ///         English is in force the base itself holds its copy's pixels (Graphics.CopyTexture on the GPU: same size, format
 ///         and mips), so every renderer shows the language whoever built it and whenever. Back to English, or to a language
 ///         without a copy, the base is unloaded and reloads its own pixels from disk on its next use
 ///         (Resources.UnloadAsset). No asset is ever written, in the Editor or in a player, and the Editor's play mode ends
 ///         back in English.
+///   patch a swap for a big sheet whose words cover part of it (the evacuation plans: a full copy per language would add
+///         about 54 MB to the build for 简体中文 alone). The copy holds only the grid cells that differ from English (128
+///         texels where every platform uses 4 x 4 blocks, 192 where one uses ASTC 6 x 6), packed into power-of-two atlases
+///         &lt;path&gt;~patch0.png, ~patch1.png ... beside their places in &lt;path&gt;~patch.json; Tools/lookdev/pack_world_text_patch.py
+///         writes both and proves the base with the cells pasted is the language's sheet. The cells' compressed blocks are
+///         copied into the base level by level while they stay on the block grid (levels 0-5 at 128 texels, where an atlas
+///         cell's own box mips equal the sheet's). The smaller levels come whole from &lt;path&gt;~patchtail (the language's
+///         sheet at the first of them, 64 x 32 for an evacuation plan, with its mips), so a far plan shows no ghost of the
+///         English layout. A patched base is unloaded before another language patches it, so patches always go onto English.
 ///   own   the base is readable: code reads its pixels on the CPU (the stair signs' plate art and glyph atlases). That code
 ///         loads the language's copy itself with Texture() (any size) and its layout file with Text(), and rebuilds on
 ///         Applied.
 /// The language is read from FrontRoomsLanguage.Current once a frame (its start-up Load raises no event) and applied in
 /// that frame; then Applied is raised. WebGL lists English alone (FrontRoomsLanguage.Listed), so nothing here runs there.
-/// Cost: none in English; in another language the swapped bases stay loaded (they are what the rooms show) and each copy is
-/// loaded only for its copy, then unloaded.
+/// Cost: none in English; in another language the swapped and patched bases stay loaded (they are what the rooms show) and
+/// each copy or atlas is loaded only for its copy, then unloaded the next frame.
 /// </summary>
 public static class FrontRoomsWorldText
 {
@@ -44,6 +55,27 @@ public static class FrontRoomsWorldText
         public string[] own;
         /// <summary>Resources paths of text assets (layouts) with a copy in this language (Text).</summary>
         public string[] texts;
+        /// <summary>Resources paths of bases patched with this language's differing cells (&lt;path&gt;~patch.json).</summary>
+        public string[] patch;
+    }
+
+    /// <summary>The suffix of a patch copy's plan (&lt;path&gt;~patch.json) and atlases (&lt;path&gt;~patch0, ~patch1, ...).</summary>
+    public const string PatchSuffix = "~patch";
+
+    /// <summary>A patch copy's plan (Tools/lookdev/pack_world_text_patch.py). Texels at level 0, from the bottom left.</summary>
+    [Serializable]
+    public sealed class PatchPlan
+    {
+        /// <summary>The base's size.</summary>
+        public int width, height;
+        /// <summary>The grid the cells sit on, from the base's origin.</summary>
+        public int cell;
+        public int atlases;
+        /// <summary>Seven numbers per copy: the atlas, x and y in it, width, height, x and y in the base.</summary>
+        public int[] rects;
+        /// <summary>The first level the tail (&lt;path&gt;~patchtail, that level of the language's sheet with its mips) gives
+        /// whole; 0 for none.</summary>
+        public int tail;
     }
 
     [Serializable]
@@ -68,6 +100,10 @@ public static class FrontRoomsWorldText
     static readonly Dictionary<string, Texture2D> held = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
     static readonly List<string> scratch = new List<string>();
     static readonly HashSet<string> warned = new HashSet<string>(StringComparer.Ordinal);
+    // Copies and atlases whose blocks went into a base: unloaded the next frame, once the GPU has made the copies (as the
+    // landing placards drop their patches).
+    static readonly List<UnityEngine.Object> retire = new List<UnityEngine.Object>();
+    static int retireFrame = -1;
 
     /// <summary>The language whose world text is on screen (English = every base as it is on disk).</summary>
     public static string AppliedCode { get; private set; } = English;
@@ -147,6 +183,7 @@ public static class FrontRoomsWorldText
     /// <summary>Follow the game's language now if it changed (the watcher calls this once a frame).</summary>
     public static void Follow()
     {
+        if (retire.Count > 0 && Time.frameCount > retireFrame) Flush();
         var code = CurrentCode;
         if (code != AppliedCode) Apply(code);
     }
@@ -159,7 +196,8 @@ public static class FrontRoomsWorldText
     {
         var k = For(code);
         Swapped = Refused = 0;
-        // Bases the new language does not cover go back to their own pixels.
+        // Bases the new language does not swap go back to their own pixels; so do patched ones, since a patch covers only
+        // its cells and goes onto English.
         scratch.Clear();
         foreach (var pair in held)
             if (k == null || !k.swap.Contains(pair.Key)) scratch.Add(pair.Key);
@@ -170,8 +208,12 @@ public static class FrontRoomsWorldText
             if (b != null) Resources.UnloadAsset(b);
         }
         if (k != null)
+        {
             foreach (var path in k.language.swap ?? Array.Empty<string>())
                 if (Swap(path, k.language.code)) Swapped++; else Refused++;
+            foreach (var path in k.language.patch ?? Array.Empty<string>())
+                if (Patch(path, k.language.code)) Swapped++; else Refused++;
+        }
         AppliedCode = k != null ? code : English;
         Applied?.Invoke();
     }
@@ -194,9 +236,106 @@ public static class FrontRoomsWorldText
             return false;
         }
         Graphics.CopyTexture(v, b);
-        Resources.UnloadAsset(v);
+        Retire(v);
         held[path] = b;
         return true;
+    }
+
+    static bool Patch(string path, string code)
+    {
+        var stem = Root + code + "/" + path + PatchSuffix;
+        var b = Resources.Load<Texture2D>(path);
+        PatchPlan plan = null;
+        var planText = Resources.Load<TextAsset>(stem);
+        if (planText != null)
+        {
+            try { plan = JsonUtility.FromJson<PatchPlan>(planText.text); }
+            catch (Exception) { plan = null; }
+            Resources.UnloadAsset(planText);
+        }
+        var r = plan?.rects;
+        string why = null;
+        if (b == null) why = "no base";
+        else if (r == null || r.Length == 0 || r.Length % 7 != 0 || plan.atlases < 1) why = "no plan";
+        else if (b.isReadable) why = "the base is readable (an own copy, loaded by its code)";
+        else if (b.width != plan.width || b.height != plan.height) why = "the base is " + b.width + "x" + b.height + ", the plan's " + plan.width + "x" + plan.height;
+        else if (b.activeMipmapLimit != 0) why = "a mipmap limit is in force";
+        else if ((SystemInfo.copyTextureSupport & CopyTextureSupport.Basic) == 0) why = "no CopyTexture on this GPU";
+        var atlases = why == null ? new Texture2D[plan.atlases] : null;
+        for (var i = 0; why == null && i < atlases.Length; i++)
+        {
+            var a = atlases[i] = Resources.Load<Texture2D>(stem + i);
+            if (a == null) why = "no atlas " + i;
+            else if (a.graphicsFormat != b.graphicsFormat || a.activeMipmapLimit != 0) why = "atlas " + i + " is " + a.graphicsFormat + ", the base " + b.graphicsFormat;
+        }
+        // The levels every copy takes: while each stays on the format's block grid in both textures (the cells share one
+        // grid, so they agree: 6 at 128 texels with 4 x 4 blocks, 5 at 192).
+        var levels = why == null ? b.mipmapCount : 0;
+        if (why == null)
+        {
+            int bw = (int)GraphicsFormatUtility.GetBlockWidth(b.graphicsFormat), bh = (int)GraphicsFormatUtility.GetBlockHeight(b.graphicsFormat);
+            for (var i = 0; why == null && i < r.Length; i += 7)
+            {
+                var a = r[i] >= 0 && r[i] < atlases.Length ? atlases[r[i]] : null;
+                if (a == null || r[i + 3] <= 0 || r[i + 4] <= 0 || r[i + 1] < 0 || r[i + 2] < 0 || r[i + 5] < 0 || r[i + 6] < 0
+                    || r[i + 1] + r[i + 3] > a.width || r[i + 2] + r[i + 4] > a.height || r[i + 5] + r[i + 3] > b.width || r[i + 6] + r[i + 4] > b.height)
+                {
+                    why = "copy " + i / 7 + " falls outside its textures";
+                    break;
+                }
+                var n = 0;
+                while (n < levels && n < a.mipmapCount && OnGrid(r, i, bw << n, bh << n)) n++;
+                levels = n;
+            }
+            if (why == null && levels == 0) why = "a copy is off the " + bw + " x " + bh + " block grid";
+        }
+        if (why != null)
+        {
+            Warn(path + " (" + code + " patch): " + why + "; English stays");
+            if (atlases != null)
+                foreach (var a in atlases)
+                    if (a != null) Resources.UnloadAsset(a);
+            return false;
+        }
+        for (var i = 0; i < r.Length; i += 7)
+            for (var m = 0; m < levels; m++)
+                Graphics.CopyTexture(atlases[r[i]], 0, m, r[i + 1] >> m, r[i + 2] >> m, r[i + 3] >> m, r[i + 4] >> m, b, 0, m, r[i + 5] >> m, r[i + 6] >> m);
+        foreach (var a in atlases) Retire(a);
+        // The smaller levels whole from the tail; without one (or one that does not fit) they keep English.
+        if (plan.tail > 0 && plan.tail < b.mipmapCount)
+        {
+            var t = Resources.Load<Texture2D>(stem + "tail");
+            if (t == null) Warn(path + " (" + code + " patch): no tail; levels from " + plan.tail + " keep English");
+            else if (t.graphicsFormat != b.graphicsFormat || t.width != b.width >> plan.tail || t.height != b.height >> plan.tail
+                     || t.mipmapCount < b.mipmapCount - plan.tail || t.activeMipmapLimit != 0)
+            {
+                Warn(path + " (" + code + " patch): the tail is " + t.width + "x" + t.height + " " + t.graphicsFormat + " mips " + t.mipmapCount + "; levels from " + plan.tail + " keep English");
+                Resources.UnloadAsset(t);
+            }
+            else
+            {
+                for (var m = 0; plan.tail + m < b.mipmapCount; m++) Graphics.CopyTexture(t, 0, m, b, 0, plan.tail + m);
+                Retire(t);
+            }
+        }
+        held[path] = b;
+        return true;
+    }
+
+    static bool OnGrid(int[] r, int i, int bw, int bh) =>
+        r[i + 1] % bw == 0 && r[i + 2] % bh == 0 && r[i + 3] % bw == 0 && r[i + 4] % bh == 0 && r[i + 5] % bw == 0 && r[i + 6] % bh == 0;
+
+    static void Retire(UnityEngine.Object copy)
+    {
+        retire.Add(copy);
+        retireFrame = Time.frameCount;
+    }
+
+    static void Flush()
+    {
+        foreach (var o in retire)
+            if (o != null) Resources.UnloadAsset(o);
+        retire.Clear();
     }
 
     /// <summary>Resources.UnloadAsset for code that loads a texture, copies it and drops it (the landing placards' composites):
@@ -213,6 +352,7 @@ public static class FrontRoomsWorldText
     /// the end of a tool's Preview.</summary>
     public static void Restore()
     {
+        Flush();
         foreach (var b in held.Values)
             if (b != null) Resources.UnloadAsset(b);
         held.Clear();
@@ -239,6 +379,8 @@ public static class FrontRoomsWorldText
         byCode.Clear();
         held.Clear();
         warned.Clear();
+        retire.Clear();
+        retireFrame = -1;
         AppliedCode = English;
     }
 

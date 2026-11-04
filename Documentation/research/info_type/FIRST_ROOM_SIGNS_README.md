@@ -54,3 +54,29 @@ Once they're mounted in the first-room blockout, send me lit frames:
 - the letters from the entry door.
 
 I check legibility and the metal-on-fascia contrast. If a mount number changes, send the delta and I'll re-bake.
+
+## World text: W10 in nine languages (2026-11-03)
+
+- **What and why:** the BUSINESS HOURS plate follows the language (Red 11-03, `research/narrative/95_world_text_localization.md`). 平面视觉 pointed out that the plate art in main is this line's, so W10 is localized here.
+- **Where:** `Resources/WorldText/<code>/Surfaces/Textures/Prop_PlateBusinessHours_{A,N,S}.png` for all nine languages, at the base size (1832 x 612). Package `W/apply/world_text_w10_business_hours`, LANDED 11-03 18:2x.
+- **Words:** each table's row (95 §5).
+- **Line breaks** (this line's; signed by 叙事 11-03 18:3x, pt-BR re-broken by them):
+
+| Language | Rows |
+|---|---|
+| zh-Hans | 营业时间内 / 此门不得上锁 |
+| zh-Hant | 營業時間內 / 此門不得上鎖 |
+| ja | 営業時間中は / 施錠しないこと |
+| ko | 영업시간 중 이 문을 / 잠그지 마십시오 |
+| de | DIESE TÜR WÄHREND / DER GESCHÄFTSZEIT / NICHT VERSCHLIESSEN |
+| fr | CETTE PORTE DOIT RESTER / DÉVERROUILLÉE PENDANT / LES HEURES D'OUVERTURE |
+| es | ESTA PUERTA DEBE / PERMANECER SIN LLAVE / EN HORARIO COMERCIAL |
+| pt-BR | ESTA PORTA DEVE / FICAR DESTRANCADA / NO HORÁRIO COMERCIAL (叙事 18:3x: NO stays with its noun, as in es) |
+| ru | В РАБОЧЕЕ ВРЕМЯ / ДВЕРЬ НЕ ЗАПИРАТЬ |
+
+- **Type** (`research/localization/WORLD_TYPE.md` §3, shared with 平面视觉):
+  - CJK: body = the 1 in cap / 0.70, no tracking, 1.3 em apart.
+  - Latin: the English 1 in cap, 0.5 in apart. A notice of equal rows takes one face, so the whole block is in Heros Bold Condensed when any row overruns in Bold. fr's first row is at 25.2 of 25.4 mm (the last resort).
+  - ru: Roboto Condensed Bold until PT Sans is allowed.
+- **Textures:** A is the plate's albedo. _N and _S follow 游戏视觉's `make_station_surfaces.py` derivation (height to normal by central differences; smoothness 0.45 on the face, 0.25 in the letters). `W/info_type/stair_signs/world_bh.py` replays it, and on English it reproduces main's three textures exactly.
+- **Record:** VL496 (`images/vl496_w10_business_hours_9_languages.jpg`).

@@ -169,7 +169,9 @@ public sealed class FrontRoomsTerminalRaster : IDisposable
 
     /// <summary>
     /// The text-mode raster on the CPU (the shader's twin): dst = Width x Height in Unity texture order (row 0 = the
-    /// picture's bottom). Each dot is 2 x 2 pixels; the 9th dot column follows the VGA rule for CP437 0xC0-0xDF.
+    /// picture's bottom). Each dot is 2 x 2 pixels; the 9th dot column follows the VGA rule for CP437 0xC0-0xDF. A full-width
+    /// glyph (W18) is 16 dots in its two 9-dot cells with one blank dot each side: its left half on dots 1-8 of the left
+    /// cell, its right half on dots 0-7 of the right cell.
     /// </summary>
     public static void RasterCpu(FrontRoomsTerminalGrid grid, FrontRoomsTerminalFace face, Color32[] dst)
     {
@@ -181,6 +183,7 @@ public sealed class FrontRoomsTerminalRaster : IDisposable
                 for (var col = 0; col < FrontRoomsTerminalGrid.Cols; col++)
                 {
                     var code = grid.Glyph(col, row);
+                    var kind = grid.Kind(col, row);
                     var a = grid.Attr(col, row);
                     var fg = FrontRoomsTerminalPalette.Fg(a);
                     var bg = FrontRoomsTerminalPalette.Bg(a);
@@ -189,7 +192,10 @@ public sealed class FrontRoomsTerminalRaster : IDisposable
                     var x0 = col * DotW * Scale;
                     for (var x = 0; x < DotW; x++)
                     {
-                        var on = x < 8 ? (bits >> (7 - x) & 1) != 0 : nine;
+                        bool on;
+                        if (kind == FrontRoomsTerminalGrid.WideLeft) on = x >= 1 && (bits >> (8 - x) & 1) != 0;
+                        else if (kind == FrontRoomsTerminalGrid.WideRight) on = x < 8 && (bits >> (7 - x) & 1) != 0;
+                        else on = x < 8 ? (bits >> (7 - x) & 1) != 0 : nine;
                         var c = on ? fg : bg;
                         line[x0 + x * 2] = c;
                         line[x0 + x * 2 + 1] = c;

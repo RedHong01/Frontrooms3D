@@ -7859,15 +7859,15 @@ public static class FrontRoomsMapInteractionTests
             var sprint = Loudness("Sprint", 185);
             var glass = Loudness("Glass", 187);
             var device = Loudness("Device", 189);
-            var doorNoise = Loudness("Door", 191);
+            var doorNoise = Loudness("Ease", 191);   // V5 split the door noise: an eased door carries 6 m (RELAY 10)
             type.GetField("relay", flags).SetValue(game, null);
             type.GetField("director", flags).SetValue(game, null);
             Check(heard == FrontRoomsRelayHeard.Linked && NearV4a(range1, 9f) && panel && NearV4a(range5, 11.7f) && dx > 9f && farWalk == FrontRoomsRelayHeard.OutOfRange
                   && slow == FrontRoomsRelayHeard.None && still == FrontRoomsRelayHeard.None && run == FrontRoomsRelayHeard.None,
                 label + "the walk (the game's WalkStepNoise): " + heard + " at " + dClose.ToString("0.0", inv) + " m, range " + range1.ToString("0.0", inv) + " at hearing 1.0, " + range5.ToString("0.0", inv) + " at 1.3; " + dx.ToString("0.0", inv) + " m off " + farWalk
                 + "; never the panel (Attention " + attention.ToString("0.0", inv) + " -> " + d1.Policy.Attention.ToString("0.0", inv) + "); slow gait " + slow + ", still " + still + ", run " + run + " (a sprint step is its own noise)");
-            Check(NearV4a(sprint, 27f) && NearV4a(glass, 60f) && NearV4a(device, 45f) && NearV4a(doorNoise, 14f),
-                label + "the game's loudness (RelayNoise): sprint " + sprint.ToString("0.#", inv) + ", glass " + glass.ToString("0.#", inv) + ", device " + device.ToString("0.#", inv) + ", door " + doorNoise.ToString("0.#", inv) + " until V5 splits it");
+            Check(NearV4a(sprint, 27f) && NearV4a(glass, 60f) && NearV4a(device, 45f) && NearV4a(doorNoise, 6f),
+                label + "the game's loudness (RelayNoise): sprint " + sprint.ToString("0.#", inv) + ", glass " + glass.ToString("0.#", inv) + ", device " + device.ToString("0.#", inv) + ", eased door " + doorNoise.ToString("0.#", inv) + " until V5 splits it");
         }
     }
 #endif

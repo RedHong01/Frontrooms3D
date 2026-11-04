@@ -1,0 +1,15 @@
+{
+ "half": "ÀÁÂÃÄÇÈÉÊËÍÎÏÑÓÔÕÖÙÚÛÜàáâãäçèéêëíîïñóôõöùúûüÿß°ºª«»¿¡·§",
+ "wide": "",
+ "big": [
+  {
+   "role": "second",
+   "mode": "halfblock",
+   "chars": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:-/'!? ÀÂÇÉÈÊËÎÏÔÙÛÜ",
+   "w": 4,
+   "h": 10,
+   "top": 64,
+   "perRow": 32
+  }
+ ]
+}

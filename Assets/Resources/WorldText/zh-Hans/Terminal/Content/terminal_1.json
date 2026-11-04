@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO, zh-Hans (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_1.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "主菜单",
+    "doc": "阅读备忘",
+    "list": "打印队列",
+    "help": "帮助"
+  },
+  "main": {
+    "headline": "备忘录",
+    "second": "{UNREAD} 未读",
+    "secondNone": "全部已读",
+    "listItem": "打印队列",
+    "listMessage": "查看等待打印的文件。",
+    "helpItem": "帮助",
+    "helpMessage": "查看各键的用途。"
+  },
+  "memos": [
+    {
+      "index": "D.K., 保安部      钥匙登记",
+      "date": "{DATE_NOW}",
+      "message": "阅读保安部 D.K. 的备忘。",
+      "head": [
+        {
+          "label": "发件:",
+          "value": "D.K., 保安部"
+        },
+        {
+          "label": "收件:",
+          "value": "全体租户"
+        },
+        {
+          "label": "日期:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "事由:",
+          "value": "钥匙登记"
+        }
+      ],
+      "body": [
+        "下班前请把钥匙登记归还。",
+        "上周有三把办公室钥匙未归还。",
+        "",
+        "0700 前未登记归还的钥匙，按遗失上报。",
+        "请勿外借钥匙。每把钥匙只登记给一人。"
+      ],
+      "sign": "D.K."
+    },
+    {
+      "index": "R.M., 物业部      装修",
+      "date": "{DATE_BACK4}",
+      "message": "阅读物业部 R.M. 的备忘。",
+      "head": [
+        {
+          "label": "发件:",
+          "value": "R.M., 物业部"
+        },
+        {
+          "label": "收件:",
+          "value": "全体租户"
+        },
+        {
+          "label": "日期:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "事由:",
+          "value": "装修"
+        }
+      ],
+      "body": [
+        "多个楼层仍在装修。",
+        "装修完成前，楼层可能与张贴的平面图不符。",
+        "",
+        "如本层张贴的平面图已过时，请告知物业部。",
+        "",
+        "感谢您的耐心。"
+      ],
+      "sign": "R.M."
+    }
+  ],
+  "list": {
+    "heading": "队列: MAIN             打印机: LASER 2          状态: 正在打印",
+    "columns": [
+      "作业",
+      "文件",
+      "所有者",
+      "页数",
+      "状态"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "火警演习通知",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "正在打印",
+        "message": "正在打印第 2 页，共 2 页。"
+      },
+      {
+        "job": "0413",
+        "document": "钥匙登记表",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "等待中",
+        "message": "正在等待打印机。"
+      }
+    ]
+  },
+  "help": {
+    "heading": "按键",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "选择项目"
+      },
+      {
+        "action": "Side",
+        "text": "上一个或下一个"
+      },
+      {
+        "action": "Select",
+        "text": "打开所选项目"
+      },
+      {
+        "action": "Page",
+        "text": "上一页或下一页"
+      },
+      {
+        "action": "Cancel",
+        "text": "返回上一步"
+      },
+      {
+        "action": "Exit",
+        "text": "退出 {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "本帮助"
+      }
+    ]
+  },
+  "words": {
+    "help": "帮助",
+    "select": "选择",
+    "cancel": "取消",
+    "exit": "退出",
+    "page": "翻页",
+    "softSelect": "Enter",
+    "softCancel": "取消",
+    "softHelp": "帮助",
+    "more": "更多:",
+    "memoOf": "备忘 {N} / {M}"
+  },
+  "refusals": {
+    "notAuthorized": "无权操作：只有作业的所有者才能更改。",
+    "topOfData": "已到文件夹开头：没有更早的备忘。",
+    "bottomOfData": "已到文件夹末尾：没有更多备忘。"
+  }
+}

@@ -63,7 +63,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     public enum UseKind { Hidden, Open, Shut, Take, Locked, Hold, Tap, Broken, Read, Back, Unlock, Examine, Watch, Peek }
 
     /// <summary>Buttons the view draws a press state for.</summary>
-    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip, SettingsTab, SettingsPreview, SettingsPeekBack, LanguageRow }
+    public enum Button { None, Pause, Use, SprintToggle, Resume, Settings, Restart, ReturnTitle, RestartCancel, RestartConfirm, TryAgain, SettingsClose, SettingsRow, TextChip, SettingsTab, SettingsPreview, SettingsPeekBack, LanguageRow, PadMapTap }
 
     /// <summary>The touch preference rows (the TOUCH column of the settings card).</summary>
     public enum TouchRow { LookSpeed, InvertLook, GyroLook, Stick, Sprint, StickHints, ControlsSize, ControlsOpacity, LeftHanded, HapticsGameplay, HapticsControls }
@@ -219,6 +219,20 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     // row folds in 0.22 s, ease-in-out cubic (as a map row and the desktop's LANGUAGE).
     public const float UnfoldMin = .26f, UnfoldMax = .52f, UnfoldPerUnit = 1f / 1500f, FoldFadeS = .12f, FoldS = .22f;
     float langUnfoldAt = -100f, langFoldAt = -100f, langUnfoldFrom, langFoldFrom;
+    /// <summary>CONTROLLER unfolded into its map (SETTINGS_MOTION.md, E4c: "On the phone the controller fills the 710 pt list"; the
+    /// desktop's E2): the desktop's controller drawing in the row, a callout chosen by a tap or ← →, the chosen one tapped again (or
+    /// A) listening for a button. Only one row is open. A tap on the row's word unfolds it and folds it again; ↑ ↓ or B fold it.</summary>
+    public bool MapUnfolded { get; private set; }
+    /// <summary>The controller's map (the view makes it on the first unfold) and where it is in frame points: the unfolded part of
+    /// its row on screen, the drawing's origin (top-left), its height with its pads, the chosen callout.</summary>
+    public FrontRoomsKeyMapView PadMap { get; set; }
+    public Rect PadMapRect { get; set; }
+    public Vector2 PadMapOrigin { get; set; }
+    public float PadMapHeight { get; set; } = 300f;
+    public Rect PadMapChosenRect { get; set; }
+    float mapUnfoldAt = -100f, mapFoldAt = -100f, mapUnfoldFrom, mapFoldFrom;
+    // The list follows the map's chosen callout once the view has placed it (a frame after ← → or a tap).
+    bool followChosen;
     /// <summary>The view's measure of a row's open height at a list width (its sentence wraps, never cut); null: twice its first line.</summary>
     public Func<FrontRoomsSettingsMenu.Row, float, float> SettingsOpenHeight { get; set; }
     // A row opening in place (SETTINGS_MOTION.md; the constants are W/settings_motion/mock.py's, as FrontRoomsDesktopSettingsView):
@@ -539,6 +553,16 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             if (FrontRoomsBindCapture.Update()) SettingsRowRequested?.Invoke(ActiveSettingsRow, RowExplain);
             return;
         }
+        // CONTROLLER's map listening for a button or asking to swap reads the devices itself (B or MENU cancels, A swaps), as the
+        // desktop's map page: no menu button acts meanwhile, and a direction held waits for its release.
+        if (menuState == MenuState.Settings && PadMap != null && PadMap.Capturing)
+        {
+            ReadMenuNav();
+            navRepeatAt = float.PositiveInfinity;
+            PadMap.UpdateCapture();
+            FrontRoomsInput.HoldPadMenu();
+            return;
+        }
         if (!ExternalInput) { FocusChip = Button.None; return; }
         var nav = ReadMenuNav();
         switch (menuState)
@@ -588,7 +612,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             return;
         }
         // B or Esc closes the open row; a second resumes (SETTINGS_MOTION.md).
-        if (nav.Back) { if (LanguageUnfolded) SetLanguageUnfolded(false); else if (OpenSettingsRow >= 0) SetOpenRow(-1); else PressChip(Button.SettingsClose); return; }
+        if (nav.Back) { if (MapUnfolded) SetMapUnfolded(false); else if (LanguageUnfolded) SetLanguageUnfolded(false); else if (OpenSettingsRow >= 0) SetOpenRow(-1); else PressChip(Button.SettingsClose); return; }
         if (FocusChip == Button.Restart || FocusChip == Button.SettingsClose)
         {
             // The header: END RUN, RESUME (left to right); down goes back to the rows.
@@ -608,6 +632,19 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             else if (nav.Dir.x != 0) { LanguageStrip.Step(nav.Dir.x); return; }
             else if (nav.Confirm && Time.frameCount != modeChangedFrame) { LanguageStrip.PickHighlighted(); return; }
         }
+        // CONTROLLER's map has the pad and the keys, as the desktop's map page: ← → the next callout, ↑ ↓ fold it and go on to the
+        // next row, A listens for a button for the chosen one, X puts it back, Y presses DEFAULTS (twice puts every button back).
+        var mapRow = SlotRow(ActiveSettingsRow);
+        if (MapUnfolded && mapRow != null && mapRow.Key == FrontRoomsSettingsMenu.Key.PadMap && PadMap != null)
+        {
+            var fresh = Time.frameCount == modeChangedFrame;
+            if (nav.Dir.y != 0) SetMapUnfolded(false);
+            else if (nav.Dir.x != 0) { PadMap.Step(nav.Dir.x); followChosen = true; return; }
+            else if (nav.Confirm && !fresh) { PadMap.BeginCapture(); return; }
+            else if (nav.Reset && !fresh) { PadMap.ResetChosen(); return; }
+            else if (nav.Preview && !fresh) { PressMapDefaults(); return; }
+            else return;
+        }
         if (nav.Dir.y != 0)
         {
             // The first ↑ ↓ on a fresh sheet or tab opens the focused row where it is; then each opens the next and closes the
@@ -625,6 +662,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         // Y on GRAPHICS: its preview. The header chips returned above, so neither acts on RESUME or END RUN; nor on the press
         // that switched the sheet to this pad or keyboard, which only shows the focus (2026-10-31).
         var handedOver = Time.frameCount == modeChangedFrame;
+        // CONTROLLER's map row, as the desktop's: A or → unfolds it.
+        if (row.Key == FrontRoomsSettingsMenu.Key.PadMap && !handedOver && (nav.Confirm || nav.Dir.x > 0)) { SetMapUnfolded(true); FollowRow(ActiveSettingsRow); return; }
         if (nav.Reset && !handedOver) { FrontRoomsSettingsMenu.ResetRow(row); ApplySettingsRow(ActiveSettingsRow, RowExplain); return; }
         if (nav.Preview && !handedOver && SettingsTab == FrontRoomsSettingsMenu.Tab.Graphics) { ApplySettingsRow(ActiveSettingsRow, RowPreview); return; }
         if (nav.Dir.x != 0)
@@ -1029,8 +1068,11 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             // LANGUAGE grows under its head by its grid's height as the grid unfolds.
             var fold = r.Kind == FrontRoomsSettingsMenu.Kind.Language ? LanguageFoldAmount(now) : 0f;
             if (fold > 0f) h = rest + LanguageGridHeight * fold;
+            // CONTROLLER's map row grows by its map's height as the map unfolds.
+            var mapFold = r.Key == FrontRoomsSettingsMenu.Key.PadMap ? MapFoldAmount(now) : 0f;
+            if (mapFold > 0f) h = rest + PadMapHeight * mapFold;
             slots.Add(new SettingsSlot { Id = id, Label = r.Label, Value = r.ValueText, Row = r, Rect = new Rect(list.x, y - h, list.width, h),
-                Rest = rest, Open = open, IsOpen = motion.IsOpen, OpenAt = motion.OpenAt, CloseAt = motion.CloseAt, Fold = fold });
+                Rest = rest, Open = open, IsOpen = motion.IsOpen, OpenAt = motion.OpenAt, CloseAt = motion.CloseAt, Fold = Mathf.Max(fold, mapFold) });
             y -= h;
         }
         // The list runs to the bottom edge (Red, 2026-10-24); its last row scrolls up clear of the home indicator.
@@ -1040,6 +1082,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         // A row that has folded leaves the bookkeeping.
         for (var i = rowOpens.Count - 1; i >= 0; i--)
             if (!rowOpens[i].IsOpen && now - rowOpens[i].CloseAt > CloseFadeS + CloseS) rowOpens.RemoveAt(i);
+        if (followChosen && PadMapChosenRect.height > 0f) { followChosen = false; FollowFrame(PadMapChosenRect); }
     }
 
     // ------------------------------------------------------------ a row opens in place (SETTINGS_MOTION.md)
@@ -1056,7 +1099,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
     void SetOpenRow(int id)
     {
         if (!Opens(SlotRow(id))) id = -1;
-        if (id >= 0) SetLanguageUnfolded(false);
+        if (id >= 0) { SetLanguageUnfolded(false); SetMapUnfolded(false); }
         if (id == OpenSettingsRow) return;
         var now = FrontRoomsTouchMotion.Now;
         var at = -1;
@@ -1090,6 +1133,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         langFoldFrom = 0f;
         langFoldAt = langUnfoldAt = -100f;
         LanguageStrip?.SetGrid(false, true);
+        // and CONTROLLER's map.
+        MapUnfolded = false;
+        mapFoldFrom = 0f;
+        mapFoldAt = mapUnfoldAt = -100f;
     }
 
     /// <summary>LANGUAGE's grid out or back, in motion, the strip with it; out, it closes the open row.</summary>
@@ -1099,7 +1146,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         var now = FrontRoomsTouchMotion.Now;
         var amount = LanguageFoldAmount(now);
         LanguageUnfolded = on;
-        if (on) { SetOpenRow(-1); langUnfoldAt = now; langUnfoldFrom = amount; }
+        if (on) { SetOpenRow(-1); SetMapUnfolded(false); langUnfoldAt = now; langUnfoldFrom = amount; }
         else { langFoldAt = now; langFoldFrom = amount; }
         LanguageStrip?.SetGrid(on);
     }
@@ -1110,6 +1157,54 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         if (FrontRoomsHandheld.ReduceMotion) return LanguageUnfolded ? 1f : 0f;
         if (LanguageUnfolded) return Mathf.Lerp(langUnfoldFrom, 1f, OutQuart((now - langUnfoldAt) / Mathf.Min(UnfoldMax, UnfoldMin + LanguageGridHeight * UnfoldPerUnit)));
         return langFoldFrom * (1f - FrontRoomsTouchMotion.Evaluate(FrontRoomsTouchMotion.Ease.InOutCubic, Mathf.Clamp01((now - langFoldAt - FoldFadeS) / FoldS)));
+    }
+
+    /// <summary>CONTROLLER's map out or back, in motion (the view plays its reveal and its fade); out, it closes the open row and
+    /// folds LANGUAGE's grid.</summary>
+    void SetMapUnfolded(bool on)
+    {
+        if (on == MapUnfolded) return;
+        var now = FrontRoomsTouchMotion.Now;
+        var amount = MapFoldAmount(now);
+        MapUnfolded = on;
+        if (on) { SetOpenRow(-1); SetLanguageUnfolded(false); mapUnfoldAt = now; mapUnfoldFrom = amount; }
+        else { mapFoldAt = now; mapFoldFrom = amount; }
+    }
+
+    /// <summary>How far CONTROLLER's map is out, 0..1, on LANGUAGE's curves (the graph's own height). Reduced motion: it jumps.</summary>
+    public float MapFoldAmount(float now)
+    {
+        if (FrontRoomsHandheld.ReduceMotion) return MapUnfolded ? 1f : 0f;
+        if (MapUnfolded) return Mathf.Lerp(mapUnfoldFrom, 1f, OutQuart((now - mapUnfoldAt) / Mathf.Min(UnfoldMax, UnfoldMin + PadMapHeight * UnfoldPerUnit)));
+        return mapFoldFrom * (1f - FrontRoomsTouchMotion.Evaluate(FrontRoomsTouchMotion.Ease.InOutCubic, Mathf.Clamp01((now - mapFoldAt - FoldFadeS) / FoldS)));
+    }
+
+    /// <summary>A frame point in the map's own units (its top-left origin, y down), as the desktop's MapPoint.</summary>
+    Vector2 PadMapPoint(Vector2 p) => new Vector2(p.x - PadMapOrigin.x, PadMapOrigin.y - p.y) / Mathf.Max(.01f, PadMap != null ? PadMap.Scale : 1f);
+
+    /// <summary>Y on the map: the CONTROLLER list's DEFAULTS row (a first press asks, a second within 3 s puts every button back).</summary>
+    void PressMapDefaults()
+    {
+        foreach (var s in slots)
+            if (!s.Header && s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadDefaults) { FrontRoomsSettingsMenu.Activate(s.Row); break; }
+        PadMap?.Refresh(true);
+    }
+
+    /// <summary>The list follows to show a rect on screen whole (0.32 s, ease-in-out): the map's chosen callout.</summary>
+    void FollowFrame(Rect r)
+    {
+        var view = SettingsScrollViewport;
+        var bottom = view.yMin + Layout.SettingsBottomInset;
+        var target = SettingsScroll;
+        if (r.yMax > view.yMax) target -= r.yMax - view.yMax;
+        else if (r.yMin < bottom) target += bottom - r.yMin;
+        target = Mathf.Clamp(target, 0f, SettingsScrollMax);
+        if (Mathf.Abs(target - SettingsScroll) < .5f) return;
+        followFrom = SettingsScroll;
+        followTo = target;
+        followAt = FrontRoomsTouchMotion.Now;
+        following = true;
+        scrollVelocity = 0f;
     }
 
     /// <summary>The LANGUAGE row's slot id on this tab, or -1.</summary>
@@ -1152,7 +1247,8 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         {
             var s = slots[i];
             var h = s.Header ? s.Rest : s.Id == OpenSettingsRow ? OpenHeightOf(s.Row, s.Rect.width)
-                : s.Row != null && s.Row.Kind == FrontRoomsSettingsMenu.Kind.Language && LanguageUnfolded ? s.Rest + LanguageGridHeight : s.Rest;
+                : s.Row != null && s.Row.Kind == FrontRoomsSettingsMenu.Kind.Language && LanguageUnfolded ? s.Rest + LanguageGridHeight
+                : s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadMap && MapUnfolded ? s.Rest + PadMapHeight : s.Rest;
             if (!s.Header && s.Id == id)
             {
                 top = y;
@@ -1516,6 +1612,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             {
                 // A finger is no control to bind (2026-11-01): a touch anywhere ends a listening row; the tap still does what it does.
                 if (FrontRoomsBindCapture.Busy) FrontRoomsBindCapture.Cancel();
+                if (PadMap != null && PadMap.Capturing) PadMap.CancelCapture();
                 Begin(id, p);
                 continue;
             }
@@ -1654,6 +1751,12 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 }
                 f.Button = MenuButtonAt(p);
                 if (f.Button != Button.None) f.Role = Role.Button;
+                else if (MapUnfolded && PadMap != null && PadMapRect.Contains(p))
+                {
+                    // CONTROLLER's map: the lift chooses the callout under it, or listens for the chosen one (Activate).
+                    f.Role = Role.Button;
+                    f.Button = Button.PadMapTap;
+                }
                 else if (LanguageTagAt(p) != -1)
                 {
                     f.Role = Role.Button;
@@ -1740,7 +1843,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     PressedButton = Button.None;
                     goto case Role.SliderDrag;
                 }
-                if (f.Button == Button.SettingsRow && SettingsScrollViewport.Contains(f.Start) && Mathf.Abs(p.y - f.Start.y) > ScrollStartSlop)
+                if ((f.Button == Button.SettingsRow || f.Button == Button.PadMapTap) && SettingsScrollViewport.Contains(f.Start) && Mathf.Abs(p.y - f.Start.y) > ScrollStartSlop)
                 {
                     // A drag in the touch column scrolls it instead of tapping the row.
                     f.Role = Role.Scroll;
@@ -1837,6 +1940,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
             case Button.SettingsTab:
             case Button.SettingsPreview:
             case Button.SettingsPeekBack:
+            case Button.PadMapTap:
                 return (p - f.Start).sqrMagnitude <= TapSlop * TapSlop * 4f;
             case Button.LanguageRow:
                 // Anywhere on the strip: a slide along it moves the press (Move), it is not a cancel; the grid's head stays the head.
@@ -1983,6 +2087,13 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     if (f.RowDirection != RowLine) { SetLanguageUnfolded(!LanguageUnfolded); if (LanguageUnfolded) FollowRow(f.Row); }
                     break;
                 }
+                // CONTROLLER's word unfolds its map and folds it again; a tap beside the drawing does nothing.
+                if (langRow != null && langRow.Key == FrontRoomsSettingsMenu.Key.PadMap)
+                {
+                    ActiveSettingsRow = f.Row;
+                    if (f.RowDirection != RowLine) { SetMapUnfolded(!MapUnfolded); if (MapUnfolded) FollowRow(f.Row); }
+                    break;
+                }
             }
                 // A tap opens its row in place (hover never does) and works the control under it; a tap on the open row's first line
                 // off its control closes it (SETTINGS_MOTION.md, as a click on the desktop).
@@ -1995,6 +2106,17 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     FollowRow(f.Row);
                 }
                 break;
+            case Button.PadMapTap:
+            {
+                // A callout is chosen by a tap; the chosen one tapped again listens for a button (as a click on the desktop's map).
+                var mapAt = PadMapPoint(f.Start);
+                foreach (var s in slots) if (!s.Header && s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadMap) ActiveSettingsRow = s.Id;
+                if (PadMap == null) break;
+                var at = PadMap.ActionAt(mapAt);
+                if (at >= 0 && at == PadMap.Focus) PadMap.BeginCapture();
+                else if (PadMap.FocusAt(mapAt)) followChosen = true;
+                break;
+            }
             case Button.LanguageRow:
             {
                 // The head (the key, the current name) unfolds the grid and folds it again; on the rail another charm picks at once;

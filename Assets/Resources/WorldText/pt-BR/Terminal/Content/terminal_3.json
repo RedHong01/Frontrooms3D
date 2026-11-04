@@ -1,0 +1,159 @@
+{
+  "_about": "OFFICE MEMO, pt-BR (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_3.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "Menu principal",
+    "doc": "Ler memorando",
+    "list": "Fila de impressão",
+    "help": "Ajuda"
+  },
+  "main": {
+    "headline": "MEMORANDOS",
+    "second": "{UNREAD} NÃO LIDOS",
+    "secondNone": "TODOS LIDOS",
+    "listItem": "Fila de impressão",
+    "listMessage": "Ver o que aguarda na impressora.",
+    "helpItem": "Ajuda",
+    "helpMessage": "Ver o que cada tecla faz."
+  },
+  "memos": [
+    {
+      "index": "D.K., Segurança   Visitantes",
+      "date": "{DATE_NOW}",
+      "message": "Ler o memorando de D.K., Segurança.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "D.K., Segurança"
+        },
+        {
+          "label": "Para:",
+          "value": "Todos os inquilinos"
+        },
+        {
+          "label": "Data:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "Ref.:",
+          "value": "Visitantes"
+        }
+      ],
+      "body": [
+        "Todo visitante assina o livro no posto de segurança.",
+        "Receba seus visitantes no posto e acompanhe-os na saída.",
+        "",
+        "Depois das 1800, visitantes só entram se um inquilino ligar para o posto."
+      ],
+      "sign": "D.K."
+    },
+    {
+      "index": "R.M., Manutenção  Proibido fumar",
+      "date": "{DATE_BACK4}",
+      "message": "Ler o memorando de R.M., Manutenção.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "R.M., Manutenção"
+        },
+        {
+          "label": "Para:",
+          "value": "Todos os inquilinos"
+        },
+        {
+          "label": "Data:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "Ref.:",
+          "value": "Proibido fumar"
+        }
+      ],
+      "body": [
+        "A partir do dia primeiro, é proibido fumar em todo o prédio.",
+        "Isso inclui escritórios, banheiros e escadas.",
+        "",
+        "Fume do lado de fora, longe da entrada principal."
+      ],
+      "sign": "R.M."
+    }
+  ],
+  "list": {
+    "heading": "Fila: MAIN             Impressora: LASER 2      Estado: Imprimindo",
+    "columns": [
+      "Nº",
+      "Documento",
+      "Dono",
+      "Págs.",
+      "Estado"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "Aviso de simulado de incêndio",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "Imprimindo",
+        "message": "Imprimindo página 2 de 2."
+      },
+      {
+        "job": "0413",
+        "document": "Registro de retirada de chaves",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "Aguardando",
+        "message": "Aguardando a impressora."
+      }
+    ]
+  },
+  "help": {
+    "heading": "Teclas",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "Escolher um item"
+      },
+      {
+        "action": "Side",
+        "text": "Anterior ou próximo"
+      },
+      {
+        "action": "Select",
+        "text": "Abrir o item escolhido"
+      },
+      {
+        "action": "Page",
+        "text": "Página anterior ou próxima"
+      },
+      {
+        "action": "Cancel",
+        "text": "Voltar um passo"
+      },
+      {
+        "action": "Exit",
+        "text": "Sair do {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "Esta ajuda"
+      }
+    ]
+  },
+  "words": {
+    "help": "Ajuda",
+    "select": "Escolher",
+    "cancel": "Cancelar",
+    "exit": "Sair",
+    "page": "Página",
+    "softSelect": "Enter",
+    "softCancel": "Cancelar",
+    "softHelp": "Ajuda",
+    "more": "Mais:",
+    "memoOf": "Memorando {N} de {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Sem autorização: só o dono de um trabalho pode alterá-lo.",
+    "topOfData": "Início da pasta: não há memorandos anteriores.",
+    "bottomOfData": "Fim da pasta: não há mais memorandos."
+  }
+}

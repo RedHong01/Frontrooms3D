@@ -1,0 +1,163 @@
+{
+  "_about": "OFFICE MEMO, es (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from interoffice.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "Menú principal",
+    "doc": "Leer memorando",
+    "list": "Cola de impresión",
+    "help": "Ayuda"
+  },
+  "main": {
+    "headline": "MEMORANDOS",
+    "second": "{UNREAD} SIN LEER",
+    "secondNone": "TODO LEÍDO",
+    "listItem": "Cola de impresión",
+    "listMessage": "Ver qué espera en la impresora.",
+    "helpItem": "Ayuda",
+    "helpMessage": "Ver qué hace cada tecla."
+  },
+  "memos": [
+    {
+      "index": "R.M., Mantenimiento  Procedimiento de alarma",
+      "date": "{DATE_NOW}",
+      "message": "Leer el memorando de R.M., Mantenimiento.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "R.M., Mantenimiento"
+        },
+        {
+          "label": "Para:",
+          "value": "Todos los inquilinos"
+        },
+        {
+          "label": "Fecha:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "Ref.:",
+          "value": "Procedimiento de alarma"
+        }
+      ],
+      "body": [
+        "En caso de alarma de incendio, camine; no corra. Siga el plano expuesto hasta la escalera A.",
+        "Ante una alarma, un encargado de piso revisa cada sala.",
+        "",
+        "Romper una ventana activa la alarma.",
+        "",
+        "Próximo simulacro: {DRILL_WEEKDAY} {DRILL_DAY} de {DRILL_MONTH}, a las 10:00."
+      ],
+      "sign": "R.M."
+    },
+    {
+      "index": "D.K., Seguridad   Fuera de horario",
+      "date": "{DATE_BACK4}",
+      "message": "Leer el memorando de D.K., Seguridad.",
+      "head": [
+        {
+          "label": "De:",
+          "value": "D.K., Seguridad"
+        },
+        {
+          "label": "Para:",
+          "value": "Todos los inquilinos"
+        },
+        {
+          "label": "Fecha:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "Ref.:",
+          "value": "Fuera de horario"
+        }
+      ],
+      "body": [
+        "Fuera de horario, la entrada principal está cerrada con llave.",
+        "Firme la entrada y la salida en el puesto de seguridad.",
+        "",
+        "Toda salida de llaves debe firmarse.",
+        "",
+        "Seguridad recorre el edificio una vez por hora, de 2300 a 0700."
+      ],
+      "sign": "D.K."
+    }
+  ],
+  "list": {
+    "heading": "Cola: MAIN             Impresora: LASER 2       Estado: Imprimiendo",
+    "columns": [
+      "N.º",
+      "Documento",
+      "Dueño",
+      "Págs.",
+      "Estado"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "Aviso de simulacro",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "Imprimiendo",
+        "message": "Imprimiendo página 2 de 2."
+      },
+      {
+        "job": "0413",
+        "document": "Registro de salida de llaves",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "En espera",
+        "message": "Esperando la impresora."
+      }
+    ]
+  },
+  "help": {
+    "heading": "Teclas",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "Elegir un elemento"
+      },
+      {
+        "action": "Side",
+        "text": "Anterior o siguiente"
+      },
+      {
+        "action": "Select",
+        "text": "Abrir el elemento elegido"
+      },
+      {
+        "action": "Page",
+        "text": "Página anterior o siguiente"
+      },
+      {
+        "action": "Cancel",
+        "text": "Retroceder un paso"
+      },
+      {
+        "action": "Exit",
+        "text": "Salir de {PROGRAM}"
+      },
+      {
+        "action": "Help",
+        "text": "Esta ayuda"
+      }
+    ]
+  },
+  "words": {
+    "help": "Ayuda",
+    "select": "Elegir",
+    "cancel": "Cancelar",
+    "exit": "Salir",
+    "page": "Página",
+    "softSelect": "Enter",
+    "softCancel": "Cancelar",
+    "softHelp": "Ayuda",
+    "more": "Más:",
+    "memoOf": "Memorando {N} de {M}"
+  },
+  "refusals": {
+    "notAuthorized": "Sin autorización: solo el dueño de un trabajo puede cambiarlo.",
+    "topOfData": "Inicio de la carpeta: no hay memorandos anteriores.",
+    "bottomOfData": "Fin de la carpeta: no hay más memorandos."
+  }
+}

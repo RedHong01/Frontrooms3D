@@ -98,7 +98,7 @@ public sealed class FrontRoomsTerminal
     /// <summary>A new run: every unread mark and last-item memory resets (the map line calls it with the run's start).</summary>
     public static void ResetRun() => runs.Clear();
 
-    readonly FrontRoomsTerminalContent content;
+    FrontRoomsTerminalContent content;
     readonly FrontRoomsTerminalGrid grid, scratch;
     readonly RunMemory memory;
     readonly List<string> transcript = new List<string>();
@@ -598,6 +598,29 @@ public sealed class FrontRoomsTerminal
     /// <summary>Lay the current panel out again (the clock's minute, a face swap, a new namer). Only real changes reach the grid.</summary>
     public void Refresh() => Layout();
 
+    /// <summary>
+    /// The language changed (W18): the same machine shows the new language's content set. The sets share their shape (the
+    /// same memos, jobs and help rows), so the panel, the bar, the memo and the scroll stay where they are (clamped), and
+    /// the run's read marks carry over. The change cuts (no motion).
+    /// </summary>
+    public void SetContent(FrontRoomsTerminalContent next)
+    {
+        if (next == null || next == content) return;
+        content = next;
+        var n = content.memos.Length;
+        if (memory.read.Length != n)
+        {
+            var read = new bool[n];
+            Array.Copy(memory.read, read, Mathf.Min(n, memory.read.Length));
+            memory.read = read;
+        }
+        memo = Mathf.Clamp(memo, 0, Mathf.Max(0, n - 1));
+        bar = ClampItem(bar);
+        listBar = Mathf.Clamp(listBar, 0, Mathf.Max(0, Mathf.Min(content.list.jobs.Length, MaxJobs) - 1));
+        Layout();
+        motion = default;
+    }
+
     void Layout()
     {
         var g = scratch;
@@ -693,7 +716,7 @@ public sealed class FrontRoomsTerminal
             var a = i == bar ? FrontRoomsTerminalPalette.Bar : FrontRoomsTerminalPalette.Field;
             if (i == bar) g.Fill(BarLeft, row, BarWidth, 1, ' ', a);
             if (mark) g.Set(MarkCol, row, 0xFE, a);
-            var room = (string.IsNullOrEmpty(right) ? ItemRight + 1 : ItemRight - right.Length) - ItemCol;
+            var room = (string.IsNullOrEmpty(right) ? ItemRight + 1 : ItemRight - FrontRoomsTerminalFace.Cells(right)) - ItemCol;
             g.Put(ItemCol, row, label, a, Mathf.Max(0, room));
             if (!string.IsNullOrEmpty(right)) g.PutRight(ItemRight, row, right, a);
             T(string.IsNullOrEmpty(right) ? label : label + "  " + right);
@@ -723,14 +746,20 @@ public sealed class FrontRoomsTerminal
         }
     }
 
+    // W18: the width counts cells (a full-width character takes two). A line breaks at its last space within the width, else
+    // (a CJK line has none) after the last character that fits, never inside a full-width glyph. English breaks as before.
     static void Wrap(string s, int width, List<string> into)
     {
         var start = 0;
         while (start < s.Length)
         {
-            if (s.Length - start <= width) { into.Add(s.Substring(start)); break; }
-            var cut = s.LastIndexOf(' ', start + width, width + 1);
-            if (cut <= start) cut = start + width;
+            var cells = 0;
+            var end = start;
+            while (end < s.Length && cells + FrontRoomsTerminalFace.Cells(s[end]) <= width) cells += FrontRoomsTerminalFace.Cells(s[end++]);
+            if (end >= s.Length) { into.Add(s.Substring(start)); break; }
+            if (end == start) end = start + 1;   // one glyph wider than the width: it goes alone
+            var cut = s.LastIndexOf(' ', end, end - start + 1);
+            if (cut <= start) cut = end;
             into.Add(s.Substring(start, cut - start).TrimEnd());
             start = cut;
             while (start < s.Length && s[start] == ' ') start++;
@@ -850,8 +879,8 @@ public sealed class FrontRoomsTerminal
             var row = content.help.rows[helpRows[helpScroll + k]];
             TerminalAction action;
             Enum.TryParse(row.action, true, out action);
-            keyWidth = Mathf.Max(keyWidth, Name(action).Length);
-            textWidth = Mathf.Max(textWidth, X(row.text).Length);
+            keyWidth = Mathf.Max(keyWidth, FrontRoomsTerminalFace.Cells(Name(action)));
+            textWidth = Mathf.Max(textWidth, FrontRoomsTerminalFace.Cells(X(row.text)));
         }
         var textCol = Mathf.Max(HelpTextCol, HelpKeyCol + keyWidth + 1);
         var right = Mathf.Clamp(textCol + textWidth + 1, HelpRight, BoxRight);
@@ -931,20 +960,23 @@ public sealed class FrontRoomsTerminal
             if (softKeyMode)
             {
                 var label = " " + Word(action) + " ";
-                if (col + label.Length > 79) { layoutExtra++; break; }
+                var cells = FrontRoomsTerminalFace.Cells(label);
+                if (col + cells > 79) { layoutExtra++; break; }
                 g.Put(col, FooterRow, label, FrontRoomsTerminalPalette.SoftKey);
-                softKeys.Add(new SoftKey { from = col, to = col + label.Length - 1, verb = VerbOf(action) });
-                col += label.Length + 2;
+                softKeys.Add(new SoftKey { from = col, to = col + cells - 1, verb = VerbOf(action) });
+                col += cells + 2;
             }
             else
             {
                 var name = Name(action);
                 if (string.IsNullOrEmpty(name)) continue;
                 var word = "=" + Word(action);
-                if (col + name.Length + word.Length > 79) { layoutExtra++; break; }
+                var nameCells = FrontRoomsTerminalFace.Cells(name);
+                var wordCells = FrontRoomsTerminalFace.Cells(word);
+                if (col + nameCells + wordCells > 79) { layoutExtra++; break; }
                 g.Put(col, FooterRow, name, FrontRoomsTerminalPalette.Bright);
-                g.Put(col + name.Length, FooterRow, word, FrontRoomsTerminalPalette.Field);
-                col += name.Length + word.Length + 2;
+                g.Put(col + nameCells, FooterRow, word, FrontRoomsTerminalPalette.Field);
+                col += nameCells + wordCells + 2;
             }
         }
     }

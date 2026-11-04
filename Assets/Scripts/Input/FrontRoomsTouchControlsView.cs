@@ -42,6 +42,14 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     FrontRoomsLanguagePreview languagePreview;
     // The list's mask in frame points (TickSettings), where LANGUAGE's strip lives.
     Rect listMaskRect;
+    // CONTROLLER's map on touch (E4c): made on the first unfold, under its own clip in the list's mask; its words at the touch
+    // sheet's sizes (Bayon 17, Plex 11 for the desktop's 22, 13); 8 pt over and under the drawing, as the desktop's MapPad.
+    RectTransform padClip;
+    FrontRoomsKeyMapView padMap;
+    bool padMapShown;
+    float padMapFitW = -1f;
+    object padMapFitLang;
+    const float PadMapTextScale = 17f / 22f, PadMapPad = 8f;
     readonly Dictionary<FrontRoomsTouchControls.Button, float> chipWords = new Dictionary<FrontRoomsTouchControls.Button, float>();
 
 
@@ -2111,6 +2119,13 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             r.ValueB.text = string.Empty;
             r.ChevronLeft.gameObject.SetActive(false);
             r.ChevronRight.gameObject.SetActive(false);
+            // A map row (CONTROLLER on touch, E4c): its › at the row's right end turns to ⌄ as its map unfolds.
+            if (row != null && row.Kind == FrontRoomsSettingsMenu.Kind.Page)
+            {
+                r.ChevronRight.gameObject.SetActive(true);
+                r.ChevronRight.rectTransform.anchoredPosition = new Vector2(width * .5f - 8f, firstY);
+                r.ChevronRight.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -90f * s.Fold);
+            }
 
             // The control against the row's right edge; the label owns the rest, so a narrow view never overprints it.
             var controlW = row != null ? FrontRoomsSettingsMenu.ControlWidth(row, m) : 0f;
@@ -2139,6 +2154,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             r.Underlay.rectTransform.anchoredPosition = new Vector2(-8f, 0f);
             if (FrontRoomsTouchControls.Opens(row) && (s.Open > 0f || s.IsOpen)) AnimateOpen(r, s, row, width, labelWidth, motionNow);
             else RestClosed(r);
+            if (row != null && row.Kind == FrontRoomsSettingsMenu.Kind.Page) GrowFoldLabel(r, s, labelWidth);
         }
         for (var i = slots.Count; i < rows.Count; i++)
         {
@@ -2147,6 +2163,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (rows.Count > slots.Count) rows.RemoveRange(slots.Count, rows.Count - slots.Count);
 
         TickLanguageStrip(L, card, cardCenter);
+        TickPadMap(L);
         TickDetailColumn(L, Local);
 
         // The list's scroll: a thin bar while it moves. The rows run on under the bottom edge (Red, 2026-10-24: no fade
@@ -2270,6 +2287,94 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         previewWanted = settingsCard.Alpha.Current > .5f;
         previewCaption.rectTransform.sizeDelta = new Vector2(w, 14f);
         previewCaption.rectTransform.anchoredPosition = local(new Vector2(left + w * .5f, top - ph - 6f - 7f));
+    }
+
+    /// <summary>CONTROLLER's map in its row (E4c; SETTINGS_MOTION.md: "On the phone the controller fills the 710 pt list"): made on
+    /// the first unfold under its own clip in the list's mask, as wide as the list, its words at the touch sizes; the clip is the
+    /// part of the row unfolded so far, so the graph fades in only there (as the desktop's, VL487 D-3). It plays its reveal as the
+    /// model unfolds it and its fade as it folds; the model reads where it is for taps and the list's follow.</summary>
+    void TickPadMap(FrontRoomsTouchLayout L)
+    {
+        controls.PadMapRect = default;
+        controls.PadMapChosenRect = default;
+        var slot = default(FrontRoomsTouchControls.SettingsSlot);
+        var found = false;
+        foreach (var s in controls.SettingsSlots)
+            if (!s.Header && s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadMap) { slot = s; found = true; }
+        var want = found && (controls.MapUnfolded || slot.Fold > 0f) && !controls.SettingsPeek;
+        if (!want)
+        {
+            if (padMap != null && padMap.Root.gameObject.activeSelf) padMap.SetActive(false);
+            padMapShown = false;
+            return;
+        }
+        if (padMap == null)
+        {
+            if (!controls.MapUnfolded) return;
+            padClip = Node("controller map clip", cardViewportRight, Vector2.zero, false);
+            padClip.gameObject.AddComponent<RectMask2D>();
+            padMap = FrontRoomsKeyMapView.CreatePad(padClip, bayon, plex, Paper, Ink, Accent, PadMapTextScale);
+            controls.PadMap = padMap;
+        }
+        if (controls.MapUnfolded != padMapShown)
+        {
+            padMapShown = controls.MapUnfolded;
+            if (padMapShown) { padMap.SetActive(true); padMapFitW = -1f; padMap.PlayOpen(); }
+            else padMap.PlayClose();
+        }
+        var list = L.SettingsListRect;
+        // As wide as the list, at most 1.45x (the desktop's 58 px pitch); the labels keep their size, so the scale settles in two
+        // passes. Again whenever the list's width or the language changes.
+        if (!Mathf.Approximately(padMapFitW, list.width) || !ReferenceEquals(padMapFitLang, FrontRoomsLanguage.Current))
+        {
+            padMapFitW = list.width;
+            padMapFitLang = FrontRoomsLanguage.Current;
+            padMap.SetScale(1f);
+            for (var i = 0; i < 2; i++)
+            {
+                var bw = padMap.Bounds.width;
+                if (bw > 1f) padMap.SetScale(Mathf.Clamp(padMap.Scale * (list.width - 8f) / bw, .3f, 1.45f));
+            }
+            controls.PadMapHeight = Mathf.Ceil(padMap.Bounds.height + 2f * PadMapPad);
+        }
+        var b = padMap.Bounds;
+        // The row's top on screen; the clip is its unfolded part, from under its head down to its foot as it is now.
+        var top = slot.Rect.yMax + controls.SettingsScroll;
+        var shownH = Mathf.Max(0f, slot.Rect.height - slot.Rest);
+        var clip = new Rect(list.x - 16f, top - slot.Rest - shownH, list.width + 24f, shownH);
+        padClip.anchoredPosition = clip.center - listMaskRect.center;
+        padClip.sizeDelta = clip.size;
+        var origin = new Vector2(Mathf.Round(list.x + (list.width - b.width) * .5f - b.x), Mathf.Round(top - slot.Rest - PadMapPad + b.y));
+        padMap.PlaceAt(origin.x - clip.xMin, clip.yMax - origin.y);
+        padMap.Animate();
+        var view = controls.SettingsScrollViewport;
+        controls.PadMapRect = Rect.MinMaxRect(clip.xMin, Mathf.Max(clip.yMin, view.yMin), clip.xMax, Mathf.Min(clip.yMax, view.yMax));
+        controls.PadMapOrigin = origin;
+        var cr = padMap.ChosenRect;
+        controls.PadMapChosenRect = new Rect(origin.x + cr.x, origin.y - cr.yMax, cr.width, cr.height);
+    }
+
+    /// <summary>A map row unfolding: its name grows as an open row's does (1.4x, never into the row's right end; the resting Label
+    /// while it is folded).</summary>
+    void GrowFoldLabel(RowView r, FrontRoomsTouchControls.SettingsSlot s, float labelWidth)
+    {
+        var moving = s.Fold > .0005f;
+        r.Label.enabled = !moving;
+        r.LabelOpen.enabled = moving;
+        if (!moving) return;
+        if (r.LabelOpen.text != s.Label) r.LabelOpen.text = s.Label;
+        var gen = r.Label.cachedTextGenerator;
+        var restSize = r.Label.resizeTextForBestFit && gen != null && gen.fontSizeUsedForBestFit > 0
+            ? gen.fontSizeUsedForBestFit / Mathf.Max(.01f, r.Label.pixelsPerUnit) : r.Label.fontSize;
+        var openSize = (float)Mathf.Max(1, r.LabelOpen.fontSize);
+        var k = restSize * (1f + FrontRoomsTouchControls.TitleGrow * s.Fold) / openSize;
+        var full = r.LabelOpen.preferredWidth;
+        if (full > 1f) k = Mathf.Min(k, Mathf.Max(restSize / openSize, (labelWidth - 24f) / full));
+        var lt = r.LabelOpen.rectTransform;
+        lt.sizeDelta = new Vector2(Mathf.Max(labelWidth, full + 4f), 30f);
+        lt.anchoredPosition = new Vector2(0f, -s.Rest * .5f);
+        lt.localScale = new Vector3(k, k, 1f);
+        r.LabelOpen.color = Paper;
     }
 
     /// <summary>The frame rate in the picture's bottom-right corner, 8 pt in: the word and the reading over the dashes.</summary>

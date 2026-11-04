@@ -10,6 +10,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A",
                 "Surfaces/Textures/Prop_StationPaper_A"
             ],
@@ -41,7 +44,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         },
         {
             "code": "es",
@@ -52,6 +56,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A",
                 "Surfaces/Textures/Prop_StationPaper_A"
             ],
@@ -83,7 +90,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         },
         {
             "code": "fr",
@@ -94,6 +102,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A",
                 "Surfaces/Textures/Prop_StationPaper_A"
             ],
@@ -125,7 +136,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         },
         {
             "code": "ja",
@@ -136,6 +148,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A"
             ],
             "own": [
@@ -166,7 +181,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         },
         {
             "code": "ko",
@@ -177,6 +193,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A"
             ],
             "own": [
@@ -207,7 +226,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         },
         {
             "code": "pt-BR",
@@ -218,6 +238,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A",
                 "Surfaces/Textures/Prop_StationPaper_A"
             ],
@@ -249,7 +272,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         },
         {
             "code": "ru",
@@ -260,6 +284,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A"
             ],
             "own": [
@@ -290,7 +317,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         },
         {
             "code": "zh-Hans",
@@ -300,10 +328,6 @@
                 "Print/AlarmTell/alarm_zone_card_glow",
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
-                "Surfaces/Textures/Prop_AnnunciatorLabel_A",
-                "Surfaces/Textures/Prop_EvacPlan_A",
-                "Surfaces/Textures/Prop_EvacPlan_A_Landing",
-                "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0",
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Block0",
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Block1",
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing_B10plus_Title0",
@@ -324,13 +348,9 @@
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing_B8_Title0",
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing_B9_Block0",
                 "Surfaces/Textures/Prop_EvacPlan_A_Landing_B9_Title0",
-                "Surfaces/Textures/Prop_EvacPlan_A_Room",
-                "Surfaces/Textures/Prop_EvacPlan_A_RoomPhase0",
-                "Surfaces/Textures/Prop_EvacPlan_E",
-                "Surfaces/Textures/Prop_EvacPlan_E_Room",
-                "Surfaces/Textures/Prop_EvacPlan_E_RoomPhase0",
-                "Surfaces/Textures/Prop_EvacPlan_Locked_E",
-                "Surfaces/Textures/Prop_StationKeyPlate_A"
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S"
             ],
             "own": [
                 "Print/Stair/exit_door_to_glyphs",
@@ -361,6 +381,19 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
+            ],
+            "patch": [
+                "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_EvacPlan_A_LandingPhase0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Landing",
+                "Surfaces/Textures/Prop_EvacPlan_A_RoomPhase0",
+                "Surfaces/Textures/Prop_EvacPlan_A_Room",
+                "Surfaces/Textures/Prop_EvacPlan_A",
+                "Surfaces/Textures/Prop_EvacPlan_E_RoomPhase0",
+                "Surfaces/Textures/Prop_EvacPlan_E_Room",
+                "Surfaces/Textures/Prop_EvacPlan_E",
+                "Surfaces/Textures/Prop_EvacPlan_Locked_E",
+                "Surfaces/Textures/Prop_StationKeyPlate_A"
             ]
         },
         {
@@ -372,6 +405,9 @@
                 "Print/Stair/rescue_face_albedo",
                 "Print/Stair/rescue_face_glow",
                 "Surfaces/Textures/Prop_AnnunciatorLabel_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_A",
+                "Surfaces/Textures/Prop_PlateBusinessHours_N",
+                "Surfaces/Textures/Prop_PlateBusinessHours_S",
                 "Surfaces/Textures/Prop_StationKeyPlate_A"
             ],
             "own": [
@@ -402,7 +438,8 @@
                 "Terminal/Content/terminal_1",
                 "Terminal/Content/terminal_2",
                 "Terminal/Content/terminal_3"
-            ]
+            ],
+            "patch": []
         }
     ]
 }

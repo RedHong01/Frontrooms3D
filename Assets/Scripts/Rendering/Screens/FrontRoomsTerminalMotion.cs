@@ -190,7 +190,7 @@ public sealed class FrontRoomsTerminalMotion
                 var written = Mathf.Min(rows.Height, k * PaintRowsPerStep);
                 for (var r = Mathf.Max(0, rows.top + written); r <= Mathf.Min(FrontRoomsTerminalGrid.Rows - 1, rows.bottom); r++)
                     for (var c = Mathf.Max(0, rows.left); c <= Mathf.Min(FrontRoomsTerminalGrid.Cols - 1, rows.right); c++)
-                        shown.Set(c, r, before.Glyph(c, r), before.Attr(c, r));
+                        shown.CopyCell(c, r, before);
                 break;
         }
     }
@@ -213,7 +213,7 @@ public sealed class FrontRoomsTerminalMotion
         else
             for (var r = b.top + 1; r < b.bottom; r++)
                 for (var c = b.left + 1; c < b.right; c++)
-                    g.Set(c, r, inside.Glyph(c, r), inside.Attr(c, r));
+                    g.CopyCell(c, r, inside);
         g.Set(b.left, b.top, 0xDA, a); g.Fill(b.left + 1, b.top, b.Width - 2, 1, 0xC4, a); g.Set(b.right, b.top, 0xBF, a);
         for (var r = b.top + 1; r < b.bottom; r++) { g.Set(b.left, r, 0xB3, a); g.Set(b.right, r, 0xB3, a); }
         g.Set(b.left, b.bottom, 0xC0, a); g.Fill(b.left + 1, b.bottom, b.Width - 2, 1, 0xC4, a); g.Set(b.right, b.bottom, 0xD9, a);

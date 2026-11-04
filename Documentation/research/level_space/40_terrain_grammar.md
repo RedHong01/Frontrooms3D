@@ -568,3 +568,15 @@ Spec only; to be drawn from the numbers like Fig. 4 and 5 (`W/level_space/make_t
 2. **Plate 1, the slide hall:** plan on the cell grid, and the section unrolled along the flume with each bay's c, s and crown.
 3. **Plate 2, the well:** the void column, each storey's rim turned, the core, the one bridge, the cascade.
 4. **Plate 3, a pool-level skeleton:** the pinned moves, then the infill, with R4 and R6 marked.
+
+### 11.9 Module sizes: whole modules on one strict 3D grid (Red, 11-03)
+
+Red, 11-03 ~18:3x, in this line's chat: "我认为不一定所有模组都要严格的遵循最小单位，就比如说有些模组它本来就需要就是9×9的一个大小。" Then: "目的只是为了让所有的模组都遵循一套严谨的一个 3D 网格的这种比例关系，然后呢它们之间就是有这种明确的数学关系去对照，这样子在关卡生成器进行生成的时候，这个关卡它就是比较可控的。"
+
+Read as follows (the reading is this line's; Red may correct it):
+- **A module is one whole piece at the size its use needs.** It need not be assembled from §11.4's smallest pieces. A B4-L is 3 × 3 cells (9 × 9 m), the well's column 3 × 3, the slide's shaft 2 × 2 (6 × 6 m), a dome gallery 4 × 4 (12 × 12 m), the slide hall 7 × 7, because their geometry needs it; their insides (radii, risers, flume sections, arches) follow their own design.
+- **What the grid fixes is the proportion between modules, in all three dimensions:** every footprint a whole number of cells (3.0 m); every floor, ceiling and port level a whole number of level steps (0.30 m = one tenth of a cell); every storey a whole number of steps (13 = 3.9 m, 15 = 4.5 m); every port on a cell edge at a step level. Any two modules then relate by integers, and the generator places, stacks and joins them by integer arithmetic. That is the control Red asks for.
+- **Below the step, sizes are a module's own detail, not a placement rule:** the 0.15 m tile course and the 0.6 m fine module stay the kit's metrics (§11.4, LMS §2), so pieces line up inside a module, but they never decide where a module goes.
+- **Edge and corner pieces (§11.4) are how the generator joins modules,** not a requirement that every module be made of them. A set piece (stair core, B4-M, B4-L, shaft, dome, slide hall, the well) is placed whole with its ports declared.
+- **A natural outline that is not a cell multiple** (B4-M's 4.36 m) takes the smallest whole-cell footprint that holds it (2 × 2), and the leftover belongs to the module (a landing, a collar, a wider tread), never a hole in the grid (R5's pivot and flange). Likewise a stair core takes the footprint its storey needs: a 4.5 m storey of 30 risers at 0.15 / 0.30 needs about 6.6 m of flights and landings, so 3 × 1 cells or a three-flight stair in 2 × 2, not a 1 × 1 cell.
+- **Limits that stay:** LMS's 1-8 × 1-8 cells per room module and the 24 m chunk (a room never crosses one). A module larger than a chunk would need 关卡设计 to change the chunk rule; this page does not propose it.

@@ -158,6 +158,11 @@ namespace FrontRooms.Map
         public ModuleTrigger trigger = ModuleTrigger.None;
         public ModuleFinish finish = ModuleFinish.Zone;
 
+        /// <summary>Zone lamps (appended, Red 2026-10-31 "low zones as recommended", Lo-C): a back-of-house room (storage,
+        /// service). In a Low zone its cells hang the 4 ft wraparound instead of L03 (FrontRoomsLampKit.ForCell); elsewhere it
+        /// changes nothing. False keeps every existing module as it was.</summary>
+        public bool backOfHouse;
+
         /// <summary>A Corridor module's longest side (CR-1: the Run! corridor's 9 cells cross one chunk border; a Room module stays within MaxCells).</summary>
         public const int MaxCorridorCells = 9;
 

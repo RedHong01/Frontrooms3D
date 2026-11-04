@@ -408,7 +408,6 @@ PLAYSTATION CONTROLLER	PLAYSTATION 手柄	device state; draft 2026-11-01
 {0} DISCONNECTED	{0}已断开	device state; draft 2026-11-01
 KEYBOARD	键盘	device state; draft 2026-11-01
 CONNECT A KEYBOARD	连接键盘	device state; draft 2026-11-01
-Choose it, then press the button you want for it. A button another action has asks before it swaps.	选中后，按下想用于它的按钮。如果按钮已被其他动作占用，交换前会先询问。	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	选中后，按下想用于它的按键。如果按键已被其他动作占用，交换前会先询问。	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	把所有按钮恢复为默认值。按两次确认。	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	把所有按键恢复为默认值。按两次确认。	device state; draft 2026-11-01

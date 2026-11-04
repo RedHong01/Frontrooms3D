@@ -350,6 +350,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     {
         public Light light;
         public Renderer panel;
+        // Zone lamps (O-C): the lit ceiling of an indirect lamp, its own renderer (GlassRT never traces it), written the
+        // panel's block every time the panel is. Null for every other lamp.
+        public Renderer glow;
         public Color emission;
         public float baseIntensity;
         public bool castsShadow;
@@ -2704,7 +2707,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
                 BuildColumn(style, new Vector3(i * cs, 0f, j * cs), height, zone.theme, theme, b, Get, Solid, origin);
             }
 
-            if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier);
+            if (!reserved) BuildFixture(chunk, cell, cellCenter, height, theme, data.lamp[index], data.tier, BackOfHouse(data, i, j));
         }
 
         // TRANSITION (T4d): the kits' pieces join the blocks, their own renderers and props are made, and each
@@ -3640,7 +3643,20 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
 
     // ---------- Fixtures: each lamp keeps its own state ----------
 
-    void BuildFixture(BuiltChunk chunk, GridCoord cell, Vector3 localCenter, float height, ThemeMaterials theme, ModuleLamp lamp, int tier)
+    // Zone lamps (Lo-C): the cell lies in a stamped module marked back-of-house (later rooms win an overlap, as the stamp).
+    static bool BackOfHouse(MapChunk data, int i, int j)
+    {
+        if (data.rooms == null) return false;
+        for (var r = data.rooms.Length - 1; r >= 0; r--)
+        {
+            if (!data.rooms[r].Contains(i, j)) continue;
+            var module = data.ModuleOf(r);
+            return module != null && module.backOfHouse;
+        }
+        return false;
+    }
+
+    void BuildFixture(BuiltChunk chunk, GridCoord cell, Vector3 localCenter, float height, ThemeMaterials theme, ModuleLamp lamp, int tier, bool backOfHouse = false)
     {
         // A module can take a lamp out altogether.
         if (lamp == ModuleLamp.Off) return;
@@ -3650,15 +3666,20 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         root.transform.SetParent(chunk.root.transform, false);
         // The lens fills whole 0.6 m ceiling tiles: X [1.2, 1.8], Z [1.2, 2.4] of the cell.
         root.transform.localPosition = localCenter + new Vector3(0f, height, ModuleUnits.TrofferOffsetZ);
-        // The troffer is the visual line's kit (L03, Red 2026-10-31; FrontRoomsTrofferKit), centred on this root on the
-        // ceiling plane: "Lens" (a direct child, the one renderer TickFixtures drives, beside "Light" for GlassRT), an unlit
-        // "Housing" and, on desktop, the "Soil" stain; no colliders, shadows off. Its drive is the zone lens's colour at the
-        // kit's 1.8 as seen (LensDrive). Without the kit's assets it builds nothing and returns null: the flat lens as before.
-        var pr = FrontRoomsTrofferKit.Build(root.transform);
+        // The zone's lamp (zone lamps, Red 2026-10-31; FrontRoomsLampKit.ForCell): the Office's Standard rooms hang O-C's
+        // lensed-indirect pendant, a back-of-house Low module the 4 ft wraparound, every other cell L03 (FrontRoomsTrofferKit),
+        // centred on this root on the ceiling plane: "Lens" (a direct child, the one renderer TickFixtures drives, beside
+        // "Light" for GlassRT), unlit housings (desktop), the pendant's lit ceiling ("Lens glow", written the same block); no
+        // colliders, shadows off. Its drive is the zone lens's colour at the lamp's own level as seen (LensDrive). Without
+        // the kits it builds nothing and returns null: the flat lens as before.
+        var zone = Cache.ZoneOf(cell);
+        var kind = FrontRoomsLampKit.ForCell(zone.theme, zone.height, height, backOfHouse);
+        var pr = FrontRoomsLampKit.BuildMapLamp(kind, root.transform, out var glow);
         if (pr != null)
         {
             fixture.panel = pr;
-            fixture.emission = FrontRoomsTrofferKit.LensDrive(theme.lens);
+            fixture.glow = glow;
+            fixture.emission = FrontRoomsLampKit.LensDrive(kind, theme.lens);
         }
         else
         {
@@ -3828,6 +3849,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             block.SetColor("_EmissionColor", f.emission * Mathf.Max(.04f, f.level * held));
             block.SetFloat(LampDipId, f.dip);
             f.panel.SetPropertyBlock(block);
+            if (f.glow != null) f.glow.SetPropertyBlock(block);
         }
     }
 
@@ -3876,6 +3898,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         block.SetColor(EmissionColorId, f.emission * factor);
         block.SetFloat(LampDipId, f.dip);
         f.panel.SetPropertyBlock(block);
+        if (f.glow != null) f.glow.SetPropertyBlock(block);
         f.emissionWritten = factor;
     }
 

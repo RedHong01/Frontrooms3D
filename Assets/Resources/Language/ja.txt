@@ -408,7 +408,6 @@ PLAYSTATION CONTROLLER	PLAYSTATION コントローラー	device state; draft 202
 {0} DISCONNECTED	{0}の接続が切れました	device state; draft 2026-11-01
 KEYBOARD	キーボード	device state; draft 2026-11-01
 CONNECT A KEYBOARD	キーボードを接続	device state; draft 2026-11-01
-Choose it, then press the button you want for it. A button another action has asks before it swaps.	選んでから、使いたいボタンを押します。ほかの操作に使われているボタンなら、入れ替える前に確認します。	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	選んでから、使いたいキーを押します。ほかの操作に使われているキーなら、入れ替える前に確認します。	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	すべてのボタンをデフォルトに戻します。2回押して確定します。	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	すべてのキーをデフォルトに戻します。2回押して確定します。	device state; draft 2026-11-01

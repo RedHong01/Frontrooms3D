@@ -105,6 +105,9 @@ public sealed partial class FrontRoomsKeyMapView
     // The drawing's scale, px per map unit; the action's label and note sizes, which do not scale.
     float k = 1f;
     const int ActionSize = 22, NoteSize = 13;
+    // The words' scale, 1 on the desktop; the touch sheet's map sets its labels at the touch sizes (17 / 11 pt), and their pads and
+    // offsets with them.
+    readonly float ts;
     // The reveal's clock and where it stands (UpdateReveal).
     float revealAt = -100f, keysIn = 1f, fillsIn = 1f, leadersIn = 1f, calloutsIn = 1f;
     HashSet<string> bound = new HashSet<string>();
@@ -127,9 +130,10 @@ public sealed partial class FrontRoomsKeyMapView
     Callout Chosen => callouts[Focus];
     static bool Reduced => FrontRoomsHandheld.ReduceMotion;
 
-    FrontRoomsKeyMapView(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent, bool pad)
+    FrontRoomsKeyMapView(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent, bool pad, float textScale = 1f)
     {
         this.bayon = bayon; this.mono = mono; this.paper = paper; this.ink = ink; this.accent = accent;
+        ts = textScale > 0f ? textScale : 1f;
         padBoard = pad;
         root = Node(parent, pad ? "Key map (CONTROLS / CONTROLLER)" : "Key map (CONTROLS / KEYBOARD & MOUSE)");
         root.anchorMin = root.anchorMax = new Vector2(0f, 1f);
@@ -146,8 +150,8 @@ public sealed partial class FrontRoomsKeyMapView
     }
 
     /// <summary>Builds the map under <paramref name="parent"/>, hidden; the settings page places, shows and feeds it.</summary>
-    public static FrontRoomsKeyMapView Create(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent) =>
-        new FrontRoomsKeyMapView(parent, bayon, mono, paper, ink, accent, false);
+    public static FrontRoomsKeyMapView Create(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent, float textScale = 1f) =>
+        new FrontRoomsKeyMapView(parent, bayon, mono, paper, ink, accent, false, textScale);
 
     // ------------------------------------------------------------- layout data
 
@@ -333,9 +337,9 @@ public sealed partial class FrontRoomsKeyMapView
         var anchor = onRight ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
         // Under its words and over the keys and the leaders before it.
         c.Under = Img(root, accent, 0f);
-        c.ActionText = Txt(root, FrontRoomsLanguage.T(action), bayon, ActionSize, paper, anchor);
+        c.ActionText = Txt(root, FrontRoomsLanguage.T(action), bayon, Mathf.RoundToInt(ActionSize * ts), paper, anchor);
         FrontRoomsLanguage.Style(c.ActionText, action);
-        c.NoteText = Txt(root, "", mono, NoteSize, new Color(paper.r, paper.g, paper.b, .75f), anchor);
+        c.NoteText = Txt(root, "", mono, Mathf.Max(11, Mathf.RoundToInt(NoteSize * ts)), new Color(paper.r, paper.g, paper.b, .75f), anchor);
         FrontRoomsLanguage.Style(c.NoteText);
         c.Dot = Img(root, paper, 0f);
         if (c.IsFixed)
@@ -355,26 +359,26 @@ public sealed partial class FrontRoomsKeyMapView
         var anchor = c.OnRight ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
         c.ActionText.alignment = anchor;
         c.NoteText.alignment = anchor;
-        var aw = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(c.Action), ActionSize, false) + 2f;
-        var nw = FrontRoomsSettingsMenu.TextWidth(c.Note, NoteSize, true) + 2f;
+        var aw = FrontRoomsSettingsMenu.TextWidth(FrontRoomsLanguage.T(c.Action), ActionSize * ts, false) + 2f;
+        var nw = FrontRoomsSettingsMenu.TextWidth(c.Note, Mathf.Max(11, Mathf.RoundToInt(NoteSize * ts)), true) + 2f;
         var w = Mathf.Max(aw, nw);
         // The label's anchor scales with the drawing; its words stay their size.
         var x = Mathf.Round(c.LabelX * k);
         var y = Mathf.Round(c.LabelY * k);
         var ax = c.OnRight ? x : x - aw;
-        Place(c.ActionText.rectTransform, ax, y, aw, 26f);
-        Place(c.NoteText.rectTransform, c.OnRight ? x : x - nw, y + 25f, nw, 18f);
+        Place(c.ActionText.rectTransform, ax, y, aw, 26f * ts);
+        Place(c.NoteText.rectTransform, c.OnRight ? x : x - nw, y + 25f * ts, nw, 18f * ts);
         // The bar: 14 px past the words at each side, 6 over and 8 under them (the mock's pads, around Bayon's own leading).
         var left = c.OnRight ? x : x - w;
-        var bar = new Rect(left - 14f, y - 4f, w + 28f, 53f);
+        var bar = new Rect(left - 14f * ts, y - 4f * ts, w + 28f * ts, 53f * ts);
         Place(c.Under.rectTransform, bar.x, bar.y, bar.width, bar.height);
         c.Hit = new Rect(bar.x / k, bar.y / k, bar.width / k, bar.height / k);
         // The changed dot (settings' rule: a changed row shows a dot before its control) and the padlock sit before the action word.
-        var mark = c.OnRight ? ax + aw + 8f : ax - 12f;
-        Place(c.Dot.rectTransform, mark, y + 8f, 6f, 6f);
+        var mark = c.OnRight ? ax + aw + 8f * ts : ax - 12f * ts;
+        Place(c.Dot.rectTransform, mark, y + 8f * ts, 6f, 6f);
         var shapes = new[] { new Rect(1f, 0f, 5f, 1f), new Rect(1f, 0f, 1f, 4f), new Rect(5f, 0f, 1f, 4f), new Rect(0f, 4f, 7f, 5f) };
         for (var i = 0; i < c.Lock.Count; i++)
-            Place(c.Lock[i].rectTransform, (c.OnRight ? ax + aw + 8f : ax - 13f) + shapes[i].x, y + 6f + shapes[i].y, shapes[i].width, shapes[i].height);
+            Place(c.Lock[i].rectTransform, (c.OnRight ? ax + aw + 8f * ts : ax - 13f * ts) + shapes[i].x, y + 6f * ts + shapes[i].y, shapes[i].width, shapes[i].height);
     }
 
     string NoteFor(Callout c)

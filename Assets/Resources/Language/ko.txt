@@ -408,7 +408,6 @@ PLAYSTATION CONTROLLER	PLAYSTATION 컨트롤러	device state; draft 2026-11-01
 {0} DISCONNECTED	{0} 연결 해제됨	device state; draft 2026-11-01
 KEYBOARD	키보드	device state; draft 2026-11-01
 CONNECT A KEYBOARD	키보드를 연결하세요	device state; draft 2026-11-01
-Choose it, then press the button you want for it. A button another action has asks before it swaps.	선택한 뒤 원하는 버튼을 누르세요. 다른 동작이 쓰는 버튼이면 바꾸기 전에 묻습니다.	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	선택한 뒤 원하는 키를 누르세요. 다른 동작이 쓰는 키면 바꾸기 전에 묻습니다.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	모든 버튼을 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	모든 키를 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01

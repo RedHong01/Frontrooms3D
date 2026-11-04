@@ -135,6 +135,8 @@ Already in the tables, reuse as they are: `STAIR A`, `STAIR KEY`, the four plan 
 - **One word for the security desk.** The plan prints it twice, beside the room and in the legend, and line 4, the terminals and the station paper already use the desk word. So `SECURITY DESK` follows line 4: pt-BR `POSTO DE SEGURANÇA` (not PORTARIA), ja `警備デスク` (not 守衛室), ko `경비 데스크` (not 경비실). The other six already agree.
 - **es line 4, shortened to set at full size:** `4 PUERTAS DE ESCALERA CERRADAS. LLAVE EN EL PUESTO DE SEGURIDAD.` The key in the same line still says why they are shut. The TEXT panel row is the same key, so it changes too.
 
+**Business-hours plate (W10) line breaks:** 信息设计's breaks are signed for eight languages as set. pt-BR keeps `NO` with its noun: `ESTA PORTA DEVE / FICAR DESTRANCADA / NO HORÁRIO COMERCIAL`, the same pattern as es. The words are unchanged.
+
 The TEXT panel rows `NO REENTRY (the door into this floor)` change with them: de `KEIN ZUTRITT (die Tür in dieses Stockwerk)`, ru `ВХОДА НЕТ (дверь на этот этаж)`. 信息设计's line breaks are signed as set: the rescue sign in three lines (two in de), the far door split as listed in its message, ja and ko keep their word order.
 
 ### 5.2 Signs read off the art (W16, W17)
@@ -217,7 +219,9 @@ The sign-off notice (`30` §4.1) is not on screen yet; it is translated when it 
   - the initials, times (`2300`, `0700`, `1800`), job numbers and the dates (`{DATE_NOW}` keeps the US `MM/DD/YY`);
   - key names on row 25. The words beside them translate (`words.select` …); `softSelect` `Enter` is a key and stays.
 - **World words match the signs:** the security desk (保安台, 警衛台, 警備デスク …), Stair A, the floor warden and the posted plan read as in §5 and the tables.
-- **Engine needs (游戏视觉 / 交互设计; none of these is a word change):**
+- **Installed (游戏视觉, LANDED 2026-11-03 18:07):** `Resources/WorldText/<code>/Terminal/Content/*.json`, byte-identical to `terminal_sets/`. Widths count cells. The drill tokens follow the language; the drill is always a Tuesday (星期二, 火曜日, 화요일). A language's terminals switch over once 平面视觉's face for it lands, and stay English until then.
+- **After any wording change:** re-run the builder, then copy `terminal_sets/<code>/` to the WorldText path (CLAIM in LANDINGS), or tell 游戏视觉.
+- Engine needs as asked (all four done by the landing above):
   1. glyph codes past 255, and a wide glyph spanning two cells (平面视觉, WORLD_TYPE §3b);
   2. `Wrap` counts cells, not chars. CJK body lines are written at ≤ 76 cells so they never wrap, but `Put`'s clip widths and `PutRight` must count cells too;
   3. the memo index pads the name to 18 cells, not chars (built in the files);

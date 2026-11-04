@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO, ja (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_2.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "メインメニュー",
+    "doc": "回覧を読む",
+    "list": "印刷待ち",
+    "help": "ヘルプ"
+  },
+  "main": {
+    "headline": "回覧",
+    "second": "未読 {UNREAD}",
+    "secondNone": "すべて既読",
+    "listItem": "印刷待ち",
+    "listMessage": "プリンタで待っている文書を見ます。",
+    "helpItem": "ヘルプ",
+    "helpMessage": "キーの使い方を見ます。"
+  },
+  "memos": [
+    {
+      "index": "R.M., 総務部      カーペット清掃",
+      "date": "{DATE_NOW}",
+      "message": "総務部 R.M. の回覧を読みます。",
+      "head": [
+        {
+          "label": "差出:",
+          "value": "R.M., 総務部"
+        },
+        {
+          "label": "宛先:",
+          "value": "入居者各位"
+        },
+        {
+          "label": "日付:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "件名:",
+          "value": "カーペット清掃"
+        }
+      ],
+      "body": [
+        "今週末、全階のカーペットを清掃します。",
+        "金曜日の退社前に、机の下の床を片付けてください。",
+        "",
+        "月曜日もカーペットが湿っている場合があります。",
+        "においは洗浄剤によるもので、1、2 日で消えます。",
+        "",
+        "お問い合わせは総務部まで。"
+      ],
+      "sign": "R.M."
+    },
+    {
+      "index": "D.K., 警備        遺失物",
+      "date": "{DATE_BACK4}",
+      "message": "警備 D.K. の回覧を読みます。",
+      "head": [
+        {
+          "label": "差出:",
+          "value": "D.K., 警備"
+        },
+        {
+          "label": "宛先:",
+          "value": "入居者各位"
+        },
+        {
+          "label": "日付:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "件名:",
+          "value": "遺失物"
+        }
+      ],
+      "body": [
+        "夜間巡回で見つかった物は、警備デスクで 30 日間保管します。",
+        "営業時間内にお申し出ください。",
+        "",
+        "30 日以内に引き取りのない物は慈善団体へ寄付します。"
+      ],
+      "sign": "D.K."
+    }
+  ],
+  "list": {
+    "heading": "キュー: MAIN           プリンタ: LASER 2        状態: 印刷中",
+    "columns": [
+      "番号",
+      "文書",
+      "所有者",
+      "枚数",
+      "状態"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "避難訓練のお知らせ",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "印刷中",
+        "message": "2/2 ページを印刷中です。"
+      },
+      {
+        "job": "0413",
+        "document": "鍵貸出表",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "待機中",
+        "message": "プリンタの空きを待っています。"
+      }
+    ]
+  },
+  "help": {
+    "heading": "キー",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "項目を選ぶ"
+      },
+      {
+        "action": "Side",
+        "text": "前または次"
+      },
+      {
+        "action": "Select",
+        "text": "選んだ項目を開く"
+      },
+      {
+        "action": "Page",
+        "text": "前または次のページ"
+      },
+      {
+        "action": "Cancel",
+        "text": "一つ戻る"
+      },
+      {
+        "action": "Exit",
+        "text": "{PROGRAM} を終了"
+      },
+      {
+        "action": "Help",
+        "text": "このヘルプ"
+      }
+    ]
+  },
+  "words": {
+    "help": "ヘルプ",
+    "select": "選択",
+    "cancel": "取消",
+    "exit": "終了",
+    "page": "ページ",
+    "softSelect": "Enter",
+    "softCancel": "取消",
+    "softHelp": "ヘルプ",
+    "more": "続き:",
+    "memoOf": "回覧 {N}/{M}"
+  },
+  "refusals": {
+    "notAuthorized": "権限がありません：ジョブを変更できるのは所有者だけです。",
+    "topOfData": "フォルダの先頭です：これより前の回覧はありません。",
+    "bottomOfData": "フォルダの末尾です：これ以上の回覧はありません。"
+  }
+}

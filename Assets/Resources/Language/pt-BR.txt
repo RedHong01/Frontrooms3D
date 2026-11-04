@@ -408,7 +408,6 @@ PLAYSTATION CONTROLLER	CONTROLE PLAYSTATION	device state; draft 2026-11-01
 {0} DISCONNECTED	{0} DESCONECTADO	device state; draft 2026-11-01
 KEYBOARD	TECLADO	device state; draft 2026-11-01
 CONNECT A KEYBOARD	CONECTE UM TECLADO	device state; draft 2026-11-01
-Choose it, then press the button you want for it. A button another action has asks before it swaps.	Escolha a ação e pressione o botão que quiser para ela. Se outra ação já usa esse botão, o jogo pergunta antes de trocar.	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	Escolha a ação e pressione a tecla que quiser para ela. Se outra ação já usa essa tecla, o jogo pergunta antes de trocar.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	Volta todos os botões ao padrão. Aperte duas vezes para confirmar.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	Volta todas as teclas ao padrão. Aperte duas vezes para confirmar.	device state; draft 2026-11-01

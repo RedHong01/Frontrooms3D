@@ -408,7 +408,6 @@ PLAYSTATION CONTROLLER	PLAYSTATION-CONTROLLER	device state; draft 2026-11-01
 {0} DISCONNECTED	{0} GETRENNT	device state; draft 2026-11-01
 KEYBOARD	TASTATUR	device state; draft 2026-11-01
 CONNECT A KEYBOARD	TASTATUR ANSCHLIESSEN	device state; draft 2026-11-01
-Choose it, then press the button you want for it. A button another action has asks before it swaps.	Auswählen, dann die gewünschte Taste am Controller drücken. Hat eine andere Aktion sie schon, wird vor dem Tausch gefragt.	device state; draft 2026-11-01
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	Auswählen, dann die gewünschte Taste auf der Tastatur drücken. Hat eine andere Aktion sie schon, wird vor dem Tausch gefragt.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	Setzt alle Tasten des Controllers auf den Standard zurück. Zweimal drücken zum Bestätigen.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	Setzt alle Tasten der Tastatur auf den Standard zurück. Zweimal drücken zum Bestätigen.	device state; draft 2026-11-01

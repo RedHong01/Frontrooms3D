@@ -51,8 +51,8 @@ public sealed partial class FrontRoomsKeyMapView
     static readonly Dictionary<string, Texture2D> padMasks = new Dictionary<string, Texture2D>();
 
     /// <summary>Builds the CONTROLLER map under <paramref name="parent"/>, hidden; the settings page places, shows and feeds it.</summary>
-    public static FrontRoomsKeyMapView CreatePad(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent) =>
-        new FrontRoomsKeyMapView(parent, bayon, mono, paper, ink, accent, true);
+    public static FrontRoomsKeyMapView CreatePad(RectTransform parent, Font bayon, Font mono, Color paper, Color ink, Color accent, float textScale = 1f) =>
+        new FrontRoomsKeyMapView(parent, bayon, mono, paper, ink, accent, true, textScale);
 
     /// <summary>The CONTROLLER map (a pad's buttons), not KEYBOARD &amp; MOUSE.</summary>
     public bool IsPad => padBoard;

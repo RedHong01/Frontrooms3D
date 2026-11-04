@@ -1,0 +1,162 @@
+{
+  "_about": "OFFICE MEMO, ko (narrative design 2026-11-03, research/narrative/95 section 5.5). AI draft. Built from terminal_2.json by build_terminal_langs.py (narrative/95 §5.5); do not edit by hand.",
+  "program": "OFFICE MEMO",
+  "titles": {
+    "main": "주 메뉴",
+    "doc": "메모 읽기",
+    "list": "인쇄 대기열",
+    "help": "도움말"
+  },
+  "main": {
+    "headline": "메모",
+    "second": "{UNREAD}건 안읽음",
+    "secondNone": "모두 읽음",
+    "listItem": "인쇄 대기열",
+    "listMessage": "프린터에서 대기 중인 문서를 봅니다.",
+    "helpItem": "도움말",
+    "helpMessage": "각 키의 기능을 봅니다."
+  },
+  "memos": [
+    {
+      "index": "R.M., 시설관리부  카펫 청소",
+      "date": "{DATE_NOW}",
+      "message": "시설관리부 R.M.의 메모를 읽습니다.",
+      "head": [
+        {
+          "label": "발신:",
+          "value": "R.M., 시설관리부"
+        },
+        {
+          "label": "수신:",
+          "value": "입주자 전원"
+        },
+        {
+          "label": "날짜:",
+          "value": "{DATE_NOW}"
+        },
+        {
+          "label": "제목:",
+          "value": "카펫 청소"
+        }
+      ],
+      "body": [
+        "이번 주말에 모든 층의 카펫을 청소합니다.",
+        "금요일 퇴근 전에 책상 아래 바닥을 비워 주십시오.",
+        "",
+        "월요일에도 카펫이 젖어 있을 수 있습니다.",
+        "냄새는 세정제 때문이며 하루 이틀이면 사라집니다.",
+        "",
+        "문의는 시설관리부로."
+      ],
+      "sign": "R.M."
+    },
+    {
+      "index": "D.K., 경비부      분실물",
+      "date": "{DATE_BACK4}",
+      "message": "경비부 D.K.의 메모를 읽습니다.",
+      "head": [
+        {
+          "label": "발신:",
+          "value": "D.K., 경비부"
+        },
+        {
+          "label": "수신:",
+          "value": "입주자 전원"
+        },
+        {
+          "label": "날짜:",
+          "value": "{DATE_BACK4}"
+        },
+        {
+          "label": "제목:",
+          "value": "분실물"
+        }
+      ],
+      "body": [
+        "야간 순찰 중 발견된 물품은 경비 데스크에서 30일간 보관합니다.",
+        "업무시간 중에 문의해 주십시오.",
+        "",
+        "30일 안에 찾아가지 않은 물품은 자선단체에 기부합니다."
+      ],
+      "sign": "D.K."
+    }
+  ],
+  "list": {
+    "heading": "대기열: MAIN           프린터: LASER 2          상태: 인쇄 중",
+    "columns": [
+      "번호",
+      "문서",
+      "소유자",
+      "쪽수",
+      "상태"
+    ],
+    "jobs": [
+      {
+        "job": "0412",
+        "document": "소방 훈련 안내",
+        "owner": "R.M.",
+        "pages": "2",
+        "status": "인쇄 중",
+        "message": "2쪽 중 2쪽 인쇄 중."
+      },
+      {
+        "job": "0413",
+        "document": "열쇠 반출 대장",
+        "owner": "D.K.",
+        "pages": "1",
+        "status": "대기 중",
+        "message": "프린터를 기다리는 중."
+      }
+    ]
+  },
+  "help": {
+    "heading": "키",
+    "rows": [
+      {
+        "action": "Move",
+        "text": "항목 선택"
+      },
+      {
+        "action": "Side",
+        "text": "이전 또는 다음"
+      },
+      {
+        "action": "Select",
+        "text": "선택한 항목 열기"
+      },
+      {
+        "action": "Page",
+        "text": "이전 또는 다음 쪽"
+      },
+      {
+        "action": "Cancel",
+        "text": "한 단계 뒤로"
+      },
+      {
+        "action": "Exit",
+        "text": "{PROGRAM} 종료"
+      },
+      {
+        "action": "Help",
+        "text": "이 도움말"
+      }
+    ]
+  },
+  "words": {
+    "help": "도움말",
+    "select": "선택",
+    "cancel": "취소",
+    "exit": "종료",
+    "page": "쪽",
+    "softSelect": "Enter",
+    "softCancel": "취소",
+    "softHelp": "도움말",
+    "more": "더 보기:",
+    "memoOf": "메모 {N}/{M}"
+  },
+  "refusals": {
+    "notAuthorized": "권한 없음: 작업 소유자만 변경할 수 있습니다.",
+    "topOfData": "폴더의 처음: 이전 메모가 없습니다.",
+    "bottomOfData": "폴더의 끝: 메모가 더 없습니다."
+  }
+}

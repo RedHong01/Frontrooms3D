@@ -3,10 +3,14 @@
 // (glyph, attribute) cells into the 720 x 400 text-mode picture at 2x (1440 x 800), whole pixels only, into the
 // terminal's RenderTexture; the caller regenerates its mips. The CRT tube (FrontRooms/ScreenVideo) then draws that
 // texture on the desk monitor like any picture, stretching 720 x 400 to the 4:3 tube as the monitor did.
-//   _TermCells   80 x 25 RGBA8 (linear): r = CP437 glyph, g = attribute (bg << 4 | fg); memory row = screen row (top first)
-//   _TermFont    128 x 256 R8: the 8 x 16 face in CP437 order, memory row = glyph row (top first)
+//   _TermCells   80 x 25 RGBA8 (linear): r = glyph slot low byte, g = attribute (bg << 4 | fg), b = slot high byte,
+//                a = the cell's kind (0 half-width, 1 a full-width glyph's left half, 2 its right half; W18, 2026-11-03);
+//                memory row = screen row (top first)
+//   _TermFont    128 x (16 x slot rows) R8: the 8 x 16 slots, 16 a row (CP437 order, then the language's); memory row = glyph
+//                row (top first)
 //   _TermPalette the 16 text colours, linear (the target is sRGB: the store encodes them back to the exact bytes)
-// A cell is 9 x 16: the 9th column is blank except for CP437 0xC0-0xDF, which repeat their 8th column (VGA).
+// A cell is 9 x 16: the 9th column is blank except for CP437 0xC0-0xDF, which repeat their 8th column (VGA). A full-width
+// glyph is 16 dots across its two cells with a blank dot each side (left half on dots 1-8, right half on dots 0-7).
 // No keywords, no time, no blink. FrontRoomsTerminalRaster.RasterCpu is the same function on the CPU (the fallback and
 // the harness's pixel check).
 Shader "Hidden/FrontRooms/TerminalRaster"
@@ -49,11 +53,24 @@ Shader "Hidden/FrontRooms/TerminalRaster"
                 float cx = floor((px - col * 18.0) * 0.5);      // 0..8 within the 9-dot cell
                 float cy = floor((py - row * 32.0) * 0.5);      // 0..15
                 float4 cell = LOAD_TEXTURE2D(_TermCells, uint2((uint)col, (uint)row));
-                float glyph = floor(cell.r * 255.0 + 0.5);
+                float glyph = floor(cell.r * 255.0 + 0.5) + 256.0 * floor(cell.b * 255.0 + 0.5);
                 float attr = floor(cell.g * 255.0 + 0.5);
+                float kind = floor(cell.a * 255.0 + 0.5);
                 float gx = cx;
                 float use = 1.0;
-                if (cx > 7.5)
+                if (kind > 1.5)
+                {
+                    // a full-width glyph's right half: dots 0-7, the 9th blank
+                    gx = min(cx, 7.0);
+                    use = cx < 7.5 ? 1.0 : 0.0;
+                }
+                else if (kind > 0.5)
+                {
+                    // its left half: dot 0 blank, dots 1-8 its columns 0-7
+                    gx = max(cx - 1.0, 0.0);
+                    use = cx > 0.5 ? 1.0 : 0.0;
+                }
+                else if (cx > 7.5)
                 {
                     gx = 7.0;
                     use = (glyph >= 192.0 && glyph <= 223.0) ? 1.0 : 0.0;

@@ -1,0 +1,24 @@
+{
+ "half": "ÀÁÂÃÄÇÈÉÊËÍÎÏÑÓÔÕÖÙÚÛÜàáâãäçèéêëíîïñóôõöùúûüÿß°ºª«»¿¡·§",
+ "wide": "",
+ "big": [
+  {
+   "role": "headline",
+   "mode": "halfblock",
+   "chars": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:-/'!? ÄÖÜ",
+   "w": 5,
+   "h": 14,
+   "top": 64,
+   "perRow": 25
+  },
+  {
+   "role": "second",
+   "mode": "halfblock",
+   "chars": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:-/'!? ÄÖÜ",
+   "w": 4,
+   "h": 10,
+   "top": 92,
+   "perRow": 32
+  }
+ ]
+}

@@ -14,6 +14,11 @@ using UnityEngine;
 ///   {MONTH_BACK4}; the next drill = the first Tuesday at least 8 days after the in-game date: {DRILL_WEEKDAY},
 ///   {DRILL_MONTH}, {DRILL_DAY}; {UNREAD}, {N}, {M}, {PROGRAM}. A ":U" suffix gives capitals ({DRILL_MONTH:U}).
 /// The in-game date is today's month and day in 1990 (29 February reads 28).
+/// Languages (W18, 2026-11-03; research/narrative/95 5.5): a language's sets are WorldText copies of these files
+/// (Resources/WorldText/&lt;code&gt;/Terminal/Content/), read in the terminals' language (FrontRoomsTerminalFace.TerminalLanguage:
+/// the world text's when it has a terminal face, else English). The drill's weekday and month are in that language: CJK and
+/// Hangul a month number and 星期二 / 火曜日 / 화요일, de / fr / es / pt-BR / ru the names as each writes them (ru's month in the
+/// genitive); dates otherwise keep the US M/DD/YY (95 5.5).
 /// </summary>
 [Serializable]
 public sealed class FrontRoomsTerminalContent
@@ -58,8 +63,10 @@ public sealed class FrontRoomsTerminalContent
 
     /// <summary>Where this set came from (the resource name), for logs.</summary>
     [NonSerialized] public string Source = "";
+    /// <summary>The language the set is in (its drill words follow it).</summary>
+    [NonSerialized] public string Language = FrontRoomsWorldText.English;
 
-    static readonly Dictionary<int, FrontRoomsTerminalContent> cache = new Dictionary<int, FrontRoomsTerminalContent>();
+    static readonly Dictionary<string, FrontRoomsTerminalContent> cache = new Dictionary<string, FrontRoomsTerminalContent>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics()
@@ -68,13 +75,15 @@ public sealed class FrontRoomsTerminalContent
         ClockOverride = null;
     }
 
-    /// <summary>The content set for a terminal's content key (the deal's key, 20_design section 3.4).</summary>
+    /// <summary>The content set for a terminal's content key (the deal's key, 20_design section 3.4), in the terminals' language.</summary>
     public static FrontRoomsTerminalContent Load(int contentKey)
     {
-        if (cache.TryGetValue(contentKey, out var hit) && hit != null) return hit;
+        var code = FrontRoomsTerminalFace.TerminalLanguage;
+        var key = code + "/" + contentKey.ToString(CultureInfo.InvariantCulture);
+        if (cache.TryGetValue(key, out var hit) && hit != null) return hit;
         var name = "terminal_" + contentKey.ToString(CultureInfo.InvariantCulture);
-        var asset = Resources.Load<TextAsset>(Folder + name);
-        if (asset == null) { name = DefaultSet; asset = Resources.Load<TextAsset>(Folder + name); }
+        var asset = TextIn(code, Folder + name);
+        if (asset == null) { name = DefaultSet; asset = TextIn(code, Folder + name); }
         var content = asset != null ? Parse(asset.text) : null;
         if (content == null)
         {
@@ -82,9 +91,13 @@ public sealed class FrontRoomsTerminalContent
             content = new FrontRoomsTerminalContent();
         }
         content.Source = name;
-        cache[contentKey] = content;
+        content.Language = code;
+        cache[key] = content;
         return content;
     }
+
+    // English: the set itself; another language: its WorldText copy (the world text is in that language when the terminals are).
+    static TextAsset TextIn(string code, string path) => code == FrontRoomsWorldText.English ? Resources.Load<TextAsset>(path) : FrontRoomsWorldText.Text(path);
 
     public static FrontRoomsTerminalContent Parse(string json)
     {
@@ -149,6 +162,60 @@ public sealed class FrontRoomsTerminalContent
         return h + ":" + now.Minute.ToString("00", CultureInfo.InvariantCulture) + (now.Hour < 12 ? " AM" : " PM");
     }
 
+    // ---------------------------------------------------------------- the drill's words per language (W18, 95 5.5)
+
+    static readonly string[] WeekdaysZhHans = { "星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六" };
+    static readonly string[] WeekdaysJa = { "日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日" };
+    static readonly string[] WeekdaysKo = { "일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일" };
+    static readonly string[] WeekdaysDe = { "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag" };
+    static readonly string[] WeekdaysFr = { "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi" };
+    static readonly string[] WeekdaysEs = { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" };
+    static readonly string[] WeekdaysPt = { "domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado" };
+    static readonly string[] WeekdaysRu = { "воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота" };
+    static readonly string[] MonthsDe = { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember" };
+    static readonly string[] MonthsFr = { "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre" };
+    static readonly string[] MonthsEs = { "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre" };
+    static readonly string[] MonthsPt = { "janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro" };
+    static readonly string[] MonthsRuGenitive = { "января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря" };
+
+    /// <summary>The weekday's name in the language (English for a language without its own).</summary>
+    public static string Weekday(DateTime d, string code)
+    {
+        var i = (int)d.DayOfWeek;
+        switch (code)
+        {
+            case "zh-Hans":
+            case "zh-Hant": return WeekdaysZhHans[i];
+            case "ja": return WeekdaysJa[i];
+            case "ko": return WeekdaysKo[i];
+            case "de": return WeekdaysDe[i];
+            case "fr": return WeekdaysFr[i];
+            case "es": return WeekdaysEs[i];
+            case "pt-BR": return WeekdaysPt[i];
+            case "ru": return WeekdaysRu[i];
+            default: return d.ToString("dddd", CultureInfo.InvariantCulture);
+        }
+    }
+
+    /// <summary>The month as the language writes it in a date: a number for CJK and Hangul, a name otherwise (ru: genitive).</summary>
+    public static string Month(DateTime d, string code)
+    {
+        var i = d.Month - 1;
+        switch (code)
+        {
+            case "zh-Hans":
+            case "zh-Hant":
+            case "ja":
+            case "ko": return d.Month.ToString(CultureInfo.InvariantCulture);
+            case "de": return MonthsDe[i];
+            case "fr": return MonthsFr[i];
+            case "es": return MonthsEs[i];
+            case "pt-BR": return MonthsPt[i];
+            case "ru": return MonthsRuGenitive[i];
+            default: return d.ToString("MMMM", CultureInfo.InvariantCulture);
+        }
+    }
+
     /// <summary>Expand the tokens in s (see the class summary). Unknown tokens are left as written.</summary>
     public string Expand(string s, int unread = 0, int n = 0, int m = 0)
     {
@@ -171,8 +238,8 @@ public sealed class FrontRoomsTerminalContent
                 case "DATE_BACK4": v = Short(MonthsBack(game, 4)); break;
                 case "MONTH_NOW": v = MonthYear(game); break;
                 case "MONTH_BACK4": v = MonthYear(MonthsBack(game, 4)); break;
-                case "DRILL_WEEKDAY": v = NextDrill(game).ToString("dddd", CultureInfo.InvariantCulture); break;
-                case "DRILL_MONTH": v = NextDrill(game).ToString("MMMM", CultureInfo.InvariantCulture); break;
+                case "DRILL_WEEKDAY": v = Weekday(NextDrill(game), Language); break;
+                case "DRILL_MONTH": v = Month(NextDrill(game), Language); break;
                 case "DRILL_DAY": v = NextDrill(game).Day.ToString(CultureInfo.InvariantCulture); break;
                 case "UNREAD": v = unread.ToString(CultureInfo.InvariantCulture); break;
                 case "N": v = n.ToString(CultureInfo.InvariantCulture); break;

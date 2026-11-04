@@ -502,7 +502,9 @@ public static class FrontRoomsSettingsMenu
         var h = Header(Tab.Controls, "CONTROLLER");
         h.Label = Tagged(FrontRoomsInput.PadConnected ? FrontRoomsInput.FamilyName(FrontRoomsInput.Family) : h.Label, Scheme.Pad);
         list.Add(h);
-        foreach (var b in FrontRoomsInput.PadBinds) list.Add(BindRow(b, "Choose it, then press the button you want for it. A button another action has asks before it swaps."));
+        // One row that unfolds into the controller's map, the desktop's CONTROLLER drawing (SETTINGS_MOTION.md, E4c: "On the phone
+        // the controller fills the 710 pt list"); its callouts change a button as the per-button rows did. DEFAULTS stays under it.
+        list.Add(PageRow(Key.PadMap, "CONTROLLER", "Every button and stick the game uses, drawn on a controller. Choose one to read what it does, or to change its button.", PadPreview()));
         list.Add(DefaultsRow(Key.PadDefaults, "Puts every button back to its default. Press twice to confirm."));
     }
 

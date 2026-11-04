@@ -348,12 +348,16 @@ public sealed class FrontRoomsTerminalScreen : MonoBehaviour
         if (all.Count == 0) DisposePool();
     }
 
+    // The face changed: a tool's Use, or the terminals' language (W18), which also brings that language's content set into the
+    // same machine (panel, bar and page kept: FrontRoomsTerminal.SetContent).
     static void OnFaceChanged()
     {
         foreach (var t in all)
         {
             if (t.grid == null) continue;
             t.grid.Face = FrontRoomsTerminalFace.Current;
+            if (t.machine.Content.Language != FrontRoomsTerminalFace.TerminalLanguage)
+                t.machine.SetContent(FrontRoomsTerminalContent.Load(t.ContentKey));
             t.machine.Refresh();
             t.renderedVersion = -1;
             t.Flush();
