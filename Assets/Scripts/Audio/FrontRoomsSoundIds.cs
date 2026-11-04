@@ -35,6 +35,8 @@ namespace FrontRooms.Audio
         public const string DoorExitChainRun = "event:/Mechanism/Door/ExitChainRun";     // the unlock cut: off the bar, through the staple
         public const string DoorExitChainSway = "event:/Mechanism/Door/ExitChainSway";   // the unlock cut: swinging from the staple
         public const string DoorExitChainFloor = "event:/Mechanism/Door/ExitChainFloor"; // the unlock cut: its tail on the carpet
+        public const string DoorExitChainHaul = "event:/Mechanism/Door/ExitChainHaul";   // the U1 fall: the long side runs the chain through the staple
+        public const string DoorExitChainClink = "event:/Mechanism/Door/ExitChainClink"; // the U1 fall: a link knocks the wall in the sway
         public const string DoorBlowCrack = "event:/Mechanism/Door/BlowCrack";       // a new damage stage, on its swap frame
         public const string DoorBrokenGrind = "event:/Mechanism/Door/BrokenGrind";   // a try at a broken door
         public const string DoorStreamOpen = "event:/Mechanism/Door/StreamOpen";     // per leaf, Leaf
@@ -57,12 +59,19 @@ namespace FrontRooms.Audio
         public const string PadlockRelease = "event:/Mechanism/Lock/PadlockRelease";   // the EXIT's commit
         public const string PadlockSwivel = "event:/Mechanism/Lock/PadlockSwivel";
         public const string PadlockKnock = "event:/Mechanism/Lock/PadlockKnock";       // the open padlock on the staple
+        public const string PadlockTap = "event:/Mechanism/Lock/PadlockTap";           // the U1 fall: the open padlock taps the wall
+
+        // Alarm devices (Relay v2 V7a foil, V7b alarm door; inert until the profile's foil / alarmDoor): the device's own sound
+        public const string AlarmFoilBell = "event:/Mechanism/Alarm/FoilBell";         // a foiled window's local bell, a short ring
+        public const string AlarmDoorHorn = "event:/Mechanism/Alarm/DoorHorn";         // the exit alarm's horn over an alarm door
 
         // Window
         public const string WindowStress = "event:/Mechanism/Window/Stress";
         public const string WindowSashStrain = "event:/Mechanism/Window/SashStrain";   // C12: E held on a sash latch (Progress)
         public const string WindowSashGive = "event:/Mechanism/Window/SashGive";       // C12: the sash gives
         public const string WindowSashRailLand = "event:/Mechanism/Window/SashRailLand"; // a shattered sash's meeting rail on the sill
+        public const string WindowFoilMagnet = "event:/Mechanism/Window/FoilMagnet";   // V7a: the sheared reed magnet lands on the sill
+        public const string WindowFoilBlock = "event:/Mechanism/Window/FoilBlock";     // V7a: a takeoff block pops off the glass
         public const string WindowCrack = "event:/Mechanism/Window/Crack";
         public const string WindowShatter = "event:/Mechanism/Window/Shatter";
 

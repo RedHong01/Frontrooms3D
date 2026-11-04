@@ -63,11 +63,11 @@ ENTER  OPEN	ENTER  開啟
 ENTER  SWAP     ESC  CANCEL	ENTER  交換     ESC  取消
 ESC  RESUME	ESC  繼續
 ESC ALWAYS PAUSES AND GOES BACK	ESC 總是暫停和返回
-EVACUATION PLAN · LEVEL 0	逃生平面圖 · LEVEL 0
+EVACUATION PLAN · LEVEL 0	逃生平面圖 · 第 0 層
 EXAMINE	查看
 EXAMINE KEY	查看鑰匙
-EXIT (over the stair door)	EXIT 出口（樓梯門上方）
-EXIT (over the stair door, padlocked)	EXIT 出口（樓梯門上方，掛鎖）
+EXIT (over the stair door)	緊急出口（樓梯門上方）
+EXIT (over the stair door, padlocked)	緊急出口（樓梯門上方，掛鎖）
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	遊戲用到的每個按鍵都畫在鍵盤和滑鼠上。選中一個，可以查看作用或更改按鍵。
 FIXED	固定
 FLOATING	浮動
@@ -130,10 +130,10 @@ LANGUAGE	語言
 LAYOUT	版面
 LEFT-HANDED	左手模式
 LEGEND	圖例
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	圖例：你在這裡 · 樓梯（EXIT），下一層 · 警衛台（鑰匙） · 牆上箭頭，指向出路
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	圖例：你在這裡 · 樓梯（EXIT），下一層 · 牆上箭頭，指向出路
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	圖例：你在這裡 · 樓梯（緊急出口），下一層 · 警衛台（鑰匙） · 牆上箭頭，指向出路
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	圖例：你在這裡 · 樓梯（緊急出口），下一層 · 牆上箭頭，指向出路
 LEVEL 0	第 0 層
-LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 圖紙 A-2，共 4 張 · 印於 11/89
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	第 0 層 · 圖紙 A-2，共 4 張 · 印於 11/89
 LEVEL 4 / OFFICE	第 4 層 / 辦公室
 LEVEL B{0}	第 B{0} 層
 LISTEN	傾聽
@@ -412,3 +412,67 @@ Choose it, then press the button you want for it. A button another action has as
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	選取後，按下想用於它的按鍵。如果按鍵已被其他動作佔用，交換前會先詢問。	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	把所有按鈕恢復為預設值。按兩次確認。	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	把所有按鍵恢復為預設值。按兩次確認。	device state; draft 2026-11-01
+EXIT	緊急出口	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NOT AN EXIT	非出口	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+AREA OF RESCUE ASSISTANCE	救援等候區	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NO ROOF ACCESS	不通屋頂	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+LEVELS 0 TO B1	第 0 層至第 B1 層	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NEAREST REENTRY ON LEVEL B1	最近返回點：第 B1 層	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+REENTRY ON THIS FLOOR	可由此返回本層	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SILENT ALARM: REMOVAL SIGNALS PANEL	無聲警報：取下即通報控制盤	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	營業時間內此門不得上鎖	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SECURITY	警衛	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+PLEASE SIGN IN	請登記	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM\nZONE	警報\n區域	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	開門即報警	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+TROUBLE	故障	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+POWER	電源	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPARE	備用	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPRINKLER FLOW	灑水水流	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+STAY TUNED.	敬請鎖定。	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ELECTRICAL\nROOM	配電室	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+AUTHORIZED PERSONNEL ONLY	非工作人員禁止進入	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+EMPLOYEES ONLY	員工專用	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STAFF ONLY	閒人免進	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STORAGE	儲藏室	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+NO SMOKING	禁止吸菸	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+SNACKS • CANDY • CHIPS	零食 • 糖果 • 洋芋片	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+FRAGILE	易碎	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+THIS SIDE UP	此面朝上	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+KEEP DRY	防潮	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+PAYROLL	薪資	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MISC	雜項	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+Q3 REPORTS	第三季報告	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MINUTES	會議記錄	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+CLIENT FILES	客戶檔案	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+DATE · NAME · COMPANY · VISITING · TIME IN · TIME OUT	日期 · 姓名 · 公司 · 拜訪 · 進入 · 離開	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+COURIER · COPIER SVC · HVAC SVC · WATER SVC · OFFICE SUPPLY · PEST CONTROL · VENDING	快遞 · 影印機維修 · 空調維修 · 飲水服務 · 辦公用品 · 除蟲 · 販賣機	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+MAILROOM · RM 214 · BLDG SVCS · FRONT OFFICE · STOCK RM 3 · RM 118	收發室 · 214 室 · 大樓服務 · 行政辦公室 · 3 號庫房 · 118 室	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+NIGHT DESK	夜班值班台	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ON DUTY D.K.	上崗 D.K.	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 1 COMPLETE  ALL SECURE	第 1 次巡邏完畢  一切正常	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BLDG SVCS CALLED  LAMPS OUT STOCK RM 3	已通知大樓服務  3 號庫房燈熄	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 3	第 3 次巡邏	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+KEY CONTROL	鑰匙管理	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ALL KEYS MUST BE SIGNED OUT	領用鑰匙必須登記	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DATE · KEY NO. · NAME · OUT · IN · INIT.	日期 · 鑰匙號 · 姓名 · 借出 · 歸還 · 簽名	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+PHONE LIST	電話表	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+FIRE · POLICE	火警 · 警察	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BOILER RM	鍋爐房	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+POST ORDERS	崗位守則	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BACK ROOM CLEARANCE	後倉清倉特賣	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+3-PC SOFA SET	三件式沙發	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+NOW $499  WAS $899	現價 $499  原價 $899	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+90 DAYS SAME AS CASH	90 天免息分期	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+CALL 555-0147	請致電 555-0147	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9  7 DAYS	每天早 9 點至晚 9 點	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9	早 9 點至晚 9 點	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+FREE DELIVERY	免費送貨	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+ALWAYS MORE\nIN THE BACK	後面\n總有更多	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+PLEASE STAND BY	請稍候	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+TECHNICAL DIFFICULTIES	技術故障	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+WTCZ 61 SIGNS OFF AT 2 AM	WTCZ 61 凌晨 2 點收播	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	今日一思\n穩步而行的人\n比奔跑的人\n走得更遠。	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+[WINDOW ALARM]	[窗戶警報聲]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+[DOOR ALARM]	[門警報聲]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+CONTROL RM	消防控制室	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft

@@ -7,6 +7,10 @@ using UnityEngine;
 /// lands (DoorLatched), the strike coming off on a break (DoorBrokenFrom), the hanging leaf's wobble when a broken door
 /// is tried (DoorBrokenTried), and the deadbolt left drawn once a door is unlocked (DoorUnlocked: for the run, from both
 /// faces). One hidden component per map, added by the facade's first DressDoor in Play Mode; it unbinds on destroy.
+/// Body doors (doors 20_design §10 row 17, Red's 10-31 picks): the latch burst of a sprint into a latched door
+/// (DoorLatchBurst: lever or knob snap, latchbolt, strike rattle), the barge's shudder (DoorSwingStarted Barge), the
+/// slammed leaf's shudder as it latches (DoorSwingStarted Slam, then DoorLatched) and the settle where the unlock's 10 deg
+/// pop stops (DoorSwingStarted Unlock, only while the map's BodyDoors is on).
 /// Render-only: it reads nothing back into gameplay, plays no sound (the beats are the map's and the door shot's).
 /// </summary>
 public sealed class FrontRoomsDoorDressEvents : MonoBehaviour
@@ -31,6 +35,8 @@ public sealed class FrontRoomsDoorDressEvents : MonoBehaviour
         map.DoorBrokenFrom += OnBrokenFrom;
         map.DoorBrokenTried += OnBrokenTried;
         map.DoorUnlocked += OnUnlocked;
+        map.DoorLatchBurst += OnLatchBurst;
+        map.DoorSwingStarted += OnSwingStarted;
     }
 
     void OnDestroy()
@@ -42,6 +48,8 @@ public sealed class FrontRoomsDoorDressEvents : MonoBehaviour
         map.DoorBrokenFrom -= OnBrokenFrom;
         map.DoorBrokenTried -= OnBrokenTried;
         map.DoorUnlocked -= OnUnlocked;
+        map.DoorLatchBurst -= OnLatchBurst;
+        map.DoorSwingStarted -= OnSwingStarted;
         map = null;
     }
 
@@ -53,4 +61,15 @@ public sealed class FrontRoomsDoorDressEvents : MonoBehaviour
     static void OnBrokenFrom(FrontRoomsMapWorld.Door door, Vector3 from, bool swingSide) { var r = RigOf(door); if (r != null) r.DetachStrike(from); }
     static void OnBrokenTried(FrontRoomsMapWorld.Door door, Vector3 point) { var r = RigOf(door); if (r != null) r.BeatWobble(); }
     static void OnUnlocked(FrontRoomsMapWorld.Door door, GridCoord zone, Vector3 keyhole) { var r = RigOf(door); if (r != null && r.LockedModel) r.SetDeadboltRest(1f); }
+
+    static void OnLatchBurst(FrontRoomsMapWorld.Door door) { var r = RigOf(door); if (r != null) r.BeatLatchBurst(); }
+
+    void OnSwingStarted(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorSwingKind kind)
+    {
+        var r = RigOf(door);
+        if (r == null) return;
+        if (kind == FrontRoomsMapWorld.DoorSwingKind.Barge) r.BeatShudder();
+        else if (kind == FrontRoomsMapWorld.DoorSwingKind.Slam) r.ArmSlam();
+        else if (kind == FrontRoomsMapWorld.DoorSwingKind.Unlock && map != null && map.BodyDoors) r.ArmUnlockPop();
+    }
 }

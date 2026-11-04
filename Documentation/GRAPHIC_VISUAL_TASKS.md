@@ -81,7 +81,7 @@ Last update: 2026-10-07 evening. Items 1–3 are open; see each status line.
   - **Final InDesign build, 2026-10-22 13:46–13:49 (VL372, PASS):** Source Serif 4 Variable at opsz 10 (Figma's own optical size; Adobe Fonts' Caption never synced) and the cue-dot spacing fixed. Both forms break 17/17 serif lines as in Figma; reader 280/280. The 10:24 Text-cut files are in `Print/_archive_REV-10-22-26_text-cut/`.
   - **Next:**
     - Print the new PDF on canary stock, fill it in pencil, scan it and run the reader (plan in the 印刷与演示 handoff).
-- 2026-11-02: PT2 built (REV. 10-31-26: FR-PT 04, 05 and the new 06) and in `Print/`; reader template landed in `Tools/playtest_scan/`; Figma drafts still to sync.
+- 2026-11-02: PT2 built (REV. 10-31-26: FR-PT 04, 05 and the new 06) and in `Print/`; reader template landed in `Tools/playtest_scan/`; Figma drafts synced 2026-11-03; VL479–481 placed.
 
 ## 1. In-game wallpaper cue: IN PROGRESS
 Red, 2026-10-07: "先把其中一套应用在游戏里，和关卡设计还有系统设计协作构思这个逻辑在游戏里什么时候启用，以及给我一个游戏内渲染的预览效果视频"

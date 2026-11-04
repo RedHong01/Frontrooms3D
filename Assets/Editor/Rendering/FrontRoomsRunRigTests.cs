@@ -608,6 +608,7 @@ public static class FrontRoomsRunRigTests
         {
             root.position = new Vector3(4992f, 0f, 4992f);
             var l = RunRigLayout.Corridor1x9();
+            l.buildShell = false;                     // as the binder (FrontRoomsRunRigBinder.Layout): the map builds the shell
             l.skinShell = true;
             FrontRoomsRunDress.Build(root, l);
             int soffit = 0, reveal = 0, revealAtGoal = 0, coverCabinet = 0;

@@ -28,7 +28,7 @@ Three levels, read left to right and top to bottom: **what it is** (the name, Ba
 
 | Row kind | Second line, left | Second line, under the control |
 |---|---|---|
-| SEGMENTS (QUALITY, SHADOWS …) | what it does, one sentence (Source Serif, 2 lines at most) | under each segment what it means (Plex Mono, the current one at 95 %, the rest at 50 %): QUALITY `30 FPS · 60 FPS · + AO HIGH · FULL RES · YOUR MIX`, FRAME RATE `33 MS · 25 MS · 17 MS · 8 MS`; a short rule under the default; `DEFAULT …` at the right |
+| SEGMENTS (QUALITY, SHADOWS …) | what it does, one sentence (Source Serif, 2 lines at most) | under each segment what it means (Plex Mono, the current one at 95 %, the rest at 50 %): QUALITY `30 FPS · 60 FPS · + AO HIGH · FULL RES · YOUR MIX`, FRAME RATE `33 MS · 25 MS · 17 MS · 8 MS`; a rule under the default's note, as wide as the note (1 px, 4 px under its baseline, 60 %), so it marks the whole note and never sits under one letter (11-03: a 12 px stub read as `AS H_IGH`); `DEFAULT …` at the right |
 | SLIDER (LOOK SPEED, RENDER SCALE) | what it does | the stops' meanings under the track (`0.10° · 0.20° PER PT · 0.30°`) |
 | SWITCH (HDR, CAPTIONS) | what it does | what the current state does (`SOUNDS THAT HUNT YOU`) |
 | METER (FRAME RATE NOW) | what it measures | a live frame-time line against the target (yellow, 16.7 ms) |
@@ -71,6 +71,10 @@ The right column shows the game's real assets in the language under the pointer,
 ## Platforms
 
 Same rules on every screen (three-platform parity). Row heights double: desktop 48 → 96 px, phone 44 → 88 pt, tablet its own row height × 2. The phone and the iPad lose the explanation column to the list (it widens from 418 to 710 pt on iPhone 17 Pro); the iPad keeps a picture column for GRAPHICS and LANGUAGE, as the desktop does.
+
+## Built check (平面视觉, 2026-11-03)
+
+Desktop E1–E3 at 1080p: VL487 FLAG (`images/vl487_settings_motion_desktop.jpg`). Touch E4a: VL488 FAIL (`images/vl488_settings_motion_touch.jpg`): an open name grows by the screen scale × 1.4. Sent to 交互设计 (T-1, D-1, D-3, D-4, D-7) and 设置菜单 (D-2 note length, D-6 preview panel). Touch LANGUAGE (E4b) and CONTROLLER (E4c) are not built yet; check them when they land.
 
 ## Owners if Red agrees
 

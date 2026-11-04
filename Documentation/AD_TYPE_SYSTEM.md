@@ -20,9 +20,12 @@ This file is the Ad derivative. It covers:
 - **The v1 system** (Ad_02's cards, 2026-10-08) stays in `2800:6096`.
 - **Verification:** VL287 `3230:8391`.
 
-**Generator:** `Tools/screens/broadcast.py` holds v1, which is what ships in Ad_02. v3 is in the dev copy `~/FrontRoomsVisualWork/screens_dev/` until Red approves it.
-- The dev copy adds the CG renderer, the EG 1-1990 bars and the v3 states.
-- `test/check_safe.py` checks every CG line against title safe.
+**Generator:** `Tools/screens/` (`out/` holds what it rendered).
+- `broadcast.py` renders Ad_02 (v1) and, since 2026-10-22, Ad_03 with the v3 station layer: the CG renderer, the EG 1-1990 bars and the v3 states.
+- `offair.py` renders the off-air bars v3.2: the plate and the live clock's key (§3.6).
+- `ad_lang.py` renders Ad_03 in the nine other languages (§1.3).
+- `still_desk.py` renders the still desk frames.
+- The dev copy `~/FrontRoomsVisualWork/screens_dev/` is superseded; its `test/check_safe.py` checks every CG line against title safe.
 
 **Research:** `~/FrontRoomsVisualWork/reference/ad_reference/`. Each topic has a NOTES.md with numbered sources:
 - `station_1990`: 156 sources;
@@ -81,6 +84,39 @@ Cap heights per em, measured from the shipped files:
 | Courier Prime Bold | 0.580 |
 | VT323 | 0.560 |
 
+### 1.3 The spot in the player's language (world text W19, 2026-11-03)
+Red, 2026-11-03, 叙事设计 chat: "目前切换成不同的语言，应该游戏里比如说对应的广告，平面视觉的type应该也需要做对应的改变，也就是所有的diegetic narratives 需要adapt 语言的变化。" Then "全部按推荐" (`research/narrative/95_world_text_localization.md` §6): frame A, a dubbed film. The same American spot plays and only its words change. The voice stays English.
+
+- **What changes.** The supers of cards 1–4, and the CG lines of the station states: STAY TUNED., the stand-by card, Thought For Today and the dealer tag's hours.
+  - Strings come from the game's own tables (`Assets/Resources/Language/<lang>.txt`, 95 §5.4).
+  - The store's logotype, the prices, the phone number, the proper names and the whole station ID card stay.
+  - The sign-off pages have no translated strings yet; they are not on screen.
+- **Generator.** `Tools/screens/ad_lang.py` writes `out/FrontRooms_Ad_03/<lang>/` (the loop mp4, cards, states), plus `lang_sheet.png` and `lang_fit.txt`.
+  - Same 16 s and cuts at 3/7/10/14 s, so 声音设计's S1 loop lines up.
+  - Every face comes from the repo (Period1990 and `Resources/Fonts`); nothing was downloaded.
+- **Faces per script.** Each word keeps its English role, place, colour and shadow.
+
+| Role (English face) | Latin: de, fr, es, pt-BR | Cyrillic: ru | CJK: zh-Hans, zh-Hant, ja, ko |
+|---|---|---|---|
+| Headline (Anton) | Anton | Oswald Bold, emboldened 1.8 % | Noto Sans CJK Bold, condensed to 86 % (長体), emboldened 3.2 % |
+| Supers (Archivo Black Italic) | Archivo Black Italic | Libre Franklin Black Italic | Noto Sans CJK Bold, slanted 10° (斜体), emboldened 3 %, ideographs 1.2 × the English cap |
+| Flag (Archivo Black) | Archivo Black | Libre Franklin Black | Noto Sans CJK Bold, emboldened 3 %, 1.15 × the cap |
+| CG Bold / Regular (Heros) | Heros | Roboto Condensed Bold / Regular | Noto Sans CJK Bold / Regular, set solid |
+
+- **Why these faces.**
+  - A 1990 dub studio set local supers on a phototypesetter, whose lenses made condensed (長体) and slanted (斜体) settings of gothic.
+  - CJK, Hangul and Cyrillic signage of the period used gothic (sans) faces (95 §4).
+  - Libre Franklin is a period American grotesque (Franklin Gothic), and Oswald takes Anton's condensed role.
+  - Franklin set too wide for the CG's slots, so the CG takes Roboto Condensed, a neo-grotesque pair like Heros's two weights.
+  - The CG lines go through the CG renderer in every script: no smoothing, scan-line steps, the 2-line edge and the 4-line shadow.
+- **Sizes.** Each face matches the English cap height: Cyrillic by its H; CJK by its ideograph face (0.86 em), a little taller, as CJK needs to be to read at these sizes.
+- **Fit.** A word wider than its slot steps down to 75 % of its size; on the CG it steps down the ladder (36, 30, 24). The card-4 line may break in two.
+  - Results are in `lang_fit.txt`: 153 lines, 7 stepped down, none over.
+  - The steps: STAY TUNED. to CG 30 in fr and ru; PLEASE STAND BY to CG 30 in ja and fr; the fr WAS line, the pt-BR card-4 line and the ru headline by under 7 %.
+  - The pink flag grows with its word but never past title safe (ru).
+- **Layout notes.** French has no NOW word (`$499 AU LIEU DE $899`), so its price stands alone. A WAS line too long to start where English did ends at title safe, and its strike follows the line.
+- **The runtime** (the current language only; WebGL stays English) is 游戏视觉's: `briefs/visual.md`, 2026-11-03.
+
 ## 2. Programme: the agency layer
 
 Ad_02's settings (Red approved Ad_02 on 10-14), now named as local text styles. Sizes are raster px.
@@ -120,7 +156,7 @@ Research: `station_1990/NOTES.md` §1.
 - **No permanent corner bug.** The US networks adopted them in autumn 1993. **No corner time and temperature** either: in 1990 the time showed only over the off-air bars (WFLD 32, 1988–89). WeatherStar was cable only. The power-off "burn-in ghost of the station bug" is gone for the same reason.
   - The KTTV tape of 7 Dec 1989 (board AD-R3) shows the one exception: a FOX 11 logo keyed lower right during a news cut-in, and none over the movie. The game has no news, so no logo appears at all.
   - Corner marks on the archive tapes are the uploaders' ("31", "Stolen from 31 Rewind", "www.FuzzyMemories.TV"). They are not station bugs.
-- **Off-air bars as aired** (WFLD, 17 Dec 1989; board AD-R2): the station logo keyed at top centre-right; the date `12-17-89` and a running clock keyed bottom right in a blocky, segment-style face. That face came from a time-and-date inserter, not the CG's Helvetica. Our v3.1 bars centre the call, time and date in the CG face. **Proposed v3.2, after the Alpha:** move them to the WFLD layout. It needs a time-and-date face, which means a font check and Red's OK for any download.
+- **Off-air bars as aired** (WFLD, 17 Dec 1989; board AD-R2): the station logo keyed at top centre-right; the date `12-17-89` and a running clock keyed bottom right in a blocky, segment-style face. That face came from a time-and-date inserter, not the CG's Helvetica. Our v3.1 bars centred the call, time and date in the CG face. **v3.2 (2026-11-03) moves them to the WFLD layout (§3.6).** The inserter's face is drawn by the generator from the WFLD frames, so the font check found nothing to download.
   - **Since 2026-10-22 the in-game date and clock are live** (Red's live-clock rule, below in §3.4), so they can't be baked into the video. v3.2 therefore delivers two things: a bars plate (bars + logo, no date or time), and a keying spec for the runtime date and clock (face, size, position, tick). 游戏视觉's screen code keys them on the set. The public pieces (CAMPAIGN_PLAN B1, B3) are rendered video, so their clocks stay scripted.
 - **Stand-by:** the ID slide or a text card with "TECHNICAL DIFFICULTIES / PLEASE STAND BY", silent or over a music bed, for 20–90 s. Sometimes a few seconds of bars or a frozen bumper come first.
 - **Sign-off order:**
@@ -173,7 +209,7 @@ Sizes are cap heights in scan lines.
 | Thought For Today | The late card before sign-off: title at CG 30 in CG yellow, three lines at CG 24 (叙事设计 v2.1: THE STEADY WALKER / GOES FARTHER THAN / THE ONE WHO RUNS.) |
 | Sign-off, page 1 | The ID slide at 60 %, `THIS CONCLUDES OUR` / `BROADCAST DAY.` at CG 30, and the legal ID at CG 18 |
 | Sign-off, page 2 | The notice, six lines at CG 24 (the standards line, `WE RETURN AT 6 AM.`, `GOOD NIGHT.`) |
-| Off air | SMPTE EG 1-1990 bars (§3.5) with `WTCZ-TV 61` (CG 30), the clock (CG 48) and the date (CG 30). **In the game both are live:** the real time, and the real month and day in 1990 (weekday from the 1990 calendar; a real Feb 29 shows `02-28-90`, because 1990 has none and the date never runs ahead of the real one); the sign-off and bars play only between 02:00 and 06:00 local time. The master and `states/bars_clock.png` show a sample (`2:00 AM`, `12-01-90`), not a fixed night. v2.1's fixed night of Friday 11-30-90 is retired (叙事设计, `30_screen_strings.md` §4.1, after Red's rule of 2026-10-22, 游戏视觉 chat: "…新的钟表是可以正常走动，并且呼应现实世界的时间的（…还有游戏里面的电脑等一系列有时间显示相关的设备的）") |
+| Off air | **v3.2 (§3.6):** SMPTE EG 1-1990 bars (§3.5), the WTCZ-TV 61 logo keyed in the upper half, and the date over a running clock, bottom right, in a time-and-date inserter's face (v3.1 centred `WTCZ-TV 61` at CG 30, the clock at CG 48 and the date at CG 30). **In the game both are live:** the real time, and the real month and day in 1990 (weekday from the 1990 calendar; a real Feb 29 shows `02-28-90`, because 1990 has none and the date never runs ahead of the real one); the sign-off and bars play only between 02:00 and 06:00 local time. The v3.1 master and `states/bars_clock.png` show a sample (`2:00 AM`, `12-01-90`), as v3.2's previews do (`12-01-90`, `03:48:27`); neither is a fixed night. v2.1's fixed night of Friday 11-30-90 is retired (叙事设计, `30_screen_strings.md` §4.1, after Red's rule of 2026-10-22, 游戏视觉 chat: "…新的钟表是可以正常走动，并且呼应现实世界的时间的（…还有游戏里面的电脑等一系列有时间显示相关的设备的）") |
 | Dealer tag | FRONT ROOMS (CG 36) / FURNITURE (CG 24, +20 %) in CG yellow; `RT. 41 AT MAIN ST.` and `FAIRVIEW` (CG 24); the phone number (CG 48); `OPEN 9 TO 9` (CG 24) |
 | Power off | Dark glass only |
 
@@ -199,6 +235,42 @@ Approved 28 March 1990, revising ECR 1-1978.
 - the PLUGE −4 step sits at black and the +4 step shows at 11.
 
 **Tone:** a steady 1 kHz, or silence. Never next to the alarm slate.
+
+### 3.6 Off-air bars v3.2: the plate and the live key (2026-11-03)
+**Files:** `Tools/screens/out/offair_bars/`, whose README is the request to 游戏视觉 (with a reference compose sketch). **Generator:** `Tools/screens/offair.py`. **Reference:** WFLD 32, 17 Dec 1989 (`frames/A1_wfld_bars_0125*.png`, board AD-R2).
+
+**The plate** (`bars_plate.png`, `@2x`): §3.5's bars, byte for byte v3.1's, with the logo keyed in the upper half. There is no date and no time.
+- The ID slide's ring and numeral at 0.66 (ring 112 px, numeral 47.5 px), then `WTCZ-TV` in Michroma at 26.4 px.
+- Under it, the city of licence `FAIRVIEW` in Michroma caps at 13.2 px, tracked 1.14 em to the call letters' width.
+- Call letters then city make the key a visual legal ID all night (47 CFR 73.1201), as WFLD's "WFLD · CHICAGO" was. Both strings come from 叙事设计's spec (`station_call`, `legal_id`).
+- Cream with a 1.5 px black edge and a 3 px hard shadow. WFLD's key had about 1.4 px of edge and a 2–3 px shadow.
+- Centred. WFLD's logo sat a little right of centre, but our ring lockup is symmetric, and off the axis it reads as misplaced.
+
+**The inserter's face** (`clock_glyphs.png`, `@2x`): drawn by the generator, not set from a font, so nothing is downloaded.
+- **Grid.** 3 × 5 blocks, one block 5 px × 5 scan lines, so a glyph is 15 px × 25 lines.
+  - WFLD's block is 4 px × 4.2 rows at 448 × 336, or 5.7 × 6.0 at 640 × 480.
+  - A 5-line block keeps WFLD's proportions (a 3-block gap between the rows) inside title safe and 4 lines under the castellations. A 6-line block would fit only with the row gap cut to 1.2 blocks.
+- **Slant.** 6° (tan 0.105), one scan line at a time.
+- **Glyphs, as aired.** '1' is one right-hand stroke. The middle bar of '3' stops short. '7' has a short hook under its bar. '9' has no tail. The colon sits low (block rows 3 and 5), at the left of its cell.
+- **Cells.** Every character takes one 4-block cell (20 px), so the date's dashes line up with the time's colons. Ours reads `12-0 1-90 / 03: 48: 27`, as WFLD's read `12- 17-89 / 0 1: 25: 36`.
+- **Edge.** Inserter white (219, the CG's white) with a 1-line black border. It is drawn at 1,510 positions across and box-filtered across only, like the CG (§3.2).
+
+**The key** (`offair_key.json`), all at 1× (double for `@2x`):
+
+| | Date row | Time row |
+|---|---|---|
+| Format | `MM-dd-90`: the real month and day in 1990; a real Feb 29 shows `02-28-90` | `HH:mm:ss`: local time, 24-hour, leading zeros (in the window 24-hour and 12-hour read the same) |
+| First cell, top-left | x 413, y 364 | x 413, y 404 |
+| Cells | 8 at a 20 px pitch; the 24 × 29 sprite goes at (x + 20 i − 2, y − 2) | the same |
+
+- **Ink.** The clock is at x 412–572, y 363–430; the logo at x 223–418, y 65–247. Both are inside title safe (x 66–574, y 48–432).
+- **Tick.** Read the clock every frame and redraw a row only when its string changes. Hard cuts, no blink.
+- **Window.** 02:00–06:00 local time only (§3.4).
+- **Compositing.** Composite in sRGB-encoded 8-bit values, never in linear light: out = plate × (1 − a) + rgb × a. Linear-light blending is what lightened the in-game S2 (§6).
+
+**Not this line's call:**
+- Sound in the window. The period's answer is a 1 kHz tone or silence, but the set is also the floor's sound beacon. 声音设计 and 系统设计 decide.
+- Whether the sign-off pages play before the bars. The screen code decides.
 
 ## 4. Alarm slate (layout here; the face is Information Design's signage)
 

@@ -63,11 +63,11 @@ ENTER  OPEN	ENTER  開く
 ENTER  SWAP     ESC  CANCEL	ENTER  入れ替え     ESC  キャンセル
 ESC  RESUME	ESC  再開
 ESC ALWAYS PAUSES AND GOES BACK	ESC は常にポーズと戻る
-EVACUATION PLAN · LEVEL 0	避難経路図 · LEVEL 0	TEXT panel, placard title
+EVACUATION PLAN · LEVEL 0	避難経路図 · 0階	TEXT panel, placard title
 EXAMINE	調べる
 EXAMINE KEY	鍵を調べる
-EXIT (over the stair door)	EXIT 出口（階段のドアの上）	TEXT panel; EXIT stays, it is what the sign over the door says
-EXIT (over the stair door, padlocked)	EXIT 出口（階段のドアの上、南京錠あり）	TEXT panel
+EXIT (over the stair door)	非常口（階段のドアの上）	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
+EXIT (over the stair door, padlocked)	非常口（階段のドアの上、南京錠あり）	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	ゲームで使うキーとボタンをキーボードとマウスの図で示します。選ぶと役割の確認やキーの変更ができます。
 FIXED	固定
 FLOATING	フローティング
@@ -130,12 +130,12 @@ LANGUAGE	言語
 LAYOUT	レイアウト
 LEFT-HANDED	左利きモード
 LEGEND	凡例	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（EXIT）、一階下へ · 警備デスク（鍵） · 壁の矢印、出口を指す	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（EXIT）、一階下へ · 壁の矢印、出口を指す	TEXT panel
-LEVEL 0	レベル 0
-LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 図面 A-2（全4枚） · 印刷 11/89	TEXT panel
-LEVEL 4 / OFFICE	レベル 4 / オフィス
-LEVEL B{0}	レベル B{0}
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（非常口）、一階下へ · 警備デスク（鍵） · 壁の矢印、出口を指す	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	凡例：現在地 · 階段（非常口）、一階下へ · 壁の矢印、出口を指す	TEXT panel
+LEVEL 0	0階
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	0階 · 図面 A-2（全4枚） · 印刷 11/89	TEXT panel
+LEVEL 4 / OFFICE	4階 / オフィス
+LEVEL B{0}	B{0}階
 LISTEN	聞き耳
 LOCKED	施錠中
 LOOK	見る	Both senses: the camera control and the close-up prompt E  ·  LOOK
@@ -412,3 +412,67 @@ Choose it, then press the button you want for it. A button another action has as
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	選んでから、使いたいキーを押します。ほかの操作に使われているキーなら、入れ替える前に確認します。	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	すべてのボタンをデフォルトに戻します。2回押して確定します。	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	すべてのキーをデフォルトに戻します。2回押して確定します。	device state; draft 2026-11-01
+EXIT	非常口	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NOT AN EXIT	出口ではありません	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+AREA OF RESCUE ASSISTANCE	救助待機場所	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NO ROOF ACCESS	屋上出入不可	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+LEVELS 0 TO B1	0階〜B1階	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NEAREST REENTRY ON LEVEL B1	最寄りの再入場：B1階	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+REENTRY ON THIS FLOOR	この階へ再入場可	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SILENT ALARM: REMOVAL SIGNALS PANEL	無音警報：取り外すと盤に通報	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	営業時間中は施錠しないこと	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SECURITY	警備	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+PLEASE SIGN IN	ご記帳ください	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM\nZONE	警報\n区域	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	開けると警報が鳴ります	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+TROUBLE	故障	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+POWER	電源	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPARE	予備	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPRINKLER FLOW	スプリンクラー流水	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+STAY TUNED.	チャンネルはそのまま。	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ELECTRICAL\nROOM	電気室	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+AUTHORIZED PERSONNEL ONLY	関係者以外立入禁止	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+EMPLOYEES ONLY	従業員専用	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STAFF ONLY	スタッフ専用	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STORAGE	倉庫	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+NO SMOKING	禁煙	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+SNACKS • CANDY • CHIPS	スナック • キャンディ • チップス	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+FRAGILE	ワレモノ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+THIS SIDE UP	天地無用	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+KEEP DRY	水濡れ注意	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+PAYROLL	給与	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MISC	その他	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+Q3 REPORTS	第3四半期報告	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MINUTES	議事録	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+CLIENT FILES	顧客ファイル	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+DATE · NAME · COMPANY · VISITING · TIME IN · TIME OUT	日付 · 氏名 · 会社名 · 訪問先 · 入館 · 退館	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+COURIER · COPIER SVC · HVAC SVC · WATER SVC · OFFICE SUPPLY · PEST CONTROL · VENDING	宅配便 · コピー機保守 · 空調保守 · 給水サービス · 事務用品 · 害虫駆除 · 自販機	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+MAILROOM · RM 214 · BLDG SVCS · FRONT OFFICE · STOCK RM 3 · RM 118	郵便室 · 214号室 · 設備管理 · 総務 · 第3倉庫 · 118号室	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+NIGHT DESK	夜間受付	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ON DUTY D.K.	勤務開始 D.K.	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 1 COMPLETE  ALL SECURE	巡回1 完了  異常なし	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BLDG SVCS CALLED  LAMPS OUT STOCK RM 3	設備管理に連絡  第3倉庫 消灯	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 3	巡回3	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+KEY CONTROL	鍵管理	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ALL KEYS MUST BE SIGNED OUT	鍵の持出しは必ず記入	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DATE · KEY NO. · NAME · OUT · IN · INIT.	日付 · 鍵番号 · 氏名 · 持出 · 返却 · 印	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+PHONE LIST	内線表	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+FIRE · POLICE	消防 · 警察	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BOILER RM	ボイラー室	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+POST ORDERS	勤務規程	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BACK ROOM CLEARANCE	倉庫一掃セール	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+3-PC SOFA SET	3点ソファセット	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+NOW $499  WAS $899	特価 $499  通常 $899	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+90 DAYS SAME AS CASH	90日間 金利ゼロ	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+CALL 555-0147	お電話は 555-0147	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9  7 DAYS	毎日 朝9時〜夜9時	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9	朝9時〜夜9時	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+FREE DELIVERY	配送無料	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+ALWAYS MORE\nIN THE BACK	奥には\nまだまだ	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+PLEASE STAND BY	しばらくお待ちください	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+TECHNICAL DIFFICULTIES	技術的な問題	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+WTCZ 61 SIGNS OFF AT 2 AM	WTCZ 61 午前2時 放送終了	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	今日のことば\n着実に歩む者は\n走る者より\n遠くへ行く。	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+[WINDOW ALARM]	[窓の警報音]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+[DOOR ALARM]	[ドアの警報音]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+CONTROL RM	防災センター	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft

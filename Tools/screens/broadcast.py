@@ -514,6 +514,14 @@ def office(lines, pos):
     return f
 
 
+# The encode's colour tags (2026-11-03, 平面视觉 · 广告): the cards are sRGB and swscale converts them with the BT.601
+# matrix at limited range, so the stream says exactly that. Untagged, Unity's AVFoundation path warned "Color primaries is
+# unknown" (AVFoundation itself guessed SMPTE-C primaries); tagging BT.709 everywhere would shift colour (pink 219 -> 223).
+# ffmpeg 8 takes the tags from the frames (setparams); the output flags write them to the container as well.
+COLOR_PARAMS = "setparams=color_primaries=bt709:color_trc=bt709:colorspace=smpte170m:range=tv"
+COLOR_TAGS = ["-colorspace", "smpte170m", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"]
+
+
 CARDS = {"card1": card1, "card2": card2, "card3": card3, "card4": card4, "station_id": station_id,
          "card4_v3": card4_v3, "station_id_v3": station_id_v3}
 
@@ -562,7 +570,8 @@ def main(argv):
     open(os.path.join(tmp, "list.txt"), "w").write("\n".join(lines) + "\n")
     mp4 = os.path.join(out, spec["name"] + ".mp4")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", os.path.join(tmp, "list.txt"),
-                    "-vf", f"fps={fps},format=yuv420p", "-t", str(sum(i["seconds"] for i in spec["sequence"])), "-c:v", "libx264", "-profile:v", "main", "-crf", "18", "-movflags", "+faststart", mp4], check=True)
+                    "-vf", f"fps={fps},scale=out_color_matrix=bt601:out_range=tv,format=yuv420p,{COLOR_PARAMS}", "-t", str(sum(i["seconds"] for i in spec["sequence"])),
+                    "-c:v", "libx264", "-profile:v", "main", "-crf", "18", *COLOR_TAGS, "-movflags", "+faststart", mp4], check=True)
     shutil.rmtree(tmp)
     # flipbook: one 256x192 frame per second of the loop, 4x4 atlas
     seq = []

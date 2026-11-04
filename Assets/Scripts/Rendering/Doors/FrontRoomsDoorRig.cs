@@ -99,11 +99,16 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
 
     // Jolt (the seam's): latch-end metres, clock, spring.
     float joltClock = -1f, joltDegrees, joltSpring;
-    // Beats (the facade's): 1 open lever / knob, 2 rattle knob; latch click; broken wobble.
+    // Beats (the facade's): 1 open lever / knob, 2 rattle knob, 3 the latch burst's snap; latch click; broken wobble;
+    // body doors (2026-11-03, doors 20_design §10 row 17): the strike's rattle, the barge's shudder, the unlock pop's settle.
     int handleBeatKind;
     float handleBeatClock, handleReleaseClock = -1f;
     float latchClickClock = -1f;
     float wobbleClock = -1f;
+    float strikeRattleClock = -1f, strikeRattleSide = 1f;
+    float shudderClock = -1f;
+    float popArmedClock = -1f, popClock = -1f, popSign = 1f;
+    float slamArmedAt = -1f;
     // Strike: 0 in place, 1 falling, 2 resting on the floor.
     int strikeState;
     float strikeClock;
@@ -119,6 +124,18 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
     const float LatchClick = .06f;
     const float WobbleDeg = .6f, WobbleHz = 2.4f, WobbleSeconds = .3f;
     const float StrikeFallSeconds = .4f;
+    // The latch burst (a sprint into a latched door, Red 10-31 9A): the latchbolt is driven home through its spring, so the
+    // spindle yanks the lever or knob through its full turn at once; it returns on its spring and taps its stop once.
+    const float BurstSnap = .025f, BurstHold = .02f, BurstDecay = .045f, BurstHz = 9f, BurstSeconds = .25f;
+    // ... and the strike plate, hit by the bolt's bevel, rattles on its two screws: 1.2 mm out toward the swing and back.
+    const float StrikeRattleMetres = .0012f, StrikeRattleDeg = 1.2f, StrikeRattleHz = 22f, StrikeRattleDecay = .05f, StrikeRattleSeconds = .18f;
+    // The barge's shudder (render-only): the slab rings about its pivot as the shoulder lands, 0.8 deg at 13 Hz, gone in 0.3 s.
+    const float ShudderDeg = .8f, ShudderHz = 13f, ShudderDecay = .07f, ShudderSeconds = .3f;
+    // The unlock's 10 deg pop (Red 10-31 11B, "开锁后门只弹开 10°，你再用身体推"): the map swings the leaf to
+    // BodyDoorUnlockDegrees; where it stops the slab coasts 1 deg past and settles, as a leaf the latch spring let go.
+    const float PopDeg = 1f, PopHz = 7f, PopDecay = .07f, PopSeconds = .35f, PopArmSeconds = 2f;
+    // The slam's swing is FastSwing.SwingSeconds long; its latch comes well inside this.
+    const float SlamArmSeconds = 1.5f;
 
     /// <summary>The nearest live rig to a point within a radius (the shot look's LOD0 force), or null.</summary>
     public static FrontRoomsDoorRig Nearest(Vector3 point, float within)
@@ -380,14 +397,43 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
         handleBeatClock = 0f;
     }
 
-    internal void BeatLatchClick() => latchClickClock = 0f;
+    internal void BeatLatchClick()
+    {
+        latchClickClock = 0f;
+        // A slammed leaf (the pull at speed) shudders as it latches, with the sound line's SlamBang on DoorLatched(Slam).
+        if (slamArmedAt >= 0f && Time.time - slamArmedAt <= SlamArmSeconds) BeatShudder();
+        slamArmedAt = -1f;
+    }
+
+    /// <summary>The pull at speed began (DoorSwingStarted Slam): its latch, if it comes within SlamArmSeconds, shudders.</summary>
+    internal void ArmSlam() => slamArmedAt = Time.time;
 
     internal void BeatWobble() { wobbleClock = 0f; poseDirty = true; }
+
+    /// <summary>A sprint burst the latch (the map's DoorLatchBurst, raised once the barge's swing began, the leaf turned away
+    /// from the body): the lever or knob snaps through and back, the latchbolt with it, and the strike rattles toward the
+    /// side the leaf goes (−door.swing·X, as the jolt).</summary>
+    internal void BeatLatchBurst()
+    {
+        handleBeatKind = 3;
+        handleBeatClock = 0f;
+        handleReleaseClock = -1f;
+        strikeRattleSide = Door != null ? -Door.swing : 1f;
+        strikeRattleClock = 0f;
+    }
+
+    /// <summary>A barged leaf (DoorSwingStarted Barge): the slab's shudder on top of the map's swing.</summary>
+    internal void BeatShudder() { shudderClock = 0f; poseDirty = true; }
+
+    /// <summary>The unlock opened the leaf toward BodyDoorUnlockDegrees (DoorSwingStarted Unlock with body doors on): the settle
+    /// plays where the leaf arrives.</summary>
+    internal void ArmUnlockPop() { popArmedClock = 0f; popClock = -1f; }
 
     // ---------------------------------------------------------------- per frame
 
     /// <summary>True while a beat, jolt, wobble or strike fall is running (the driver steps only these and moved doors).</summary>
-    bool Active => handleBeatKind != 0 || latchClickClock >= 0f || joltClock >= 0f || wobbleClock >= 0f || strikeState == 1;
+    bool Active => handleBeatKind != 0 || latchClickClock >= 0f || joltClock >= 0f || wobbleClock >= 0f || strikeState == 1
+        || strikeRattleClock >= 0f || shudderClock >= 0f || popArmedClock >= 0f || popClock >= 0f;
 
     // The hinge or the map's collider child moved since the last pose (the door swung, hung crooked, was jolted).
     bool Moved()
@@ -426,14 +472,60 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
             wobbleClock += dt;
             if (wobbleClock >= WobbleSeconds) wobbleClock = -1f;
         }
+        if (shudderClock >= 0f)
+        {
+            shudderClock += dt;
+            if (shudderClock >= ShudderSeconds) shudderClock = -1f;
+            poseDirty = true;
+        }
+        TickUnlockPop(dt);
         if (strikeState == 1)
         {
             strikeClock += dt;
             ApplyStrike();
         }
+        else if (strikeRattleClock >= 0f)
+        {
+            strikeRattleClock += dt;
+            ApplyStrikeRattle();
+        }
         ApplyPose();
         ApplyParts();
     }
+
+    // The unlock pop: armed by the Unlock swing; the settle starts once the map's leaf stands at the unlock angle (or the arm
+    // times out: a leaf stopped short, a door rebuilt), toward the side it turned.
+    void TickUnlockPop(float dt)
+    {
+        if (popArmedClock >= 0f)
+        {
+            popArmedClock += dt;
+            if (Door != null && Door.angle >= FrontRoomsMapWorld.BodyDoorUnlockDegrees - .1f)
+            {
+                popArmedClock = -1f;
+                popClock = 0f;
+                popSign = HingeYaw() < 0f ? -1f : 1f;
+            }
+            else if (popArmedClock >= PopArmSeconds) popArmedClock = -1f;
+        }
+        if (popClock >= 0f)
+        {
+            popClock += dt;
+            if (popClock >= PopSeconds) popClock = -1f;
+            poseDirty = true;
+        }
+    }
+
+    // The hinge's turn from shut about its axis (degrees, signed): the side the leaf went.
+    float HingeYaw()
+    {
+        if (Door == null || Door.hinge == null) return 0f;
+        var a = Quaternion.Inverse(Door.closed) * Door.hinge.localRotation;
+        return Mathf.DeltaAngle(0f, a.eulerAngles.y);
+    }
+
+    // A damped ring: amplitude a, frequency hz, decay tau (s), t seconds after the hit.
+    static float Ring(float a, float hz, float tau, float t) => a * Mathf.Exp(-t / tau) * Mathf.Sin(2f * Mathf.PI * hz * t);
 
     void TickBeats(float dt)
     {
@@ -461,6 +553,23 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
             var k = t < RattleDown ? t / RattleDown : t < RattleHoldEnd ? 1f : t < RattleBackEnd ? 1f - (t - RattleHoldEnd) / (RattleBackEnd - RattleHoldEnd) : 0f;
             handleBeat = FrontRoomsShotTimings.Rattle.KnobDeg * Smooth(k) * (LockedModel ? 1f : FrontRoomsShotTimings.Rattle.LeverDeg / FrontRoomsShotTimings.Rattle.KnobDeg);
             if (t >= RattleBackEnd) handleBeatKind = 0;
+        }
+        else if (handleBeatKind == 3)
+        {
+            // The burst: through at once, a breath at the full turn, then home on the spring with one tap on the stop (the
+            // ring's second lobe); never past the rest, which the stop holds.
+            handleBeatClock += dt;
+            var t = handleBeatClock;
+            float k;
+            if (t < BurstSnap) k = t / BurstSnap;
+            else if (t < BurstSnap + BurstHold) k = 1f;
+            else
+            {
+                var s = t - BurstSnap - BurstHold;
+                k = Mathf.Max(0f, Mathf.Exp(-s / BurstDecay) * Mathf.Cos(2f * Mathf.PI * BurstHz * s));
+            }
+            handleBeat = maxDeg * k;
+            if (t >= BurstSeconds) handleBeatKind = 0;
         }
         latchBeat = maxDeg > 0f ? handleBeat / maxDeg : 0f;
         if (latchClickClock >= 0f)
@@ -501,6 +610,8 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
         var turn = 0f;
         if (joltClock >= 0f) turn += -swing * joltDegrees * JoltShape(joltClock / Mathf.Max(.01f, joltSpring));
         if (wobbleClock >= 0f) turn += WobbleDeg * Mathf.Exp(-wobbleClock / (WobbleSeconds * .4f)) * Mathf.Sin(2f * Mathf.PI * WobbleHz * wobbleClock);
+        if (shudderClock >= 0f) turn += Ring(ShudderDeg, ShudderHz, ShudderDecay, shudderClock);
+        if (popClock >= 0f) turn += popSign * Ring(PopDeg, PopHz, PopDecay, popClock);
         // The visual pivot (fix 1): the hinge turns the rig by a about the map's point; R(-a) p - p puts the turn about p.
         var pivot = Vector3.zero;
         if (pivotZ > 0f && Door != null && Door.hinge != null)
@@ -558,6 +669,25 @@ public sealed class FrontRoomsDoorRig : MonoBehaviour, IFrontRoomsDoorRig
             boltApplied = b;
             deadbolt.localPosition = deadboltRest + Vector3.back * (DeadboltTravel * b);
         }
+    }
+
+    // The strike's rattle on its screws: out toward the swing side along the frame's face axis and a small twist, back at rest.
+    void ApplyStrikeRattle()
+    {
+        if (strike == null || strikeState != 0) { strikeRattleClock = -1f; return; }
+        var t = strikeRattleClock;
+        if (t >= StrikeRattleSeconds)
+        {
+            strikeRattleClock = -1f;
+            strike.localPosition = strikeRestPos;
+            strike.localRotation = strikeRestRot;
+            return;
+        }
+        var parent = strike.parent;
+        var axis = Frame != null && parent != null ? parent.InverseTransformDirection(Frame.TransformDirection(Vector3.right)) : Vector3.right;
+        var ring = Mathf.Exp(-t / StrikeRattleDecay) * Mathf.Sin(2f * Mathf.PI * StrikeRattleHz * t);
+        strike.localPosition = strikeRestPos + axis * (strikeRattleSide * StrikeRattleMetres * Mathf.Abs(ring));
+        strike.localRotation = strikeRestRot * Quaternion.Euler(0f, 0f, StrikeRattleDeg * ring);
     }
 
     void ApplyStrike()

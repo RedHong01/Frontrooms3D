@@ -275,7 +275,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     // An open row's second line (SETTINGS_MOTION.md, touch metrics in pt): the name 17 -> 24 Bayon, the sentence Source Serif 14 at
     // a 1.24 em pitch, the notes and the default Plex Mono 11; note, rule and default centres under the first line, as the desktop's.
     const int OpenLabelSize = 24, SentenceSize = 14, NoteSize = 11;
-    const float SentencePitch = .905f, NoteDY = 14f, RuleDY = 21.5f, DefaultDY = 32.5f, SentenceMin = 160f, TapH = 18f;
+    const float SentencePitch = .905f, NoteDY = 14f, DefaultDY = 32.5f, SentenceMin = 160f, TapH = 18f;
     readonly Dictionary<FrontRoomsSettingsMenu.Row, Vector4> openHeights = new Dictionary<FrontRoomsSettingsMenu.Row, Vector4>();
     readonly Dictionary<FrontRoomsSettingsMenu.Row, string> openHeightTexts = new Dictionary<FrontRoomsSettingsMenu.Row, string>();
     // FRAME RATE NOW's live line: the mean frame time of every 0.1 s, the last 48 (4.8 s), while the sheet is open.
@@ -2259,7 +2259,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     // ------------------------------------------------------------ a row opens in place (SETTINGS_MOTION.md, E4 touch)
 
     // An open row's second line, below its first line (touch pt): the sentence's block centred 19 below it in a 2x row (from 4
-    // below it when taller), the notes at NoteDY, the default's rule at RuleDY, the default (and a picture row's TAP HERE line
+    // below it when taller), the notes at NoteDY, the default's rule under its note, the default (and a picture row's TAP HERE line
     // beside it) as far above the row's bottom as DefaultDY is below the first line's bottom in a 2x row; FRAME RATE NOW's trace
     // between 8 below the first line and 12 above the 2x row's bottom.
     const float SentenceDY = 19f, TraceTop = 8f, TraceBottom = 12f;
@@ -2398,16 +2398,19 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             {
                 if (string.IsNullOrEmpty(notes[i])) continue;
                 var c = Mathf.Round(NoteCentre(row, i, w, m)) - half;
-                AddNote(v, i, c, 160f, TextAnchor.MiddleCenter, rest).text = notes[i];
+                var note = AddNote(v, i, c, 160f, TextAnchor.MiddleCenter, rest);
+                note.text = notes[i];
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 // A note wider than its choice goes back to the strings, never cut with "…" (SETTINGS_MOTION.md).
                 if (row.Kind == FrontRoomsSettingsMenu.Kind.Segments && FrontRoomsSettingsMenu.TextWidth(notes[i], NoteSize, true) > FrontRoomsSettingsMenu.CellWidth(row, i, m) + 1f && warnedNotes.Add(notes[i]))
                     Debug.LogWarning("[settings] touch note wider than its choice (" + row.Label + "): " + notes[i]);
 #endif
                 if (i != row.DefaultIndex) continue;
-                v.NoteRule = Img("default rule", v.Line, new Vector2(12f, 1f), WithAlpha(Paper, 0f));
+                // The default's mark spans its whole note, 1 pt, 4 pt under the note's baseline (VL488 D-1); Plex Mono's baseline
+                // sits .375 em under the middle of a centred line.
+                v.NoteRule = Img("default rule", v.Line, new Vector2(Mathf.Ceil(note.preferredWidth), 1f), WithAlpha(Paper, 0f));
                 v.NoteRule.sprite = FrontRoomsTouchSprites.Solid();
-                v.NoteRule.rectTransform.anchoredPosition = new Vector2(c, -(rest + RuleDY));
+                v.NoteRule.rectTransform.anchoredPosition = new Vector2(c, -(rest + NoteDY + .375f * note.fontSize + 4.5f));
                 v.RuleSlot = v.Notes.Count - 1;
             }
         }
@@ -2552,8 +2555,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (moving)
         {
             if (r.LabelOpen.text != s.Label) r.LabelOpen.text = s.Label;
+            // The size best fit settled on is in canvas pixels (points x pixelsPerUnit: 3 on an iPhone, 2 on an iPad), the
+            // label's in points (VL488 T-1: the name grew 4.2x on an iPhone).
             var gen = r.Label.cachedTextGenerator;
-            var restSize = r.Label.resizeTextForBestFit && gen != null && gen.fontSizeUsedForBestFit > 0 ? gen.fontSizeUsedForBestFit : r.Label.fontSize;
+            var restSize = r.Label.resizeTextForBestFit && gen != null && gen.fontSizeUsedForBestFit > 0
+                ? gen.fontSizeUsedForBestFit / Mathf.Max(.01f, r.Label.pixelsPerUnit) : r.Label.fontSize;
             var openSize = (float)Mathf.Max(1, r.LabelOpen.fontSize);
             var k = restSize * (1f + FrontRoomsTouchControls.TitleGrow * FrontRoomsTouchControls.OutQuart(s.Open)) / openSize;
             var full = r.LabelOpen.preferredWidth;

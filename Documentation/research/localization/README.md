@@ -11,7 +11,7 @@ Red, in 总控 B, 2026-10-30: "目前本地化上，我需要你research正常�
 - **Recommended target: 9 languages,** which cover 91.5 % of Steam's language share: English, 简体中文, Русский, Español, Português (Brasil), Deutsch, Français, 日本語, 한국어. Five more can follow on evidence: Polski, 繁體中文, Türkçe, Українська, Italiano (96.6 %).
 - **The game has very little text:** about 1,500 words of interface and rules, about 2,400 with the office terminals. One language costs €146–340 at a game-translation vendor's list rates. Text is the cheap part.
 - **The real work is fonts and code.** Bayon has no accented letters at all, so even French and Spanish labels cannot be set in it. Some 15 string sources across six owners must go through one table.
-- **The world stays English.** It is an American office in 1990. What the player must read to play is translated in a reading layer (HUD, menus, captions, the TEXT panel), not in the print on the walls.
+- **The world follows the language (Red 2026-11-03, replaces "the world stays English").** It is still an American office in 1990, like a dubbed film: only the words change (frame A, `research/narrative/95_world_text_localization.md`). Everything printed, lettered, lit or broadcast inside the building is shown in the language the player picked, as well as the HUD, menus, captions and the TEXT panel. Proper names, tokens, US conventions and hardware markings stay.
 - **System:** a small in-house table (English string as key, one file per language) with a font map per language, not the Unity Localization package.
 - **The row is ready to specify, not to ship.** It should wait for Red's picks in §9.
 
@@ -88,7 +88,7 @@ Cost uses one vendor's published list rates from English, in EUR per word, repet
 
 ## 3. What translates and what stays English
 
-The principle: **the world stays English; the layer the player reads to play is translated.** The building is American, 1990 (era lock, COMMON rule 11). Translating a wall sign breaks the place; not explaining a rule breaks the game. The TEXT panel in close-ups (T6/T7, the transcript of the evacuation plan) is already the bridge: the object stays as printed, and its words appear in plain type.
+The principle (changed 2026-11-03): **the world follows the language, like a dubbed film.** The building stays American, 1990 (era lock, COMMON rule 11, frame A); only the words on its signs, plans, forms, screens and ads change, in the period type of each script. The rule, the inventory of every world text (W1 to W20, owners, pipelines) and the nine-language glossary are `research/narrative/95_world_text_localization.md`; the glossary rows are in the tables (`passed_keys.txt` lists them, the print, atlas and screen pipelines read them). The TEXT panel stays and now shows the same words the object shows. Until a world text is re-baked in a language, the object keeps its English print and the TEXT panel has the language's words.
 
 Words measured 2026-10-30 from main (unique strings per source, sorted by hand from `strings_raw.tsv`).
 
@@ -100,10 +100,10 @@ Words measured 2026-10-30 from main (unique strings per source, sorted by hand f
 | Captions | `Audio/*`, `FrontRoomsCaptions.cs` | 声音设计 | about 33 | translate |
 | Close-up prompts + evacuation plan transcript | `Rendering/Inspect/FrontRoomsInspectCatalog.cs` | 游戏视觉, strings 叙事设计 | 200 | translate (in the TEXT panel) |
 | **Subtotal: interface and rules** | | | **about 1,500** | |
-| Office terminals (3 sets + OFFICE MEMO) | `Resources/Terminal/Content/*.json` | 叙事设计 | 921 | CRT stays English; translation in the TEXT panel |
+| Office terminals (3 sets + OFFICE MEMO) | `Resources/Terminal/Content/*.json` | 叙事设计 | 921 | translated later, in per-language 1990 bitmap faces (95 §4, §6 Q4); until then English on the CRT, the language in the TEXT panel |
 | **Subtotal with terminals** | | | **about 2,430** | |
-| Printed sheets, placard art, door signs, EXIT, stair lettering, wallpaper | baked textures and glyph atlases | 平面视觉, 游戏视觉 | n/a | stay English |
-| TV ad | video + audio | 广告 | n/a | stays English; the `[TV]` captions translate |
+| Printed sheets, placard art, door signs, EXIT, stair lettering | baked textures and glyph atlases | 平面视觉, 游戏视觉 | n/a | follow the language (95 §3 W1 to W17); the wallpaper has no words |
+| TV ad | video + audio | 广告 | n/a | English voice; supers, cards and the `[TV]` captions translate (95 §5.4) |
 | The FRONTROOMSSS logo | | 广告 | n/a | never translated |
 | Store pages | `Steam_Publishing/STORE_PAGE_DRAFT.md`; App Store metadata | App Store · 构建 | 356 + App Store text | translate per language; can go first |
 
@@ -270,7 +270,7 @@ Small packages, each landed on its own (rule 23). Status 2026-10-30 23:51:
 | | Question | Recommendation | Blocks |
 |---|---|---|---|
 | D1 | Which languages | 9 (Tier 1 + 2); Tier 3 on evidence after release | tables, fonts |
-| D2 | Does the world stay English | Yes: reading layer only | scope of all text work |
+| D2 | Does the world stay English | **No (Red 2026-11-03, 叙事设计 chat, "全部按推荐"): the world follows the language, frame A (a dubbed film).** WebGL stays English. 简体中文 first | scope of all text work |
 | D3 | System | In-house table | step 1 |
 | D4 | Who translates | **Changed 2026-10-31 17:17:** AI draft for all ten, shipped as it is; Red reviews 简体中文 later (the review page stays open); no native check before release. Was: Red reviews 简体中文 first and a paid native check of the rest before a public release | tables |
 | D5 | Languages not finished yet | **Changed 2026-10-31 17:17:** every build lists all ten as AI drafts (WebGL: English alone); `Finished` is only the review status the strip dims by. Was: public builds list only finished languages, test builds show the rest dimmed | the page |

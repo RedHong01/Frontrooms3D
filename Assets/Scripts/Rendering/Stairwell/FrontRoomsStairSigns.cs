@@ -20,9 +20,14 @@ using UnityEngine;
 /// desktop at 2 px/mm (a 12 x 14 in ID sign is 610 x 712 px, about 3.5 times what the screen shows of it at 1.2 m),
 /// the reduced tier (phones, WebGL) at 1 px/mm. At 4 px/mm the six plate sets of one stair took ~86 MB of RGBA32
 /// with mips (two stairwells live at once on floors 2 and up: ~150 MB); at 2 px/mm ~21 MB a stair, 1 px/mm ~5 MB.
+/// World text follows the language (2026-11-03, FrontRoomsWorldText): the plate art and the glyph atlases are read on the CPU,
+/// so their copies in the game's language are loaded here (FrontRoomsWorldText.Texture / Text: own copies, any size, with
+/// the slot's own glyph layout json), and every live plate is baked again when the language changes, into the same material.
 /// </summary>
 public static class FrontRoomsStairSigns
 {
+    static FrontRoomsStairSigns() => FrontRoomsWorldText.Applied += Relocalize;
+
     public const string Folder = "Print/Stair/";
     /// <summary>The art's height scale: 255 = 3.2 mm off the surface (SPEC section 5).</summary>
     public const float HeightRangeMM = 3.2f;
@@ -157,8 +162,8 @@ public static class FrontRoomsStairSigns
     static SlotData LoadSlot(string name)
     {
         if (slotCache.TryGetValue(name, out var d)) return d;
-        var json = Resources.Load<TextAsset>(Folder + name + "_glyphs");
-        var tex = Resources.Load<Texture2D>(Folder + name + "_glyphs");
+        var json = FrontRoomsWorldText.Text(Folder + name + "_glyphs");
+        var tex = FrontRoomsWorldText.Texture(Folder + name + "_glyphs");
         if (json == null || tex == null) { Debug.LogWarning("[StairSigns] glyphs for slot " + name + " are missing"); return null; }
         d = new SlotData { j = JsonUtility.FromJson<GlyphSlot>(json.text) };
         d.atlas = Red(tex);
@@ -271,9 +276,9 @@ public static class FrontRoomsStairSigns
         albedo = null; height = mask = null; W = H = 0; pxPerMm = 4f;
         var name = ArtName(p);
         text = name;
-        var albedoSrc = Resources.Load<Texture2D>(Folder + name + "_albedo");
-        var heightSrc = Resources.Load<Texture2D>(Folder + name + "_height");
-        var maskSrc = Resources.Load<Texture2D>(Folder + name + "_mask");
+        var albedoSrc = FrontRoomsWorldText.Texture(Folder + name + "_albedo");
+        var heightSrc = FrontRoomsWorldText.Texture(Folder + name + "_height");
+        var maskSrc = FrontRoomsWorldText.Texture(Folder + name + "_mask");
         if (albedoSrc == null || heightSrc == null || maskSrc == null || !albedoSrc.isReadable || !heightSrc.isReadable || !maskSrc.isReadable)
         {
             Debug.LogWarning("[StairSigns] plate art " + name + " is missing or not readable");
@@ -321,15 +326,43 @@ public static class FrontRoomsStairSigns
 
     static PlateSet Bake(Plate p, int k)
     {
-        if (!Compose(p, k, out var albedo, out var height, out var mask, out var W, out var H, out var pxPerMm, out var text)) return null;
+        var set = new PlateSet { plate = p, k = HasSlots(p) ? Mathf.Max(0, k) : 0, size = SizeOf(p) };
+        if (!BakeInto(set)) return null;
+        set.material = FrontRoomsStairKit.PlateMaterial(set, Inside(p));
+        return set;
+    }
+
+    /// <summary>The set's textures made from the art in the game's language; false leaves the set as it was.</summary>
+    static bool BakeInto(PlateSet set)
+    {
+        var p = set.plate;
+        if (!Compose(p, set.k, out var albedo, out var height, out var mask, out var W, out var H, out var pxPerMm, out var text)) return false;
         var reduce = Reduced ? 4 : 2;
-        var set = new PlateSet { plate = p, k = HasSlots(p) ? Mathf.Max(0, k) : 0, size = SizeOf(p), text = text };
         var tag = "StairSign " + ArtName(p) + (p == Plate.IdSignFar ? " far" : "") + " k" + set.k;
+        set.text = text;
         set.albedo = Make(albedo, W, H, reduce, false, tag + " albedo");
         set.normal = MakeNormal(height, W, H, pxPerMm, reduce, tag + " normal");
         set.mask = MakeMask(mask, W, H, reduce, tag + " mask");
-        set.material = FrontRoomsStairKit.PlateMaterial(set, Inside(p));
-        return set;
+        return true;
+    }
+
+    /// <summary>The language changed: the glyph layouts are read again and every live plate is baked again into its own
+    /// material, so the plates on the walls change with it.</summary>
+    static void Relocalize()
+    {
+        slotCache.Clear();
+        foreach (var set in live.Values)
+        {
+            if (!set.Alive || set.material == null) continue;
+            Texture2D albedo = set.albedo, normal = set.normal, mask = set.mask;
+            if (!BakeInto(set)) continue;
+            set.material.SetTexture("_BaseMap", set.albedo);
+            set.material.SetTexture("_BumpMap", set.normal);
+            set.material.SetTexture("_MaskMap", set.mask);
+            Kill(albedo);
+            Kill(normal);
+            Kill(mask);
+        }
     }
 
     // A separable Gaussian over the coverage (0 outside), radius 3 sigma.

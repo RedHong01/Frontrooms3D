@@ -1,0 +1,154 @@
+lang	element	text	design	used	width	slot	verdict
+zh-Hans	card1 super	后仓清仓特卖	30.0	30.0	186	484	ok
+zh-Hans	card2 headline	三件套沙发	58.1	58.1	250	510	ok
+zh-Hans	card2 now	现价	25.1	25.1	54	174	ok
+zh-Hans	card2 was	原价 $899	23.0	23.0	110	202	ok
+zh-Hans	card2 finance	90 天免息分期	25.1	25.1	167	488	ok
+zh-Hans	card3 lead	请致电	42.6	42.6	128	508	ok
+zh-Hans	card3 hours	每天早 9 点至晚 9 点	26.5	26.5	248	508	ok
+zh-Hans	card3 flag	免费送货	25.4	25.4	106	292	ok
+zh-Hans	card4 line	后面总有更多	29.3	29.3	182	508	ok
+zh-Hans	slogan	敬请锁定。	36	36	211	508	ok
+zh-Hans	standby 1	请稍候	36	36	144	508	ok
+zh-Hans	standby 2	技术故障	24	24	127	508	ok
+zh-Hans	thought title	今日一思	30	30	159	508	ok
+zh-Hans	thought 1	稳步而行的人	24	24	194	508	ok
+zh-Hans	thought 2	比奔跑的人	24	24	159	508	ok
+zh-Hans	thought 3	走得更远。	24	24	140	508	ok
+zh-Hans	tag hours	早 9 点至晚 9 点	24	24	225	508	ok
+zh-Hant	card1 super	後倉清倉特賣	30.0	30.0	185	484	ok
+zh-Hant	card2 headline	三件式沙發	58.1	58.1	249	510	ok
+zh-Hant	card2 now	現價	25.1	25.1	54	174	ok
+zh-Hant	card2 was	原價 $899	23.0	23.0	110	202	ok
+zh-Hant	card2 finance	90 天免息分期	25.1	25.1	167	488	ok
+zh-Hant	card3 lead	請致電	42.6	42.6	133	508	ok
+zh-Hant	card3 hours	每天早 9 點至晚 9 點	26.5	26.5	250	508	ok
+zh-Hant	card3 flag	免費送貨	25.4	25.4	105	292	ok
+zh-Hant	card4 line	後面總有更多	29.3	29.3	180	508	ok
+zh-Hant	slogan	敬請鎖定。	36	36	226	508	ok
+zh-Hant	standby 1	請稍候	36	36	144	508	ok
+zh-Hant	standby 2	技術故障	24	24	128	508	ok
+zh-Hant	thought title	今日一思	30	30	160	508	ok
+zh-Hant	thought 1	穩步而行的人	24	24	194	508	ok
+zh-Hant	thought 2	比奔跑的人	24	24	159	508	ok
+zh-Hant	thought 3	走得更遠。	24	24	150	508	ok
+zh-Hant	tag hours	早 9 點至晚 9 點	24	24	225	508	ok
+ja	card1 super	倉庫一掃セール	30.0	30.0	215	484	ok
+ja	card2 headline	3点ソファセット	58.1	58.1	374	510	ok
+ja	card2 now	特価	25.1	25.1	54	174	ok
+ja	card2 was	通常 $899	23.0	23.0	110	202	ok
+ja	card2 finance	90日間 金利ゼロ	25.1	25.1	190	488	ok
+ja	card3 lead	お電話は	42.6	42.6	173	508	ok
+ja	card3 hours	毎日 朝9時〜夜9時	26.5	26.5	230	508	ok
+ja	card3 flag	配送無料	25.4	25.4	106	292	ok
+ja	card4 line	奥にはまだまだ	29.3	29.3	214	508	ok
+ja	slogan	チャンネルはそのまま。	36	36	501	508	ok
+ja	standby 1	しばらくお待ちください	36	30	437	508	SHRUNK
+ja	standby 2	技術的な問題	24	24	193	508	ok
+ja	thought title	今日のことば	30	30	242	508	ok
+ja	thought 1	着実に歩む者は	24	24	225	508	ok
+ja	thought 2	走る者より	24	24	155	508	ok
+ja	thought 3	遠くへ行く。	24	24	173	508	ok
+ja	tag hours	朝9時〜夜9時	24	24	197	508	ok
+ko	card1 super	창고 정리 세일	30.0	30.0	184	484	ok
+ko	card2 headline	소파 3종 세트	58.1	58.1	282	510	ok
+ko	card2 now	할인가	25.1	25.1	70	174	ok
+ko	card2 was	정가 $899	23.0	23.0	104	202	ok
+ko	card2 finance	90일 무이자	25.1	25.1	133	488	ok
+ko	card3 lead	전화	42.6	42.6	80	508	ok
+ko	card3 hours	매일 오전 9시~오후 9시	26.5	26.5	268	508	ok
+ko	card3 flag	무료 배달	25.4	25.4	104	292	ok
+ko	card4 line	안쪽엔 늘 더 있어요	29.3	29.3	240	508	ok
+ko	slogan	채널 고정!	36	36	203	508	ok
+ko	standby 1	잠시 기다려 주십시오	36	36	423	508	ok
+ko	standby 2	기술적 문제	24	24	152	508	ok
+ko	thought title	오늘의 한마디	30	30	227	508	ok
+ko	thought 1	꾸준히 걷는 이가	24	24	222	508	ok
+ko	thought 2	달리는 이보다	24	24	184	508	ok
+ko	thought 3	더 멀리 간다.	24	24	169	508	ok
+ko	tag hours	오전 9시~오후 9시	24	24	244	508	ok
+de	card1 super	LAGERRÄUMUNG	31.3	31.3	301	484	ok
+de	card2 headline	3-TLG. SOFAGARNITUR	58.1	58.1	456	510	ok
+de	card2 now	JETZT	26.2	26.2	94	174	ok
+de	card2 was	STATT $899	24.0	24.0	155	202	ok
+de	card2 finance	90 TAGE ZINSFREI	26.2	26.2	258	488	ok
+de	card3 lead	ANRUFEN:	44.3	44.3	258	508	ok
+de	card3 hours	TÄGLICH 9–21 UHR	27.6	27.6	283	508	ok
+de	card3 flag	LIEFERUNG GRATIS	27.6	27.6	308	328	ok
+de	card4 line	HINTEN GIBT'S IMMER MEHR	30.5	30.5	478	508	ok
+de	slogan	BLEIBEN SIE DRAN.	36	36	506	508	ok
+de	standby 1	BITTE WARTEN	36	36	388	508	ok
+de	standby 2	TECHNISCHE STÖRUNG	24	24	420	508	ok
+de	thought title	GEDANKE DES TAGES	30	30	478	508	ok
+de	thought 1	WER STETIG GEHT,	24	24	343	508	ok
+de	thought 2	KOMMT WEITER ALS	24	24	359	508	ok
+de	thought 3	WER RENNT.	24	24	223	508	ok
+de	tag hours	9–21 UHR	24	24	165	508	ok
+fr	card1 super	LIQUIDATION DU STOCK	31.3	31.3	416	484	ok
+fr	card2 headline	SALON 3 PIÈCES	58.1	58.1	332	510	ok
+fr	card2 now	(none: the price stands alone)	0	0	0	0	ok
+fr	card2 was	AU LIEU DE $899	24.0	22.6	199	202	SHRUNK
+fr	card2 finance	90 JOURS SANS FRAIS	26.2	26.2	312	488	ok
+fr	card3 lead	APPELEZ LE	44.3	44.3	296	508	ok
+fr	card3 hours	7J/7 DE 9H À 21H	27.6	27.6	246	508	ok
+fr	card3 flag	LIVRAISON GRATUITE	27.6	27.6	345	365	ok
+fr	card4 line	TOUJOURS PLUS AU FOND	30.5	30.5	438	508	ok
+fr	slogan	RESTEZ À L'ÉCOUTE.	36	30	454	508	SHRUNK
+fr	standby 1	VEUILLEZ PATIENTER	36	30	469	508	SHRUNK
+fr	standby 2	INCIDENT TECHNIQUE	24	24	389	508	ok
+fr	thought title	PENSÉE DU JOUR	30	30	380	508	ok
+fr	thought 1	QUI MARCHE SÛREMENT	24	24	439	508	ok
+fr	thought 2	VA PLUS LOIN QUE	24	24	334	508	ok
+fr	thought 3	CELUI QUI COURT.	24	24	326	508	ok
+fr	tag hours	DE 9H À 21H	24	24	212	508	ok
+es	card1 super	LIQUIDACIÓN DE BODEGA	31.3	31.3	437	484	ok
+es	card2 headline	SALA 3 PIEZAS	58.1	58.1	303	510	ok
+es	card2 now	AHORA	26.2	26.2	103	174	ok
+es	card2 was	ANTES $899	24.0	24.0	159	202	ok
+es	card2 finance	90 DÍAS SIN INTERESES	26.2	26.2	330	488	ok
+es	card3 lead	LLAME AL	44.3	44.3	238	508	ok
+es	card3 hours	7 DÍAS DE 9 A 9	27.6	27.6	214	508	ok
+es	card3 flag	ENVÍO GRATIS	27.6	27.6	224	292	ok
+es	card4 line	SIEMPRE HAY MÁS AL FONDO	30.5	30.5	486	508	ok
+es	slogan	NO SE VAYA.	36	36	333	508	ok
+es	standby 1	UN MOMENTO	36	36	356	508	ok
+es	standby 2	DIFICULTADES TÉCNICAS	24	24	450	508	ok
+es	thought title	PENSAMIENTO DEL DÍA	30	30	504	508	ok
+es	thought 1	QUIEN CAMINA FIRME	24	24	386	508	ok
+es	thought 2	LLEGA MÁS LEJOS	24	24	325	508	ok
+es	thought 3	QUE QUIEN CORRE.	24	24	349	508	ok
+es	tag hours	DE 9 A 9	24	24	142	508	ok
+pt-BR	card1 super	QUEIMA DE ESTOQUE	31.3	31.3	366	484	ok
+pt-BR	card2 headline	CONJUNTO 3 PEÇAS	58.1	58.1	406	510	ok
+pt-BR	card2 now	POR	26.2	26.2	60	174	ok
+pt-BR	card2 was	ERA $899	24.0	24.0	121	202	ok
+pt-BR	card2 finance	90 DIAS SEM JUROS	26.2	26.2	278	488	ok
+pt-BR	card3 lead	LIGUE	44.3	44.3	152	508	ok
+pt-BR	card3 hours	TODO DIA DAS 9 ÀS 21	27.6	27.6	322	508	ok
+pt-BR	card3 flag	ENTREGA GRÁTIS	27.6	27.6	277	297	ok
+pt-BR	card4 line	SEMPRE TEM MAIS LÁ NO FUNDO	30.5	28.6	504	508	SHRUNK
+pt-BR	slogan	NÃO SAIA DAÍ.	36	36	372	508	ok
+pt-BR	standby 1	AGUARDE	36	36	258	508	ok
+pt-BR	standby 2	PROBLEMAS TÉCNICOS	24	24	415	508	ok
+pt-BR	thought title	PENSAMENTO DO DIA	30	30	468	508	ok
+pt-BR	thought 1	QUEM ANDA FIRME	24	24	337	508	ok
+pt-BR	thought 2	VAI MAIS LONGE	24	24	292	508	ok
+pt-BR	thought 3	QUE QUEM CORRE.	24	24	342	508	ok
+pt-BR	tag hours	DAS 9 ÀS 21	24	24	205	508	ok
+ru	card1 super	РАСПРОДАЖА СО СКЛАДА	29.0	29.0	423	484	ok
+ru	card2 headline	ГАРНИТУР 3 ПРЕДМ.	61.7	59.7	508	510	SHRUNK
+ru	card2 now	ТЕПЕРЬ	24.3	24.3	103	174	ok
+ru	card2 was	БЫЛО $899	22.2	22.2	137	202	ok
+ru	card2 finance	90 ДНЕЙ БЕЗ ПРОЦЕНТОВ	24.3	24.3	342	488	ok
+ru	card3 lead	ЗВОНИТЕ	41.1	41.1	212	508	ok
+ru	card3 hours	ЕЖЕДНЕВНО С 9 ДО 21	25.6	25.6	306	508	ok
+ru	card3 flag	БЕСПЛАТНАЯ ДОСТАВКА	25.6	25.6	372	392	ok
+ru	card4 line	В ГЛУБИНЕ ВСЕГДА ЕСТЬ ЕЩЁ	28.3	28.3	464	508	ok
+ru	slogan	ОСТАВАЙТЕСЬ С НАМИ.	36	30	455	508	SHRUNK
+ru	standby 1	ПОДОЖДИТЕ	36	36	297	508	ok
+ru	standby 2	ТЕХНИЧЕСКИЕ НЕПОЛАДКИ	24	24	433	508	ok
+ru	thought title	МЫСЛЬ ДНЯ	30	30	232	508	ok
+ru	thought 1	ИДУЩИЙ РОВНО	24	24	256	508	ok
+ru	thought 2	УЙДЁТ ДАЛЬШЕ	24	24	248	508	ok
+ru	thought 3	БЕГУЩЕГО.	24	24	174	508	ok
+ru	tag hours	С 9 ДО 21	24	24	144	508	ok

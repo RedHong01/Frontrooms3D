@@ -92,7 +92,8 @@ Proposal only. 系统设计 and 关卡设计 own the events (driver interface pe
 - **Budget, desktop:** live decode for the two nearest powered screens in view within 6 m; every other screen uses the flipbook.
 - **Budget, WebGL:** flipbook only. This is its own tier with no VideoPlayer, so the unverified Chrome codec and range-request questions in `SCREEN_ADS.md` never come up.
 - **Variation:** about 1 set in 3 is on; the rest are off (dark glass). A few show snow or the slate. Sets on the station channel are in sync.
-- **Time on screens (Red, 2026-10-22, 游戏视觉 chat):** any time or date a screen shows is live: the real time, and the real month and day in 1990. A real Feb 29 shows `02-28-90` (1990 has no Feb 29; 叙事设计, `30_screen_strings.md` §4.1). The rendered video and flipbook therefore never carry a clock. A clock or date (the off-air bars) is keyed over them at runtime, and the station's off-air states play only between 02:00 and 06:00 local time (`AD_TYPE_SYSTEM.md` §3.4, `research/screens/30_screen_strings.md` §4.1).
+- **Time on screens (Red, 2026-10-22, 游戏视觉 chat):** any time or date a screen shows is live: the real time, and the real month and day in 1990. A real Feb 29 shows `02-28-90` (1990 has no Feb 29; 叙事设计, `30_screen_strings.md` §4.1). The rendered video and flipbook therefore never carry a clock. A clock or date (the off-air bars) is keyed over them at runtime, and the station's off-air states play only between 02:00 and 06:00 local time (`AD_TYPE_SYSTEM.md` §3.4, `research/screens/30_screen_strings.md` §4.1). The bars plate and the clock's key (face, cells, tick, compositing) are in `Tools/screens/out/offair_bars/` (`AD_TYPE_SYSTEM.md` §3.6, 2026-11-03).
+- **Language (world text W19, Red 2026-11-03):** the spot's words follow the player's language; the picture, timing and English voice do not. One Ad_03 loop per language is in `Tools/screens/out/FrontRooms_Ad_03/<lang>/` (`AD_TYPE_SYSTEM.md` §1.3). The game plays the current language's loop; WebGL stays English.
 
 ## 6. Owners
 
@@ -113,6 +114,8 @@ Proposal only. 系统设计 and 关卡设计 own the events (driver interface pe
    - Figma `3226:7267`: Ad / styles, six 1× masters, slides S09–S12.
    - The dev generator: `~/FrontRoomsVisualWork/screens_dev/`.
    - VL287 `3230:8391`.
+4. **Off-air bars v3.2 (2026-11-03):** the bars plate and the live clock's key for 游戏视觉's screen code, `Tools/screens/out/offair_bars/` (`AD_TYPE_SYSTEM.md` §3.6).
+5. **The spot in nine languages (2026-11-03, W19):** `Tools/screens/out/FrontRooms_Ad_03/<lang>/`, with the encode now tagged BT.601 (`AD_TYPE_SYSTEM.md` §1.3).
 
 **Next:**
 1. **Done 10-22 (Red approved):** Ad_03 rendered (`Tools/screens/out/FrontRooms_Ad_03/`, sha1 8bde2101) and handed to 游戏视觉 for the StreamingAssets swap. The tube look was requested from 游戏视觉 for after the Alpha. Originally planned:

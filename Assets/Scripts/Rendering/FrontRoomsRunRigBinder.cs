@@ -39,7 +39,7 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     public static float AnimatedResetDistance = 30f;
     /// <summary>Optional (the system-design line's call, open): the tell's LEDs burn steady while the room is tripped (the period latch).</summary>
     public static bool LatchAlarmLed;
-    /// <summary>The detector disc's clearance from a wraparound's end (m): the tell's 0.25 m clear ceiling disc.</summary>
+    /// <summary>The detector disc's clearance from a ceiling lamp's end (m): the tell's 0.25 m clear ceiling disc.</summary>
     public const float DetectorClear = .15f;
     /// <summary>The goal leaf counts as open for the light gate past this hinge angle (degrees); latched is 0.5.</summary>
     public const float GoalOpenDegrees = 2f;
@@ -331,10 +331,10 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     }
 
     /// <summary>A ceiling point on the centreline moved along <paramref name="deeper"/> (+1 or -1) until the detector's disc
-    /// clears every wraparound (its 1.235 m length plus DetectorClear).</summary>
+    /// clears every ceiling lamp of the rig (the R-B strip's 1.28 m, or a wraparound's 1.235 m, plus DetectorClear).</summary>
     static float ClearOfWraps(RunRigLayout l, float z, float deeper)
     {
-        const float wrapHalf = .6175f;
+        var wrapHalf = FrontRoomsRunRig.OwnLampHalfLength(l);
         for (var pass = 0; pass < 4; pass++)
         {
             var moved = false;

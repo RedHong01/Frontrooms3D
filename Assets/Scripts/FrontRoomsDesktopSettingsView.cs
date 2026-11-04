@@ -51,6 +51,9 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     Image back, restart;
     // CONTROLS' maps (Red, 2026-10-29), which unfold under their rows in the list: KEYBOARD & MOUSE, and its BACK.
     FrontRoomsKeyMapView keyMap;
+    // Each map unfolds inside its own clip, as tall as its row has unfolded (VL487 D-3): the graph fades in only where the row has
+    // grown to, never over the rows still moving down under it. Two, so a map folding and the other unfolding each keep theirs.
+    RectTransform keyClip, padClip;
     // The CONTROLLER map beside it (2026-10-31), made on its row's first open (null until then); page: the map open now,
     // or the last one open.
     FrontRoomsKeyMapView padMap, page;
@@ -263,7 +266,11 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         cornerGroups.Add(restart.gameObject.AddComponent<CanvasGroup>());
         // The map unfolds in the list, across columns 1–12; BACK takes the corner from RESUME and END RUN while it is open
         // (Figma 3688:7842, K2).
-        keyMap = FrontRoomsKeyMapView.Create(listContent, bayon, mono, Paper, Ink, Accent);
+        keyClip = Node(listContent, "keyboard map clip");
+        keyClip.gameObject.AddComponent<RectMask2D>();
+        padClip = Node(listContent, "controller map clip");
+        padClip.gameObject.AddComponent<RectMask2D>();
+        keyMap = FrontRoomsKeyMapView.Create(keyClip, bayon, mono, Paper, Ink, Accent);
         page = keyMap;
         pageBack = KeylineButton("BACK", 0f, out pageBackText);
         pageBack.gameObject.SetActive(false);
@@ -534,8 +541,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         // after the keyboard's map, where Build put that one.
         if (padRow && padMap == null)
         {
-            padMap = FrontRoomsKeyMapView.CreatePad(listContent, bayon, mono, Paper, Ink, Accent);
-            padMap.Root.SetSiblingIndex(keyMap.Root.GetSiblingIndex() + 1);
+            padMap = FrontRoomsKeyMapView.CreatePad(padClip, bayon, mono, Paper, Ink, Accent);
         }
         page = padRow ? padMap : keyMap;
         if (closingPage == page) closingPage = null;
@@ -680,17 +686,24 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         pageBack.gameObject.SetActive(pageOpen);
         pageDefaults.gameObject.SetActive(pageOpen);
         // A pad that came or went says so here for a moment, in place of the hints (2026-11-01).
-        hints.text = FrontRoomsInput.NoticeLive ? FrontRoomsInput.ChangeLine() : pageOpen ? PageHints : HintText() + RowHint();
+        hints.text = FrontRoomsInput.NoticeLive ? FrontRoomsInput.ChangeLine() : pageOpen ? PageHints : LanguageGridHasKeys ? LanguageHints() : HintText() + RowHint();
     }
 
-    // What Enter does on a row that unfolds (a map, LANGUAGE), and how LANGUAGE's grid is worked once it has.
+    // LANGUAGE's grid has the keys: the line is the grid's own, one CHOOSE, SET and how to fold it (VL487 D-7: not the sheet's
+    // ← → CHANGE beside a CHOOSE, nor GRAPHICS' SPACE PREVIEW).
+    bool LanguageGridHasKeys => langOpen && corner == Corner.None && rows != null && Focus >= 0 && Focus < rows.Count && rows[Focus].Kind == Kind.Language;
+
+    static string LanguageHints() => FrontRoomsInput.PadInUse
+        ? FrontRoomsLanguage.F("{0}  CHOOSE", "← →") + Gap + FrontRoomsLanguage.F("{0}  SET", FrontRoomsInput.PadName(PadButton.South)) + Gap
+            + FrontRoomsLanguage.F("{0}  BACK", FrontRoomsInput.PadName(PadButton.East))
+        : FrontRoomsLanguage.T("← →  CHOOSE     ENTER  SET") + Gap + FrontRoomsLanguage.F("{0}  BACK", "ESC");
+
+    // What Enter does on a row that unfolds (a map, LANGUAGE).
     string RowHint()
     {
         if (corner != Corner.None || rows == null || Focus < 0 || Focus >= rows.Count) return "";
         var row = rows[Focus];
         var pad = FrontRoomsInput.PadInUse;
-        if (row.Kind == Kind.Language && langOpen)
-            return Gap + (pad ? FrontRoomsLanguage.F("{0}  CHOOSE", "← →") + Gap + FrontRoomsLanguage.F("{0}  SET", FrontRoomsInput.PadName(PadButton.South)) : FrontRoomsLanguage.T("← →  CHOOSE     ENTER  SET"));
         if (row.Kind != Kind.Page && row.Kind != Kind.Language) return "";
         return Gap + (pad ? FrontRoomsLanguage.F("{0}  OPEN", FrontRoomsInput.PadName(PadButton.South)) : FrontRoomsLanguage.T("ENTER  OPEN"));
     }
@@ -727,7 +740,7 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
     // The list follows the chosen action when the graph is taller than the list (0.32 s, as it follows a row).
     void KeepChosenVisible()
     {
-        var y = -page.Root.anchoredPosition.y;
+        var y = -ClipOf(page).anchoredPosition.y - page.Root.anchoredPosition.y;
         var chosen = page.ChosenRect;
         var view = listMask.rect.height;
         var target = scrollTo;
@@ -921,8 +934,13 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
         var map = pageOpen && IsRowOf(r, page) ? page : closingPage != null && IsRowOf(r, closingPage) ? closingPage : null;
         if (map == null) return;
         var b = map.Bounds;
-        map.PlaceAt(Mathf.Round(Mathf.Max(0f, (root.rect.width - 2f * M - b.width) * .5f) - b.x), Mathf.Round(v.Y + v.RestH + MapPad - b.y));
+        // Its clip is the part of the row unfolded so far, as wide as the list's mask; the graph sits in it where it rests.
+        var top = Mathf.Round(v.Y + v.RestH);
+        PlaceIn(ClipOf(map), 0f, top, Mathf.Max(listContent.sizeDelta.x, root.rect.width - 2f * M) + 24f, Mathf.Max(0f, Mathf.Round(v.Y + v.H) - top));
+        map.PlaceAt(Mathf.Round(Mathf.Max(0f, (root.rect.width - 2f * M - b.width) * .5f) - b.x), Mathf.Round(v.Y + v.RestH + MapPad - b.y) - top);
     }
+
+    RectTransform ClipOf(FrontRoomsKeyMapView map) => map.IsPad ? padClip : keyClip;
 
     static void Fade(Text t, float alpha)
     {
@@ -1217,7 +1235,8 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                 x += cell;
                 if (i >= notes.Length || string.IsNullOrEmpty(notes[i])) continue;
                 var nw = FrontRoomsSettingsMenu.TextWidth(notes[i], NoteSize, true);
-                AddNote(v, i, Mathf.Round(c) - 120f, 240f, TextAnchor.MiddleCenter).text = notes[i];
+                var note = AddNote(v, i, Mathf.Round(c) - 120f, 240f, TextAnchor.MiddleCenter);
+                note.text = notes[i];
                 left = Mathf.Min(left, c - nw * .5f);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 // A note wider than its choice goes back to the strings, never cut with "…" (SETTINGS_MOTION.md).
@@ -1225,8 +1244,10 @@ public sealed class FrontRoomsDesktopSettingsView : MonoBehaviour, IPointerDownH
                     Debug.LogWarning("[settings] note wider than its choice (" + r.Label + "): " + notes[i]);
 #endif
                 if (i != r.DefaultIndex) continue;
+                // The default's mark spans its whole note, 1 px, 4 px under the note's baseline (RuleY; VL487 D-1).
+                var rw = Mathf.Ceil(note.preferredWidth);
                 v.Rule = Img(v.Rect, Paper, 0f);
-                PlaceIn(v.Rule.rectTransform, Mathf.Round(c) - 6f, RuleY, 12f, 1f);
+                PlaceIn(v.Rule.rectTransform, Mathf.Round(c - rw * .5f), RuleY, rw, 1f);
                 v.RuleSlot = v.Notes.Count - 1;
             }
         }

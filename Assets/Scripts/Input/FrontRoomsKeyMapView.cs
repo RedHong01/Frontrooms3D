@@ -259,6 +259,9 @@ public sealed partial class FrontRoomsKeyMapView
         mouse.Add(Part(MouseLook, MX, MY + 73f, 111f, 103f, new Vector4(0f, 0f, 55.5f, 55.5f), true));
         var ring = Part("ring", MX + 47f, MY + 14f, 17f, 34f, new Vector4(8.5f, 8.5f, 8.5f, 8.5f), false);
         ring.Image.color = ink;
+        // One of the mouse's parts, so a new scale places it with the rest (VL487 D-4: left out, it stayed at the 1x place over
+        // F10-F11 and the wheel lost its ring); Animate tints it, the hit tests pass over it.
+        mouse.Add(ring);
         mouse.Add(Part(Wheel, MX + 49f, MY + 16f, 13f, 30f, new Vector4(6.5f, 6.5f, 6.5f, 6.5f), false));
     }
 

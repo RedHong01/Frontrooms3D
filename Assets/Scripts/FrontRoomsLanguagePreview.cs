@@ -170,10 +170,24 @@ public sealed class FrontRoomsLanguagePreview
             var rt = t.rectTransform;
             Place(rt, pad, 0f, inner, 0f);
             _ = t.preferredHeight; // lays the text out at this width, so the layout generator holds its line count
-            var h = Mathf.Max(1, t.cachedTextGeneratorForLayout.lineCount) * pitch;
+            var generator = t.cachedTextGeneratorForLayout;
+            var count = Mathf.Max(1, generator.lineCount);
+            var h = count * pitch;
+            var last = false;
+            // The panel ends on a whole line: a block that runs past the foot keeps the lines that fit, and nothing follows it.
+            var room = Mathf.FloorToInt((panelH - pad - y) / pitch);
+            if (room < count)
+            {
+                if (room < 1) { Object.Destroy(t.gameObject); break; }
+                var cut = generator.lines[room].startCharIdx;
+                t.text = t.text.Substring(0, Mathf.Min(cut, t.text.Length)).TrimEnd();
+                h = room * pitch;
+                last = true;
+            }
             Place(rt, pad, y - (natural - pitch) * .5f, inner, h);
             y += h + Spacing * s;
             first = false;
+            if (last) break;
         }
     }
 

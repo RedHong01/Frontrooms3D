@@ -345,7 +345,16 @@ Method and pass mark from `20_design` §2.3–§2.4: a cap reads at ≥ 18.6′.
 - **A held key repeats:** after 0.5 s (the PC/AT's default typematic delay, [S27]), then one step per 0.34 s. The period rate of 10.9 a second is cut to the photosafe rate.
 - Nothing acts for 0.20 s after the close-up opens (EXAMINE's `CancelAfter`), so the press that opened it never selects.
 - **Latches:** a MOVE key held when the close-up opens moves nothing until released (C25, now for W, A, S, D and the arrows). Any of them held when it closes is ignored by walking until released (C25b).
-- Hard cuts only: no smooth scrolling, no transitions. Everything runs on unscaled time (`FrontRoomsInspect.Dt`).
+- Cuts for the bar, a line of scroll, messages and the clock; panel changes and page turns move as the period's programs moved them (§4.2a, `10_research.md` Period motion). No smooth scrolling, no fades. Everything runs on unscaled time (`FrontRoomsInspect.Dt`).
+
+### 4.2a Motion (2026-11-02, 动画和动态图形; landed by 游戏视觉 2026-11-03)
+
+Red, 11-02 14:18: "我需要你调研一下那个时候的图形操作系统是否有motion transition，如果有，我需要你优化这个电脑交互的部分". Code: `FrontRoomsTerminalMotion.cs`; the machine notes each change's motion (`TakeMotion`), the screen plays it.
+
+- A panel opened from MAIN's line **explodes from that line** to its frame; HELP opened with its key explodes from the middle of its box; going back **implodes onto where it came from** (the closing panel stays inside the shrinking frame); a page turn (another memo, or a page of scroll) **is written in from the top**, two rows a step. Bar, line scroll, messages, the clock: cuts, as before.
+- One step a tick (1/60 s); one step per cell of the longest edge's travel, at most 14: memo from its line 13 steps (0.22 s), HELP 14 (0.23 s), page 10 (0.17 s). Every move ends inside the 0.34 s window; keys, timing, refusals, sounds (TerminalKey only) and the panel layouts are unchanged.
+- Camera motion Off (`FrontRoomsSettings.CameraMotionPercent == 0`, 0 by default when the phone OS asks for reduced motion) and the CPU raster make every move a cut. Clock: `FrontRoomsInspect.Dt` (capture-safe).
+- Cost: while a move plays, one GPU raster render per step (at most 14 in 0.24 s, one 1440 × 800 procedural draw + mips each); idle frames unchanged (no draw, no allocation). A second 80 × 25 grid and a third (`before`) per terminal: 8 KB.
 
 ### 4.3 Messages, refusals and "not authorised"
 

@@ -27,6 +27,9 @@ public static class FrontRoomsInspectPlaytest
 {
     const string ScenePath = "Assets/Scenes/FrontRooms3D.unity";
     const string ActiveKey = "FrontRooms.InspectPlay.Active", DeadlineKey = "FrontRooms.InspectPlay.Deadline", DoneKey = "FrontRooms.InspectPlay.Done", ModeKey = "FrontRooms.InspectPlay.Mode";
+    // The verdict outlives the play-mode exit, so a batch run ends with exit code 1 on FAIL or a timeout (the coordinator, 10-31: a runner
+    // reading the exit code must see the failure).
+    const string PassedKey = "FrontRooms.InspectPlay.Passed";
     const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
     const float Step = 1f / 60f;
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -70,6 +73,7 @@ public static class FrontRoomsInspectPlaytest
     {
         EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         SessionState.SetBool(ActiveKey, true);
+        SessionState.EraseBool(PassedKey);
         SessionState.SetString(ModeKey, mode);
         SessionState.SetFloat(DeadlineKey, (float)EditorApplication.timeSinceStartup + seconds);
         EditorApplication.update -= Tick;
@@ -129,6 +133,7 @@ public static class FrontRoomsInspectPlaytest
         try { FrontRoomsInput.ClearInjectedSnapshot(); } catch { }
         SessionState.SetBool(DoneKey, true);
         Save();
+        SessionState.SetBool(PassedKey, result.failed == 0 && result.passed > 0);
         Log("FINISHED " + result.verdict);
     }
 
@@ -143,7 +148,9 @@ public static class FrontRoomsInspectPlaytest
             EditorApplication.update -= Tick;
             SessionState.EraseBool(ActiveKey);
             SessionState.EraseBool(DoneKey);
-            if (Application.isBatchMode) EditorApplication.Exit(0);
+            var passed = SessionState.GetBool(PassedKey, false);
+            SessionState.EraseBool(PassedKey);
+            if (Application.isBatchMode) EditorApplication.Exit(passed ? 0 : 1);
             return;
         }
         if (!EditorApplication.isPlaying) return;

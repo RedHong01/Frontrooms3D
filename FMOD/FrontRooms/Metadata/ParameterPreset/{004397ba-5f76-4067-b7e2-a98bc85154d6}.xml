@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{004397ba-5f76-4067-b7e2-a98bc85154d6}">
+		<property name="name">
+			<value>Damage</value>
+		</property>
+		<relationship name="folder">
+			<destination>{ec392971-797d-45c0-a935-5395b25ee4d3}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{767102e3-3b63-4b79-903b-21cbe75d0957}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{767102e3-3b63-4b79-903b-21cbe75d0957}" />
+</objects>

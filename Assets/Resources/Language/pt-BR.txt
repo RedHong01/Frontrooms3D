@@ -63,11 +63,11 @@ ENTER  OPEN	ENTER  ABRIR
 ENTER  SWAP     ESC  CANCEL	ENTER  TROCAR     ESC  CANCELAR
 ESC  RESUME	ESC  CONTINUAR
 ESC ALWAYS PAUSES AND GOES BACK	ESC SEMPRE PAUSA E VOLTA
-EVACUATION PLAN · LEVEL 0	PLANTA DE EVACUAÇÃO · LEVEL 0	TEXT panel, placard title
+EVACUATION PLAN · LEVEL 0	PLANTA DE EVACUAÇÃO · NÍVEL 0	TEXT panel, placard title
 EXAMINE	EXAMINAR
 EXAMINE KEY	EXAMINAR CHAVE
-EXIT (over the stair door)	EXIT, SAÍDA (sobre a porta da escada)	TEXT panel; EXIT stays, it is what the sign over the door says
-EXIT (over the stair door, padlocked)	EXIT, SAÍDA (sobre a porta da escada, com cadeado)	TEXT panel
+EXIT (over the stair door)	SAÍDA (sobre a porta da escada)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
+EXIT (over the stair door, padlocked)	SAÍDA (sobre a porta da escada, com cadeado)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Todas as teclas e botões do jogo, desenhados em um teclado e um mouse. Escolha um para ler o que faz ou mudar sua tecla.
 FIXED	FIXO
 FLOATING	FLUTUANTE
@@ -130,10 +130,10 @@ LANGUAGE	IDIOMA
 LAYOUT	LAYOUT
 LEFT-HANDED	MODO CANHOTO
 LEGEND	LEGENDA	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LEGENDA: VOCÊ ESTÁ AQUI · ESCADA (EXIT), UM ANDAR ABAIXO · POSTO DE SEGURANÇA (CHAVE) · SETAS NA PAREDE, APONTAM A SAÍDA	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LEGENDA: VOCÊ ESTÁ AQUI · ESCADA (EXIT), UM ANDAR ABAIXO · SETAS NA PAREDE, APONTAM A SAÍDA	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	LEGENDA: VOCÊ ESTÁ AQUI · ESCADA (SAÍDA), UM ANDAR ABAIXO · POSTO DE SEGURANÇA (CHAVE) · SETAS NA PAREDE, APONTAM A SAÍDA	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	LEGENDA: VOCÊ ESTÁ AQUI · ESCADA (SAÍDA), UM ANDAR ABAIXO · SETAS NA PAREDE, APONTAM A SAÍDA	TEXT panel
 LEVEL 0	NÍVEL 0
-LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · FOLHA A-2 DE 4 · IMPRESSO 11/89	TEXT panel
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	NÍVEL 0 · FOLHA A-2 DE 4 · IMPRESSO 11/89	TEXT panel
 LEVEL 4 / OFFICE	NÍVEL 4 / ESCRITÓRIO
 LEVEL B{0}	NÍVEL B{0}
 LISTEN	ESCUTA
@@ -412,3 +412,67 @@ Choose it, then press the button you want for it. A button another action has as
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	Escolha a ação e pressione a tecla que quiser para ela. Se outra ação já usa essa tecla, o jogo pergunta antes de trocar.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	Volta todos os botões ao padrão. Aperte duas vezes para confirmar.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	Volta todas as teclas ao padrão. Aperte duas vezes para confirmar.	device state; draft 2026-11-01
+EXIT	SAÍDA	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NOT AN EXIT	NÃO É SAÍDA	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+AREA OF RESCUE ASSISTANCE	ÁREA DE ESPERA DE RESGATE	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NO ROOF ACCESS	SEM ACESSO À COBERTURA	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+LEVELS 0 TO B1	NÍVEIS 0 A B1	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NEAREST REENTRY ON LEVEL B1	REENTRADA MAIS PRÓXIMA: NÍVEL B1	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+REENTRY ON THIS FLOOR	REENTRADA NESTE ANDAR	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SILENT ALARM: REMOVAL SIGNALS PANEL	ALARME SILENCIOSO: RETIRAR AVISA A CENTRAL	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	ESTA PORTA DEVE FICAR DESTRANCADA NO HORÁRIO COMERCIAL	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SECURITY	SEGURANÇA	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+PLEASE SIGN IN	FAVOR ASSINAR	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM\nZONE	ZONA DE\nALARME	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	O ALARME VAI SOAR	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+TROUBLE	FALHA	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+POWER	ENERGIA	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPARE	RESERVA	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPRINKLER FLOW	FLUXO SPRINKLER	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+STAY TUNED.	NÃO SAIA DAÍ.	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ELECTRICAL\nROOM	SALA ELÉTRICA	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+AUTHORIZED PERSONNEL ONLY	SOMENTE PESSOAL AUTORIZADO	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+EMPLOYEES ONLY	SOMENTE FUNCIONÁRIOS	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STAFF ONLY	APENAS PESSOAL	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STORAGE	DEPÓSITO	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+NO SMOKING	PROIBIDO FUMAR	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+SNACKS • CANDY • CHIPS	SALGADINHOS • DOCES • BATATAS	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+FRAGILE	FRÁGIL	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+THIS SIDE UP	ESTE LADO PARA CIMA	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+KEEP DRY	MANTER SECO	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+PAYROLL	FOLHA	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MISC	DIVERSOS	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+Q3 REPORTS	RELATÓRIOS T3	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MINUTES	ATAS	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+CLIENT FILES	ARQUIVOS DE CLIENTES	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+DATE · NAME · COMPANY · VISITING · TIME IN · TIME OUT	DATA · NOME · EMPRESA · VISITA · ENTRADA · SAÍDA	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+COURIER · COPIER SVC · HVAC SVC · WATER SVC · OFFICE SUPPLY · PEST CONTROL · VENDING	MENSAGEIRO · ASSIST. COPIADORA · MANUT. AR-COND. · SERV. ÁGUA · MAT. ESCRITÓRIO · DEDETIZAÇÃO · MÁQ. DE VENDA	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+MAILROOM · RM 214 · BLDG SVCS · FRONT OFFICE · STOCK RM 3 · RM 118	CORRESPONDÊNCIA · SALA 214 · SERV. PREDIAIS · ADMINISTRAÇÃO · ALMOX. 3 · SALA 118	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+NIGHT DESK	PLANTÃO NOTURNO	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ON DUTY D.K.	EM SERVIÇO D.K.	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 1 COMPLETE  ALL SECURE	RONDA 1 CONCLUÍDA  TUDO EM ORDEM	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BLDG SVCS CALLED  LAMPS OUT STOCK RM 3	SERV. PREDIAIS ACIONADOS  SEM LUZ ALMOX. 3	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 3	RONDA 3	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+KEY CONTROL	CONTROLE DE CHAVES	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ALL KEYS MUST BE SIGNED OUT	TODA CHAVE RETIRADA DEVE SER ASSINADA	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DATE · KEY NO. · NAME · OUT · IN · INIT.	DATA · Nº CHAVE · NOME · SAÍDA · ENTRADA · RUBR.	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+PHONE LIST	TELEFONES	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+FIRE · POLICE	BOMBEIROS · POLÍCIA	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BOILER RM	CASA DE CALDEIRAS	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+POST ORDERS	NORMAS DO POSTO	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BACK ROOM CLEARANCE	QUEIMA DE ESTOQUE	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+3-PC SOFA SET	CONJUNTO 3 PEÇAS	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+NOW $499  WAS $899	POR $499  ERA $899	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+90 DAYS SAME AS CASH	90 DIAS SEM JUROS	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+CALL 555-0147	LIGUE 555-0147	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9  7 DAYS	TODO DIA DAS 9 ÀS 21	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9	DAS 9 ÀS 21	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+FREE DELIVERY	ENTREGA GRÁTIS	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+ALWAYS MORE\nIN THE BACK	SEMPRE TEM MAIS\nLÁ NO FUNDO	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+PLEASE STAND BY	AGUARDE	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+TECHNICAL DIFFICULTIES	PROBLEMAS TÉCNICOS	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+WTCZ 61 SIGNS OFF AT 2 AM	WTCZ 61 ENCERRA ÀS 2H	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	PENSAMENTO DO DIA\nQUEM ANDA FIRME\nVAI MAIS LONGE\nQUE QUEM CORRE.	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+[WINDOW ALARM]	[ALARME DE JANELA]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+[DOOR ALARM]	[ALARME DE PORTA]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+CONTROL RM	CENTRAL DE CONTROLE	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft

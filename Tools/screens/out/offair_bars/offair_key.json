@@ -1,0 +1,86 @@
+{
+  "about": "Off-air bars v3.2 (平面视觉 · 广告, 2026-11-03): the plate plus the runtime key for the live date and clock. Spec: Documentation/AD_TYPE_SYSTEM.md §3.6. Generator: Tools/screens/offair.py.",
+  "raster": [
+    640,
+    480
+  ],
+  "plate": {
+    "1x": "bars_plate.png",
+    "2x": "bars_plate@2x.png",
+    "srgb": true
+  },
+  "glyphs": {
+    "1x": "clock_glyphs.png",
+    "2x": "clock_glyphs@2x.png",
+    "order": "0123456789-:",
+    "sprite": [
+      24,
+      29
+    ],
+    "margin": 2,
+    "alpha": "straight",
+    "srgb": true
+  },
+  "cells": {
+    "pitch": 20,
+    "glyphHeight": 25,
+    "unit": 5,
+    "note": "x, y = the top-left of a row's first cell; sprite i goes at (x + i * pitch - margin, y - margin), all at 1x; multiply every number by 2 for @2x"
+  },
+  "rows": {
+    "date": {
+      "x": 413,
+      "y": 364,
+      "format": "MM-dd-90",
+      "source": "the real month and day in 1990; a real Feb 29 shows 02-28-90 (FrontRoomsTerminalContent.GameDate)"
+    },
+    "time": {
+      "x": 413,
+      "y": 404,
+      "format": "HH:mm:ss",
+      "source": "the device's local time (FrontRoomsTerminalContent.Now), 24-hour, leading zeros"
+    }
+  },
+  "tick": "Read the clock every frame; redraw a row only when its string changes (once a second for the time). Hard cut, no blink, no fade, no smoothing.",
+  "window": {
+    "from": "02:00",
+    "to": "06:00",
+    "clock": "local",
+    "note": "the station's off-air states play only in this window (AD_TYPE_SYSTEM.md §3.4)"
+  },
+  "composite": "In sRGB-encoded 8-bit values, never in linear light: out = plate * (1 - a) + rgb * a, a = alpha / 255. To redraw a row, copy that row's rectangle back from the plate, then composite its 8 sprites left to right.",
+  "rowRect": {
+    "date": [
+      411,
+      362,
+      164,
+      29
+    ],
+    "time": [
+      411,
+      402,
+      164,
+      29
+    ]
+  },
+  "ink": {
+    "logo": [
+      223,
+      65,
+      418,
+      247
+    ],
+    "clock": [
+      413,
+      363,
+      571,
+      430
+    ],
+    "titleSafe": [
+      66,
+      48,
+      574,
+      432
+    ]
+  }
+}

@@ -45,6 +45,7 @@ Research only: no code, no clone, no Unity, no download. Sources [LS41]–[LS50]
    - view-only terrain (arches, vaults, domes, windows, guarded drops) needs no navigation work;
    - small steps (≤ 0.45 m) need step rules for the player and the Relay;
    - storey changes (flights, spirals, mezzanines) need two-level navigation, which the pool's C9 already asks 关卡设计 for.
+7. **Modules (Red 11-02, §11):** the smallest unit is the 3 m cell on one floor plane. The kit adds the vertical (cell levels in 0.30 m steps, storeys, voids), resolves edges from neighbouring cells, and builds the slide (pick A) from cell pieces: flume cells dropping whole tile courses on spine bays of a 0.6 m pier and a 2.4 m arch.
 
 ## 1. What Red saw, and why it reads symmetric
 
@@ -347,6 +348,7 @@ Every terrain module's edge carries **ports**, each a ground level plus a joint 
 2. **Tier 1** (view-only): the well's asymmetric outlines and terraces seen from above, arches and domes in the pool modules, the lobby stair's arch. This is mostly the pool line's C5 and 游戏视觉's kits.
 3. **Tier 2:** per-cell `floorY` for every theme (C2 generalised): computer room, training room, sunken lounge, raised trading floor, beach, weir terraces.
 4. **Tier 3:** two-level navigation (C9 generalised): mezzanines, spirals, the slide tower, the casbah cluster.
+5. **The module system (§11):** 关卡设计 rules on §11.7 through 总控; then the kit sheet and plates (§11.8); then 游戏视觉's spine kit.
 
 ## 9. Stills, round 3 (Red 10-31 ~16:15: "全部")
 
@@ -375,3 +377,194 @@ Limits of the stills:
 - The 1991 stair, ramp and spiral numbers come from the ADA 1991 text [LS47] and from code summaries that quote the BOCA/UBC/IRC wording [LS48]. The model codes of 1990 are to verify before any sign or rule quotes a number.
 - The leisure-pool history beyond World Waterpark (Center Parcs, Bletchley) was in the lost sub-session `30`; it can be added when that runs.
 - The figures are diagrams. Fig. 5's section is one route, not a level plan.
+
+## 11. The module system: from the smallest unit to the skeleton (Red 11-02)
+
+### 11.1 Red's ask, and what was done
+
+Red, 11-02 ~10:40: "我希望你不要搭建白盒，而是像是我之前的关卡设计逻辑一样，思考这些dramatic设计如何能够作为一个个module，然后modulize。比如说一个最小的建筑单位目前是什么，然后如何模组化构成一些有趣的结构，一般游戏里强调建筑的模组化建筑都是怎么做的" (do not build whiteboxes; like my earlier level-design logic, think how these dramatic designs can become modules and modularize them: what is the smallest architectural unit now, how do modules compose interesting structures, how do games that stress modular architecture do it).
+
+Red, 11-02 ~14:30, choosing among three readings of how tiled walls carry the water slide: "A · 墙在下面" (A: a tiled wall stands under the flume like an aqueduct, with arches; chosen over B, a ledge growing out of the room's wall beside the flume, and C, the flume threaded through full-height walls).
+
+The ask came after Red, 11-02 07:31: "目前不只是滑梯重做，在cursor还有dramatic 空间的各种各样的尝试，目前你的滑梯重做方案似乎忽略了dramatic 空间结构的study". So the slide is one assembly of the same kit.
+
+What was done, and what was not:
+- **No whitebox, no Unity, no download:** research text only. The map line's spec and code were read, not edited; §11.7 holds proposals, through 总控.
+- **Two research drafts** (2026-11-03, working notes, both complete): `W/level_space/drafts/modules_games.txt` (eleven games and tools, G1–G56) and `modules_architecture.txt` (ten works built before 1993, A1–A55). The sources cited are [LS180]–[LS200] in `SOURCES.md`.
+- **Also read:** this page's §4–7; `20`; `61` §0.1 and §2.5–4; `60`, `30` and `31` by search; the r5 and r4t briefs.
+- **Guard:** methods, not looks: the works below lend rules, never a composition.
+
+### 11.2 The smallest unit today
+
+From `LEVEL_MODULE_SPEC.md` (LMS), `LEVEL_DESIGNER.md` and `FrontRoomsModuleUnits.cs` (`ModuleUnits`), read only:
+
+| Unit | Value | Where |
+|---|---|---|
+| Cell | 3.0 m square; every wall, doorway, door and window spans one cell edge | LMS §2; `Cell` |
+| Fine module | 0.6 m, five per cell: ceiling grid, carpet tiles, fixtures | LMS §2, §4; `Fine` |
+| Structural grid | 6 m (every other cell line); columns 0.6 or 0.9 m on corners with both indices even | LMS §2, §3; `ColumnGrid` |
+| Chunk | 8 × 8 cells = 24 m, built and dropped round the player; a room never crosses one | LMS §2, §9 |
+| Wall | 0.16 m, centred on the cell line; clear span n × 3 − 0.16 | LMS §2; `WallThickness` |
+| Door | 1.0 × 2.1 m, Low ↔ Standard borders only | LMS §3; `DoorWidth`, `DoorHeight` |
+| Arch | doorless, 1.1–1.8 m wide, top 2.2 m, off-centre, ≥ 0.2 m of wall to each corner | LMS §3; `ArchMinWidth` … `ArchCornerMargin` |
+| Ceiling classes | Low 2.4, Standard 2.9, Tall 5.4 m clear; floor slab 0.20, ceiling slab 0.16 | LMS §2; `LowCeiling` … |
+| Room module | 1–8 × 1–8 cells, one ceiling class and theme; edges Wall / Arch / Open; columns; props; fill; lamps; markers | LMS §9; `LEVEL_DESIGNER.md` |
+| `Validate` | errors: no way in, cells cut off, a prop in a wall or a clear strip, a blocked walk, a bad marker | LMS §9 |
+
+The generator stamps a module into an intact, uniform carved room of its height and theme (`moduleChance` 0.3).
+
+**The one missing degree of freedom.** Everything stands on one floor plane, y = 0 of its floor. The only vertical variable is the ceiling class; a Tall room is a taller box on the same ground. There is no floor level per cell, no void, no storey inside a level, no edge that is a step, a ledge or a guard. The generator can vary plan and ceiling, never the ground: that is the root of the endless horizontal (`20` §1). §6.1 already asks for per-cell `floorY`; this section builds the rest on it.
+
+### 11.3 What modular games and buildings teach
+
+From the drafts; built before 1993, or method only.
+
+| Work | Smallest unit | Joint rule | Vertical | Why compositions surprise | Lesson for us | Sources |
+|---|---|---|---|---|---|---|
+| Bethesda kits (Skyrim 2011, Fallout 4 2015); kit practice | footprints in multiples (a 512 room, a 256 hall); a 3 m footprint on a 1.5 m snap | grid snap; glue kits between kits; sockets and plugs; 11 holes per wall half give 121 walls | shaft sub-kits of fixed plan; stacked prefabs; floors with thickness | kit-bashing; repetition shows in clutter first | one metrics table for every kit; glue pieces own each style change; stack, loopback and gap tests | [LS45] [LS180] [LS181] |
+| Stålberg: Bad North, Townscaper | a cell holding a state; pieces drawn at its corners (dual grid: 16 cases, 6 with rotation) | adjacency solved from tile edges (WFC) | stacked cells; arches, stairways, bridges drawn "depending on their configuration" | the drama is where states change; big shapes predictable, small ones free | pieces are resolved from neighbouring states, not placed | [LS46] [LS182] |
+| Wave Function Collapse, model synthesis | a labelled cell | an adjacency table; fixed tiles pinned first | one more axis: no storey, support or reachable stair | weighted choice inside the rules | the joint table is the design; pin the big moves; a known-good fallback per region | [LS183] |
+| Minecraft jigsaw; DunGen | a template; a tile prefab | named connectors with target pools; sockets meet only their kind; a fallback or blocker for every unused port | up and down connectors; stair tiles whose entrances fix the direction | depth-weighted pools; pieces inside pieces | a socket per opening type; every unused port designed; rings as convex pieces round a void cell | [LS184] [LS185] |
+| Spelunky (2008) | a room of 10 × 8 tiles in a 4 × 4 grid | a room type promises its exits | the level is a descent; a shaft is a top, repeatable middles and a bottom | template, insert slot and chance tile re-roll apart | route first; exits on six faces; a tower is a cap, N middles, a base | [LS186] |
+| The Sims (storeys; platforms 2020) | a tile; storeys of one wall height | one step: walk on; more: a stair or ladder; the platform edge is its own piece | storeys plus in-storey platforms; a spiral is 2 × 2 plus a landing square and needs one storey height | players' split levels and pits | two height systems; the edge follows the height difference | [LS187] |
+| Tiny Glade (2024); Valheim (1.0) | a stroke; a piece and its hop | joint pieces derived where strokes meet; support flows from piece to piece | a raised building grows columns; stone "17 up but 0 out" | the carrier is derived from the carried | lay the flume first and draw its spine under it; tile has no reach; the arch is the only span | [LS188] [LS189] |
+| Shadows of Doubt (2019–22) | a 1.8 m tile; floors of 15 × 15 | door rules per room type | floors stack; ducts routed by search through leftover space | rooms scored on shape and windows | author the storey plan, fill the rooms; route the flume through free air by search | [LS190] |
+| Habitat 67 (1967); Nakagin (1972), Yamanashi (1966) | a 12 × 5.33 × 3 m box; a capsule; a round service shaft | box on box, offset; capsule bolted to a core; floor trays between shafts | streets every 4th floor; bridges every 3rd; missing trays leave voids | offset roofs become terraces; bare shafts read as towers | stack with an offset; plug into a core; protect voids by rule (Yamanashi's filled up) | [LS191] [LS192] |
+| Centraal Beheer (1972); Amsterdam Orphanage (1960) | a 9 × 9 m island = 3 × 3 cells with a one-cell cross; a 3.36 m bay and a 3 × 3-bay hall | islands meet through bridges over void bands; units chained on diagonals | void bands give views up, down and across; stepped towers | every floor sees into the gaps | a 3 × 3-cell island and a 1-cell void band; 1 : 3 sizes; height marks the hall | [LS121] [LS193] [LS194] |
+| Bofill: Kafka's Castle (1968) to Walden 7 (1975) | a small cell; a 5 m Greek cross | the core first; each unit one step higher and turned | spirals of rooms round a core; displaced towers | courts between arms; colour by role | a height-and-turn operator round a core; mark circulation by tile format or trim | [LS41] [LS141] [LS195] |
+| Habraken, *Supports* (1961); Alexander, *A Pattern Language* (1977) | support and infill; a pattern | support designed first, judged over many variants; patterns large to small | 116 cascade of roofs; 195 the stair as one bay two storeys high; 119 arcades | gradients of height and light | drama in the support; test over many seeds; the spine as an arcade | [LS4] [LS196] [LS197] |
+| Piranesi, *Carceri* (1750, 1761); Portman's atria (1967–85), Kansas City walkways (1981) | a kit of pier, arch, stair, bridge; a ring of rooms on a gallery | montage in depth; every storey round one void | layered depth; lifts shown moving; hung walkways fell | ends out of sight; every storey seen at once | three layers in a long view; one cue per quadrant; carry from below, never hang | [LS33] [LS137] [LS139] [LS198] [LS199] |
+| GDR pools (1968–92); FaulknerBrowns leisure pools (1974–89) | the whole hall as a type | type plus a change at each site; one repeated roof element | Doncaster's flume runs through mall and atrium, about 3.5 storeys over 120 m | four types, many sites | a hall with a vault per cell; the flume as the line joining modules | [LS200] |
+
+Lessons, in order of use:
+1. **Two units.** The generator decides a cell's state; pieces are drawn where cells meet, chosen by the states on both sides (Stålberg, DunGen, Minecraft).
+2. **Fix the metrics before any piece:** footprint multiples, pivots, slab thickness, one opening standard, shared by the office kit and the tile kit (Bethesda, kit practice).
+3. **The vertical gets its own mechanism:** storeys plus in-storey levels; stair cores and towers stack as cap, middles and base (The Sims, Spelunky, Bethesda's shafts).
+4. **Pin the big moves, then fill.** Local rules have no global form (WFC). The route, the well, the tower and the flume come first; void cells are reserved (Spelunky, Shadows of Doubt, Habraken, Yamanashi).
+5. **Derive the carrier from the carried.** The spine is drawn under the flume's path; tile has no horizontal reach, so the arch is its only span (Tiny Glade, Valheim, Alexander's arcade, the 1981 walkways). This makes "A · 墙在下面" a rule the generator cannot break.
+6. **Composition comes from the joint rule, kept alive by a gradient:** offset stacking makes terraces, a height-and-turn step makes spirals, void bands make cross-views; one repeated box reads dead (Habitat, Bofill, Centraal Beheer).
+7. **Every port closes by design, and legibility is planned:** terminators and blockers, known-good fallbacks, tests over many seeds, a re-orientation cue (DunGen, Minecraft, *Variations*, the Bonaventure).
+
+### 11.4 The hierarchy: unit, piece, module, assembly, skeleton
+
+**UNIT.**
+
+| Unit | Value | Decides |
+|---|---|---|
+| Cell | 3.0 × 3.0 m (LMS §2) | the generator's choice: kind, level, ceiling |
+| Half-grid | 1.5 m | offsets of cores and landings only, never a state [LS181] |
+| Fine module | 0.6 m | piece sizes: piers, step runs, copings |
+| Tile course | 0.15 m (the pool line's 6 in tile) | every vertical piece size: riser, sill, coping step; the 2.4 m arch's radius is 8 courses |
+| Level step (new) | 0.30 m = two courses = two risers | the floor level of a cell inside a storey: −8 … +9 steps (−2.40 … +2.70, §6.1) |
+| Storey (new) | a whole number of steps: 15 = 4.5 m on the pool level (`61` §4, upper floor +9.0); 13 = 3.9 m on office floors | multi-storey modules, void cells, the well |
+
+A cell's state is its kind (Floor, Water with a depth, Void, Block, or a Connector: Stair, Spiral, Ramp, Bridge, Flume), its level in steps and its ceiling (a class, or a number of storeys).
+
+**Why 0.30 m and storeys.**
+- Every dry level in §4 is a multiple of 0.30 (§5.1): raised floor +0.30, terraces 0.60, pits −0.60 to −2.40, mezzanine +2.70; the dock's 48 in rounds to +1.20. Water keeps its own depths. A 0.60 step would lose the raised floor, the mezzanine and the 4.5 m storey for nothing.
+- 0.30 is the player's step offset (LMS §7): one step is the most a body takes without a flight, and R1 still builds it.
+- It is two courses, so every coping, nosing and weir lip lands on a tile line.
+- Steps alone make no well or tower; storeys alone no terrace, pit or weir. The Sims keeps both [LS187].
+- The 3.9 m office storey (2.9 clear + 0.2 slab + 0.8 plenum) and the 4.5 m pool storey replace the 4.0 m map storey of `20` §4.1 and `60` §2.1, which is not a whole number of steps; `60`'s stair sweeps need redoing for them.
+
+**PIECE.** Edge pieces are resolved from the two cells' kinds and their height difference Δ; nobody places them (lesson 1). A step run of n steps takes n fine modules (2n risers, §5.1), so up to 5 steps fit in one cell.
+
+| Cells A / B | Δ (steps) | Edge that is crossed | Edge that is closed |
+|---|---|---|---|
+| Floor / Floor | 0 | Open; arch (LMS §3, or round C5 up to 2.4 m); a door where LMS §3 puts one | Wall |
+| Floor / Floor | 1 (0.30) | STEP: two risers on one fine module of the lower cell | KERB: a nosing |
+| Floor / Floor | 2–5 (0.60–1.50) | STEP RUN: 4–10 risers on 2–5 fine modules inside one cell, a cheek on its open side | LEDGE with coping; over 0.76 m a guard: half-wall 1.07 m or balustrade |
+| Floor / Floor | 6 and up, under a storey | none at the edge: a connector module in its own cells (R2) | LEDGE + guard 1.07 (E1): a gallery edge |
+| Floor / Void | any | none | VOID EDGE: guard 1.07 on a slab edge that shows its section (V1) |
+| Floor / Water | to the water | COPING with a ladder (B8); STEPS INTO WATER (C7); BEACH (C3) takes its own cells | COPING |
+| Water / Water | 1–2 | WEIR (C5) | WEIR |
+| any / Block | — | an arch or door the block owns | the block's wall |
+| Floor / Floor, flume over the line | 0 | SPINE BAY with a walk arch (§11.6) | SPINE BAY with a sight arch or plinth |
+
+Where the two ceilings differ, a soffit or an arch head sits over the edge (R3). **Corner pieces** come from the four cells round a corner (16 cases, 6 under turns and mirrors, the dual grid [LS182]): column (structural grid), pier (spine), newel or guard post where two guarded edges meet, coping corner (inside, outside), the cheek at a step run's end, the WALL PASS (§11.6).
+
+**MODULE** (rooms with heights; each owns its connectors, R2): mezzanine (A5: a +9-step gallery over a third to a half of a Tall room, two connectors); terrace (A4: 0 / +2 / +4 steps, unequal widths); sunken court (A3: −2 to −8 steps, runs on two sides, the ceiling kept); gallery (a one-cell band beside a void); bridge (A6: Connector cells over a void, guarded); stair cores B4-S 1 × 1, B4-M 2 × 2, B4-L 3 × 3 (`60` §6), B2 a 3.9 m storey in 1 × 3 cells, B3 in 2 × 1; the B10 Flume (§11.6).
+
+**ASSEMBLY** (multi-storey groups with ports):
+- **The well:** a void column of 3 × 3 cells (or r5's 2 × 6 slot) through every storey. Per storey the rim is one of four to six outlines, turned (§7.5). Ports: a gallery on one or two sides, one stair core in one corner, one bridge on one storey only, a cascade (C5) down one wall near the pool.
+- **The slide hall:** §11.6. Others: F1 and F1b stair halls, F2 water court, F6 casbah.
+
+**SKELETON** (lesson 4): (1) pin the well at its world position, then each level's assemblies; (2) fill with room modules as today, void cells reserved; (3) check: §6.3's splice check, support (every tiled run on a wall, pier or arch), the Relay's graph without spirals or flume (R6), symmetry (R4), over many seeds.
+
+| Level | Pinned | Modules per floor | Against symmetry (R4) | Two routes (R6) |
+|---|---|---|---|---|
+| Level 0 | the well's rim | ≤ 1 terrain module per zone (§7.1); at most one split suite with B4-S | modules off their room's centre lines; the rim outline turned per floor | every raised or sunken area of 2+ cells: two step runs, or a run and a ramp |
+| Office | the well; one stack (V3) per district | one raised floor or sunken bullpen and one file mezzanine (B4-S + B2) per district | no two districts put the stack in the same place | the mezzanine's flight is the Relay's way up |
+| Run! | the ramp spine; the dock release | thresholds only | — | the corridor loops as today |
+| Pool | the well's foot; one slide hall; one B4-L arrival | 2–4 T_PL_* modules; 1–2 B4-M | no two neighbours share an axis (§7.4); the slide never symmetric (`61` §4) | every spiral paired with a flight; the start room's corridor door |
+
+### 11.5 Tests: does the kit compose what is already designed
+
+LS1–LS11 here are sheets, not sources.
+
+| Device | Made of | What the kit lacks |
+|---|---|---|
+| `20` V1 cut, V3 stack, the well; sheets LS2, LS5; r5 S1 | Void cells, VOID EDGE, gallery bands, a core, a bridge, a WEIR down a wall, storeys | the view down while one floor is loaded (the stand-in shaft, `20` §3) |
+| V2 drop; A2–A4; LS1, LS3, LS8 | levels in steps, STEP, STEP RUN, LEDGE | the Relay's step climbing (§6.4 tier 2) |
+| V4 tall void (14.5 m) | a ceiling in storeys | stronger lamps, a longer far clip (`20` §7) |
+| V5 bridge; F7 island field | Bridge cells over Void; 3 × 3 islands, 1-cell void lanes | two-level navigation (tier 3) |
+| V6 ramp (1:8, 3 m down over 24 m = 10 steps over 8 cells), LS4; B9 creeping slope (1:30) | a Ramp connector with a whole number of steps | a sloped floor cell: every level here is flat |
+| V7 moving structure | edges re-resolved at a revisit shift | a rule for which edges may change |
+| LS6 route; F2, F5; C1–C7 | WEIR, COPING, BEACH, STEPS INTO WATER, round arches | a water level per cell (C2) |
+| LS7, LS11: F4, F6; LS10: B4-M, B4-L; LS9 | §11.6; blocks at their own levels; 2 × 2 and 3 × 3 cores; STEP, ramp, dock LEDGE | nothing new |
+| F8 flat lid over a stepped floor; F9 parallel bowl | levels under a ceiling plane (§6.1 `ceilingY`) | a ceiling that steps with the floor (F9) |
+| C8 covered basin; E7 floor light | Water or Void below, Floor above | two layers in one cell |
+| C9 wet block; D7 riser shaft | a Block with a room in it; a Void in the ceiling only | a room inside a Block; a ceiling-only Void |
+| E8 mesh; E5b blade field | E8 a closed edge that sight and sound cross (R7); E5b panels on fine-module points | E5b is props, not edges |
+| F1, F1b slot stair hall | a 2-cell Void slot over 2–3 storeys | a flight across a void |
+| r5 S2 terraces | levels; a terrace's LEDGE carries the flume | a SPINE BAY on a ledge (blind arches on its low side) |
+| r5 S3 through | WALL PASS | its threaded walls are reading C; under pick A the spans need SPINE BAYs |
+
+### 11.6 The slide as modules (Red's pick A)
+
+"A · 墙在下面": the tiled wall stands under the flume (`61` §2.6). The flume runs on cell lines, so its spine is an edge piece like any wall (LMS §2).
+
+| Piece | Size | Rule |
+|---|---|---|
+| FLUME CELL | one cell, one 3.0 m section (`61` §1.1 has no period length; 2.4 m was inferred too) | drops whole courses: 2c = 0.30 m (10 %), 3c = 0.45 m (15 %); 5c = 0.75 m (25 %) in the slot only; 0c level in the last cell. Joints over the piers; the style (SL-A, B, C) changes only there |
+| SPINE BAY | 3.0 m = a 0.6 m PIER on the cell corner + a 2.4 m round ARCH on the edge | body 0.6 m; coping 0.9 × 0.30 m on a 0.15 m corbel course, one level per pier, its top one course (the saddle, 0.7 m long) under the riding line; it steps 2 or 3 courses at mid-arch (`61` §2.6: every 1.6 m); no steel |
+| SPINE BEND | r 3.0 m round a cell corner, in 45° bays (chord 2.30, opening 1.70 m): 2 for 90°, 4 for 180° | both tangent points on cell corners. Changes `61`: 90° bends were r 2.0, the colonnade 1.55 m chords with 0.95 m openings; now every bay is a walkable arch |
+| WALL PASS | a 1.8 × 1.8 m tiled reveal centred where the spine's line meets a wall line (a corner piece) | the flume cell on each side is SL-C, whole cells (`61` §2.5 said 1.2 m); the half-edges beside it hold no other opening; the gap of M4 |
+| TOWER SHAFT | 2 × 2 cells; Ø 3.6 m; through the ceiling | base (arched door), N middle storeys, cap (half-wall ring). Proposed riser 0.1875 m: 24 a 4.5 m storey, two turns of 2.25 m (headroom about 2.15, code 1.98 [LS48]), the same bearing on every floor; `61`'s 0.20 m gives 22.5 |
+| START ROOM | 5 × 2 cells on the floor above: +9.0, 3.0 m clear | the slot is the first two flume cells (5c): riding line 9.3 → 7.8 over 6 m (`61` §4: to 7.97 over 5.3 m), trough top 8.51 under the 8.7 soffit; tub, cheeks, crossbar; corridor door (R6) |
+| CATCH POOL | 3 × 2 cells, long axis on the flume's line | C1, 0.9 m of water; `61` §2.1's 7.2 × 5.2 m water fits, ≥ 6.1 m of it beyond the lip [LS78] |
+
+**The grade, against `61` §4.** A uniform 10 % is 9.3 / 0.30 = 31 cells, 93 m: exactly M7's limit. With the slot and the level last cell, 10 % gives 29 cells, 87 m: the base run (42 m), one crossing loop (25 m) and a second crossing room (12–15 m). Alternating 2c and 3c (11 + 10 cells for the 52 courses below +7.8) gives 24 cells, 72 m, 12.9 %, like the r4t path (72 m, 12.8 %), with one crossing loop. **12.5 % is better**, as that mix: 10 % is M7's floor, under the 1983 tubes' 15 % and today's 14 % open flumes (`61` §1.1), and a uniform 12.5 % cell drops 2.5 courses, off the tile grid. 3c cells go after bends, 2c into the pool; all-2c only buys a second crossing room.
+
+**Crown rule.** c = the lower coping underside over the arch, above the bay's floor. Springing s = 0.6 c, rounded down to a course; crown = s + 1.2.
+- Walk arch where c ≥ 3.6 m: s ≥ 2.10 (M6; the Relay, 2.05 m, walks through).
+- Highest: under the slot c reaches 7.95 and s 4.65, capped at `61`'s 4.5 in that one bay; under the first run c = 7.2, s = 4.20.
+- c drops at least 2 courses a bay, so neighbouring crowns always differ (R4); the solid band over each crown is at least 0.3 m.
+- This replaces `61` §2.6's "springing = body top − 1.8" (equal arches wherever it hits the 4.5 m cap) and r4t's 0.62 c + 0.9 (for 1.78 m arches).
+- **Sight arch** where c = 2.2–3.6: 1.2 m wide, sill 1.07, round head, crown 0.3 m under c. **Plinth** where c < 2.2: solid and 0.9 m thick, so no coping hangs below 2.1 m (M6).
+- **R7:** above eye level, never more than one 0.6 m pier of solid wall between openings; the one or two plinth bays with c between 1.62 and 2.2 are the only exception (`61` §2.6 missed it).
+
+**Styles by piece** (`61` §2.5): SL-B in the slot, the first run and the last cells (seen from above and from the deck); SL-A on cells seen from the floor (the bend, hall spans, the crossing room); SL-C at WALL PASSes and in the service void.
+
+**The Relay never rides.** Flume cells and the shaft's spiral stay out of its graph; it reaches the start room by the corridor door. Walk arches in every bay where c ≥ 3.6 m, and the deck round the spine's low end, keep the hall one space (R6): the answer to r4t's flaw "it divides the hall".
+
+**The assembly** (T_PL_SlideHall, 7 × 7 cells, `61` §3): the shaft in one corner, the spine with one 180° bend, two WALL PASSes on different walls (M1), the catch pool, the start room over the south side. Ports: the hall's doors, the corridor door above, the two passes, the exit lane.
+
+### 11.7 What it asks of 关卡设计 and 游戏视觉
+
+**关卡设计** (proposals only, through 总控; LMS and the code stay theirs):
+1. A level per cell in 0.30 m steps (§6.1's `floorY`, every theme) and a storey height per level profile, a whole number of steps.
+2. Void cells: reserved, guarded; sight and sound cross, the Relay never.
+3. Multi-storey modules: a footprint with a storey count and ports per storey (door, gallery, connector, flume), pinned before the carve.
+4. Edge resolution as data: §11.4's table, every edge with a crossed and a closed state; corner pieces; the round arch up to 2.4 m as a new edge size.
+5. The Flume connector: one-way cells on cell lines, out of the Relay's graph, and a support check.
+
+**游戏视觉** would build: FLUME CELL in three styles and four drops; PIER with saddle and coping; walk and sight ARCH; plinth; bend bay; WALL PASS reveal; shaft base, middle and cap; tub and cheeks; catch pool; STEP, STEP RUN, LEDGE, VOID EDGE, WEIR and COPING in an office and a tile version. LOD: one tile material for spine, coping and shaft, so a run merges into few draws on iPhone and iPad [LS190]; LOD1 drops grout normals and the saddle's curve; LOD2 merges a run of bays into one mesh. The tile sheet must divide 3 m (LMS §5, `TileAlign`): 1.5 m (10 × 10 tiles), not r4t's 2.4 m.
+
+### 11.8 Diagrams to draw next
+
+Spec only; to be drawn from the numbers like Fig. 4 and 5 (`W/level_space/make_terrain_figs.py`), no source image:
+1. **Kit sheet**, axonometric: the cell with its 0.6, 0.30 and 0.15 m marks; every edge and corner piece of §11.4 by Δ; the pieces of §11.6 with sizes.
+2. **Plate 1, the slide hall:** plan on the cell grid, and the section unrolled along the flume with each bay's c, s and crown.
+3. **Plate 2, the well:** the void column, each storey's rim turned, the core, the one bridge, the cascade.
+4. **Plate 3, a pool-level skeleton:** the pinned moves, then the infill, with R4 and R6 marked.

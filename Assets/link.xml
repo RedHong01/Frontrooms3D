@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="UnityEngine.Physics2DModule">
+    <type fullname="UnityEngine.Collider2D" preserve="all" />
+  </assembly>
+</linker>

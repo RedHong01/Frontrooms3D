@@ -806,13 +806,23 @@ SPEC = {
                   "staple (1.10 s) until the open padlock jams.",
              tracks=[dict(name="Run", sounds=[dict(files=lib("Door/door_exit_chain_run"), volume=EXIT_CUT_DB, randPitch=.5, randVol=1)])]),
         dict(path="Mechanism/Door/ExitChainSway", **DOOR3D, max_=18.0,
-             note="The cut's Exit.ChainSway (1.22 s, with the knock): the chain hanging from the staple swings along the wall "
-                  "(period 1.4 s, dying in 0.8 s); a clink at each turning point, the first 0.29 s after the cue.",
-             tracks=[dict(name="Sway", sounds=[dict(files=lib("Door/door_exit_chain_sway"), start=.29, volume=EXIT_CUT_DB - 8,
+             note="The cut's Exit.ChainSway (U1 fall, 1.67 s, with the knock): the chain hanging from the staple sways along the "
+                  "wall, damped in about a second by the knock's friction; clinks 0.25, 0.73 and 1.11 s after the cue, dying.",
+             tracks=[dict(name="Sway", sounds=[dict(files=lib("Door/door_exit_chain_sway_u1"), start=.25, volume=EXIT_CUT_DB - 8,
                                                     randPitch=.3)])]),
         dict(path="Mechanism/Door/ExitChainFloor", **DOOR3D, max_=24.0,
-             note="The cut's Exit.ChainFloor (1.38 s): the chain's tail lands on the carpet.",
-             tracks=[dict(name="Floor", sounds=[dict(files=lib("Door/door_exit_chain_floor"), volume=EXIT_CUT_DB - 2, randPitch=.5)])]),
+             note="The cut's Exit.ChainFloor (U1 fall, 1.67 s): the tail's first link on the carpet, the last links lying down "
+                  "along the wall's foot by about 2.5 s.",
+             tracks=[dict(name="Floor", sounds=[dict(files=lib("Door/door_exit_chain_floor_u1"), volume=EXIT_CUT_DB - 2, randPitch=.5)])]),
+        dict(path="Mechanism/Door/ExitChainHaul", **DOOR3D, max_=24.0,
+             note="The U1 fall's second Exit.ChainRun (1.27 s, at the staple): the long side's weight runs the chain through the "
+                  "staple for 0.40 s, faster and faster, into the padlock's knock.",
+             tracks=[dict(name="Haul", sounds=[dict(files=lib("Door/door_exit_chain_haul"), volume=EXIT_CUT_DB, randPitch=.4)])]),
+        dict(path="Mechanism/Door/ExitChainClink", **DOOR3D, max_=16.0,
+             note="The U1 fall's Exit.ChainClink: a link of the hanging chain knocks the wall in the sway (at most 6; none in "
+                  "the landed fall).",
+             tracks=[dict(name="Clink", sounds=[dict(files=lib("Door/door_exit_chain_clink"), volume=EXIT_CUT_DB - 10, randPitch=.6,
+                                                     randVol=1.5)])]),
         dict(path="Mechanism/Door/Locked", **DOOR3D,
              tracks=[dict(name="Rattle", sounds=[dict(files=lib("Door/door_locked_rattle"), randPitch=1, randVol=1.5)])]),
         dict(path="Mechanism/Door/Blow", spatial=True, min=1.0, max=36.0, bus="Mechanism", bank="SFX",
@@ -906,6 +916,18 @@ SPEC = {
         dict(path="Mechanism/Lock/PadlockKnock", **DOOR3D, max_=24.0, note="Exit.PadlockKnock (1.22 s): the open padlock jams "
              "against the staple, its body on the steel plate.",
              tracks=[dict(name="Knock", sounds=[dict(files=lib("Lock/padlock_knock"), volume=EXIT_CUT_DB + 2, randPitch=.5)])]),
+        dict(path="Mechanism/Lock/PadlockTap", **DOOR3D, max_=18.0, note="Exit.PadlockTap (U1 fall, 1.28 s): the open padlock "
+             "swings on the lower run and taps the wall, before it is hauled up to the knock.",
+             tracks=[dict(name="Tap", sounds=[dict(files=lib("Lock/padlock_tap"), volume=EXIT_CUT_DB - 4, randPitch=.5)])]),
+        # ---------------------------------------------------------- alarm devices (Relay v2 V7a / V7b; RELAY 9.4's Device row)
+        dict(path="Mechanism/Alarm/FoilBell", spatial=True, min=2.0, max=40.0, extent=60, bus="Mechanism", bank="SFX",
+             note="map.DeviceTripped with a foil: id (V7a, once per window and floor, inert until the profile's foil): the panel's "
+                  "local bell at the window, a short ring and the gong's ring-out. Caption [WINDOW ALARM]. Synthesized gong + 757195.",
+             tracks=[dict(name="Bell", sounds=[dict(files=lib("Alarm/alarm_foil_bell"), volume=-5, randPitch=.3)])]),
+        dict(path="Mechanism/Alarm/DoorHorn", spatial=True, min=2.0, max=45.0, extent=40, bus="Mechanism", bank="SFX",
+             note="map.DeviceTripped with an alarmdoor: id (V7b, once per door and floor, before the open; inert until the profile's "
+                  "alarmDoor): the exit alarm's piezo horn, one 1.4 s blast at the horn over the door (2.242 m). Caption [DOOR ALARM].",
+             tracks=[dict(name="Horn", sounds=[dict(files=lib("Alarm/alarm_door_horn"), volume=-9, randPitch=.2)])]),
         # ---------------------------------------------------------- Run! rooms (关卡设计's CR-2; research/room_visuals/20_run_emergency_power.md §4)
         dict(path="Mechanism/Run/MainsDrop", **RUN3D, note="A Run! B room trips (游戏视觉's FrontRoomsRunRig.MainsDropped, CR-S3, "
              "at the room's centre), inert until runRooms is on: the lighting contactor drops out and every wraparound goes dark in "
@@ -944,6 +966,13 @@ SPEC = {
              tracks=[dict(name="Land", sounds=[dict(files=lib("Door/door_stopmid_settle"), pitch=3, volume=SASH_DB, randPitch=1)]),
                      dict(name="Bounce", sounds=[dict(files=lib("Door/door_stopmid_settle"), start=.1, pitch=4, volume=SASH_DB - 18,
                                                       randPitch=1)])]),
+        dict(path="Mechanism/Window/FoilMagnet", spatial=True, min=.5, max=12.0, bus="Mechanism", bank="SFX",
+             note="游戏视觉's FrontRoomsWindowFoil.PartDropped \"magnet\" (V7a): the reed magnet sheared off by the pry lands on the "
+                  "room's sill (the director plays it at the landing time).",
+             tracks=[dict(name="Land", sounds=[dict(files=lib("Window/foil_magnet_land"), volume=SASH_DB - 4, randPitch=.8)])]),
+        dict(path="Mechanism/Window/FoilBlock", spatial=True, min=.5, max=10.0, bus="Mechanism", bank="SFX",
+             note="PartDropped \"block\" (V7a): a takeoff block pops off the shattered glass and swings on its lead.",
+             tracks=[dict(name="Pop", sounds=[dict(files=lib("Window/foil_block_pop"), volume=SASH_DB - 8, randPitch=.8)])]),
         dict(path="Mechanism/Window/Crack", spatial=True, min=1.0, max=28.0, bus="Mechanism", bank="SFX",
              tracks=[dict(name="Crack", sounds=[dict(files=lib("Window/win_crack_hit") + lib("Window/win_crack_hit_b"), randPitch=1)])]),
         dict(path="Mechanism/Window/Shatter", spatial=True, min=2.0, max=50.0, bus="Mechanism", bank="SFX",

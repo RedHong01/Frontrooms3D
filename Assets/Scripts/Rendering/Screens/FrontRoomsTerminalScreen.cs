@@ -14,7 +14,8 @@ using UnityEngine;
 ///   READING  the close-up is open (<see cref="BeginReading"/> .. <see cref="EndReading"/>): always live.
 /// Live pictures come from a pool of <see cref="LiveBudget"/> (2 on desktop, 1 on handheld and WebGL), 5.9 MiB each; a
 /// terminal keeps its picture until another one needs the slot. A picture renders only when its grid changed (a key, the
-/// clock's minute, a face swap) or the GPU lost it: idle frames cost no draw and no allocation.
+/// clock's minute, a face swap), while a screen change moves (41 section 4.2a: one render per step, at most 14 in 0.24 s;
+/// <see cref="FrontRoomsTerminalMotion"/>) or when the GPU lost it: idle frames cost no draw and no allocation.
 /// READ (TB2): a terminal carries a READ target built like the station TV's (ReadTarget; Q3 / A38: the E.1 eye and
 /// "E . READ SCREEN" on readable terminals only), framed per class: desktop and WebGL as today's close-up (0.251 m, 70 %),
 /// a phone full bleed (0.265 m, 95 % of the full height, no TEXT), an iPad at 70 %. FrontRoomsInspectTerminal joins the
@@ -105,9 +106,12 @@ public sealed class FrontRoomsTerminalScreen : MonoBehaviour
 
     FrontRoomsScreenVideo screen;
     FrontRoomsTerminalGrid grid;
+    /// <summary>What the tube shows: the grid itself, or a step of the move from the screen before it (41 section 4.2a).</summary>
+    FrontRoomsTerminalGrid shown;
+    FrontRoomsTerminalMotion motion;
     FrontRoomsTerminal machine;
     FrontRoomsTerminalRaster raster;
-    int renderedVersion = -1;
+    int renderedVersion = -1, composedVersion = -1;
     bool reading, initialised, wanted;
     float distance, lodHeight = -1f, lodSize;
     Texture bound;
@@ -162,6 +166,10 @@ public sealed class FrontRoomsTerminalScreen : MonoBehaviour
     public FrontRoomsScreenVideo Screen => screen;
     public FrontRoomsTerminal Machine => machine;
     public FrontRoomsTerminalGrid Grid => grid;
+    /// <summary>The cells on the tube now: <see cref="Grid"/>, or a step of the move to it.</summary>
+    public FrontRoomsTerminalGrid Shown => shown;
+    /// <summary>The screen change moving now, if any (41 section 4.2a).</summary>
+    public FrontRoomsTerminalMotion Motion => motion;
     /// <summary>The live picture's raster (null in TELL).</summary>
     public FrontRoomsTerminalRaster Raster => raster;
     public bool Live => raster != null;
@@ -194,6 +202,9 @@ public sealed class FrontRoomsTerminalScreen : MonoBehaviour
         screen = s;
         ContentKey = contentKey;
         grid = new FrontRoomsTerminalGrid(FrontRoomsTerminalFace.Current);
+        shown = new FrontRoomsTerminalGrid(grid.Face);
+        motion = new FrontRoomsTerminalMotion(grid.Face);
+        composedVersion = -1;
         if (machine != null) Unhook();
         machine = new FrontRoomsTerminal(FrontRoomsTerminalContent.Load(contentKey), grid, contentKey);
         machine.Refused += OnRefused;
@@ -420,11 +431,23 @@ public sealed class FrontRoomsTerminalScreen : MonoBehaviour
 
     void Flush()
     {
-        if (raster == null) return;
-        if (raster.Lost || grid.Version != renderedVersion)
+        // a change that moves starts from what the tube shows now; on the CPU raster or with Camera motion Off it cuts
+        var m = machine != null ? machine.TakeMotion() : default;
+        if (m.kind != TerminalMotionKind.Cut)
         {
-            raster.Render(grid, grid.Face);
-            renderedVersion = grid.Version;
+            if (raster != null && raster.Gpu && FrontRoomsTerminalMotion.Enabled) motion.Begin(shown, m);
+            else motion.Stop();
+        }
+        if (motion.Running || grid.Version != composedVersion || shown.Face != grid.Face)
+        {
+            motion.Compose(grid, shown);
+            composedVersion = motion.Running ? -1 : grid.Version;
+        }
+        if (raster == null) return;
+        if (raster.Lost || shown.Version != renderedVersion)
+        {
+            raster.Render(shown, shown.Face);
+            renderedVersion = shown.Version;
         }
         Bind();
     }
@@ -555,6 +578,7 @@ public sealed class FrontRoomsTerminalScreen : MonoBehaviour
             if (!t.initialised) continue;
             t.RefreshRead();
             t.StepFaceReflection(Time.unscaledDeltaTime);
+            t.motion.Advance(FrontRoomsInspect.Dt);         // the close-up's unscaled clock (a capture's fixed step too)
             t.Flush();
         }
         // the EXAMINE terminal extension: an aborted close-up ends the reading; the phone's surround follows the picture

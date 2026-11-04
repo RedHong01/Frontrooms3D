@@ -63,11 +63,11 @@ ENTER  OPEN	ENTER  ОТКРЫТЬ
 ENTER  SWAP     ESC  CANCEL	ENTER  ПОМЕНЯТЬ     ESC  ОТМЕНА
 ESC  RESUME	ESC  ПРОДОЛЖИТЬ
 ESC ALWAYS PAUSES AND GOES BACK	ESC ВСЕГДА ПАУЗА И НАЗАД
-EVACUATION PLAN · LEVEL 0	ПЛАН ЭВАКУАЦИИ · LEVEL 0	TEXT panel, placard title
+EVACUATION PLAN · LEVEL 0	ПЛАН ЭВАКУАЦИИ · ЭТАЖ 0	TEXT panel, placard title
 EXAMINE	ОСМОТРЕТЬ
 EXAMINE KEY	ОСМОТРЕТЬ КЛЮЧ
-EXIT (over the stair door)	EXIT, ВЫХОД (над дверью на лестницу)	TEXT panel; EXIT stays, it is what the sign over the door says
-EXIT (over the stair door, padlocked)	EXIT, ВЫХОД (над дверью на лестницу, на навесном замке)	TEXT panel
+EXIT (over the stair door)	ВЫХОД (над дверью на лестницу)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
+EXIT (over the stair door, padlocked)	ВЫХОД (над дверью на лестницу, на навесном замке)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	Все клавиши и кнопки игры на рисунке клавиатуры и мыши. Выберите одну, чтобы узнать, что она делает, или переназначить её.
 FIXED	ФИКС.
 FLOATING	ПЛАВАЮЩИЙ
@@ -130,12 +130,12 @@ LANGUAGE	ЯЗЫК
 LAYOUT	РАСКЛАДКА
 LEFT-HANDED	ДЛЯ ЛЕВШЕЙ
 LEGEND	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (EXIT), НА ЭТАЖ НИЖЕ · ПОСТ ОХРАНЫ (КЛЮЧ) · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (EXIT), НА ЭТАЖ НИЖЕ · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
-LEVEL 0	УРОВЕНЬ 0
-LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · ЛИСТ A-2 ИЗ 4 · НАПЕЧАТАНО 11/89	TEXT panel
-LEVEL 4 / OFFICE	УРОВЕНЬ 4 / ОФИС
-LEVEL B{0}	УРОВЕНЬ B{0}
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (ВЫХОД), НА ЭТАЖ НИЖЕ · ПОСТ ОХРАНЫ (КЛЮЧ) · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	УСЛОВНЫЕ ОБОЗНАЧЕНИЯ: ВЫ ЗДЕСЬ · ЛЕСТНИЦА (ВЫХОД), НА ЭТАЖ НИЖЕ · СТРЕЛКИ НА СТЕНАХ, УКАЗЫВАЮТ ВЫХОД	TEXT panel
+LEVEL 0	ЭТАЖ 0
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	ЭТАЖ 0 · ЛИСТ A-2 ИЗ 4 · НАПЕЧАТАНО 11/89	TEXT panel
+LEVEL 4 / OFFICE	ЭТАЖ 4 / ОФИС
+LEVEL B{0}	ЭТАЖ B{0}
 LISTEN	СЛУШАЕТ
 LOCKED	ЗАПЕРТО
 LOOK	СМОТРЕТЬ	Both senses: the camera control and the close-up prompt E  ·  LOOK
@@ -412,3 +412,67 @@ Choose it, then press the button you want for it. A button another action has as
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	Выберите действие и нажмите нужную для него клавишу. Если клавиша уже занята другим действием, игра спросит, прежде чем поменять их.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	Возвращает все кнопки к значениям по умолчанию. Нажмите дважды, чтобы подтвердить.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	Возвращает все клавиши к значениям по умолчанию. Нажмите дважды, чтобы подтвердить.	device state; draft 2026-11-01
+EXIT	ВЫХОД	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NOT AN EXIT	НЕ ВЫХОД	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+AREA OF RESCUE ASSISTANCE	ЗОНА ОЖИДАНИЯ СПАСАТЕЛЕЙ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NO ROOF ACCESS	ВЫХОДА НА КРЫШУ НЕТ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+LEVELS 0 TO B1	ЭТАЖИ 0–B1	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NEAREST REENTRY ON LEVEL B1	БЛИЖАЙШИЙ ВХОД: ЭТАЖ B1	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+REENTRY ON THIS FLOOR	ВХОД НА ЭТОТ ЭТАЖ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SILENT ALARM: REMOVAL SIGNALS PANEL	ТИХАЯ ТРЕВОГА: СНЯТИЕ ПЕРЕДАЁТ СИГНАЛ НА ПУЛЬТ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	В РАБОЧЕЕ ВРЕМЯ ДВЕРЬ НЕ ЗАПИРАТЬ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SECURITY	ОХРАНА	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+PLEASE SIGN IN	ОТМЕТЬТЕСЬ, ПОЖАЛУЙСТА	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM\nZONE	ЗОНА\nТРЕВОГИ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	СРАБОТАЕТ СИГНАЛИЗАЦИЯ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+TROUBLE	НЕИСПРАВНОСТЬ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+POWER	ПИТАНИЕ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPARE	РЕЗЕРВ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPRINKLER FLOW	ПОТОК СПРИНКЛЕРОВ	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+STAY TUNED.	ОСТАВАЙТЕСЬ С НАМИ.	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ELECTRICAL\nROOM	ЭЛЕКТРОЩИТОВАЯ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+AUTHORIZED PERSONNEL ONLY	ТОЛЬКО ДЛЯ ПЕРСОНАЛА	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+EMPLOYEES ONLY	ТОЛЬКО ДЛЯ СОТРУДНИКОВ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STAFF ONLY	СЛУЖЕБНОЕ ПОМЕЩЕНИЕ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STORAGE	КЛАДОВАЯ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+NO SMOKING	НЕ КУРИТЬ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+SNACKS • CANDY • CHIPS	СНЕКИ • КОНФЕТЫ • ЧИПСЫ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+FRAGILE	ХРУПКОЕ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+THIS SIDE UP	ВЕРХ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+KEEP DRY	БЕРЕЧЬ ОТ ВЛАГИ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+PAYROLL	ЗАРПЛАТА	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MISC	РАЗНОЕ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+Q3 REPORTS	ОТЧЁТЫ ЗА 3 КВ.	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MINUTES	ПРОТОКОЛЫ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+CLIENT FILES	ДЕЛА КЛИЕНТОВ	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+DATE · NAME · COMPANY · VISITING · TIME IN · TIME OUT	ДАТА · ФАМИЛИЯ · ОРГАНИЗАЦИЯ · К КОМУ · ПРИХОД · УХОД	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+COURIER · COPIER SVC · HVAC SVC · WATER SVC · OFFICE SUPPLY · PEST CONTROL · VENDING	КУРЬЕР · РЕМОНТ КОПИРОВ · ВЕНТИЛЯЦИЯ · ДОСТАВКА ВОДЫ · КАНЦТОВАРЫ · ДЕЗИНСЕКЦИЯ · АВТОМАТЫ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+MAILROOM · RM 214 · BLDG SVCS · FRONT OFFICE · STOCK RM 3 · RM 118	ЭКСПЕДИЦИЯ · КОМН. 214 · ХОЗЧАСТЬ · ПРИЁМНАЯ · СКЛАД 3 · КОМН. 118	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+NIGHT DESK	НОЧНОЙ ПОСТ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ON DUTY D.K.	ЗАСТУПИЛ D.K.	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 1 COMPLETE  ALL SECURE	ОБХОД 1 ЗАВЕРШЁН  ВСЁ В ПОРЯДКЕ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BLDG SVCS CALLED  LAMPS OUT STOCK RM 3	ВЫЗВАНА ХОЗЧАСТЬ  НЕТ СВЕТА СКЛАД 3	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 3	ОБХОД 3	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+KEY CONTROL	УЧЁТ КЛЮЧЕЙ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ALL KEYS MUST BE SIGNED OUT	ВЫДАЧА КЛЮЧЕЙ ТОЛЬКО ПОД РОСПИСЬ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DATE · KEY NO. · NAME · OUT · IN · INIT.	ДАТА · № КЛЮЧА · ФАМИЛИЯ · ВЫДАН · СДАН · ПОДП.	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+PHONE LIST	ТЕЛЕФОНЫ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+FIRE · POLICE	ПОЖАРНЫЕ · ПОЛИЦИЯ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BOILER RM	КОТЕЛЬНАЯ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+POST ORDERS	ИНСТРУКЦИЯ ПОСТА	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BACK ROOM CLEARANCE	РАСПРОДАЖА СО СКЛАДА	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+3-PC SOFA SET	ГАРНИТУР 3 ПРЕДМ.	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+NOW $499  WAS $899	ТЕПЕРЬ $499  БЫЛО $899	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+90 DAYS SAME AS CASH	90 ДНЕЙ БЕЗ ПРОЦЕНТОВ	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+CALL 555-0147	ЗВОНИТЕ 555-0147	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9  7 DAYS	ЕЖЕДНЕВНО С 9 ДО 21	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9	С 9 ДО 21	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+FREE DELIVERY	БЕСПЛАТНАЯ ДОСТАВКА	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+ALWAYS MORE\nIN THE BACK	В ГЛУБИНЕ\nВСЕГДА ЕСТЬ ЕЩЁ	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+PLEASE STAND BY	ПОДОЖДИТЕ	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+TECHNICAL DIFFICULTIES	ТЕХНИЧЕСКИЕ НЕПОЛАДКИ	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+WTCZ 61 SIGNS OFF AT 2 AM	WTCZ 61: КОНЕЦ ЭФИРА В 2:00	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	МЫСЛЬ ДНЯ\nИДУЩИЙ РОВНО\nУЙДЁТ ДАЛЬШЕ\nБЕГУЩЕГО.	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+[WINDOW ALARM]	[СИГНАЛ ТРЕВОГИ ОКНА]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+[DOOR ALARM]	[СИГНАЛ ТРЕВОГИ ДВЕРИ]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+CONTROL RM	ЦЕНТРАЛЬНЫЙ ПОСТ	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft

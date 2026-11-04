@@ -1,4 +1,29 @@
 {
+ "Alarm/alarm_door_horn_01.wav": {
+  "note": "the exit alarm's horn over the door: one 1.4 s blast",
+  "seconds": 1.42,
+  "source": "synthesized: a piezo exit-alarm horn at 3100 Hz, 1.4 s + 637870@38.73s +4 st"
+ },
+ "Alarm/alarm_door_horn_02.wav": {
+  "note": "the exit alarm's horn over the door: one 1.4 s blast",
+  "seconds": 1.42,
+  "source": "synthesized: a piezo exit-alarm horn at 3060 Hz, 1.4 s + 637870@38.73s +4 st"
+ },
+ "Alarm/alarm_foil_bell_01.wav": {
+  "note": "a foiled window's local alarm bell: a short ring, then the gong rings out",
+  "seconds": 1.9,
+  "source": "synthesized: a 10 in alarm bell gong at 770 Hz, 14 strokes at 22.6/s + 757195@0.04s"
+ },
+ "Alarm/alarm_foil_bell_02.wav": {
+  "note": "a foiled window's local alarm bell: a short ring, then the gong rings out",
+  "seconds": 1.9,
+  "source": "synthesized: a 10 in alarm bell gong at 746 Hz, 13 strokes at 21.8/s + 757195@0.04s"
+ },
+ "Alarm/alarm_foil_bell_03.wav": {
+  "note": "a foiled window's local alarm bell: a short ring, then the gong rings out",
+  "seconds": 1.9,
+  "source": "synthesized: a 10 in alarm bell gong at 788 Hz, 14 strokes at 23.1/s + 757195@0.04s"
+ },
  "Ambience/amb_air_hall_loop.wav": {
   "note": "carpeted hallway air, 50 Hz mains notched (window spike 1.9 dB)",
   "seconds": 20.0,
@@ -349,6 +374,21 @@
   "seconds": 0.1292,
   "source": "757195@0.56s"
  },
+ "Door/door_exit_chain_clink_01.wav": {
+  "note": "one link of the hanging chain knocks the wall",
+  "seconds": 0.1727,
+  "source": "733605@6.51s -6 st"
+ },
+ "Door/door_exit_chain_clink_02.wav": {
+  "note": "one link of the hanging chain knocks the wall",
+  "seconds": 0.1727,
+  "source": "733605@15.84s -6 st"
+ },
+ "Door/door_exit_chain_clink_03.wav": {
+  "note": "one link of the hanging chain knocks the wall",
+  "seconds": 0.1727,
+  "source": "733605@14.95s -6 st"
+ },
  "Door/door_exit_chain_drop_01.wav": {
   "note": "the key turns: the padlock opens, the chain slides off the bar and drops on the carpet",
   "seconds": 1.724,
@@ -359,15 +399,30 @@
   "seconds": 1.604,
   "source": "536414@0.00s + 330635@44.20s + 453301@0.20s + 167913@0.36s"
  },
- "Door/door_exit_chain_floor_01.wav": {
-  "note": "the chain's tail lands on the carpet (1.38)",
-  "seconds": 0.504,
-  "source": "167913@0.02s"
+ "Door/door_exit_chain_floor_u1_01.wav": {
+  "note": "the chain's tail lands on the carpet and its last links lie down along the wall's foot (U1: 1.67, settled by 2.5)",
+  "seconds": 0.884,
+  "source": "167913@0.02s + 167913@0.62s + 167913@0.80s"
  },
- "Door/door_exit_chain_floor_02.wav": {
-  "note": "the chain's tail lands on the carpet (1.38)",
-  "seconds": 0.504,
-  "source": "167913@0.23s"
+ "Door/door_exit_chain_floor_u1_02.wav": {
+  "note": "the chain's tail lands on the carpet and its last links lie down along the wall's foot (U1: 1.67, settled by 2.5)",
+  "seconds": 0.884,
+  "source": "167913@0.23s + 167913@0.62s + 167913@0.80s"
+ },
+ "Door/door_exit_chain_haul_01.wav": {
+  "note": "the long side hauls the chain through the staple, faster and faster, up to the knock (U1: 1.27-1.67)",
+  "seconds": 0.404,
+  "source": "330635@43.14s + 453301@0.27s, 453301@0.48s"
+ },
+ "Door/door_exit_chain_haul_02.wav": {
+  "note": "the long side hauls the chain through the staple, faster and faster, up to the knock (U1: 1.27-1.67)",
+  "seconds": 0.404,
+  "source": "330635@44.66s + 453301@0.51s, 453301@0.94s"
+ },
+ "Door/door_exit_chain_haul_03.wav": {
+  "note": "the long side hauls the chain through the staple, faster and faster, up to the knock (U1: 1.27-1.67)",
+  "seconds": 0.404,
+  "source": "330635@43.90s + 453301@0.44s, 453301@0.88s"
  },
  "Door/door_exit_chain_run_01.wav": {
   "note": "the chain runs: off the crash bar (0.95), then hauled through the staple (1.10)",
@@ -394,14 +449,14 @@
   "seconds": 0.1727,
   "source": "733605@16.30s -6 st + 453301@0.44s"
  },
- "Door/door_exit_chain_sway_01.wav": {
-  "note": "the hanging chain sways from the staple: a clink at each turning point, dying (from 0.29 s after the jam)",
-  "seconds": 1.5727,
+ "Door/door_exit_chain_sway_u1_01.wav": {
+  "note": "the hanging chain sways from the staple: a clink at each turning point, damped in about a second (from 0.25 s after the jam)",
+  "seconds": 1.0327,
   "source": "733605@6.51s, 733605@15.84s, 733605@15.62s -6 st"
  },
- "Door/door_exit_chain_sway_02.wav": {
-  "note": "the hanging chain sways from the staple: a clink at each turning point, dying (from 0.29 s after the jam)",
-  "seconds": 1.5727,
+ "Door/door_exit_chain_sway_u1_02.wav": {
+  "note": "the hanging chain sways from the staple: a clink at each turning point, damped in about a second (from 0.25 s after the jam)",
+  "seconds": 1.0327,
   "source": "733605@14.95s, 733605@6.54s, 733605@15.79s -6 st"
  },
  "Door/door_exit_chain_tug_01.wav": {
@@ -2059,6 +2114,16 @@
   "seconds": 0.1365,
   "source": "733605@15.62s -5 st"
  },
+ "Lock/padlock_tap_01.wav": {
+  "note": "the open padlock swings on the lower run and taps the wall (U1: 1.28)",
+  "seconds": 0.1231,
+  "source": "632489@0.01s -5 st + 453301@0.27s"
+ },
+ "Lock/padlock_tap_02.wav": {
+  "note": "the open padlock swings on the lower run and taps the wall (U1: 1.28)",
+  "seconds": 0.1231,
+  "source": "536414@0.04s -5 st + 453301@0.48s"
+ },
  "Relay/relay_lockon_chime.wav": {
   "note": "the only chime in the game",
   "seconds": 0.53,
@@ -2433,6 +2498,26 @@
   "note": "HUD B: the open padlock drops and fades, a soft metallic tink (616835, -2 st)",
   "seconds": 0.4506,
   "source": "AudioSource/HUD/unlock_drop.wav"
+ },
+ "Window/foil_block_pop_01.wav": {
+  "note": "a takeoff block pops off the shattered glass",
+  "seconds": 0.052,
+  "source": "757195@0.04s -3 st"
+ },
+ "Window/foil_block_pop_02.wav": {
+  "note": "a takeoff block pops off the shattered glass",
+  "seconds": 0.052,
+  "source": "757195@0.30s -3 st"
+ },
+ "Window/foil_magnet_land_01.wav": {
+  "note": "the sheared reed magnet lands on the sill",
+  "seconds": 0.088,
+  "source": "733605@6.51s -5 st, bounce"
+ },
+ "Window/foil_magnet_land_02.wav": {
+  "note": "the sheared reed magnet lands on the sill",
+  "seconds": 0.088,
+  "source": "733605@15.84s -5 st, bounce"
  },
  "Window/sash_give_01.wav": {
   "note": "the keeper tears, lands on the sill; the sashes slide up and stow",

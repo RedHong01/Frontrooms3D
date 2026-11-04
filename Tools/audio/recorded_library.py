@@ -1242,14 +1242,132 @@ def build_exit_unlock():
 
     def clink(t):
         return at_peak(cut(soft, t / down6, .12 / down6, pre=.003, fout=.1))
+    # U1 (§11.8, Red 11-01): the friction from the knock damps the sway in about 1 s (still by 3.5 on the cut clock), so the
+    # clinks come 0.48 and 0.86 s after the first and die 8 and 17 dB (the old rigid swing: 0.70 and 1.40 s, 7.7 dB apart)
     sways = ((6.5122, 15.8420, 15.6206), (14.9460, 6.5360, 15.7910))
-    emit("Door/door_exit_chain_sway", [mix((clink(a), 0, 0), (clink(b), .70, -7.7), (clink(c), 1.40, -15.4)) for a, b, c in sways],
+    emit("Door/door_exit_chain_sway_u1", [mix((clink(a), 0, 0), (clink(b), .48, -8), (clink(c), .86, -17)) for a, b, c in sways],
          ["%s, %s, %s -6 st" % (ref(733605, a), ref(733605, b), ref(733605, c)) for a, b, c in sways],
-         "the hanging chain sways from the staple: a clink at each turning point, dying (from 0.29 s after the jam)")
+         "the hanging chain sways from the staple: a clink at each turning point, damped in about a second (from 0.25 s after the jam)")
+    emit("Door/door_exit_chain_clink", [clink(t) for t in (6.5122, 15.8420, 14.9460)],
+         ["%s -6 st" % ref(733605, t) for t in (6.5122, 15.8420, 14.9460)], "one link of the hanging chain knocks the wall")
+    # U1: the tail's first link lands at the knock; the last five lie down along the wall's foot by about 2.5 (0.8 s later)
     floor = prepared(167913, "highpass=f=60,lowpass=f=6000")
-    emit("Door/door_exit_chain_floor", [cut(floor, t, .5, pre=.004, fout=.22) for t in (.0180, .2290)],
-         [ref(167913, t) for t in (.0180, .2290)], "the chain's tail lands on the carpet (1.38)")
+    emit("Door/door_exit_chain_floor_u1",
+         [mix((cut(floor, t, .5, pre=.004, fout=.22), 0, 0), (cut(floor, .62, .26, pre=.004, fout=.12), .34, -7),
+              (cut(floor, .80, .22, pre=.004, fout=.12), .66, -12)) for t in (.0180, .2290)],
+         ["%s + %s + %s" % (ref(167913, t), ref(167913, .62), ref(167913, .80)) for t in (.0180, .2290)],
+         "the chain's tail lands on the carpet and its last links lie down along the wall's foot (U1: 1.67, settled by 2.5)", tight=False)
+    # U1: the long side's weight runs the chain through the staple in 0.40 s (the second ChainRun, 1.27 to the knock at 1.67),
+    # faster as it goes: 330635's chain hauled through its padlock, rising 12 dB, 453301's links coming closer, cut into the knock
+    hauls = ((43.14, (.2695, .4763)), (44.66, (.5110, .9360)), (43.90, (.4360, .8790)))
+    items = []
+    for a, links in hauls:
+        x = cut(pulled, a, .40, pre=.004, fin=.01, fout=.02)
+        x = [v * 10 ** ((-12 + 12 * min(1.0, k / (.36 * SR))) / 20) for k, v in enumerate(x)]
+        items.append(mix((x, 0, 0), (cut(thick, links[0], .09, pre=.002, fout=.05), .17, -12),
+                         (cut(thick, links[1], .09, pre=.002, fout=.05), .30, -8)))
+    emit("Door/door_exit_chain_haul", items, ["%s + %s, %s" % (ref(330635, a), ref(453301, l[0]), ref(453301, l[1])) for a, l in hauls],
+         "the long side hauls the chain through the staple, faster and faster, up to the knock (U1: 1.27-1.67)", tight=False)
+    # U1: the open padlock on its 0.24 m lower run taps the wall once, 0.38 s before it is hauled up to the knock: a padlock
+    # opening 5 st down (lighter than the knock's 7: the body only grazes), over a link
+    taps, refs = [], []
+    for (sid, chain, t, n), b in zip(openings, (.2695, .4763)):
+        r = st(-5)
+        x = prepared(sid, varispeed(r) + "," + chain)
+        taps.append(mix((cut(x, t / r, .09 / r, pre=.003, fout=.05), 0, 0), (cut(thick, b, .06, pre=.002, fout=.04), .003, -14)))
+        refs.append("%s -5 st + %s" % (ref(sid, t), ref(453301, b)))
+    emit("Lock/padlock_tap", taps, refs, "the open padlock swings on the lower run and taps the wall (U1: 1.28)")
 
+
+
+def resonators(force, modes, seconds):
+    """A struck steel body as a bank of damped resonators (Hz, gain, seconds to -60 dB), driven by `force` (one sample a value)."""
+    n = int(seconds * SR)
+    out = [0.0] * n
+    for f, gain, t60 in modes:
+        r = 10 ** (-3.0 / (t60 * SR))
+        c1, c2 = 2 * r * math.cos(TAU * f / SR), -r * r
+        g = gain * math.sin(TAU * f / SR)
+        y1 = y2 = 0.0
+        for i in range(n):
+            y = c1 * y1 + c2 * y2 + (g * force[i] if i < len(force) else 0.0)
+            out[i] += y
+            y2, y1 = y1, y
+    return out
+
+
+def build_alarm_devices():
+    """Relay v2's device sounds (RELAY 9.4, "the device's own sound"; 关卡设计's V7a foil, V7b alarm door; 游戏视觉's looks), inert
+    until the profile's foil / alarmDoor. No bell or horn is in the library and nothing new is downloaded without Red, so both are
+    built from physics with real contacts, as the lock-on chime was:
+    - the foil's local bell: a c.1990 10 in vibrating alarm bell (the panel's local bell rings while the loop is open; here a short
+      ring, 0.6 s of strokes, then the gong rings out). The gong is a bank of resonators on a shallow steel dome's partials
+      (770 Hz and 1.82, 2.71, 3.96, 5.38, 6.93 x, the higher ones shorter), struck by its clapper 22-23 times a second, each stroke
+      a 0.3 ms contact with a little spread in force and time; each stroke's click is a real latch tick (757195). Not a chime: the
+      rapid strokes make the alarm bell's rattle, and it sits two octaves under the lock-on's steel.
+    - the exit alarm's horn: a battery exit alarm of the period's piezo sounder: a square drive at about 3.1 kHz through the
+      element's resonance (odd harmonics, a weak 2nd), the oscillator wandering 0.4 % and sagging 1.5 % as the battery takes the
+      load, on in 8 ms with its relay's click (637870 4 st up), 1.4 s, off in 15 ms.
+    - the foil's parts (游戏视觉's PartDropped): the reed magnet landing on the sill (a link of 733605, 5 st down, with its bounce),
+      a takeoff block popping off the glass (757195's tick 3 st down)."""
+    print("alarm devices")
+    tick = prepared(757195, "highpass=f=900,lowpass=f=9000")
+    contact = cut(tick, .04, .012, pre=.001, fin=.0005, fout=.006)
+    bells, refs = [], []
+    import random
+    for f1, rate, strokes, seed in ((770.0, 22.6, 14, 3), (746.0, 21.8, 13, 7), (788.0, 23.1, 14, 11)):
+        rnd = random.Random(seed)
+        n = int(1.9 * SR)
+        force = [0.0] * n
+        clicks = [0.0] * n
+        hit = int(.0003 * SR) + 1
+        for k in range(strokes):
+            at = int((k / rate + rnd.uniform(-.002, .002)) * SR) + int(.003 * SR)
+            amp = 10 ** (rnd.uniform(-1.5, 1.0) / 20) * (.6 + .4 * min(1.0, k / 3.0))   # the armature takes a stroke or three to swing full
+            for i in range(hit):
+                if at + i < n: force[at + i] += amp * math.sin(math.pi * i / hit)
+            for i, v in enumerate(contact):
+                if at + i < n: clicks[at + i] += amp * v
+        modes = [(f1, 1.0, 1.5), (f1 * 1.82, .55, 1.0), (f1 * 2.71, .45, .7), (f1 * 3.96, .3, .45), (f1 * 5.38, .18, .3), (f1 * 6.93, .1, .2)]
+        ring = resonators(force, modes, 1.9)
+        k = 1.0 / (max(abs(v) for v in ring) or 1.0)
+        kc = 1.0 / (max(abs(v) for v in clicks) or 1.0)
+        bells.append([k * a + .12 * kc * b for a, b in zip(ring, clicks)])
+        refs.append("synthesized: a 10 in alarm bell gong at %.0f Hz, %d strokes at %.1f/s + %s" % (f1, strokes, rate, ref(757195, .04)))
+    emit("Alarm/alarm_foil_bell", bells, refs, "a foiled window's local alarm bell: a short ring, then the gong rings out", tight=False)
+
+    up4 = st(4)
+    relay = prepared(637870, varispeed(up4) + ",highpass=f=1500")
+    horns, refs = [], []
+    for f0, seed in ((3100.0, 5), (3060.0, 9)):
+        rnd = random.Random(seed)
+        n = int(1.42 * SR)
+        x = [0.0] * n
+        ph = 0.0
+        wander = 0.0
+        for i in range(n):
+            t = i / SR
+            wander += (rnd.uniform(-1, 1) * .0004 - wander * .002)
+            f = f0 * (1.0 - .015 * (1 - math.exp(-t / .25)) + wander)
+            ph += TAU * f / SR
+            env = min(1.0, t / .008) * (1.0 if t < 1.40 else max(0.0, 1 - (t - 1.40) / .015))
+            # the element's resonance keeps the odd harmonics of the square drive, with a little 2nd from its asymmetry
+            x[i] = env * (math.sin(ph) + .06 * math.sin(2 * ph + .4) + .22 * math.sin(3 * ph) + .07 * math.sin(5 * ph))
+        click = cut(relay, 38.725 / up4, .02 / up4, pre=.002, fin=.001, fout=.01)
+        horns.append(mix((x, 0, 0), (click, 0, -10)))
+        refs.append("synthesized: a piezo exit-alarm horn at %.0f Hz, 1.4 s + %s +4 st" % (f0, ref(637870, 38.725)))
+    emit("Alarm/alarm_door_horn", horns, refs, "the exit alarm's horn over the door: one 1.4 s blast", tight=False)
+
+    down5 = st(-5)
+    tink = prepared(733605, varispeed(down5) + ",highpass=f=400,lowpass=f=9000")
+    emit("Window/foil_magnet_land",
+         [mix((cut(tink, t / down5, .08, pre=.003, fout=.05), 0, 0), (cut(tink, t / down5, .04, pre=.003, fout=.03), .045, -14))
+          for t in (6.5122, 15.8420)],
+         ["%s -5 st, bounce" % ref(733605, t) for t in (6.5122, 15.8420)], "the sheared reed magnet lands on the sill")
+    down3 = st(-3)
+    pop = prepared(757195, varispeed(down3) + ",highpass=f=700,lowpass=f=8000")
+    emit("Window/foil_block_pop", [cut(pop, t / down3, .05, pre=.002, fout=.03) for t in (.04, .30)],
+         ["%s -3 st" % ref(757195, t) for t in (.04, .30)], "a takeoff block pops off the shattered glass")
 
 
 def build_sash_pry():
@@ -1547,6 +1665,7 @@ def build():
     build_station_steps()
     build_exit_chain()
     build_exit_unlock()
+    build_alarm_devices()
     build_sash_pry()
     build_run_room()
     build_stairwell()

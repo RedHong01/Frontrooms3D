@@ -3,7 +3,7 @@
 Owner: 平面视觉 · 印刷与演示.
 - **Form design:** `Documentation/research/print_reference/PRINT_FORM_SYSTEM.md` §9.
 - **Research:** track D, `~/FrontRoomsVisualWork/reference/print_reference/research/D_scantron_omr.md`.
-- **Figma (current, REV. 10-31-26):** section 3852:9229. The canary version is **3852:9546**; the white version is **3852:9854**. Until Figma is synced, its Rating 07 still reads the 10-31 draft; the InDesign master, the printable PDF and this template are current.
+- **Figma (current, REV. 10-31-26):** section 3852:9229. The canary version is **3852:9546**; the white version is **3852:9854**. Figma, the InDesign master, the printable PDF and this template carry the same strings (Figma synced 2026-11-03).
   - REV. 10-31-26 (playtest of 11-03/04): strings from `research/tutorial/30_playtest_plan.md` §7, signed by 叙事 (`research/narrative/80_form_and_station_paper_signoff.md` §1); cues PLAN · TV · ARROWS · EXIT SIGN · LIGHT · HUD. Interview 05 is now the wallpaper question; the look-eye question is asked aloud from FR-PT 06 (moderator sheet).
   - REV. 10-22-26: section 3510:7478 (3510:7479 canary, 3510:7787 white).
   - REV. 10-22-26 drops the During play section (Red, 2026-10-22) and adds the look-eye item, interview 05.

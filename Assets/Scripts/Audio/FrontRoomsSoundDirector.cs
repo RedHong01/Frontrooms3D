@@ -59,6 +59,9 @@ namespace FrontRooms.Audio
         Vector3 sashAt;                       // the latch being pried (it is gone by the time the sash gives)
         float railFirstAt = -1f, railLastAt = -1f;   // a shatter's meeting rails landing on the sill (game time)
         Vector3 railAt;
+        float magnetLandAt = -1f;             // V7a: a foil's reed magnet sheared off by the pry lands on the sill (game time)
+        Vector3 magnetAt;
+        int chainRuns;                        // the cut's Exit.ChainRun since the release: the second is the haul through the staple
         readonly HashSet<FrontRoomsRunRig> runRigs = new HashSet<FrontRoomsRunRig>();
         // A Run! B room's fluorescent wraparounds (游戏视觉's rig, CR-S4): they hum while armed and go dark at MainsDropped.
         const string RunWrapLight = "run b wrap light";
@@ -137,6 +140,7 @@ namespace FrontRooms.Audio
             FrontRoomsExitUnlockCut.Cue += OnExitUnlockCue;
             FrontRoomsRunRigBinder.RigBuilt += OnRunRigBuilt;
             FrontRoomsWindowSash.RailsDropped += OnSashRailsDropped;
+            FrontRoomsWindowFoil.PartDropped += OnFoilPartDropped;
             FrontRoomsRunRigBinder.RigDropped += OnRunRigDropped;
             FrontRoomsDoorBreakVisual.DoorStageChanged += OnDoorStageChanged;
             FrontRoomsKeyHud.SoundCue += OnHudSoundCue;
@@ -155,6 +159,7 @@ namespace FrontRooms.Audio
             FrontRoomsExitUnlockCut.Cue -= OnExitUnlockCue;
             FrontRoomsRunRigBinder.RigBuilt -= OnRunRigBuilt;
             FrontRoomsWindowSash.RailsDropped -= OnSashRailsDropped;
+            FrontRoomsWindowFoil.PartDropped -= OnFoilPartDropped;
             FrontRoomsRunRigBinder.RigDropped -= OnRunRigDropped;
             foreach (var r in runRigs) if (r != null) Unhook(r);
             runRigs.Clear();
@@ -240,6 +245,11 @@ namespace FrontRooms.Audio
             {
                 railLastAt = -1f;
                 if (!caught) FrontRoomsFmod.OneShot(SoundIds.WindowSashRailLand, railAt);
+            }
+            if (magnetLandAt >= 0f && Time.time >= magnetLandAt)
+            {
+                magnetLandAt = -1f;
+                if (!caught) FrontRoomsFmod.OneShot(SoundIds.WindowFoilMagnet, magnetAt);
             }
         }
 
@@ -643,6 +653,10 @@ namespace FrontRooms.Audio
             map.DoorLatchBurst += OnBodyDoorBurst;
             map.DoorBodyBlocked += OnBodyDoorImpact;
             map.DoorSlammedInto += OnBodyDoorImpact;
+            map.DeviceTripped += OnDeviceTripped;
+#if FRONTROOMS_RELAY_V2
+            map.DoorSwingStarted += OnDoorSwingStarted;
+#endif
             map.KeyTaken += OnKeyTaken;
             relay.StateChanged += OnRelayState;
             relay.DoorBlow += OnDoorBlow;
@@ -695,6 +709,10 @@ namespace FrontRooms.Audio
                 map.DoorLatchBurst -= OnBodyDoorBurst;
                 map.DoorBodyBlocked -= OnBodyDoorImpact;
                 map.DoorSlammedInto -= OnBodyDoorImpact;
+                map.DeviceTripped -= OnDeviceTripped;
+#if FRONTROOMS_RELAY_V2
+                map.DoorSwingStarted -= OnDoorSwingStarted;
+#endif
                 map.KeyTaken -= OnKeyTaken;
             }
             if (relay != null)
@@ -713,6 +731,7 @@ namespace FrontRooms.Audio
             relay = null;
             stopLimitAt = -1f;
             railFirstAt = railLastAt = -1f;
+            magnetLandAt = -1f;
             FrontRoomsFmod.Stop(ref breath, true);
             FrontRoomsFmod.Stop(ref heartbeat, true);
             FrontRoomsFmod.Stop(ref windowStress, true);
@@ -933,9 +952,10 @@ namespace FrontRooms.Audio
         // A key unlock that drew the latch raises no DoorHandleTurned: its knob beat was the handle.
         // The stairwell EXIT door (C22) is steel: its maze face carries a crash bar that draws the latch itself, and it
         // shuts on a closer with the steel close. Its stair face has no bar, so an open from inside X keeps the lever.
+        // An alarm door (C16, V7b; only with the profile's alarmDoor) opens by its bar on both faces.
         void OnDoorHandleTurned(FrontRoomsMapWorld.Door door, Vector3 lockPoint)
         {
-            if (map != null && map.IsExitDoor(door) && listener != null && !map.InExitArea(map.CellOf(listener.position)))
+            if (map != null && (door != null && door.alarm || map.IsExitDoor(door) && listener != null && !map.InExitArea(map.CellOf(listener.position))))
             {
                 FrontRoomsFmod.OneShot(SoundIds.DoorExitBar, lockPoint);
                 FrontRoomsDoorSound.BarPushed(door.position);
@@ -947,12 +967,14 @@ namespace FrontRooms.Audio
         void OnBodyDoorBurst(FrontRoomsMapWorld.Door door)
         {
             if (map == null || !map.BodyDoors || door == null) return;
-            FrontRoomsFmod.OneShot(SoundIds.DoorHandle, door.position);
-            if (map.IsExitDoor(door))
+            if (door.alarm || map.IsExitDoor(door))
             {
+                if (!door.alarm) FrontRoomsFmod.OneShot(SoundIds.DoorHandle, door.position);
                 FrontRoomsFmod.OneShot(SoundIds.DoorExitBar, door.position);
                 FrontRoomsDoorSound.BarPushed(door.position);
+                return;
             }
+            FrontRoomsFmod.OneShot(SoundIds.DoorHandle, door.position);
         }
 
         void OnBodyDoorImpact(FrontRoomsMapWorld.Door door)
@@ -961,8 +983,85 @@ namespace FrontRooms.Audio
                 FrontRoomsFmod.OneShot(SoundIds.DoorStopLimit, door.position, SoundIds.Param.Impact, .65f);
         }
 
-        void OnDoorLatched(FrontRoomsMapWorld.Door door, Vector3 centre) =>
-            FrontRoomsDoorSound.Latched(centre, map != null && map.IsExitDoor(door) ? SoundIds.DoorExitClose : SoundIds.DoorLatchStrike);
+        // V5 (RELAY 10, only under the define: without it every move reads Ease): a SLAM's frame bang in place of the latch, an
+        // EASE's soft click; a barge, an unlock, the world's and the Relay's shuts keep the strike. The steel EXIT keeps its close.
+        void OnDoorLatched(FrontRoomsMapWorld.Door door, Vector3 centre)
+        {
+            var close = SoundIds.DoorLatchStrike;
+            if (map != null && map.IsExitDoor(door)) close = SoundIds.DoorExitClose;
+#if FRONTROOMS_RELAY_V2
+            else if (door != null && door.swingKind == FrontRoomsMapWorld.DoorSwingKind.Slam) close = SoundIds.DoorSlamBang;
+            else if (door != null && door.swingKind == FrontRoomsMapWorld.DoorSwingKind.Ease) close = SoundIds.DoorEaseClick;
+#endif
+            FrontRoomsDoorSound.Latched(centre, close);
+        }
+
+#if FRONTROOMS_RELAY_V2
+        // V5: a BARGE or a SLAM swings its leaf in 0.3 s (FrontRoomsShotTimings.FastSwing): the fast swing at the door, raised as
+        // the leaf leaves the frame (an open, after the lever) or at once (a shut). The hinge Foley still plays under it.
+        void OnDoorSwingStarted(FrontRoomsMapWorld.Door door, FrontRoomsMapWorld.DoorSwingKind kind)
+        {
+            if (!FrontRoomsFmod.Ready || caught || door == null) return;
+            if (kind == FrontRoomsMapWorld.DoorSwingKind.Barge || kind == FrontRoomsMapWorld.DoorSwingKind.Slam)
+                FrontRoomsFmod.OneShot(SoundIds.DoorFastSwing, door.position + Vector3.up * 1f);
+        }
+#endif
+
+        /// <summary>
+        /// A device tripped (map.DeviceTripped, Relay v2 V7a/V7b; never raised with the profile's foil / alarmDoor off): the
+        /// device's own sound where it is (RELAY 9.4's Device row). A foiled window ("foil:"): the panel's local bell, a short
+        /// ring, at the window. An alarm door ("alarmdoor:", once per door and floor, before the open): the exit alarm's horn,
+        /// at the horn over the door (游戏视觉's "Alarm horn", 2.242 m up); the bar and the door's own Foley follow as usual.
+        /// The game makes the call (the director's DeviceTriggered); this is only what the player hears.
+        /// </summary>
+        void OnDeviceTripped(Vector3 point, string id)
+        {
+            if (!FrontRoomsFmod.Ready || caught || id == null) return;
+            if (id.StartsWith("alarmdoor:", System.StringComparison.Ordinal))
+            {
+                var horn = AlarmHornPoint(point);
+                FrontRoomsFmod.OneShot(SoundIds.AlarmDoorHorn, horn);
+                Cap("[DOOR ALARM]", horn, 45f);
+            }
+            else if (id.StartsWith("foil:", System.StringComparison.Ordinal))
+            {
+                FrontRoomsFmod.OneShot(SoundIds.AlarmFoilBell, point);
+                Cap("[WINDOW ALARM]", point, 40f);
+            }
+        }
+
+        // The horn 游戏视觉's alarm look hangs on the door's frame (FrontRoomsAlarmDoorLook.HornLabel), else 2.242 m over the opening.
+        static Vector3 AlarmHornPoint(Vector3 opening)
+        {
+            var best = opening + Vector3.up * FrontRoomsAlarmDoorLook.HornY;
+            var bestDistance = 4f;
+            foreach (var look in FindObjectsByType<FrontRoomsAlarmDoorLook>(FindObjectsSortMode.None))
+            {
+                if (look == null || look.Door == null || (look.Door.position - opening).sqrMagnitude > 1f) continue;
+                var root = look.transform;
+                for (var up = 0; up < 3 && root.parent != null; up++) root = root.parent;
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name != FrontRoomsAlarmDoorLook.HornLabel) continue;
+                    var d = (t.position - best).sqrMagnitude;
+                    if (d < bestDistance) { bestDistance = d; best = t.position; }
+                }
+            }
+            return best;
+        }
+
+        // 游戏视觉's foil (V7a): the pry shears the reed magnet, which lands on the room's sill `seconds` later (game time); a
+        // takeoff block pops off the shattered glass at once and swings on its lead.
+        void OnFoilPartDropped(FrontRoomsWindowFoil foil, string part, Vector3 at, float seconds)
+        {
+            if (!FrontRoomsFmod.Ready || caught) return;
+            if (part == "magnet")
+            {
+                magnetAt = at;
+                magnetLandAt = Time.time + Mathf.Max(0f, seconds);
+            }
+            else if (part == "block") FrontRoomsFmod.OneShot(SoundIds.WindowFoilBlock, at);
+        }
 
         // The stairwell (C22) outlives each floor: its north door latches on its own event.
         void OnNorthDoorLatched(Vector3 point) => FrontRoomsDoorSound.Latched(point, SoundIds.DoorExitClose);
@@ -1187,8 +1286,10 @@ namespace FrontRooms.Audio
         /// The EXIT's unlock micro cut scene (FrontRoomsExitUnlockCut.Cue; research/unlock/20_design.md §7), on the unlock
         /// shot's clock at the padlock, from the haul at the staple: the five pin ticks (0.57-0.65) are one take from the
         /// first, since a frame can hold two of them; the seat and the turn at 0.68; the shackle's release at 0.86 is the
-        /// commit; then the swivel, the key out, the end link's slip, the chain off the bar and through the staple, the open
-        /// padlock's knock on the staple with the sway, and the tail on the carpet. A cancel before the release raises none.
+        /// commit; then the swivel, the key out, the end link's slip. From the slip the U1 fall (FrontRoomsExitChainFall, §11.8)
+        /// raises its own: the chain off the bar (0.97), the open padlock's tap on the wall (1.28), the long side hauling the
+        /// chain through the staple (the second ChainRun, 1.27-1.67), the knock on the staple with the sway and the tail on the
+        /// carpet (all 1.67), and a link on the wall if one knocks it. A cancel before the release raises none.
         /// </summary>
         void OnExitUnlockCue(string cue, Vector3 at)
         {
@@ -1204,14 +1305,16 @@ namespace FrontRooms.Audio
                     break;
                 case FrontRoomsExitUnlockCut.Cues.KeySeat: id = SoundIds.PadlockKeySeat; break;
                 case FrontRoomsExitUnlockCut.Cues.KeyTurn: id = SoundIds.PadlockKeyTurn; break;
-                case FrontRoomsExitUnlockCut.Cues.ShackleRelease: id = SoundIds.PadlockRelease; break;
+                case FrontRoomsExitUnlockCut.Cues.ShackleRelease: id = SoundIds.PadlockRelease; chainRuns = 0; break;
                 case FrontRoomsExitUnlockCut.Cues.ShackleSwivel: id = SoundIds.PadlockSwivel; break;
                 case FrontRoomsExitUnlockCut.Cues.KeyOut: id = SoundIds.LockKeyWithdraw; break;
                 case FrontRoomsExitUnlockCut.Cues.ChainSlip: id = SoundIds.DoorExitChainSlip; break;
-                case FrontRoomsExitUnlockCut.Cues.ChainRun: id = SoundIds.DoorExitChainRun; break;
+                case FrontRoomsExitUnlockCut.Cues.ChainRun: id = ++chainRuns >= 2 ? SoundIds.DoorExitChainHaul : SoundIds.DoorExitChainRun; break;
+                case FrontRoomsExitUnlockCut.Cues.PadlockTap: id = SoundIds.PadlockTap; break;
                 case FrontRoomsExitUnlockCut.Cues.PadlockKnock: id = SoundIds.PadlockKnock; break;
                 case FrontRoomsExitUnlockCut.Cues.ChainSway: id = SoundIds.DoorExitChainSway; break;
                 case FrontRoomsExitUnlockCut.Cues.ChainFloor: id = SoundIds.DoorExitChainFloor; break;
+                case FrontRoomsExitUnlockCut.Cues.ChainClink: id = SoundIds.DoorExitChainClink; break;
                 default: return;
             }
             FrontRoomsFmod.OneShot(id, at);

@@ -151,7 +151,7 @@ public static class FrontRoomsSettingsMenu
     // says so until the presets differ (平面视觉, 11-01: each note fits its own segment, Plex Mono 12 under Bayon 18).
     static readonly string[] QualityNotes = { "70 %", "85 %", "100 %", "AS HIGH", "YOUR MIX" };
     static readonly string[] HandheldResolutionNotes = { "3.2 MPX", "50–100 %" };
-    static readonly string[] ResolutionNotes = { "FULL WINDOW", "50–100 %" };
+    static readonly string[] ResolutionNotes = { "100 %", "50–100 %" };
     static readonly string[] ScaleNotes = { "SOFTEST", "", "", "", "", "", "", "", "", "", "SHARPEST" };
     static readonly string[] UpscalingNotes = { "FSR 1", "BILINEAR" };
     static readonly string[] HandheldRateNotes = { "33 MS", "17 MS" };

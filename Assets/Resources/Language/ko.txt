@@ -63,11 +63,11 @@ ENTER  OPEN	ENTER  열기
 ENTER  SWAP     ESC  CANCEL	ENTER  교체     ESC  취소
 ESC  RESUME	ESC  계속
 ESC ALWAYS PAUSES AND GOES BACK	ESC는 항상 일시정지와 뒤로
-EVACUATION PLAN · LEVEL 0	대피도 · LEVEL 0	TEXT panel, placard title
+EVACUATION PLAN · LEVEL 0	대피도 · 0층	TEXT panel, placard title
 EXAMINE	살피기
 EXAMINE KEY	열쇠 살피기
-EXIT (over the stair door)	EXIT 출구 (계단 문 위)	TEXT panel; EXIT stays, it is what the sign over the door says
-EXIT (over the stair door, padlocked)	EXIT 출구 (계단 문 위, 자물쇠 잠김)	TEXT panel
+EXIT (over the stair door)	비상구 (계단 문 위)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
+EXIT (over the stair door, padlocked)	비상구 (계단 문 위, 자물쇠 잠김)	TEXT panel; the sign says the word of the language (95 §1, Red 2026-11-03)
 Every key and button the game uses, drawn on a keyboard and a mouse. Choose one to read what it does, or to change its key.	게임에 쓰이는 모든 키와 버튼을 키보드와 마우스 그림에 표시합니다. 하나를 고르면 기능을 보거나 키를 바꿀 수 있습니다.
 FIXED	고정
 FLOATING	플로팅
@@ -130,12 +130,12 @@ LANGUAGE	언어
 LAYOUT	배치
 LEFT-HANDED	왼손잡이 모드
 LEGEND	범례	TEXT panel, region head
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (EXIT), 한 층 아래 · 경비 데스크 (열쇠) · 벽 화살표, 나가는 길 표시	TEXT panel
-LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (EXIT), 한 층 아래 · 벽 화살표, 나가는 길 표시	TEXT panel
-LEVEL 0	레벨 0
-LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	LEVEL 0 · 도면 A-2 (총 4장) · 인쇄 11/89	TEXT panel
-LEVEL 4 / OFFICE	레벨 4 / 사무실
-LEVEL B{0}	레벨 B{0}
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · SECURITY DESK (KEY) · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (비상구), 한 층 아래 · 경비 데스크 (열쇠) · 벽 화살표, 나가는 길 표시	TEXT panel
+LEGEND: YOU ARE HERE · STAIR (EXIT), ONE FLOOR DOWN · WALL ARROWS, POINT THE WAY OUT	범례: 현재 위치 · 계단 (비상구), 한 층 아래 · 벽 화살표, 나가는 길 표시	TEXT panel
+LEVEL 0	0층
+LEVEL 0 · SHEET A-2 OF 4 · PRINTED 11/89	0층 · 도면 A-2 (총 4장) · 인쇄 11/89	TEXT panel
+LEVEL 4 / OFFICE	4층 / 사무실
+LEVEL B{0}	B{0}층
 LISTEN	듣는 중
 LOCKED	잠김
 LOOK	보기	Both senses: the camera control and the close-up prompt E  ·  LOOK
@@ -412,3 +412,67 @@ Choose it, then press the button you want for it. A button another action has as
 Choose it, then press the key you want for it. A key another action has asks before it swaps.	선택한 뒤 원하는 키를 누르세요. 다른 동작이 쓰는 키면 바꾸기 전에 묻습니다.	device state; draft 2026-11-01
 Puts every button back to its default. Press twice to confirm.	모든 버튼을 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01
 Puts every key back to its default. Press twice to confirm.	모든 키를 기본값으로 되돌립니다. 두 번 눌러 확인합니다.	device state; draft 2026-11-01
+EXIT	비상구	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NOT AN EXIT	비상구 아님	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+AREA OF RESCUE ASSISTANCE	구조 대기 구역	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NO ROOF ACCESS	옥상 출입 불가	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+LEVELS 0 TO B1	0층~B1층	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+NEAREST REENTRY ON LEVEL B1	가장 가까운 재진입: B1층	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+REENTRY ON THIS FLOOR	이 층으로 재진입 가능	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SILENT ALARM: REMOVAL SIGNALS PANEL	무음 경보: 제거 시 패널에 신호	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+THIS DOOR TO REMAIN UNLOCKED DURING BUSINESS HOURS	영업시간 중 이 문을 잠그지 마십시오	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SECURITY	경비	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+PLEASE SIGN IN	방문 기록을 남겨 주십시오	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM\nZONE	경보\n구역	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ALARM WILL SOUND	문을 열면 경보가 울립니다	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+TROUBLE	고장	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+POWER	전원	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPARE	예비	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+SPRINKLER FLOW	스프링클러 유수	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+STAY TUNED.	채널 고정!	world text, 95 §5 (叙事设计 2026-11-03); AI draft
+ELECTRICAL\nROOM	전기실	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+AUTHORIZED PERSONNEL ONLY	관계자 외 출입금지	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+EMPLOYEES ONLY	직원 전용	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STAFF ONLY	직원 외 출입금지	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+STORAGE	창고	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+NO SMOKING	금연	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+SNACKS • CANDY • CHIPS	스낵 • 사탕 • 칩	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+FRAGILE	깨짐 주의	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+THIS SIDE UP	이쪽이 위	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+KEEP DRY	습기 주의	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+PAYROLL	급여	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MISC	기타	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+Q3 REPORTS	3분기 보고서	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+MINUTES	회의록	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+CLIENT FILES	고객 파일	world text, 95 §5.2 (叙事设计 2026-11-03); AI draft
+DATE · NAME · COMPANY · VISITING · TIME IN · TIME OUT	날짜 · 성명 · 회사 · 방문처 · 입실 · 퇴실	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+COURIER · COPIER SVC · HVAC SVC · WATER SVC · OFFICE SUPPLY · PEST CONTROL · VENDING	택배 · 복사기 수리 · 냉난방 수리 · 정수기 · 사무용품 · 방역 · 자판기	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+MAILROOM · RM 214 · BLDG SVCS · FRONT OFFICE · STOCK RM 3 · RM 118	우편실 · 214호 · 시설관리 · 총무실 · 3번 창고 · 118호	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+NIGHT DESK	야간 데스크	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ON DUTY D.K.	근무 시작 D.K.	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 1 COMPLETE  ALL SECURE	1차 순찰 완료  이상 없음	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BLDG SVCS CALLED  LAMPS OUT STOCK RM 3	시설관리 호출  3번 창고 소등	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+TOUR 3	3차 순찰	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+KEY CONTROL	열쇠 관리	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+ALL KEYS MUST BE SIGNED OUT	모든 열쇠는 반출 기록 필수	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+DATE · KEY NO. · NAME · OUT · IN · INIT.	날짜 · 열쇠 번호 · 성명 · 반출 · 반납 · 서명	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+PHONE LIST	전화번호	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+FIRE · POLICE	소방 · 경찰	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BOILER RM	보일러실	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+POST ORDERS	근무 수칙	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft
+BACK ROOM CLEARANCE	창고 정리 세일	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+3-PC SOFA SET	소파 3종 세트	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+NOW $499  WAS $899	할인가 $499  정가 $899	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+90 DAYS SAME AS CASH	90일 무이자	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+CALL 555-0147	전화 555-0147	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9  7 DAYS	매일 오전 9시~오후 9시	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+OPEN 9 TO 9	오전 9시~오후 9시	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+FREE DELIVERY	무료 배달	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+ALWAYS MORE\nIN THE BACK	안쪽엔\n늘 더 있어요	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+PLEASE STAND BY	잠시 기다려 주십시오	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+TECHNICAL DIFFICULTIES	기술적 문제	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+WTCZ 61 SIGNS OFF AT 2 AM	WTCZ 61 새벽 2시 방송 종료	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+THOUGHT FOR TODAY\nTHE STEADY WALKER\nGOES FARTHER THAN\nTHE ONE WHO RUNS.	오늘의 한마디\n꾸준히 걷는 이가\n달리는 이보다\n더 멀리 간다.	world text, 95 §5.4 (叙事设计 2026-11-03); AI draft
+[WINDOW ALARM]	[창문 경보음]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+[DOOR ALARM]	[문 경보음]	caption (声音设计 2026-11-03, V7a/V7b; unused until the flag is on); draft 2026-11-03
+CONTROL RM	방재실	world text, 95 §5.3 (叙事设计 2026-11-03); AI draft

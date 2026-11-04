@@ -666,6 +666,43 @@ def scenario_hud(out):
     s.close()
 
 
+def scenario_exit_fall(out):
+    """The EXIT's unlock micro cut scene with the U1 fall (research/unlock/20_design.md §11.8), on the cut's clock as the
+    director plays it: the padlock 0.6 m ahead at chest height, the staple 0.3 m right of it, the tail on the carpet. Twice,
+    5 s apart, with the player's carpet steps before each as the yardstick."""
+    s = Studio(os.path.join(out, "exit_fall_u1.wav"))
+    s.set_global("Zone", 4)
+    lock, staple, tail = (0.0, -.3, .6), (.3, -.3, .6), (.6, -1.6, .7)
+    beats = [(.57, "Lock/PadlockKeyIn", lock), (.68, "Lock/PadlockKeySeat", lock), (.68, "Lock/PadlockKeyTurn", lock),
+             (.86, "Lock/PadlockRelease", lock), (.88, "Lock/PadlockSwivel", lock), (.92, "Lock/KeyWithdraw", lock),
+             (.93, "Door/ExitChainSlip", lock), (.967, "Door/ExitChainRun", lock), (1.267, "Door/ExitChainHaul", staple),
+             (1.283, "Lock/PadlockTap", lock), (1.667, "Lock/PadlockKnock", staple), (1.667, "Door/ExitChainSway", staple),
+             (1.667, "Door/ExitChainFloor", tail)]
+    script = []
+    for k in range(2):
+        script += walk(s, 3, .55, start=.3 + 5.0 * k, Surface=0, Gait=0, Dampness=.4)
+        script += [(2.2 + 5.0 * k + t, (lambda e=e, p=p: s.play("event:/Mechanism/" + e, p))) for t, e, p in beats]
+    s.run(10.5, script)
+    s.close()
+
+
+def scenario_alarms(out):
+    """Relay v2's device sounds (V7a / V7b): carpet steps as the yardstick, a pane shattering 8 m ahead (the loudest noise in
+    the game), the foil's bell at the same window, then the alarm door's horn 6 m ahead, 2.24 m up; the foil's magnet on the
+    sill and a takeoff block 1.5 m ahead."""
+    s = Studio(os.path.join(out, "alarms.wav"))
+    s.set_global("Zone", 1)
+    script = walk(s, 3, .55, start=.3, Surface=0, Gait=0, Dampness=.4)
+    window, horn, sill = (1.0, 0.0, 8.0), (.5, .6, 6.0), (.3, -.6, 1.5)
+    script += [(2.0, lambda: s.play("event:/Mechanism/Window/Shatter", window)),
+               (4.0, lambda: s.play("event:/Mechanism/Alarm/FoilBell", window)),
+               (7.0, lambda: s.play("event:/Mechanism/Alarm/DoorHorn", horn)),
+               (9.5, lambda: s.play("event:/Mechanism/Window/FoilMagnet", sill)),
+               (10.0, lambda: s.play("event:/Mechanism/Window/FoilBlock", sill))]
+    s.run(11.0, script)
+    s.close()
+
+
 def render(out):
     os.makedirs(out, exist_ok=True)
     scenario_steps(out, "steps_walk_dry", 0, 0, 0.0, 8, .55)
@@ -694,6 +731,8 @@ def render(out):
     scenario_unlock(out)
     scenario_exit_door(out)
     scenario_hud(out)
+    scenario_exit_fall(out)
+    scenario_alarms(out)
     print("rendered into", out)
 
 

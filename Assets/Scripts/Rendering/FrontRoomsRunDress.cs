@@ -50,6 +50,7 @@ public static class FrontRoomsRunDress
         var overhead = new GameObject("run b overhead services").transform;
         overhead.SetParent(root, false);
         Overhead(overhead, l);
+        RemoteCircuit(overhead, l);
         foreach (var r in overhead.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
         for (var i = 0; i < l.wallItems.Length; i++)
         {
@@ -401,6 +402,154 @@ public static class FrontRoomsRunDress
             for (var zb = z0 + 1.5f; zb < z1; zb += 3f)
                 Kit("Kit_OutletHandyBox", root, new Vector3(l.emtWallX, low - .113f, zb), Quaternion.LookRotation(n, Vector3.up), false, "run b junction box");
         }
+    }
+
+    // ------------------------------------------------------------------ the remote circuit (zone lamps, T-B)
+    // The unit root sits UnitRootBelowCentre under the cabinet's centre (FrontRoomsRunRig.BuildUnits); the remote mount's
+    // octagon box (ZL_RPLATE, built in the cabinet's frame) is centred RemoteBoxCentre above it, its side flats RemoteBoxFlat
+    // off its centre (the 4 in box's 54 mm corner radius x cos 22.5 deg): where the run enters.
+    const float UnitRootBelowCentre = .0955f, RemoteBoxCentre = .095f, RemoteBoxFlat = .0499f;
+    // 3/4 in EMT as Kit_ConduitEMT: 17.9 mm across, its axis 11.5 mm off the wall; corners bent on a hand bender's 4.5 in
+    // centreline radius; strapped within 0.3 m of each box and at most every 1.5 m between (the dress's own runs: 1.5 m).
+    const float EmtRadius = .00895f, EmtOffset = .0115f, EmtBend = .114f, StrapEnd = .3f, StrapPitch = 1.5f;
+    static Mesh bendMesh;
+
+    /// <summary>
+    /// T-B (zone lamps, Red 2026-10-31: T-A and T-B combined): the remote heads (RunUnitDef.remote) are fed from the entry
+    /// unit (the self-contained unit nearest the entrance) by surface EMT at the remote boxes' centre height: along the entry
+    /// unit's wall from its cabinet's far side into each box beyond it, and to the other wall from its cabinet's entrance
+    /// side, round the corner, across the entrance wall above the arch and along the other wall into its boxes. Built only
+    /// with the remote-mount kit in the build (without it every unit keeps its cabinet and its own feed). Corridor1x9: z 3 R
+    /// feeds z 15 R (11.8 m) and z 9 L (2.9 m + 2.9 m across + 8.8 m); clear of the fire bell (z 1, top 2.38 m), the left
+    /// wall's three runs and handy boxes (2.56 m up) and the side doors. Render-only, no shadows, as the overhead services.
+    /// </summary>
+    static void RemoteCircuit(Transform root, RunRigLayout l)
+    {
+        if (l.units == null || !FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.RemotePlate)) return;
+        var source = -1;
+        for (var u = 0; u < l.units.Length; u++)
+            if (!l.units[u].remote && (source < 0 || l.units[u].z < l.units[source].z)) source = u;
+        if (source < 0) return;
+        var s = l.units[source];
+        var cabinet = FrontRoomsKitLibrary.GetInfo("Kit_EmergencyTwinHead");
+        var cabinetHalf = cabinet != null ? cabinet.Max.x : .17275f;
+        var y = l.unitBoxCentreY - UnitRootBelowCentre + RemoteBoxCentre;
+        var sameWall = new System.Collections.Generic.List<float>();
+        var otherWall = new System.Collections.Generic.List<float>();
+        for (var u = 0; u < l.units.Length; u++)
+        {
+            var d = l.units[u];
+            if (!d.remote) continue;
+            if (d.side * s.side < 0f) otherWall.Add(d.z);
+            else if (d.z > s.z) sameWall.Add(d.z);   // a remote between the entrance and the entry unit is not fed (no layout has one)
+        }
+        sameWall.Sort();
+        otherWall.Sort();
+        const string label = "run b remote emt";
+        var from = s.z + cabinetHalf;
+        for (var i = 0; i < sameWall.Count; i++)
+        {
+            WallRun(root, l, s.side, y, from, sameWall[i] - RemoteBoxFlat, label);
+            from = sameWall[i] + RemoteBoxFlat;
+        }
+        if (otherWall.Count == 0) return;
+        var corner = l.WallHalf + EmtOffset + EmtBend;   // where a long wall's run meets its bend
+        var across = l.halfWidth - EmtOffset - EmtBend;  // where the entrance wall's run meets each bend
+        WallRun(root, l, s.side, y, corner, s.z - cabinetHalf, label);
+        Bend(root, l, s.side, y, label + " bend");
+        Tiles(root, new Vector3(-across, y, l.WallHalf), Vector3.right, 2f * across, Quaternion.LookRotation(Vector3.forward, Vector3.right), label);
+        Bend(root, l, -s.side, y, label + " bend");
+        from = corner;
+        for (var i = 0; i < otherWall.Count; i++)
+        {
+            WallRun(root, l, -s.side, y, from, otherWall[i] - RemoteBoxFlat, label);
+            from = otherWall[i] + RemoteBoxFlat;
+        }
+    }
+
+    /// <summary>A run on a long wall (x = side x halfWidth, its face) from z0 to z1 at height y.</summary>
+    static void WallRun(Transform root, RunRigLayout l, float side, float y, float z0, float z1, string label)
+    {
+        if (z1 - z0 < .01f) return;
+        var x = side > 0f ? l.halfWidth : -l.halfWidth;
+        Tiles(root, new Vector3(x, y, z0), Vector3.forward, z1 - z0, Quaternion.LookRotation(side > 0f ? Vector3.left : Vector3.right, Vector3.forward), label);
+    }
+
+    /// <summary>EMT from a wall-face point along <paramref name="dir"/>: 1 m tiles and the rest scaled, then its straps.
+    /// <paramref name="rotation"/> turns the kit's +Z out of the wall and its +Y along the run (as the dress's own runs).</summary>
+    static void Tiles(Transform root, Vector3 start, Vector3 dir, float length, Quaternion rotation, string label)
+    {
+        var n = Mathf.FloorToInt(length + .0001f);
+        for (var k = 0; k < n; k++) Kit("Kit_ConduitEMT", root, start + dir * k, rotation, false, label);
+        var rest = length - n;
+        if (rest > .002f) Kit("Kit_ConduitEMT", root, start + dir * n, rotation, false, label, new Vector3(1f, rest, 1f));
+        if (length < 2f * StrapEnd)
+        {
+            Kit("Kit_ConduitStrap", root, start + dir * (length * .5f), rotation, false, label + " strap");
+            return;
+        }
+        var spans = Mathf.Max(1, Mathf.CeilToInt((length - 2f * StrapEnd) / StrapPitch));
+        for (var k = 0; k <= spans; k++)
+            Kit("Kit_ConduitStrap", root, start + dir * (StrapEnd + (length - 2f * StrapEnd) * k / spans), rotation, false, label + " strap");
+    }
+
+    /// <summary>The 90 deg bend in the corner of the entrance wall and the long wall on <paramref name="side"/>: from the long
+    /// wall's run (tangent at z = corner) to the entrance wall's (tangent at x = side x across).</summary>
+    static void Bend(Transform root, RunRigLayout l, float side, float y, string label)
+    {
+        var go = new GameObject(label);
+        go.transform.SetParent(root, false);
+        go.transform.localPosition = new Vector3(side * (l.halfWidth - EmtOffset - EmtBend), y, l.WallHalf + EmtOffset + EmtBend);
+        // The mesh's quarter runs from +X to +Z round its centre: turned to run from the long wall (side x X) to -Z.
+        go.transform.localRotation = Quaternion.Euler(0f, side > 0f ? 90f : 180f, 0f);
+        go.AddComponent<MeshFilter>().sharedMesh = BendMesh();
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterial = Mat("Prop_Aluminium");   // Kit_ConduitEMT's slot
+        r.shadowCastingMode = ShadowCastingMode.Off;
+    }
+
+    /// <summary>A quarter torus: centreline radius EmtBend from +X to +Z about the origin, tube radius EmtRadius; uv in metres.</summary>
+    static Mesh BendMesh()
+    {
+        if (bendMesh != null) return bendMesh;
+        const int along = 12, round = 12;
+        var verts = new Vector3[(along + 1) * (round + 1)];
+        var normals = new Vector3[verts.Length];
+        var uvs = new Vector2[verts.Length];
+        for (var i = 0; i <= along; i++)
+        {
+            var a = Mathf.PI * .5f * i / along;
+            var radial = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            for (var j = 0; j <= round; j++)
+            {
+                var f = Mathf.PI * 2f * j / round;
+                var n = radial * Mathf.Cos(f) + Vector3.up * Mathf.Sin(f);
+                var k = i * (round + 1) + j;
+                verts[k] = radial * EmtBend + n * EmtRadius;
+                normals[k] = n;
+                uvs[k] = new Vector2(EmtBend * a, EmtRadius * f);
+            }
+        }
+        var tris = new int[along * round * 6];
+        var t = 0;
+        for (var i = 0; i < along; i++)
+            for (var j = 0; j < round; j++)
+            {
+                var p = i * (round + 1) + j;
+                var q = p + round + 1;
+                // Front faces outward: Unity's front side is Cross(b - a, c - a); flip the quad when it points inward.
+                var outward = Vector3.Dot(Vector3.Cross(verts[q] - verts[p], verts[q + 1] - verts[p]), normals[p] + normals[q + 1]) > 0f;
+                if (outward) { tris[t++] = p; tris[t++] = q; tris[t++] = q + 1; tris[t++] = p; tris[t++] = q + 1; tris[t++] = p + 1; }
+                else { tris[t++] = p; tris[t++] = q + 1; tris[t++] = q; tris[t++] = p; tris[t++] = p + 1; tris[t++] = q + 1; }
+            }
+        bendMesh = new Mesh { name = "run b remote emt bend" };
+        bendMesh.vertices = verts;
+        bendMesh.normals = normals;
+        bendMesh.uv = uvs;
+        bendMesh.triangles = tris;
+        bendMesh.RecalculateTangents();
+        bendMesh.RecalculateBounds();
+        return bendMesh;
     }
 
     // ------------------------------------------------------------------ locked side doors (props)

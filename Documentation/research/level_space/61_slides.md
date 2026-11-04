@@ -390,6 +390,7 @@ So a fibreglass flume on tiled masonry walls joins two period-true parts in a wa
 - **Source:** `Assets/Editor/ZoneLamps/FrontRoomsZoneLampsShots.LevelSpace5.cs` (scenes V, W, X; option `r4l`), routed from `LevelSpace.cs`.
 - **Output:** 16 stills in `W/level_space/renders/levelspace/r4l/`; sheet `W/level_space/sheets/LS11_slides.jpg` (FOR RED: PICK). Four runs, each `FINISHED fail=0` with 16 saved. Runs 2 and 3 moved cameras, brightened the hall, enlarged the window and widened SL-B's band. Run 4 re-rendered the unchanged scenes after the parent set the clone's tile material (`Prop_CeramicGlaze`) to porcelain white, (0.93, 0.95, 0.96) instead of (0.86, 0.85, 0.80), at Red's request (10-31 17:19): "我希望底色不应该是偏暖的米白，而是和dream pool更相似的瓷白".
 - **r4t (tiled walls, highest tower, mixed styles; sheet LS12) not rendered.** The first sub-session stopped at about 17:42 when the API key ran out of credit. A Cursor Auto attempt was rolled back by Red on 10-31 at 18:50 and is not the design. Red, 11-01 18:14: "等额度后重做". The redo is designed as an option sheet with three readings of Red's "瓷砖作为墙壁去托举滑梯": A wall under the flume, B the room's walls growing a ledge beside it, C the flume threaded through full-height walls, plus TODAY (LS11's steel in the same hall, for comparison). No image exists yet and Red has not seen the readings. It stopped on 11-01 at about 22:50 at the 70 % usage gate, before any build. Numbers and build plan: `W/level_space/briefs/61c_r4t_redo_build.txt`. No r4t rows belong in the table below until the stills exist.
+- **Since then (11-02 to 11-03): no option sheet; the slide is walked instead.** Red, 11-02 07:31, rejected the slide in an empty box hall ("目前你的滑梯重做方案似乎忽略了dramatic 空间结构的study"); 11-02 ~14:30 picked reading A ("A · 墙在下面"); 11-03 14:37 moved every new structure into the main project's fourth scene to walk (RULES 5b). The slide is now district SP1 of `70_structures_districts.md`: support A inside a pool skeleton (terraced water court, M1 office ceiling, crossing room), the player can ride it. Its pieces are `40` §11.6.
 
 | Still | Shows |
 |---|---|
@@ -413,7 +414,8 @@ Limits of the stills:
 
 - Decided on 10-31 17:15 (§0.1): mixed styles; the player rides and the Relay never; nobody in the tube; the highest tower through the ceiling; tiled walls, no freestanding steel. 系统设计 and 关卡设计 take B10 · Flume (§4) and the fairness window (P4).
 - Still open: **water on or off** (P7).
-- Waiting on credit: the r4t greybox and sheet LS12 (§7), then Red checks them.
+- Decided 11-02 ~14:30: support A, the tiled wall under the flume.
+- Next: Red walks district SP1 in scene 4 (`70` §3) and decides there; its sign carries P7 and `63` Q7, Q8.
 
 ## 9. Sources
 

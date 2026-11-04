@@ -1224,8 +1224,27 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         else if (button == Button.Restart && menuState == MenuState.Settings && TryGetChipBase(Button.SettingsClose, out var resumeCenter, out var resumeSize))
         {
             var resume = new Rect(resumeCenter - resumeSize * .5f, resumeSize);
-            rect.x += ClearHeaderCorner(resume).x - resume.x;
+            var clearedResume = ClearHeaderCorner(resume);
+            rect.x += clearedResume.x - resume.x;
             rect = FrontRoomsHandheld.ClearRect(rect);
+            var rightLimit = clearedResume.xMin - 12f;
+            if (rect.xMax > rightLimit)
+            {
+                // Camera clearance must not move END RUN into RESUME's touch target.
+                rect.x = rightLimit - rect.width;
+                var cutouts = FrontRoomsHandheld.Shape.Cutouts;
+                for (var pass = 0; pass < cutouts.Length; pass++)
+                {
+                    var previousX = rect.x;
+                    foreach (var cutout in cutouts)
+                    {
+                        var keep = new Rect(cutout.xMin - 12f, cutout.yMin - 12f,
+                            cutout.width + 24f, cutout.height + 24f);
+                        if (keep.Overlaps(rect)) rect.x = keep.xMin - rect.width;
+                    }
+                    if (rect.x == previousX) break;
+                }
+            }
         }
         else rect = FrontRoomsHandheld.ClearRect(rect);
         center = rect.center;

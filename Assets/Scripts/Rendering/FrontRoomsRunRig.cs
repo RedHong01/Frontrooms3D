@@ -25,6 +25,11 @@ public struct RunUnitDef
     public bool goalPlus;
     /// <summary>Gain trims on the -Z / +Z head (0 = as designed; -0.23 = x 0.77). F12 (stage C): the near pool.</summary>
     public float trimMinus, trimPlus;
+    /// <summary>T-B (zone lamps, Red 2026-10-31: T-A and T-B combined): the two heads sit on a remote mount
+    /// (FrontRoomsLampKit.RemotePlate: an octagon box under a bracket) where the cabinet would be, fed by the remote circuit
+    /// from the entry unit (FrontRoomsRunDress); no cabinet, no pilot, no feed to the soffit. The heads, their aims, lights
+    /// and pools are the cabinet unit's. Without the kit the unit keeps its cabinet.</summary>
+    public bool remote;
 }
 
 /// <summary>A per-state box probe (VL195 / VL236): centre and size in rig space.</summary>
@@ -150,6 +155,12 @@ public sealed class RunRigLayout
     public Color wrapColor = new Color(.90f, .95f, 1f);
     /// <summary>F10 (stage C): 2.8 clipped the prismatic lens to white; the lamp study's rule 1 keeps a lens in 0.8-1.4.</summary>
     public Color wrapLensEmission = new Color(.90f, .95f, 1f) * 1.1f;
+    /// <summary>R-B (zone lamps, Red 2026-10-31): the ceiling lamps are bare two-lamp strips with a wire guard
+    /// (FrontRoomsLampKit.Strip) in place of the wraparounds, with the same Lights, halos and states. Their lens is the bare
+    /// tubes, driven at stripLensEmission (a bare T12 is about twice a wrap's face, research/zone_lamps/10_run.md s.5: the
+    /// R-B sheet's 2.6). False, or without the kit: the landed wraps.</summary>
+    public bool bareStrips = true;
+    public Color stripLensEmission = new Color(.90f, .95f, 1f) * 2.6f;
     public Color haloColor = new Color(.45f, .47f, .50f);
 
     [Header("Stage-1 / 2 warning on the rig's own wraps (CR-4; the map's burst envelope, FrontRoomsWarnLamps M3)")]
@@ -260,9 +271,11 @@ public sealed class RunRigLayout
             units = new[]
             {
                 // F12 (stage C): the near pool (z 6) read .220 x armed against r8's .169 (+30 %): its two heads x 0.77.
+                // Zone lamps (Red 2026-10-31, T-A + T-B): the self-contained units stay at the entry and the goal ends; the two
+                // between are remote heads on brackets, fed from the entry unit along both walls. Heads, aims and pools unchanged.
                 new RunUnitDef { z = 3f, side = 1f, autoAim = true, trimPlus = -.23f },
-                new RunUnitDef { z = 9f, side = -1f, autoAim = true, trimMinus = -.23f },
-                new RunUnitDef { z = 15f, side = 1f, autoAim = true },
+                new RunUnitDef { z = 9f, side = -1f, autoAim = true, trimMinus = -.23f, remote = true },
+                new RunUnitDef { z = 15f, side = 1f, autoAim = true, remote = true },
                 new RunUnitDef { z = 21f, side = -1f, autoAim = true, goalPlus = true },
             },
             goalPoint = new Vector3(0f, 1.05f, 27f),
@@ -329,6 +342,9 @@ public sealed class RunRigLayout
 /// Run! direction B (EMERGENCY POWER), production rig (run_b_production/10_plan.md): the lights and states of one
 /// Run room. It knows nothing about the map or the stream: a RunRigLayout says where things are, a host says who
 /// owns the armed ceiling lamps.
+///   Zone lamps (Red 2026-10-31, research/zone_lamps): the ceiling lamps are R-B's bare strips with wire guards (the
+///   wraparound only without the kit; every "wrap" below is such a lamp), and the two middle units are T-B remote heads
+///   on brackets (RunUnitDef.remote), fed by the dress's remote circuit from the entry unit; the end units stay T-A.
 ///   Armed: wraparounds on (cell 5 stutters dim), red AC ON pilots lit, heads off, cool bounce ambient.
 ///   Trip (t 0): the mains drop (every wrap 1 -> 0 in 0.06 s, lens afterglow 0.03 decaying tau 0.5 s), pilots out,
 ///   0.35 s of black, then each head rises 0 -> 1 over 0.18 s (ease-in) from 0.35 + 0.004 z: hard warm pools.
@@ -413,6 +429,10 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         public Renderer halo;
         public float level = 1f;
         public float z;
+        /// <summary>The lens at full level: wrapLensEmission, or stripLensEmission for a bare strip (R-B).</summary>
+        public Color lensColor;
+        /// <summary>R-B: the lens is the bare tubes, so the stutter tube's lens follows its light (a wrap's lens kept its level).</summary>
+        public bool bare;
         /// <summary>The intensity the state wants (before the cull's weight) and whether the state has it on.</summary>
         public float drive;
         public bool lit;
@@ -443,6 +463,15 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     public bool MainsDirty { get; private set; }
     public int HeadCount => heads == null ? 0 : heads.Length;
     public int OwnLampCount => wraps == null ? 0 : wraps.Length;
+    /// <summary>Half the length of the rig's own ceiling lamp along the corridor (what a ceiling item such as the ALARM ZONE
+    /// detector clears): the R-B strip's when its kit is in the build, else the wraparound's 1.235 m.</summary>
+    public static float OwnLampHalfLength(RunRigLayout layout)
+    {
+        return layout != null && layout.bareStrips && FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.Strip) ? FrontRoomsLampKit.StripHalfLength : WrapHalfLength;
+    }
+    const float WrapHalfLength = .6175f;
+    /// <summary>The remote mounts built (T-B, RunUnitDef.remote); a remote unit without the kit keeps its cabinet.</summary>
+    public int RemoteMountCount { get; private set; }
     public int ProbeCount => (armedProbes == null ? 0 : armedProbes.Length) + (trippedProbes == null ? 0 : trippedProbes.Length);
     /// <summary>True when this rig was built in the handheld tier (step 9).</summary>
     public bool Handheld { get; private set; }
@@ -634,13 +663,25 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             var yaw = def.side > 0 ? -90f : 90f;
             unitRoot.localPosition = new Vector3(def.side * Layout.halfWidth, Layout.unitBoxCentreY - cabinetHalfHeight, def.z);
             unitRoot.localRotation = Quaternion.Euler(0f, yaw, 0f);
-            var cabinet = Kit("Kit_EmergencyTwinHead", unitRoot, Vector3.zero, Quaternion.identity, "cabinet");
-            SlotRenderers(cabinet, "Run_NeonPilot", out var pr, out var pi);
-            for (var i = 0; i < pr.Length; i++) pilotList.Add(new Emissive { renderer = pr[i], index = pi[i] });
-            // Conduit feed from the knockout up to the soffit (a 1 m EMT tile scaled to the run, 18 mm off the wall).
-            var feedTop = Layout.height - (unitRoot.localPosition.y + feed.y);
-            if (feedTop > .02f)
-                FrontRoomsKitLibrary.Spawn("Kit_ConduitEMT", unitRoot, new Vector3(feed.x, feed.y, feed.z - .0115f), Quaternion.identity, new Vector3(1f, feedTop, 1f), false, "feed EMT", false);
+            // T-B (zone lamps, Red 2026-10-31): a remote unit's heads sit on the remote mount, built in the cabinet's frame (the
+            // same mounts); no cabinet, no pilot and no feed of its own (the dress's remote circuit runs into its box). Without
+            // the kit it keeps the cabinet.
+            var plate = def.remote ? FrontRoomsLampKit.BuildHousing(FrontRoomsLampKit.Family.RemotePlate, unitRoot, Vector3.zero, Quaternion.identity) : null;
+            if (plate != null)
+            {
+                plate.name = "remote mount";
+                RemoteMountCount++;
+            }
+            else
+            {
+                var cabinet = Kit("Kit_EmergencyTwinHead", unitRoot, Vector3.zero, Quaternion.identity, "cabinet");
+                SlotRenderers(cabinet, "Run_NeonPilot", out var pr, out var pi);
+                for (var i = 0; i < pr.Length; i++) pilotList.Add(new Emissive { renderer = pr[i], index = pi[i] });
+                // Conduit feed from the knockout up to the soffit (a 1 m EMT tile scaled to the run, 18 mm off the wall).
+                var feedTop = Layout.height - (unitRoot.localPosition.y + feed.y);
+                if (feedTop > .02f)
+                    FrontRoomsKitLibrary.Spawn("Kit_ConduitEMT", unitRoot, new Vector3(feed.x, feed.y, feed.z - .0115f), Quaternion.identity, new Vector3(1f, feedTop, 1f), false, "feed EMT", false);
+            }
             for (var m = 0; m < 2; m++)
             {
                 var mount = m == 0 ? mountL : mountR;
@@ -1005,17 +1046,33 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     void BuildOwnLamps()
     {
         wraps = new Wrap[Layout.ownLamps.Length];
+        // R-B's phone tier (the troffer's rule: one mesh, no housing) on phones, tablets and WebGL, as the R-B sheet showed it.
+        var phoneLamps = WebGLTier || HandheldTier || FrontRoomsLampKit.PhoneTier;
+        var strips = Layout.bareStrips && FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.Strip);
         for (var k = 0; k < wraps.Length; k++)
         {
             var p = Layout.ownLamps[k];
-            var frame = new GameObject("run b wraparound " + k).transform;
+            var frame = new GameObject((strips ? "run b strip " : "run b wraparound ") + k).transform;
             frame.SetParent(transform, false);
             frame.localPosition = p;
-            // The kit's long axis is X; turn it to run along the corridor (Z).
-            var kit = Kit("Kit_WrapFixture_4ft", frame, Vector3.zero, Quaternion.Euler(0f, 90f, 0f), "wrap fixture");
-            foreach (var r in kit.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
             var w = new Wrap { z = p.z, level = k == Layout.stutterLamp ? Layout.stutterLevel : 1f };
-            SlotRenderers(kit, "Run_WrapLens", out w.lens, out w.lensIndex);
+            // R-B: the strip's channel top on the soffit, its long axis along the corridor (Z); its lens is the two tubes.
+            var strip = strips ? FrontRoomsLampKit.Build(FrontRoomsLampKit.Family.Strip, frame, Vector3.zero, Quaternion.identity, "run b strip tubes", phoneLamps) : null;
+            if (strip != null)
+            {
+                w.lens = new Renderer[] { strip };
+                w.lensIndex = new[] { 0 };
+                w.lensColor = Layout.stripLensEmission;
+                w.bare = true;
+            }
+            else
+            {
+                // The kit's long axis is X; turn it to run along the corridor (Z).
+                var kit = Kit("Kit_WrapFixture_4ft", frame, Vector3.zero, Quaternion.Euler(0f, 90f, 0f), "wrap fixture");
+                foreach (var r in kit.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
+                SlotRenderers(kit, "Run_WrapLens", out w.lens, out w.lensIndex);
+                w.lensColor = Layout.wrapLensEmission;
+            }
             var lightGo = new GameObject("run b wrap light " + k);
             lightGo.transform.SetParent(frame, false);
             lightGo.transform.localPosition = new Vector3(0f, -.092f, 0f);
@@ -1552,12 +1609,14 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             var wr = wraps[k];
             var level = wr.level;
             if (k == Layout.stutterLamp && t < 0f) level = StutterLevel();
+            // A wrap's lens kept its level through the stutter; a bare strip's tubes are the source, so they stutter too.
+            var lensLevel = wr.bare ? level : wr.level;
             var wm = t < 0f ? warn * BurstLevel(burstClock - (wrapJitter != null && k < wrapJitter.Length ? wrapJitter[k] : 0f) - Layout.warnJitter) : 1f;
             level *= w * wm;
             wr.drive = Layout.wrapIntensity * wrapScale * level;
             wr.lit = level > .0005f;
             ApplyWrapLight(wr);
-            SetLens(wr.lens, wr.lensIndex, Layout.wrapLensEmission * (wr.level * wm * lens));
+            SetLens(wr.lens, wr.lensIndex, wr.lensColor * (lensLevel * wm * lens));
             if (wr.halo != null)
             {
                 wr.halo.enabled = level > .0005f;
@@ -1573,7 +1632,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         wr.drive = Layout.wrapIntensity * wrapScale * wr.level * level;
         wr.lit = level > .0005f;
         ApplyWrapLight(wr);
-        SetLens(wr.lens, wr.lensIndex, Layout.wrapLensEmission * (wr.level * level));
+        SetLens(wr.lens, wr.lensIndex, wr.lensColor * (wr.level * level));
         if (wr.halo != null) { wr.halo.enabled = level > .0005f; block.Clear(); block.SetFloat(DensityId, wr.level * level); wr.halo.SetPropertyBlock(block); }
     }
 

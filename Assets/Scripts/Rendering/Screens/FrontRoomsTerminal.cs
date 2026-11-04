@@ -44,6 +44,10 @@ public delegate string TerminalNamer(TerminalAction action);
 /// close-up opens; keys held at open are latched until released). It lays every panel out on the 80 x 25 grid; the
 /// screen component renders the grid. Pure C#: no device input, no sound (events only), unscaled time from the caller.
 /// Strings come from <see cref="FrontRoomsTerminalContent"/>; colours from <see cref="FrontRoomsTerminalPalette"/>.
+/// Each screen change also notes its motion (41 section 4.2a, 2026-11-02): a panel opened from MAIN's line explodes from that
+/// line, one opened with HELP's key from its own middle; going back implodes onto where it came from; a page turn paints in
+/// from the top; everything else cuts. <see cref="TakeMotion"/> hands it to the screen, which plays it
+/// (<see cref="FrontRoomsTerminalMotion"/>); the panels, their keys and their timing are unchanged.
 /// </summary>
 public sealed class FrontRoomsTerminal
 {
@@ -59,6 +63,10 @@ public sealed class FrontRoomsTerminal
     static readonly int[] ListCols = { 4, 10, 44, 54, 62 };
     static readonly int[] ListWidths = { 5, 33, 9, 7, 15 };
     const int HelpRight = 59, HelpKeyCol = 4, HelpKeyWidth = 11, HelpTextCol = 16, HelpView = BodyBottom - TableTop - 2;
+    /// <summary>DOC's frame for its motion: the page between the title and the message line, one column in from each edge.</summary>
+    static readonly TerminalBox PageBox = new TerminalBox(1, TitleRow + 1, FrontRoomsTerminalGrid.Cols - 2, MessageRow - 1);
+    /// <summary>The rows a page turn writes: the heading and the body, the whole width.</summary>
+    static readonly TerminalBox PageRows = new TerminalBox(0, HeadingRow, FrontRoomsTerminalGrid.Cols - 1, BodyBottom);
 
     static readonly TerminalAction[][] KeyRow =
     {
@@ -116,6 +124,8 @@ public sealed class FrontRoomsTerminal
     bool softKeyMode;
     string transcriptText;
     int layoutExtra;
+    TerminalBox laidBox = TerminalBox.None, helpOrigin = TerminalBox.None;
+    TerminalMotion motion;
 
     /// <summary>Raised for each refused request (41 section 4.3).</summary>
     public event Action<TerminalRefusal> Refused;
@@ -172,6 +182,23 @@ public sealed class FrontRoomsTerminal
     public string Footer => grid.RowText(FooterRow);
     /// <summary>The current panel's lines in reading order (the desktop TEXT transcript, C24).</summary>
     public string PanelTranscript => transcriptText ?? (transcriptText = string.Join("\n", transcript));
+    /// <summary>The frame of the panel on screen: DOC's page, LIST's and HELP's boxes (MAIN has none).</summary>
+    public TerminalBox PanelBox => laidBox;
+
+    /// <summary>MAIN: item i's box, its bar with a row above and below (where an Explode starts and an Implode ends).</summary>
+    public TerminalBox ItemBox(int i)
+    {
+        var r = ItemRow(ClampItem(i));
+        return new TerminalBox(BarLeft, Mathf.Max(TitleRow + 1, r - 1), BarLeft + BarWidth - 1, Mathf.Min(MessageRow - 1, r + 1));
+    }
+
+    /// <summary>The motion of the last screen change, once (a cut when nothing moves); the screen takes it when the grid changes.</summary>
+    public TerminalMotion TakeMotion()
+    {
+        var m = motion;
+        motion = default;
+        return m;
+    }
 
     /// <summary>Names the player's controls in row 25 and HELP (null = the period keys of a PC keyboard). Re-lays the panel.</summary>
     public TerminalNamer Namer { get => namer; set { namer = value; Layout(); } }
@@ -212,11 +239,14 @@ public sealed class FrontRoomsTerminal
         lockUntil = now + Mathf.Max(0f, lockout);
         baseline = true;
         Layout();
+        motion = default;
     }
 
-    /// <summary>The close-up ended: back to MAIN, which the glance shows.</summary>
+    /// <summary>The close-up ended: back to MAIN, which the glance shows (an open panel implodes onto its line as the camera pulls back).</summary>
     public void Close()
     {
+        var fromPanel = panel;
+        var fromBox = laidBox;
         open = false;
         wantsExit = false;
         hasPending = false;
@@ -224,6 +254,8 @@ public sealed class FrontRoomsTerminal
         SetPanel(TerminalPanel.Main);
         bar = ClampItem(memory.lastItem);
         Layout();
+        motion = fromPanel == TerminalPanel.Main ? default
+            : TerminalMotion.Implode(fromBox, fromPanel == TerminalPanel.Help && helpFrom == TerminalPanel.Main ? helpOrigin : ItemBox(bar));
     }
 
     // ---------------------------------------------------------------- input
@@ -345,6 +377,11 @@ public sealed class FrontRoomsTerminal
         var changed = false;
         var refused = false;
         var kind = TerminalRefusal.NotAuthorized;
+        var fromPanel = panel;
+        var fromBox = laidBox;
+        var fromBar = bar;
+        var fromMemo = memo;
+        var fromScroll = panel == TerminalPanel.Help ? helpScroll : scroll;
         switch (panel)
         {
             case TerminalPanel.Main:
@@ -410,11 +447,43 @@ public sealed class FrontRoomsTerminal
         if (changed) hasRefusal = false;              // the message line describes the item again
         if (refused) { hasRefusal = true; refusal = kind; }
         if (changed || refused) Layout();
+        if (changed)
+        {
+            var toScroll = panel == TerminalPanel.Help ? helpScroll : scroll;
+            NoteMotion(v, fromPanel, fromBox, fromBar, memo != fromMemo || Mathf.Abs(toScroll - fromScroll) > 1);
+        }
+        else if (refused) motion = default;
         if (refused) Refused?.Invoke(kind);
+    }
+
+    /// <summary>
+    /// The motion of the change Act just made (41 section 4.2a): a panel opened from MAIN's line explodes from that line to the
+    /// panel's frame and implodes back onto the item's line when it closes (the period's zoom from what was opened); HELP opened
+    /// with its key explodes from the middle of its own box and implodes back into it (a pop-up window); a page turn in DOC or
+    /// HELP (another memo, or more than a line) paints in from the top. The bar, a line of scroll and a message cut, as a 1990
+    /// program rewrote its text buffer.
+    /// </summary>
+    void NoteMotion(TerminalVerb v, TerminalPanel fromPanel, TerminalBox fromBox, int fromBar, bool pageTurn)
+    {
+        motion = default;
+        if (fromPanel == panel)
+        {
+            if (pageTurn && (panel == TerminalPanel.Doc || panel == TerminalPanel.Help)) motion = TerminalMotion.Paint(PageRows);
+            return;
+        }
+        if (panel == TerminalPanel.Help)
+        {
+            helpOrigin = fromPanel == TerminalPanel.Main && v == TerminalVerb.Select ? ItemBox(fromBar) : laidBox.Centre;
+            motion = TerminalMotion.Explode(helpOrigin, laidBox);
+        }
+        else if (fromPanel == TerminalPanel.Help) motion = TerminalMotion.Implode(fromBox, helpOrigin);
+        else if (fromPanel == TerminalPanel.Main) motion = TerminalMotion.Explode(ItemBox(fromBar), laidBox);
+        else if (panel == TerminalPanel.Main) motion = TerminalMotion.Implode(fromBox, ItemBox(bar));
     }
 
     void ActTap(int col, int row)
     {
+        motion = default;                             // a tap that only moves the bar cuts; one that opens goes through Act
         if (softKeyMode && (row == FooterRow || row == MessageRow))
         {
             foreach (var k in softKeys)
@@ -535,6 +604,7 @@ public sealed class FrontRoomsTerminal
         g.Face = grid.Face;
         g.ResetChecks();
         layoutExtra = 0;
+        laidBox = TerminalBox.None;
         g.Clear(FrontRoomsTerminalPalette.Field);
         transcript.Clear();
         transcriptText = null;
@@ -670,6 +740,7 @@ public sealed class FrontRoomsTerminal
     void LayoutDoc(FrontRoomsTerminalGrid g)
     {
         BuildDoc();
+        laidBox = PageBox;
         scroll = Mathf.Clamp(scroll, 0, MaxScroll);
         var heading = X(content.words.memoOf, memo + 1, content.memos.Length);
         g.Put(TextCol, HeadingRow, heading, FrontRoomsTerminalPalette.Bright);
@@ -722,6 +793,7 @@ public sealed class FrontRoomsTerminal
         if (list.jobs.Length > MaxJobs) layoutExtra++;
         var bottom = TableTop + 3 + jobs + 1;
         Box(g, BoxLeft, BoxRight, TableTop, bottom);
+        laidBox = new TerminalBox(BoxLeft, TableTop, BoxRight, bottom);
         var sep = TableTop + 2;
         g.Set(BoxLeft, sep, 0xC3, FrontRoomsTerminalPalette.Field);
         g.Fill(BoxLeft + 1, sep, BoxRight - BoxLeft - 1, 1, 0xC4, FrontRoomsTerminalPalette.Field);
@@ -784,6 +856,7 @@ public sealed class FrontRoomsTerminal
         var textCol = Mathf.Max(HelpTextCol, HelpKeyCol + keyWidth + 1);
         var right = Mathf.Clamp(textCol + textWidth + 1, HelpRight, BoxRight);
         Box(g, BoxLeft, right, TableTop, TableTop + 1 + shown + 1);
+        laidBox = new TerminalBox(BoxLeft, TableTop, right, TableTop + 1 + shown + 1);
         for (var k = 0; k < shown; k++)
         {
             var row = content.help.rows[helpRows[helpScroll + k]];

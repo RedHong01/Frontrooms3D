@@ -104,3 +104,10 @@ K1 and K4 drop "about 9 m": the figure is the hunter's, and the v2 hearing model
 | b | With body doors on, touch row A reads `SLOW · QUIET STEPS` (`40` §4) instead of `SLOW · UNHEARD` | **Signed.** Already signed in `40` §4 (Red's 5A, `90` §5); the defect is that `l.Slow` is set once at build, so the legend never switches. Body doors off keeps `SLOW · UNHEARD`. Whoever lands DL2 adds `SLOW · QUIET STEPS` as a key row beside D4 in the nine tables (`passed_keys.txt`, `language_tables.py check`), after 设置菜单's CLAIM; the zh, ja and ko words are checked against the faces it re-cut |
 
 No new string, no other wording change. Owners: 交互设计 (DL2, the touch legend and the driver check at `:3126-3127`), the table rows with whoever lands DL1 and DL2.
+
+## 8. Settings: the RESOLUTION note for AUTO (设置菜单, 2026-11-03)
+
+`FULL WINDOW` becomes **`100 %`**. It does not fit the desktop AUTO segment (about 79 px against 67).
+- It is true: AUTO draws at the window's full size, and it pairs with FIXED's `50–100 %`.
+- No translation: numerals and a percent sign, like `50–100 %`, so it is the same in all ten languages.
+- `NATIVE` would claim the display's native resolution, which a window is not. `WINDOW` names the place, not the size.
