@@ -275,7 +275,7 @@ public static class FrontRoomsPoolMaterials
         return Keep("emissive " + key, m);
     }
 
-    /// <summary>Galvanised chain-link (E8 mesh guards and the cage): a runtime diamond-wire texture, alpha-clipped, two-sided.</summary>
+    /// <summary>Galvanised chain-link (E8 mesh guards and the cage): a runtime diamond-wire texture, alpha-clipped, front faces only.</summary>
     public static Material ChainLink()
     {
         if (Cached("chain link", out var cached)) return cached;
@@ -283,7 +283,14 @@ public static class FrontRoomsPoolMaterials
         if (shader == null) return Lit("chain link fallback", new Color(.55f, .57f, .58f, 1f), .4f, .6f);
         const int n = 64;
         var t = new Texture2D(n, n, TextureFormat.RGBA32, true, false) { name = "Structures / chain link", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear, anisoLevel = 4, hideFlags = HideFlags.DontSave };
+        // SP2-F16 (夸张结构's scene 4 review, 11-04): the open texels were black, so every mip pulled the wire toward black
+        // and the clip left dark dots at 4-8 m. Every texel now carries the wire's colour (only alpha says where wire is),
+        // and each mip's alpha is rescaled until the share of texels over the cutoff equals the full-size level's
+        // (coverage-preserving alpha mips, Castano 2010): the mesh keeps its density with distance instead of thinning out.
+        const float cutoff = .5f;
         var px = new Color32[n * n];
+        var alpha = new float[n * n];
+        var covered = 0;
         for (var y = 0; y < n; y++)
         for (var x = 0; x < n; x++)
         {
@@ -291,26 +298,74 @@ public static class FrontRoomsPoolMaterials
             var d1 = Mathf.Abs(((x + y) % n) - n * .5f);
             var d2 = Mathf.Abs(((x - y + n) % n) - n * .5f);
             var wire = Mathf.Min(Mathf.Abs(d1 - n * .5f), Mathf.Abs(d2 - n * .5f)) < 3.2f;
-            px[x + y * n] = wire ? new Color32(150, 154, 156, 255) : new Color32(0, 0, 0, 0);
+            px[x + y * n] = new Color32(WireRgb.r, WireRgb.g, WireRgb.b, wire ? (byte)255 : (byte)0);
+            alpha[x + y * n] = wire ? 1f : 0f;
+            if (wire) covered++;
         }
-        t.SetPixels32(px);
-        t.Apply(true, false);
+        t.SetPixels32(px, 0);
+        var coverage = covered / (float)(n * n);
+        for (int mip = 1, size = n; mip < t.mipmapCount; mip++)
+        {
+            // A 2 x 2 box of the previous level's unscaled alpha, then this level's scale for the base coverage.
+            var next = Mathf.Max(1, size / 2);
+            var down = new float[next * next];
+            for (var y = 0; y < next; y++)
+            for (var x = 0; x < next; x++)
+            {
+                int x0 = Mathf.Min(x * 2, size - 1), x1 = Mathf.Min(x * 2 + 1, size - 1), y0 = Mathf.Min(y * 2, size - 1), y1 = Mathf.Min(y * 2 + 1, size - 1);
+                down[x + y * next] = (alpha[x0 + y0 * size] + alpha[x1 + y0 * size] + alpha[x0 + y1 * size] + alpha[x1 + y1 * size]) * .25f;
+            }
+            var scale = CoverageScale(down, coverage, cutoff);
+            var level = new Color32[next * next];
+            for (var i = 0; i < level.Length; i++)
+                level[i] = new Color32(WireRgb.r, WireRgb.g, WireRgb.b, (byte)Mathf.RoundToInt(Mathf.Clamp01(down[i] * scale) * 255f));
+            t.SetPixels32(level, mip);
+            alpha = down;
+            size = next;
+        }
+        t.Apply(false, false);
         var m = new Material(shader) { name = "Structures / chain link" };
         m.SetTexture("_BaseMap", t);
         m.mainTextureScale = new Vector2(1f / .05f, 1f / .05f);
-        m.SetColor("_BaseColor", new Color(.75f, .77f, .78f, 1f));
+        // The wire's albedo is the texel colour alone (about .44 linear, a light zinc grey): at .75 tint over (150, 154, 156)
+        // it was .16, and the lit wires read darker than the cage behind them (SP5, 夸张结构's review9, 11-04).
+        m.SetColor("_BaseColor", Color.white);
         m.SetFloat("_Smoothness", .45f);
-        m.SetFloat("_Metallic", .6f);
+        // Galvanised wire under the zone's cube read dark at .6 (SP2-F16): mostly the zinc's diffuse grey.
+        m.SetFloat("_Metallic", .2f);
         m.SetFloat("_AlphaClip", 1f);
         m.SetFloat("_Cutoff", .5f);
         m.EnableKeyword("_ALPHATEST_ON");
-        if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f);
+        // Every panel is a closed 1 cm solid (Prism, RakeWall, a stand-in cube), so the near face is always the one facing the eye.
+        // Drawn two-sided, the far face showed its wire lit through its back: a black twin 1 cm behind every wire up close.
+        if (m.HasProperty("_Cull")) m.SetFloat("_Cull", (float)CullMode.Back);
         m.renderQueue = (int)RenderQueue.AlphaTest;
         chainTexture = t;
         return Keep("chain link", m);
     }
 
     static Texture2D chainTexture;
+    static readonly Color32 WireRgb = new Color32(176, 180, 182, 255);
+
+    // The alpha scale that keeps the share of texels at or over the cutoff nearest the target (Castano's binary search).
+    static float CoverageScale(float[] alpha, float target, float cutoff)
+    {
+        float lo = 0f, hi = 64f;
+        for (var k = 0; k < 24; k++)
+        {
+            var mid = (lo + hi) * .5f;
+            if (Coverage(alpha, mid, cutoff) < target) lo = mid; else hi = mid;
+        }
+        // hi is the least scale that reaches the target and lo just misses it: keep the nearer.
+        return Mathf.Abs(Coverage(alpha, hi, cutoff) - target) <= Mathf.Abs(Coverage(alpha, lo, cutoff) - target) ? hi : lo;
+    }
+
+    static float Coverage(float[] alpha, float scale, float cutoff)
+    {
+        var count = 0;
+        foreach (var a in alpha) if (a * scale >= cutoff) count++;
+        return count / (float)alpha.Length;
+    }
 
     /// <summary>Dark nosing on every pool step (50 mm on the tread, 25 mm down the riser).</summary>
     public static Material Nosing => Lit("nosing", NosingColor, .35f);

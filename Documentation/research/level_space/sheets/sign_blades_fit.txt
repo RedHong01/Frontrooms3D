@@ -1,0 +1,23 @@
+OK  | TITLE SCENE 4 DISTRICT BLADES · E-BLADE V2.5 | 1355 of 3162 px
+OK  | SP3 · ARRIVAL | label 238 + data 612 of 1280 px | blade 1.8 % of the frame, south wall
+OK  | SP3 · FROM THE ARRIVAL | label 401 + data 748 of 1280 px | 2.50 m · code 11.90 · title 16.70 / 16.31 px
+OK  | SP3 · 1:1 X3 | label 229 + data 578 of 1280 px | 23° off its face: 19° side, 14° up
+OK  | SP5 · ARRIVAL | label 238 + data 595 of 1280 px | blade 2.1 % of the frame, east wall
+OK  | SP5 · FROM THE ARRIVAL | label 401 + data 612 of 1280 px | 2.50 m · code 12.17 · title 16.25 px
+OK  | SP5 · 1:1 X3 | label 229 + data 578 of 1280 px | 21° off its face: 18° side, 11° up
+OK  | SP6 · ARRIVAL | label 238 + data 595 of 1280 px | blade 5.7 % of the frame, east wall
+OK  | SP6 · FROM THE ARRIVAL | label 401 + data 748 of 1280 px | 2.00 m · code 14.92 · title 20.64 / 19.63 px
+OK  | SP6 · 1:1 X3 | label 229 + data 578 of 1280 px | 29° off its face: 24° side, 18° up
+OK  | SP7 · ARRIVAL | label 238 + data 493 of 1280 px | the blade is behind you: 0 px
+OK  | SP7 · TURN ROUND | label 305 + data 748 of 1280 px | 2.50 m · code 11.90 · title 16.40 / 16.89 px
+OK  | SP7 · 1:1 X3 | label 229 + data 578 of 1280 px | 23° off its face: 19° side, 14° up
+OK  | SP3 · WALL SIGN 0.9 M | label 380 + data 646 of 1280 px | unchanged · every line 25.1 px or more
+OK  | SP5 · WALL SIGN 0.9 M | label 380 + data 799 of 1280 px | unchanged · 2 lowest under 16: 15.60 / 15.98 px
+OK  | SP6 · WALL SIGN 0.9 M | label 380 + data 646 of 1280 px | unchanged · every line 19.5 px or more
+OK  | SP7 · WALL SIGN 0.9 M | label 380 + data 646 of 1280 px | unchanged · every line 18.1 px or more
+OK  | SP6 · UNDER IT, LOOKING UP | label 449 + data 527 of 1280 px | 0.6 m out: code 25, title 33 px
+OK  | SP3 · BACK FACE | label 280 + data 561 of 1280 px | far side, 2.50 m: right way round
+OK  | SP7 · BACK FACE | label 280 + data 578 of 1280 px | vestibule, 1.42 m: right way round
+OK  | SP6 · AT 2.5 M, FIRST PASS | label 451 + data 697 of 1280 px | covered the arch; far face showed through
+OK  | SP6 · ARRIVAL, BLADE HIDDEN | label 474 + data 561 of 1280 px | the arch whole: 12 px clear of it
+ALL LABELS FIT

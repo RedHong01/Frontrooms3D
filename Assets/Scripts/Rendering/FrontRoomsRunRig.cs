@@ -1,9 +1,25 @@
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 /// <summary>States of a Run! B room (run_b_production/10_plan.md s.1.4).</summary>
 public enum RunRigState : byte { Armed, Tripping, Tripped, Resetting }
+
+/// <summary>
+/// Card 3 (research/level_space/71_run_room.md s.6.4, decision 6; Red 11-04 on the red tube: the brighter level, then the HDR
+/// sheet's brightest column): the light a Run! room trips into. The armed room is the same in all three.
+///   Today         the trip as landed: the mains drop at once, 0.35 s of black, the heads' warm pools; the red tube strikes with the
+///                 heads; no red light on the room.
+///   AlarmCircuit  A: a dark band runs from the entrance's strip to the goal door at 20 m/s (the reset's speed): ahead of it the white
+///                 strips burn, inside it they are out, behind it each strip's red tube strikes and its Light turns red (the same
+///                 Light: no new Light), the heads throw their pools in its wake; the corridor is all red at about 2 s, then still.
+///                 The goal head (the door's light) comes up at once, as built.
+///   AlarmPulse    B: A, then from 3 s after the trip a dark pulse runs the same way every 2.5 s, 12 at most: each strip falls to
+///                 0.35 in 0.06 s, holds 0.10 s, rises over 0.40 s; the pools, the door, the goal head and C42 never move.
+/// REDUCE FLASHING: no band and no pulse; each strip cross-fades white to red over 0.5 s.
+/// </summary>
+public enum RunRedLook : byte { Today, AlarmCircuit, AlarmPulse }
 
 /// <summary>Who drives the armed ceiling lamps: a host (its own lamps, the rig supplies MainsAt), or the rig itself
 /// (its own wraparounds; the map module, CR-4). Since call 6 / C40 (2026-10-31) no host drives a Run! room: the title
@@ -177,6 +193,34 @@ public sealed class RunRigLayout
     public Color redTubeBounce = new Color(.40f, .045f, .05f);
     public Color redTubeLinear = new Color(3f, 0f, .012f);
     public Color haloColor = new Color(.45f, .47f, .50f);
+
+    /// <summary>Card 3, the red looks (RunRedLook; 71 s.6.3-6.7): each strip's own Light turns red under the alarm, at the level Red picked
+    /// on the HDR sheet (11-04, its brightest column: tube linear 3, the strip's Light 3.5 at full red, halo .40; the white Light is
+    /// 5.5): redLightIntensity in redLightColor (typed, as the inspector types a Light's colour; the zone-lamps line's numbers of 06:3x).</summary>
+    [Header("Card 3: the red looks (Today / A / B; 71 s.6)")]
+    public float redLightIntensity = 3.5f;
+    public Color redLightColor = new Color(1f, .06f, .07f);
+    /// <summary>The red soffit halo's peak, LINEAR (the sheet Red picked lit each strip's halo at a linear peak of .40 x (1, 0, .004); the
+    /// white halo's haloColor is typed).</summary>
+    public Color redHaloColor = new Color(.40f, 0f, .0016f);
+    /// <summary>The tripped ambient under the red looks (71 s.6.3: linear (1.00, 0.30, 0.24) at .08 down / .06 side / .05 up: a wall lit
+    /// by it alone reads maroon-black, never a black hole); the high band keeps its own levels in this tint.</summary>
+    public Color redTrippedTint = new Color(1f, .30f, .24f);
+    public float redTrippedDown = .08f, redTrippedSide = .06f, redTrippedUp = .05f;
+    /// <summary>The front (A and B): it leaves the entrance's strip at the trip and runs to the goal door at frontSpeed (m/s); each strip's
+    /// white falls 1 -> 0 over mainsDrop as it passes; headDelay later (the band: 7 m of dark at 20 m/s) its red strikes at
+    /// redStrikeLevel and rises to 1 over redRise (the reset's curve), and the heads in the band's wake rise with it.</summary>
+    public float frontSpeed = 20f, redStrikeLevel = .35f, redRise = .40f;
+    /// <summary>B's pulse: the first pulseFirst after the trip (in a receding room after the final seat: FrontRoomsRunRig.ReleasePulses),
+    /// then every pulsePeriod, pulseCount at most; as it passes a strip the strip falls to pulseDepth in pulseFall, holds pulseHold and
+    /// rises over pulseRise (71 s.6.4: 24 a minute, one dip per place per 2.5 s).</summary>
+    public float pulseFirst = 3f, pulsePeriod = 2.5f, pulseDepth = .35f, pulseFall = .06f, pulseHold = .10f, pulseRise = .40f;
+    public int pulseCount = 12;
+    /// <summary>The red strips keep the shadows their white Lights have (F7: an unshadowed strip lights the neighbours through the long
+    /// walls); under red, in Play, their shadow slices drop to redShadowTier (URP's per-light tier, 1 = Medium, 512 px) so the 8 heads keep
+    /// their 1024 px slices in the 4096 atlas (17 shadowed spots at High would not fit). Decided on the capture (60_production_66 C3).</summary>
+    public bool redStripShadows = true;
+    public int redShadowTier = 1;
 
     [Header("Stage-1 / 2 warning on the rig's own wraps (CR-4; the map's burst envelope, FrontRoomsWarnLamps M3)")]
     public float warnDipSpacing = .55f, warnAttack = .05f, warnRelease = .30f, warnTail = .09f, warnHoldMin = .04f, warnHoldMax = .08f;
@@ -645,7 +689,13 @@ public sealed class RunRigLayout
 ///   wraparound only without the kit; every "wrap" below is such a lamp), and the two middle units are T-B remote heads
 ///   on brackets (RunUnitDef.remote), fed by the dress's remote circuit from the entry unit; the end units stay T-A. Each
 ///   strip's middle tube is red-coated on the battery circuit (card zone_lamps 1): dark oxblood armed, struck with the heads
-///   at the trip (RedTube); the room's red light and the alarm fronts are the game visual line's card 3.
+///   at the trip (RedTube); the room's red light and the alarm fronts are card 3 (RunRedLook, below).
+///   Card 3 (71 s.6, decision 6): the look a room trips into, RedLook (DefaultRedLook: B, the alarm pulse, since it passed the
+///   project's own WCAG 2.3.1 check, Tools/lookdev/flash_check.py; A is the fallback). Today is the trip described next, as landed. A and B keep every clock below but the strips' and the pool heads':
+///   the front (frontSpeed from the entrance's strip) takes each strip's white out, its red tube and its Light turn red headDelay
+///   later (redLightIntensity, redLightColor; the halo redHaloColor; the tube RedTube x the strip's red level), the pool heads rise
+///   with it, the ambient takes redTrippedTint; B adds the pulse (pulseFirst, pulsePeriod, pulseCount). Events for the sound line:
+///   RedStrike per strip, PulseStarted per pulse.
 ///   Armed: wraparounds on (cell 5 stutters dim), red AC ON pilots lit, heads off, cool bounce ambient.
 ///   Trip (t 0): the mains drop (every wrap 1 -> 0 in 0.06 s, lens afterglow 0.03 decaying tau 0.5 s), pilots out,
 ///   0.35 s of black, then each head rises 0 -> 1 over 0.18 s (ease-in) from 0.35 + 0.004 z: hard warm pools.
@@ -678,6 +728,15 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
 
     /// <summary>Tools: build the handheld tier in the editor (the phone frame). Never set by the game.</summary>
     public static bool ForceHandheldForTools;
+
+    /// <summary>
+    /// Card 3: the look every rig built from now on trips into (RedLook). A, ALARM CIRCUIT: B, ALARM PULSE, is the look Red picked
+    /// (71 decision 6, Red 11-03: all as recommended), with A its fallback. Neither Harding FPA nor PEAT runs on this Mac, so Red chose the
+    /// project's own check (11-04, words in 60_production_66.md C3.10): Tools/lookdev/flash_check.py, WCAG 2.3.1's general and red flash rules with the
+    /// area rule, on the harness's T9 capture of B: at most 1 flash a second, under the limit of 3 (60_production_66.md C3.10, RULES 11).
+    /// Reduce Flashing still drops the pulse. Today: the trip as landed. The game never sets it; tools and scene 4 may.
+    /// </summary>
+    public static RunRedLook DefaultRedLook = RunRedLook.AlarmPulse;
 
     /// <summary>
     /// Step 9 (stage C): phones and tablets (FrontRoomsHandheld.Active: true on iOS / Android players, false in desktop
@@ -751,6 +810,14 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         /// <summary>Receding (card 2, 71 s.5.7): an uncovered strip strikes once as its cell seats: -1 waiting for the seat (dark), 0..1 its
         /// one-way rise (0.4 s; 0.5 s under Reduce Flashing), 1 as the room's state has it (every strip of a plain room).</summary>
         public float strike = 1f;
+        /// <summary>Card 3: when the front passes it (s after the trip): its distance from the entrance's strip / frontSpeed.</summary>
+        public float front;
+        /// <summary>Card 3: its Light's shadows as built (the handheld tier's included), restored when it is white again.</summary>
+        public LightShadows armedShadows;
+        /// <summary>Card 3: its Light is red now (shadows and slice as redStripShadows / redShadowTier), and its red has struck this trip.</summary>
+        public bool redPhase, redFired;
+        public UniversalAdditionalLightData urp;
+        public int armedTier;
     }
 
     struct Emissive
@@ -848,6 +915,34 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     /// <summary>Raised when an animated reset begins.</summary>
     public event Action<Vector3> ResetStarted;
 
+    /// <summary>Card 3: this rig's look (DefaultRedLook at Build). It takes effect at the next trip: a tripped room keeps the look it
+    /// tripped with (TripLook) until it is armed again, as scene 4's keys do (70 s.9).</summary>
+    public RunRedLook RedLook { get; set; }
+    /// <summary>Card 3: the look of the current or last trip.</summary>
+    public RunRedLook TripLook => tripLook;
+    /// <summary>Card 3 (71 s.5.7): B's pulses wait while this is true. A receding room's binder holds them when it builds the room and lets
+    /// them go at the end's final seat (ReleasePulses); every other room never holds them.</summary>
+    public bool PulseHeld { get; set; }
+    /// <summary>Card 3: raised once per strip as its red strikes under the alarm (A and B; strip index, the strip's world point): the
+    /// battery relay that turns its red tube and its Light red, so one click per cell as the front passes. Never in Today, in
+    /// TripImmediate or under Reduce Flashing's cross-fade (it is raised then too, all at the trip, as each strip's relay pulls in).</summary>
+    public event Action<int, Vector3> RedStrike;
+    /// <summary>Card 3: raised as each of B's pulses leaves the entrance's strip (pulse 0 .., the strip's world point); the dip then runs
+    /// to the goal door at frontSpeed. Nothing under Reduce Flashing.</summary>
+    public event Action<int, Vector3> PulseStarted;
+    /// <summary>Card 3: B's pulses started this trip (tests and tools).</summary>
+    public int PulsesStarted => pulsesFired;
+
+    /// <summary>Card 3 (71 s.5.7): the receding end's final seat: B's pulses may begin, at the later of pulseFirst after the trip and
+    /// <paramref name="delay"/> from now. No effect unless held.</summary>
+    public void ReleasePulses(float delay = 1f)
+    {
+        if (!PulseHeld) return;
+        PulseHeld = false;
+        var tripped = State == RunRigState.Tripping || State == RunRigState.Tripped;
+        pulseFrom = tripped ? Mathf.Max(Layout.pulseFirst, Clock + delay) : Layout.pulseFirst;
+    }
+
     Head[] heads;
     Wrap[] wraps;
     Emissive[] pilots;
@@ -879,6 +974,15 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     Transform goalMount;
     float goalLine = -1f;
     bool striking;
+    // Card 3: the look of this trip, B's first pulse (float.MaxValue: held), the pulses started, the red trip's ambient and halo colours.
+    RunRedLook tripLook;
+    float pulseFrom = 3f, frontOrigin, frontEnd;
+    int pulsesFired;
+    bool pulsesDone, redDirty;
+    SphericalHarmonicsL2 redTrippedSH, redHighTrippedSH;
+    Vector4 haloWhite, haloRed;
+    Color wrapLinear, redLinear;
+    static readonly int HaloColorId = Shader.PropertyToID("_Color");
     Material beamMaterial, haloMaterial;
     static Mesh floodCone, goalCone, haloQuad;
 
@@ -906,6 +1010,19 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         trippedSH = BounceSH(Layout.trippedUp, Layout.trippedSide, Layout.trippedDown, Layout.trippedTint);
         highTrippedSH = BounceSH(Layout.highTrippedUp, Layout.highTrippedSide, Layout.highTrippedDown, Layout.trippedTint);
         unitTrippedSH = BounceSH(Layout.unitUp, Layout.unitSide, Layout.unitDown, Layout.unitTint);
+        // Card 3: the red looks' tripped ambient (71 s.6.3) and the halos' two colours, linear (the material's _Color is typed haloColor,
+        // the red peak is given linear).
+        redTrippedSH = BounceSH(Layout.redTrippedUp, Layout.redTrippedSide, Layout.redTrippedDown, Layout.redTrippedTint);
+        redHighTrippedSH = BounceSH(Layout.highTrippedUp, Layout.highTrippedSide, Layout.highTrippedDown, Layout.redTrippedTint);
+        var hw = Layout.haloColor.linear;
+        var hr = Layout.redHaloColor;
+        haloWhite = new Vector4(hw.r, hw.g, hw.b, 1f);
+        haloRed = new Vector4(hr.r, hr.g, hr.b, 1f);
+        wrapLinear = Layout.wrapColor.linear;
+        redLinear = Layout.redLightColor.linear;
+        RedLook = DefaultRedLook;
+        tripLook = RedLook;
+        pulseFrom = Layout.pulseFirst;
         if (!WebGLTier)
         {
             var beamShader = Resources.Load<Shader>("Rendering/RunBeamCone");
@@ -942,6 +1059,19 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         // Step 9: the handheld tier trims the desktop build here, before anything collects the lights (the only call).
         Handheld = HandheldTier;
         if (Handheld) ApplyHandheldTier();
+        // Card 3: each strip Light's shadows as built (the handheld tier's hard ones), for when it is white again after a red trip; the
+        // front's last time (the farthest strip or pool head).
+        var frontZ = frontOrigin;
+        if (wraps != null)
+            for (var k = 0; k < wraps.Length; k++)
+            {
+                if (wraps[k].light != null) wraps[k].armedShadows = wraps[k].light.shadows;
+                frontZ = Mathf.Max(frontZ, wraps[k].z);
+            }
+        if (heads != null)
+            for (var i = 0; i < heads.Length; i++)
+                if (!heads[i].goal && !heads[i].carried) frontZ = Mathf.Max(frontZ, heads[i].z);
+        frontEnd = FrontAt(frontZ);
         if (!WebGLTier) BuildProbes();
         BuildPost();
         CollectAmbient(unitRenderers, hostRenderers, dressRoot);
@@ -1070,6 +1200,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
                     lightGo.transform.SetParent(lamp.transform, false);
                     lightGo.transform.localPosition = lensAnchor + new Vector3(0f, 0f, .017f);
                     var light = lightGo.AddComponent<Light>();
+                    // 技术美术调研 row 16, option D (Red 2026-11-04 14:14, "按推荐"): URP's per-light data, soft-shadow filter Low
+                    // set explicitly (as FrontRoomsMapWorld.ShippedShadowFilter), so the Editor shows what ships.
+                    UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(light).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;
                     light.type = LightType.Spot;
                     light.color = Layout.floodColor;
                     light.shadows = LightShadows.Soft;
@@ -1262,6 +1395,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         var aim = Quaternion.AngleAxis(Layout.goalLightPitch, Vector3.Cross(Vector3.up, away).normalized) * away;
         go.transform.localRotation = Quaternion.LookRotation(aim, Vector3.up);
         var l = go.AddComponent<Light>();
+        UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(l).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;   // row 16 option D
         l.type = LightType.Spot;
         l.spotAngle = Layout.goalLightOuter;
         l.innerSpotAngle = Layout.goalLightInner;
@@ -1504,6 +1638,10 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         // R-B's phone tier (the troffer's rule: one mesh, no housing) on phones, tablets and WebGL, as the R-B sheet showed it.
         var phoneLamps = WebGLTier || HandheldTier || FrontRoomsLampKit.PhoneTier;
         var strips = Layout.bareStrips && FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.Strip);
+        // Card 3: the front leaves the entrance's strip (the nearest the entrance) at the trip.
+        frontOrigin = float.MaxValue;
+        for (var k = 0; k < Layout.ownLamps.Length; k++) frontOrigin = Mathf.Min(frontOrigin, Layout.ownLamps[k].z);
+        if (wraps.Length == 0) frontOrigin = 0f;
         for (var k = 0; k < wraps.Length; k++)
         {
             var p = Layout.ownLamps[k];
@@ -1541,6 +1679,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             lightGo.transform.localPosition = new Vector3(0f, -.092f, 0f);
             lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             var l = lightGo.AddComponent<Light>();
+            UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(l).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;   // row 16 option D
             l.type = LightType.Spot;
             l.spotAngle = Layout.wrapOuter;
             l.innerSpotAngle = Layout.wrapInner;
@@ -1551,7 +1690,19 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             l.shadowStrength = .92f;
             l.shadowNearPlane = .1f;
             w.light = l;
-            w.halo = BuildHalo(frame, new Vector3(0f, -.003f, 0f), haloMaterial);   // 3 mm under the soffit: under the map skin (2 mm) too
+            // Card 3: URP's per-light data (its shadow slice drops a tier under red, in Play), and the front's time at this strip.
+            w.urp = l.GetComponent<UniversalAdditionalLightData>();
+            if (w.urp == null) w.urp = lightGo.AddComponent<UniversalAdditionalLightData>();
+            w.armedTier = w.urp.additionalLightsShadowResolutionTier;
+            w.front = Mathf.Max(0f, p.z - frontOrigin) / Mathf.Max(.1f, Layout.frontSpeed);
+            // Card 3: the Relay's body reads the lamps the kits registered and their Light beside the lens, named "Light" on the map; this
+            // Light keeps the name the sound line reads ("run b wrap light k"), so it is handed to the registry: the body's contact under
+            // a strip takes its Light (white armed, red under the alarm's A and B; none while it is dark).
+            if (strip != null) FrontRoomsTrofferKit.SetLampLight(strip, l);
+            // 10 mm under the soffit (card 3, 11-04): the map skin's soffit (FrontRoomsRunDress.Skin, 2 mm asked) is a 10 mm slab
+            // (FrontRoomsFilmMesh.GetPlanarBox's minimum), its face 6 mm under the soffit, and at 3 mm the halo hid behind it on every map
+            // room, white armed and red tripped; under the look-dev shell's deck (2.9) it showed. Measured on the capture (60_production_66 C3).
+            w.halo = BuildHalo(frame, new Vector3(0f, -.010f, 0f), haloMaterial);
             w.root = frame.gameObject;
             // Receding (card 2): a strip beyond the end's first line waits, dark and inactive, until the end uncovers its cell.
             if (Layout.recedeLine >= 0f && p.z > Layout.recedeLine)
@@ -1693,6 +1844,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         Clock = 0f;
         burstClock = -1f;
         for (var i = 0; i < heads.Length; i++) heads[i].relayFired = false;
+        BeginRedTrip(false);
         SetState(RunRigState.Tripping);
         MainsDropped?.Invoke(transform.TransformPoint(Layout.postCentre));
         Evaluate(0f);
@@ -1706,6 +1858,8 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         if (State == RunRigState.Armed || State == RunRigState.Resetting) return;
         reducedMix = FrontRoomsSettings.ReduceFlashing ? 1f : 0f;
         Clock = 0f;
+        // Card 3 (71 s.6.6): the reset as built; the red goes out with the heads in one step (Reduce Flashing: it fades with them).
+        if (!Reduced) WhiteAgain();
         SetState(RunRigState.Resetting);
         ResetStarted?.Invoke(transform.TransformPoint(Layout.postCentre));
         EvaluateReset(0f);
@@ -1720,6 +1874,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         Clock = -1f;
         warn = 1f;
         burstClock = -1f;
+        WhiteAgain();
         Evaluate(-1f);
         ApplyAmbient(true);
         if (was != RunRigState.Armed) StateChanged?.Invoke(State, transform.TransformPoint(Layout.postCentre));
@@ -1733,6 +1888,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         reducedMix = FrontRoomsSettings.ReduceFlashing ? 1f : 0f;
         burstClock = -1f;
         for (var i = 0; i < heads.Length; i++) heads[i].relayFired = true;
+        // Card 3: tripped quietly, in its look's steady state: no strike event, no pulse (a rebuild 48 m away or more; the train's 30 s
+        // are not replayed).
+        BeginRedTrip(true);
         State = RunRigState.Tripped;
         Clock = TripEnd;
         Evaluate(Clock);
@@ -1829,9 +1987,24 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             {
                 Clock += dt;
                 FireRelays(Clock);
+                if (RedNow) FireRedEvents(Clock);
                 Evaluate(Clock);
                 ApplyAmbient(false);
                 if (Clock >= TripEnd) SetState(RunRigState.Tripped);
+                break;
+            }
+            case RunRigState.Tripped:
+            {
+                // Card 3, B: the pulse train runs on in the tripped state until its last dip is back (a held train waits, its clock running).
+                if (!PulseLive) break;
+                Clock += dt;
+                FireRedEvents(Clock);
+                if (pulseFrom < float.MaxValue)
+                {
+                    // The last frame lands on the train's end, every strip back at its full red.
+                    EvaluateRedWraps(Mathf.Min(Clock, PulseEnd));
+                    if (emissionDirty) ApplyAmbient(false);
+                }
                 break;
             }
             case RunRigState.Resetting:
@@ -1886,7 +2059,10 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         {
             case RunRigState.Resetting: EvaluateReset(Clock); break;
             case RunRigState.Armed: EvaluateWraps(-1f, 1f); break;
-            default: EvaluateWraps(Clock, WrapLevel(Clock)); break;
+            default:
+                if (RedNow) EvaluateRedWraps(Clock);
+                else EvaluateWraps(Clock, WrapLevel(Clock));
+                break;
         }
         ApplyAmbient(false);
     }
@@ -1896,7 +2072,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         for (var i = 0; i < heads.Length; i++)
         {
             if (heads[i].relayFired) continue;
-            if (t >= HeadStart(heads[i].z))
+            if (t >= HeadStartFor(heads[i]))
             {
                 heads[i].relayFired = true;
                 TransferRelay?.Invoke(i, heads[i].world);
@@ -1977,7 +2153,17 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     // ---------------------------------------------------------------- timelines
     bool Reduced => reducedMix > .5f;
     public float HeadStart(float z) => Reduced ? Layout.reducedHeadDelay : Layout.headDelay + Layout.headStagger * z;
-    float TripEnd => Reduced ? Layout.reducedHeadDelay + Layout.reducedEnvelope + .1f : HeadStart(maxHeadZ) + Layout.headRise + .1f;
+    float TripEnd
+    {
+        get
+        {
+            if (Reduced) return Layout.reducedHeadDelay + Layout.reducedEnvelope + .1f;
+            var end = HeadStart(maxHeadZ) + Layout.headRise + .1f;
+            // Card 3: the front reaches the last strip and the last pool head, then their red and pools rise.
+            if (LookNow != RunRedLook.Today) end = Mathf.Max(end, Layout.headDelay + frontEnd + Mathf.Max(Layout.redRise, Layout.headRise) + .1f);
+            return end;
+        }
+    }
     float ResetEnd => Layout.resetRiseStart + Layout.resetCellSeconds * Mathf.Ceil(Layout.length / Mathf.Max(.1f, Layout.resetCellLength)) + Layout.resetRise + .2f;
     /// <summary>The animated reset's length (s): the re-strike sweeps the current length, resetCellSeconds a cell from the entrance
     /// (decision 7, as built), so a corridor of n cells takes n x resetCellSeconds of sweep (tests).</summary>
@@ -2008,7 +2194,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     {
         if (heads == null || heads.Length == 0) return t < 0f ? 0f : 1f;
         var sum = 0f;
-        for (var i = 0; i < heads.Length; i++) sum += HeadLevel(t, heads[i].z);
+        for (var i = 0; i < heads.Length; i++) sum += HeadLevelFor(heads[i], t);
         return sum / heads.Length;
     }
 
@@ -2050,7 +2236,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         switch (State)
         {
             case RunRigState.Tripping:
-            case RunRigState.Tripped: return WrapLevel(Mathf.Max(0f, Clock));
+            case RunRigState.Tripped: return RedNow ? WhiteAt(FrontAt(z), Mathf.Max(0f, Clock)) : WrapLevel(Mathf.Max(0f, Clock));
             case RunRigState.Resetting: return RestrikeLevel(Clock, z);
             default: return 1f;
         }
@@ -2062,16 +2248,22 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         switch (State)
         {
             case RunRigState.Tripping:
-            case RunRigState.Tripped: return LensLevel(Mathf.Max(0f, Clock));
+            case RunRigState.Tripped: return RedNow ? LensAfter(FrontAt(z), Mathf.Max(0f, Clock)) : LensLevel(Mathf.Max(0f, Clock));
             case RunRigState.Resetting: return Mathf.Max(.0f, RestrikeLevel(Clock, z));
             default: return 1f;
         }
     }
 
-    /// <summary>Deterministic state at trip time t (t &lt; 0 = armed). Look-dev and tests call it directly.</summary>
+    /// <summary>Deterministic state at trip time t (t &lt; 0 = armed). Look-dev and tests call it directly. Card 3: in a red look
+    /// (RedLook while armed, TripLook once tripped) t &gt;= 0 is that look's trip.</summary>
     public void Evaluate(float t)
     {
         if (heads == null) return;
+        if (t >= 0f && LookNow != RunRedLook.Today)
+        {
+            EvaluateRed(t);
+            return;
+        }
         var w = WrapLevel(t);
         EvaluateWraps(t, w);
         for (var i = 0; i < heads.Length; i++)
@@ -2087,6 +2279,11 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
 
     void EvaluateReset(float tr)
     {
+        if (tripLook != RunRedLook.Today)
+        {
+            EvaluateResetRed(tr);
+            return;
+        }
         var headsOut = Reduced ? Mathf.Clamp01(1f - tr / Layout.reducedEnvelope) : 0f;
         for (var i = 0; i < heads.Length; i++) SetHead(heads[i], headsOut);
         if (wraps != null)
@@ -2179,6 +2376,248 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         return new Color(r, g, bl, 1f);
     }
 
+    // ---------------------------------------------------------------- card 3: the red looks (71 s.6.3-6.7, decision 6)
+    /// <summary>The look the rig shows now: RedLook while armed (Evaluate(t) previews that trip), the trip's own look after.</summary>
+    RunRedLook LookNow => State == RunRigState.Armed ? RedLook : tripLook;
+    /// <summary>A red look's trip is under way (tripping, tripped, or its reset).</summary>
+    bool RedNow => State != RunRigState.Armed && tripLook != RunRedLook.Today;
+    /// <summary>B's train runs (or waits, held): not under Reduce Flashing, not after TripImmediate, until its last dip is back.</summary>
+    bool PulseLive => tripLook == RunRedLook.AlarmPulse && !Reduced && !pulsesDone && Layout.pulseCount > 0 && Clock < PulseEnd;
+    /// <summary>The trip time at which B's last dip is back at the farthest strip (float.MaxValue while held).</summary>
+    float PulseEnd => pulseFrom >= float.MaxValue ? float.MaxValue
+        : pulseFrom + (Layout.pulseCount - 1) * Layout.pulsePeriod + frontEnd + Layout.pulseFall + Layout.pulseHold + Layout.pulseRise + .02f;
+
+    /// <summary>When the front reaches rig z (s after the trip): its distance from the entrance's strip at frontSpeed.</summary>
+    float FrontAt(float z) => Mathf.Max(0f, z - frontOrigin) / Mathf.Max(.1f, Layout.frontSpeed);
+
+    void BeginRedTrip(bool immediate)
+    {
+        tripLook = RedLook;
+        pulsesFired = 0;
+        pulsesDone = immediate;
+        pulseFrom = PulseHeld ? float.MaxValue : Layout.pulseFirst;
+        if (wraps != null) for (var k = 0; k < wraps.Length; k++) wraps[k].redFired = immediate;
+    }
+
+    /// <summary>A strip's white (its mains) at trip time t: 1 until the front reaches it, then 0 over mainsDrop; Reduce Flashing: every
+    /// strip together, 1 -> 0 over reducedEnvelope.</summary>
+    float WhiteAt(float front, float t)
+    {
+        if (t < 0f) return 1f;
+        if (Reduced) return Mathf.Clamp01(1f - t / Layout.reducedEnvelope);
+        return Mathf.Clamp01(1f - (t - front) / Layout.mainsDrop);
+    }
+
+    /// <summary>A strip's white tubes after their own drop: the 0.03 phosphor afterglow decaying with tau 0.5 s (LensLevel, per strip).</summary>
+    float LensAfter(float front, float t)
+    {
+        if (t < 0f) return 1f;
+        var s = Reduced ? t : t - front;
+        if (s < 0f) return 1f;
+        var end = Reduced ? Layout.reducedEnvelope : Layout.mainsDrop;
+        var glow = s <= end ? Layout.afterglow : Layout.afterglow * Mathf.Exp(-(s - end) / Mathf.Max(.01f, Layout.afterglowTau));
+        return Mathf.Lerp(glow, 1f, WhiteAt(front, t));
+    }
+
+    /// <summary>A strip's red at trip time t (its tube and its Light, before a receding strike): 0 until headDelay after the front, then
+    /// redStrikeLevel at once rising to 1 over redRise (the reset's curve), times B's pulse; Reduce Flashing: 0 -> 1 over
+    /// reducedEnvelope with the white's fall, no pulse.</summary>
+    float RedAt(float front, float t)
+    {
+        if (t < 0f) return 0f;
+        if (Reduced) return Mathf.Clamp01(t / Layout.reducedEnvelope);
+        var s = t - (front + Layout.headDelay);
+        if (s < 0f) return 0f;
+        var u = Mathf.Clamp01(s / Mathf.Max(.01f, Layout.redRise));
+        return Mathf.Lerp(Layout.redStrikeLevel, 1f, u * u * (3f - 2f * u)) * PulseAt(front, t);
+    }
+
+    /// <summary>B's pulse at a strip: 1, or the dip passing it (pulseDepth in pulseFall, held pulseHold, back over pulseRise); one dip per
+    /// strip per pulsePeriod, pulseCount at most, never in A, under Reduce Flashing, while held or after TripImmediate.</summary>
+    float PulseAt(float front, float t)
+    {
+        if (LookNow != RunRedLook.AlarmPulse || Reduced || pulsesDone || pulseFrom >= float.MaxValue) return 1f;
+        var s = t - pulseFrom - front;
+        if (s < 0f) return 1f;
+        var period = Mathf.Max(.1f, Layout.pulsePeriod);
+        var p = Mathf.FloorToInt(s / period);
+        if (p >= Layout.pulseCount) return 1f;
+        var u = s - p * period;
+        if (u < Layout.pulseFall) return Mathf.Lerp(1f, Layout.pulseDepth, u / Mathf.Max(.001f, Layout.pulseFall));
+        u -= Layout.pulseFall;
+        if (u < Layout.pulseHold) return Layout.pulseDepth;
+        u -= Layout.pulseHold;
+        if (u < Layout.pulseRise)
+        {
+            var x = u / Mathf.Max(.001f, Layout.pulseRise);
+            return Mathf.Lerp(Layout.pulseDepth, 1f, x * x * (3f - 2f * x));
+        }
+        return 1f;
+    }
+
+    /// <summary>A head's start: as built (Today, the goal head, the carried unit, Reduce Flashing), else headDelay after the front reaches
+    /// it (the pools rise in the band's wake, 71 s.6.4).</summary>
+    float HeadStartFor(Head h)
+    {
+        if (LookNow == RunRedLook.Today || h.goal || h.carried || Reduced) return HeadStart(h.z);
+        return Layout.headDelay + FrontAt(h.z);
+    }
+
+    float HeadLevelFor(Head h, float t)
+    {
+        if (LookNow == RunRedLook.Today) return HeadLevel(t, h.z);
+        if (t < 0f) return 0f;
+        if (Reduced) return HeadLevel(t, h.z);
+        var f = Mathf.Clamp01((t - HeadStartFor(h)) / Layout.headRise);
+        return f * f;
+    }
+
+    /// <summary>The strips' mean white at trip time t (the ambient's armed share in a red trip).</summary>
+    float MeanWhite(float t)
+    {
+        if (t < 0f) return 1f;
+        if (wraps == null || wraps.Length == 0) return WhiteAt(0f, t);
+        float sum = 0f, n = 0f;
+        for (var k = 0; k < wraps.Length; k++)
+        {
+            if (wraps[k].hidden) continue;
+            sum += WhiteAt(wraps[k].front, t);
+            n += 1f;
+        }
+        return n > 0f ? sum / n : WhiteAt(0f, t);
+    }
+
+    void EvaluateRed(float t)
+    {
+        EvaluateRedWraps(t);
+        for (var i = 0; i < heads.Length; i++) SetHead(heads[i], HeadLevelFor(heads[i], t));
+        SetPilots(t < 0f ? 1f : Reduced ? Mathf.Clamp01(1f - t / Layout.reducedEnvelope) : 0f);
+        var mw = MeanWhite(t);
+        SetProbes(mw > 0f ? mw : 0f, mw > 0f ? 0f : MeanHeadLevel(t));
+    }
+
+    void EvaluateRedWraps(float t)
+    {
+        if (wraps == null) return;
+        for (var k = 0; k < wraps.Length; k++)
+        {
+            var wr = wraps[k];
+            if (wr.hidden)
+            {
+                wr.drive = 0f;
+                wr.lit = false;
+                ApplyWrapLight(wr);
+                continue;
+            }
+            // A receding strip waits for its seat, then rises once into the corridor's colour (71 s.5.7, StrikeRevealed).
+            var sl = wr.strike < 1f ? StrikeLevel(wr) : 1f;
+            DriveStrip(wr, wr.level * WhiteAt(wr.front, t) * sl, wr.level * LensAfter(wr.front, t) * sl, RedAt(wr.front, t) * sl);
+        }
+    }
+
+    /// <summary>The red trip's reset (71 s.6.6, as built): the heads and the red go out in one step (Reduce Flashing: they fade over
+    /// 0.5 s), the flick ripple, dark, the white re-strike from the entrance.</summary>
+    void EvaluateResetRed(float tr)
+    {
+        var headsOut = Reduced ? Mathf.Clamp01(1f - tr / Layout.reducedEnvelope) : 0f;
+        for (var i = 0; i < heads.Length; i++) SetHead(heads[i], headsOut);
+        var mean = 0f;
+        if (wraps != null)
+            for (var k = 0; k < wraps.Length; k++)
+            {
+                var wr = wraps[k];
+                var level = RestrikeLevel(tr, wr.z);
+                mean += level;
+                var sl = wr.hidden ? 0f : wr.strike < 1f ? StrikeLevel(wr) : 1f;
+                DriveStrip(wr, wr.level * level * sl, wr.level * level * sl, headsOut * sl);
+            }
+        SetPilots(Reduced ? Mathf.Clamp01(tr / Layout.reducedEnvelope) : 1f);
+        if (wraps != null && wraps.Length > 0) mean /= wraps.Length;
+        else mean = RestrikeLevel(tr, Layout.length * .5f);
+        SetProbes(mean, headsOut);
+    }
+
+    /// <summary>One strip in a red trip: its Light at white x wrapIntensity plus red x redLightIntensity (both x the handheld scale), its
+    /// colour their mix (linear, given typed), its white tubes, its red tube (RedTube: the tubes' light on the coating, or its own burn
+    /// at the strip's red level), its halo in the same mix; under red its shadows as redStripShadows / redShadowTier.</summary>
+    void DriveStrip(Wrap wr, float white, float lens, float red)
+    {
+        var dw = Layout.wrapIntensity * wrapScale * Mathf.Max(0f, white);
+        var dr = Layout.redLightIntensity * wrapScale * Mathf.Max(0f, red);
+        wr.drive = dw + dr;
+        wr.lit = white > .0005f || red > .0005f;
+        if (wr.light != null && wr.drive > 1e-5f)
+        {
+            var c = (wrapLinear * dw + redLinear * dr) / wr.drive;
+            c.a = 1f;
+            wr.light.color = c.gamma;
+        }
+        // White decides (as built); red alone (the white out) the red phase; dark (the band, the reset's gap) keeps what it has.
+        if (white > .0005f) RedShadows(wr, false);
+        else if (red > .0005f) RedShadows(wr, true);
+        ApplyWrapLight(wr);
+        SetLens(wr.lens, wr.lensIndex, wr.lensColor * lens);
+        if (wr.red != null) SetLens(wr.red, wr.redIndex, RedTube(lens, red));
+        if (wr.halo != null)
+        {
+            wr.halo.enabled = wr.lit;
+            block.Clear();
+            block.SetFloat(DensityId, 1f);
+            block.SetVector(HaloColorId, haloWhite * Mathf.Max(0f, white) + haloRed * Mathf.Max(0f, red));
+            wr.halo.SetPropertyBlock(block);
+        }
+        redDirty = true;
+    }
+
+    /// <summary>Under red (its white out) a strip's Light keeps its shadows (F7) with its slice at redShadowTier in Play (URP's per-light
+    /// tier cannot change in edit mode), or drops them when redStripShadows is off; white again, both as built. Switched while the strip is
+    /// dark (the band) or crossing to red, so no shadow pops on a lit wall.</summary>
+    void RedShadows(Wrap wr, bool on)
+    {
+        if (wr.light == null || wr.redPhase == on) return;
+        wr.redPhase = on;
+        if (on && !Layout.redStripShadows) wr.light.shadows = LightShadows.None;
+        else if (!on) wr.light.shadows = wr.armedShadows;
+        if (!Application.isPlaying || wr.urp == null || wr.light.shadows == LightShadows.None) return;
+        wr.urp.additionalLightsShadowResolutionTier = on ? Layout.redShadowTier : wr.armedTier;
+    }
+
+    /// <summary>After a red trip: every strip's Light white and shadowed as built again (the next evaluation writes its tubes and halo).</summary>
+    void WhiteAgain()
+    {
+        if (!redDirty || wraps == null) return;
+        redDirty = false;
+        for (var k = 0; k < wraps.Length; k++)
+        {
+            var wr = wraps[k];
+            if (wr.light != null) wr.light.color = Layout.wrapColor;
+            RedShadows(wr, false);
+        }
+    }
+
+    /// <summary>The sound line's partners of a red trip: each strip's relay as its red strikes (RedStrike), each of B's pulses as it
+    /// leaves the entrance (PulseStarted). Allocation-free.</summary>
+    void FireRedEvents(float t)
+    {
+        if (wraps != null)
+            for (var k = 0; k < wraps.Length; k++)
+            {
+                var wr = wraps[k];
+                if (wr.redFired) continue;
+                // A hidden or still-striking strip (receding) comes on with its seat's StripStrike cue instead.
+                if (wr.hidden || wr.strike < 1f) { wr.redFired = true; continue; }
+                if (t < (Reduced ? 0f : wr.front + Layout.headDelay)) continue;
+                wr.redFired = true;
+                RedStrike?.Invoke(k, wr.root != null ? wr.root.transform.position : transform.TransformPoint(new Vector3(0f, Layout.height, wr.z)));
+            }
+        if (tripLook != RunRedLook.AlarmPulse || Reduced || pulsesDone || pulseFrom >= float.MaxValue) return;
+        while (pulsesFired < Layout.pulseCount && t >= pulseFrom + pulsesFired * Layout.pulsePeriod)
+        {
+            PulseStarted?.Invoke(pulsesFired, transform.TransformPoint(new Vector3(0f, Layout.height, frontOrigin)));
+            pulsesFired++;
+        }
+    }
+
     /// <summary>The stutter tube (cell 5): the stream's Unstable model (two incommensurate waves, Perlin drop-outs at
     /// most ~2 a second), scaled round 0.78; steady 0.78 under REDUCE FLASHING.</summary>
     float StutterLevel()
@@ -2253,6 +2692,9 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     {
         if (ambient == null) return;
         float w, hl;
+        // Card 3: a red trip's ambient takes redTrippedTint; the white part follows the strips' mean white as the front takes it out,
+        // both in steps of 1/32 (one rewrite of every block per step, not per frame, while the front runs its 1.3-2 s).
+        var red = State != RunRigState.Armed && tripLook != RunRedLook.Today;
         if (State == RunRigState.Resetting)
         {
             w = MainsAt(Layout.length * .5f);
@@ -2261,8 +2703,13 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
         else
         {
             var t = State == RunRigState.Armed ? -1f : Clock;
-            w = WrapLevel(t);
+            w = red ? MeanWhite(t) : WrapLevel(t);
             hl = MeanHeadLevel(t);
+            if (red)
+            {
+                w = Mathf.Round(w * 32f) / 32f;
+                hl = Mathf.Round(hl * 32f) / 32f;
+            }
         }
         var shChanged = force || !Mathf.Approximately(w, lastAmbientW) || !Mathf.Approximately(hl, lastAmbientH);
         if (!shChanged && !emissionDirty) return;
@@ -2275,7 +2722,7 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
             if (e.renderer == null) continue;
             if (e.host && !hostAcquired) continue;
             if (!shChanged && !HasEmission(e.renderer, e.materials)) continue;
-            var tripped = e.kind == 1 ? highTrippedSH : e.kind == 2 ? unitTrippedSH : trippedSH;
+            var tripped = e.kind == 1 ? (red ? redHighTrippedSH : highTrippedSH) : e.kind == 2 ? unitTrippedSH : red ? redTrippedSH : trippedSH;
             shScratch[0] = armedSH * w + tripped * hl;
             var n = e.materials;
             for (var k = 0; k < n; k++)
@@ -2365,7 +2812,15 @@ public sealed class FrontRoomsRunRig : MonoBehaviour
     }
 
     /// <summary>Level of head i at trip time t (tests).</summary>
-    public float HeadLevelOf(int i, float t) => heads == null || i < 0 || i >= heads.Length ? 0f : HeadLevel(t, heads[i].z);
+    public float HeadLevelOf(int i, float t) => heads == null || i < 0 || i >= heads.Length ? 0f : HeadLevelFor(heads[i], t);
+    /// <summary>Card 3 (tests, tools): strip k's white and red at trip time t in this rig's look (before a receding strike), and the
+    /// colour its Light was last given (typed).</summary>
+    public float StripWhiteOf(int k, float t) => wraps == null || k < 0 || k >= wraps.Length ? 0f : LookNow == RunRedLook.Today ? WrapLevel(t) : WhiteAt(wraps[k].front, t);
+    public float StripRedOf(int k, float t) => wraps == null || k < 0 || k >= wraps.Length || LookNow == RunRedLook.Today ? 0f : RedAt(wraps[k].front, t);
+    /// <summary>Card 3 (tests, tools): the trip time the front reaches strip k, and when B's last dip is back (float.MaxValue while held;
+    /// 0 for a look without the pulse).</summary>
+    public float StripFrontOf(int k) => wraps == null || k < 0 || k >= wraps.Length ? 0f : wraps[k].front;
+    public float PulseTrainEnd => tripLook == RunRedLook.AlarmPulse ? PulseEnd : 0f;
     public bool HeadIsGoal(int i) => heads != null && i >= 0 && i < heads.Length && heads[i].goal;
     public Light HeadLight(int i) => heads == null || i < 0 || i >= heads.Length ? null : heads[i].light;
     public Light WrapLight(int k) => wraps == null || k < 0 || k >= wraps.Length ? null : wraps[k].light;

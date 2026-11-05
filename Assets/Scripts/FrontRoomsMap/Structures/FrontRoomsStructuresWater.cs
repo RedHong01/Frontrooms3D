@@ -11,11 +11,13 @@ using UnityEngine.Rendering;
 /// K cycles every version of the water (Shift K back): today's stand-in, two variants of it on the same runtime materials
 /// (FrontRoomsPoolMaterials.WaterOf: SP1, SP2, SP6 and the pool route P share them), then 游戏视觉's water surface
 /// (pool_water: FrontRooms/Water, FrontRoomsWaterSurface, the Submerged colour) at every absorption scale of 17 Q1
-/// (x1, x3, x4, x5, x9) and two ankle-water variants (17 section 10.7: ankle water vanishes in white rooms);
+/// (x1, x3, x4, x5, x9), two ankle-water variants (17 section 10.7: ankle water vanishes in white rooms) and two
+/// waterline variants (游戏视觉's FrontRoomsWaterSubmerged.Waterline: wet band, darkening, meniscus, tide mark);
 /// P cycles the water's platform tier (auto, desktop Ultra, desktop High, phone), so each platform's water is seen
-/// (L belongs to the districts: the lamps); U cycles how the water answers the walker (Red, 13:2x, on the rings: "目前水的
-/// 波纹我认为太规范了": every stride drew one perfect ring); I adds the water's own light on the room (Red, 13:2x: "目前水面
-/// 的光没有给整个房间晕染上一层反射光", "如果水是青色，这个颜色是否会影响房间？"), and every change of look re-renders the halls'
+/// (L belongs to the districts: the lamps); U cycles how the water answers the walker (Shift U back; Red, 13:2x, on the
+/// rings: "目前水的波纹我认为太规范了": every stride drew one perfect ring; 5-12 are 游戏视觉's less regular rings); I cycles
+/// 游戏视觉's water light on the room (Shift I back; Red, 13:2x: "目前水面的光没有给整个房间晕染上一层反射光", "如果水是青色，
+/// 这个颜色是否会影响房间？"), and every change of look re-renders the halls'
 /// reflection probes, so the tile and ceiling reflect the water now on screen; Z puts 游戏视觉's pool zone look over each
 /// body's room (FrontRoomsZoneLookVolume: the zone's ambient, haze, height fog and grade, by the stand-in's water class:
 /// club water PoolClub, level water PoolLevel, dark water PoolDark) in place of the district's one fixed trilight;
@@ -28,7 +30,7 @@ using UnityEngine.Rendering;
 [DisallowMultipleComponent]
 public sealed class FrontRoomsStructuresWater : MonoBehaviour
 {
-    enum Look { Today, Calm, DarkGlass, Clear, Absorb3, Turquoise, Absorb5, Absorb9, AnkleDeep, AnkleFilm }
+    enum Look { Today, Calm, DarkGlass, Clear, Absorb3, Turquoise, Absorb5, Absorb9, AnkleDeep, AnkleFilm, Waterline, TideMark }
 
     /// <summary>The names Red picks by (the sheet's codes: research/bathroom_rooms/sheets/water_looks.jpg, 71_water_q1.jpg).</summary>
     static readonly string[] LookNames =
@@ -43,16 +45,21 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         "8 吸收 ×9：浅水也像深池（“一两个房间”那一档）",
         "9 浅水加深：深水 ×4，脚踝深的水 ×12",
         "10 浅水水膜：同 9，脚踝深的水面再毛一点，倒影碎开",
+        "11 水线：同 6，墙脚和柱脚的湿痕更高更深，水边那道弯月形的亮边更亮",
+        "12 水线加水渍：同 11，湿痕上缘多一道茶褐色的水渍线",
     };
-    const int LookCount = 10;
+    const int LookCount = 12;
 
     /// <summary>The absorption scale per look on 游戏视觉's water (17 Q1: the club x1, the level x3-5, one or two rooms x9;
     /// 70 section 7.3: club x1, dark x3, level x4), for deep water (Basin) and for flooded floors (Ankle, under AnkleDepth).</summary>
-    static readonly float[] AbsorbDeep = { 0f, 0f, 0f, 1f, 3f, 4f, 5f, 9f, 4f, 4f };
-    static readonly float[] AbsorbAnkle = { 0f, 0f, 0f, 1f, 3f, 4f, 5f, 9f, 12f, 12f };
+    static readonly float[] AbsorbDeep = { 0f, 0f, 0f, 1f, 3f, 4f, 5f, 9f, 4f, 4f, 4f, 4f };
+    static readonly float[] AbsorbAnkle = { 0f, 0f, 0f, 1f, 3f, 4f, 5f, 9f, 12f, 12f, 4f, 4f };
     /// <summary>The ankle water's calm roughness (FrontRooms/Water _FR_WaterAlpha0, default 0.012); below 0 the default.
     /// 0.04 blurs the mirror into a film: the white ceiling no longer reads as a clean floor.</summary>
-    static readonly float[] AnkleAlpha = { -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, .04f };
+    static readonly float[] AnkleAlpha = { -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, -1f, .04f, -1f, -1f };
+    /// <summary>游戏视觉's waterline (FrontRoomsWaterSubmerged.Waterline, their values of 14:28): x raises the wet band (m),
+    /// y adds darkening, z the meniscus gain, w the tea-brown tide mark at the band's dry edge; zero = their default.</summary>
+    static readonly Vector4 WaterlineSet = new Vector4(.06f, .25f, 1.5f, 0f), TideSet = new Vector4(.06f, .25f, 1.5f, .6f);
 
     /// <summary>P: the water's platform tier (FrontRoomsWaterPlanar.ForceTier; -1 follows the game's rule).</summary>
     static readonly int[] Tiers = { -1, 2, 1, 0 };
@@ -76,27 +83,46 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         "2 少圈：只在踏进水、深水走动、站着不动时起波纹，浅水走路不再一步一圈",
         "3 两只脚：左右脚交替落水，落点、步长、力度都随机，圆环互相交错打乱",
         "4 再乱：同 3，底下的细波纹更强（约 3°），平静和起皱的地方更不均匀",
+        "5 推荐（游戏视觉）：不再是画出来的圆线，脚下一片柔和的波纹，前强后弱、每步不同，很快归于平静",
+        "6 推荐 + 两只脚：同 5，落脚用 3 的左右脚交替（落点、步长、力度随机）",
+        "7 软边：圈不再是一道细黑线，变成宽而柔的波峰，脚下一小片搅动",
+        "8 软边 + 脚形：同 7，每圈沿走的方向前强后弱、断成几瓣，每一步都不一样",
+        "9 软边 + 水流：同 7，水面很慢地流动（约 1.2 厘米/秒），大圈被带歪成蛋形，小圈仍圆",
+        "10 软边 + 回声减半：同 7，墙反射回来的圈只剩一半，晚一点到，彼此不齐",
+        "11 软边 + 消得快：同 7，每圈早五分之一消失，身后拖的圈更少",
+        "12 软边 + 步态：同 7，步子随速度变长（3.2 米/秒时一步 1.18 米），每步长短、位置、轻重都不一样",
     };
+    /// <summary>U 3, 4 and 6 drop the strides in this file (Strides); 1 and 5-12 leave them to the rings' AutoSteps, 2 has none.
+    /// 5-12 are 游戏视觉's less regular rings (FrontRoomsWaterRings, research/bathroom_rooms/70_look_build.md section 11):
+    /// each starts from TodayLook(), 5 and 6 are NaturalLook(), 7 RimSoftness alone, 8-12 RimSoftness with one more static.</summary>
+    bool OwnStrides => ripple == 2 || ripple == 3 || ripple == 5;
     const float StrideMin = .55f, StrideMax = .85f, FootSide = .11f, FootJitter = .07f, DeepWade = .45f;
 
-    /// <summary>I: the light the water sends back into the room. What enters the water crosses it twice over the white basin
-    /// and comes back out short of red (17 section 4.1-4.2: a = (0.29, 0.048, 0.006) per metre times the look's scale, along
-    /// about 2.4 times the depth; the basin's albedo 0.8; the trapping 0.475), plus the 4 % the surface reflects; that flux,
-    /// from the lamps above each body, lights the ceiling and the walls above it. Scene 4 has no bounce light (its pool
-    /// ambient is one fixed trilight for the whole district), so this preview stands it in with upward spot lights at the
-    /// surface, one per GlowCell of water (at most GlowMax), no shadows, re-measured twice a second (lamps flicker and die).
-    /// Not in it: the moving caustic light the lamps' reflections throw on ceilings and walls (FrontRooms/Surface's thrown
-    /// light, 游戏视觉's; today it carries only the wet niches).</summary>
+    /// <summary>I: 游戏视觉's water light (FrontRoomsWaterSubmerged.SetWaterLight, research/bathroom_rooms/70_look_build.md
+    /// section 12): the bounce (the light that went into the water comes back out in its colour, by depth, the zone's
+    /// absorption and the white basin, in place of the zone ambient's light from the water's directions), the overhead lamps
+    /// the water mirrors onto its ceiling (desktop only), the wet niches' glow spread over the basin. Every state but the
+    /// first also makes the district's underwater lamps wet niches, so their light comes up out of the water. It replaced
+    /// this file's upward spot lights of 13:26 (never both: they counted the water's light twice).</summary>
     static readonly string[] GlowNames =
     {
         "1 关：房间只有原来的灯和固定的泳池环境光（现在）",
-        "2 水光：每片水把透回来的青色光反到天花板和墙上（按水色、水深、白瓷池底、头顶的灯估算）",
-        "3 水光 ×2：同上亮一倍，便于看清颜色往哪里走",
+        "2 水的颜色：天花板和墙的上部染上水透回来的青色光，正对水面最浓，墙的下段比墙顶多；水下灯的光也从灯上方的水面透出来",
+        "3 水的颜色减半：同 2，弱一档",
+        "4 灯在水里：头顶的灯被水面映到天花板上，一层淡淡的、随波纹漂动的光纹（只在电脑上有，P 切到手机档会自己关掉）",
+        "5 水下灯散开：水下灯的光从整片池底泛上来，不再只在每盏灯上方一团（总亮度不变）",
+        "6 推荐：2、4、5 一起",
+        "7 水的颜色 ×2：同 2 亮一倍，只为看清颜色往哪里走，不是物理值",
     };
-    static readonly float[] GlowGain = { 0f, 1f, 2f };
-    const float GlowCell = 4f, BasinAlbedo = .8f, Trapping = .475f, SurfaceReflect = .04f, PathFactor = 2.4f, CausticRadius = .05f;
-    const int GlowMax = 32;
-    const string GlowName = "Water light";
+    static readonly FrontRoomsWaterSubmerged.WaterLightLook[] GlowLooks =
+    {
+        FrontRoomsWaterSubmerged.WaterLightLook.Today, FrontRoomsWaterSubmerged.WaterLightLook.Bounce, FrontRoomsWaterSubmerged.WaterLightLook.Bounce,
+        FrontRoomsWaterSubmerged.WaterLightLook.Mirror, FrontRoomsWaterSubmerged.WaterLightLook.Spread, FrontRoomsWaterSubmerged.WaterLightLook.Recommended,
+        FrontRoomsWaterSubmerged.WaterLightLook.Bounce,
+    };
+    static readonly float[] GlowBounce = { 0f, 1f, .5f, 0f, 0f, 1f, 2f };   // BounceGain after the look (3 and 7 move it)
+    const float CausticRadius = .05f;
+    const string NicheLamp = "Lamp · underwater";                          // FrontRoomsStructuresKit.Underwater's lamp
 
     /// <summary>Z: 游戏视觉's pool zone look (pool_zone_look, 70 section 3) over each body's room, or the scene's own trilight.</summary>
     static readonly string[] ZoneNames =
@@ -137,13 +163,11 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     bool haveFeet, leftFoot;
     float walked, nextStride = .7f;
     readonly System.Random strideRandom = new System.Random(4113);
-    // the water's light (I) and the halls' probes
+    // the water's light (I), the wet niches it registered, and the halls' probes
     int glow;
-    readonly List<Light> glowLights = new List<Light>();
-    readonly List<float> glowArea = new List<float>();
-    readonly List<float> bodyDepth = new List<float>();
+    readonly List<Light> niches = new List<Light>();
+    readonly Dictionary<Light, float> nicheBase = new Dictionary<Light, float>();
     readonly List<Light> roomLights = new List<Light>();
-    float nextGlow;
     int probeFrames = -1;
     int zoneLook;
     float hintAt = -1f;
@@ -258,25 +282,22 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             foreach (var go in bodies) ZoneFor(go);
             ScheduleProbes();
             var placed = SceneZoneLook(d);
-            host.Flash(placed ? "区域外观：这个区已经由场景放好了游戏视觉的区域外观，Z 不再另放（场景自己的按键可以换回原来的环境光）"
+            host.Flash(placed ? "区域外观：这个区由场景自己放游戏视觉的区域外观（默认开），Z 不再另放；按 Q 开关"
                 : "区域外观 · " + ZoneNames[zoneLook] + (IsReal(look) ? "" : "（只对游戏视觉的水面有效：按 K 换到第 4 版以后）"));
         }
         if (k != null && k.iKey.wasPressedThisFrame)
         {
-            glow = (glow + 1) % GlowNames.Length;
-            BuildGlow();
+            var back = k.leftShiftKey.isPressed || k.rightShiftKey.isPressed;
+            glow = (glow + (back ? GlowNames.Length - 1 : 1)) % GlowNames.Length;
+            ApplyGlow();
             ScheduleProbes();
             host.Flash("水光 · " + GlowNames[glow] + (IsReal(look) ? "" : "（只对游戏视觉的水面有效：按 K 换到第 4 版以后）"));
-        }
-        if (glowLights.Count > 0 && Time.unscaledTime >= nextGlow)
-        {
-            nextGlow = Time.unscaledTime + .5f;
-            UpdateGlow();
         }
         if (probeFrames > 0 && --probeFrames == 0) RenderProbes();
         if (k != null && k.uKey.wasPressedThisFrame)
         {
-            ripple = (ripple + 1) % RippleNames.Length;
+            var back = k.leftShiftKey.isPressed || k.rightShiftKey.isPressed;
+            ripple = (ripple + (back ? RippleNames.Length - 1 : 1)) % RippleNames.Length;
             ApplyRipple();
             host.Flash("波纹 · " + RippleNames[ripple] + (IsReal(look) ? "" : "（只对游戏视觉的水面有效：按 K 换到第 4 版以后）"));
         }
@@ -308,7 +329,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             if (walker != null && bodies.Count > 0)
             {
                 FrontRoomsWaterRings.ReportBody(FrontRoomsWaterRings.Body.Player, walker.transform.position, .3f);
-                if (ripple >= 2) Strides(walker.transform.position);
+                if (OwnStrides) Strides(walker.transform.position);
             }
             // P streams its chunks, and a district with more rectangles than FRSubFind holds keeps the nearest
             if (Time.unscaledTime >= nextRealCheck)
@@ -333,13 +354,16 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             FrontRoomsWaterPlanar.ForceTier = -1;
             FrontRoomsWaterRipples.ForcePhoneTier = false;              // the next Ensure reloads the desktop loops
         }
+        FrontRoomsWaterSubmerged.Waterline = Vector4.zero;
         if (rippleChanged)
         {
             FrontRoomsWaterRings.AutoSteps = true;
+            FrontRoomsWaterRings.TodayLook();
             FrontRoomsWaterRipples.Gain = 1f;
             FrontRoomsWaterRipples.Patchiness = .25f;
         }
         TearDownBodies();
+        if (glow != 0) FrontRoomsWaterSubmerged.SetWaterLight(FrontRoomsWaterSubmerged.WaterLightLook.Today);
         if (poolWater != null) Destroy(poolWater);
         if (poolWaterAnkle != null) Destroy(poolWaterAnkle);
         if (rippleA != null) Destroy(rippleA);
@@ -400,6 +424,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         }
 
         ScheduleProbes();
+        FrontRoomsWaterSubmerged.Waterline = look == Look.Waterline ? WaterlineSet : look == Look.TideMark ? TideSet : Vector4.zero;
         if (!IsReal(look)) { TearDownBodies(); return; }
         if (poolWaterAnkle != null)
         {
@@ -415,7 +440,6 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
                 ws.absorbScale = AbsorbOf(ws.kind);
                 ws.RefreshSubmerged();
             }
-        UpdateGlow();
     }
 
     float AbsorbOf(FrontRoomsWaterSurface.Kind kind)
@@ -425,36 +449,14 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
 
     // ---------------------------------------------------------------- the water's light on the room (I) and the probes
 
-    /// <summary>The district's lamps (point and spot), the water's own lights left out.</summary>
+    /// <summary>The district's lamps (point and spot).</summary>
     void RoomLights(FrontRoomsStructuresDistrict d)
     {
         roomLights.Clear();
         if (d == null || d.Root == null) return;
         foreach (var l in d.Root.GetComponentsInChildren<Light>(false))
-            if (l != null && (l.type == LightType.Point || l.type == LightType.Spot) && !l.gameObject.name.StartsWith(GlowName, System.StringComparison.Ordinal))
+            if (l != null && (l.type == LightType.Point || l.type == LightType.Spot))
                 roomLights.Add(l);
-    }
-
-    /// <summary>Light arriving on the water at p from the district's lamps (linear rgb, the units URP shades with: colour x
-    /// intensity x cos / r^2 with URP's range fade), only lamps above it.</summary>
-    Vector3 Irradiance(Vector3 p)
-    {
-        var e = Vector3.zero;
-        foreach (var l in roomLights)
-        {
-            if (l == null || !l.isActiveAndEnabled || l.intensity <= 0f) continue;
-            var v = l.transform.position - p;
-            if (v.y <= .05f) continue;
-            var r2 = v.sqrMagnitude;
-            var range2 = l.range * l.range;
-            if (r2 >= range2) continue;
-            if (l.type == LightType.Spot && Vector3.Angle(l.transform.forward, -v) > l.spotAngle * .5f) continue;
-            var f = r2 / range2;
-            var fade = Mathf.Clamp01(1f - f * f);
-            var c = l.color.linear * (l.intensity * fade * fade * (v.y / Mathf.Sqrt(r2)) / Mathf.Max(r2, .25f));
-            e += new Vector3(c.r, c.g, c.b);
-        }
-        return e;
     }
 
     /// <summary>The two lamps that light the water at c most (inside its room box), for its floor caustics.</summary>
@@ -475,75 +477,33 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         }
     }
 
-    void BuildGlow()
+    /// <summary>I's state on 游戏视觉's statics, and the district's underwater lamps as wet niches while it is on.</summary>
+    void ApplyGlow()
     {
-        foreach (var l in glowLights) if (l != null) Destroy(l.gameObject);
-        glowLights.Clear();
-        glowArea.Clear();
-        if (glow == 0 || !IsReal(look) || bodies.Count == 0) return;
-        if (roomLights.Count == 0) RoomLights(host != null ? host.Current : null);
-        for (var i = 0; i < bodies.Count && glowLights.Count < GlowMax; i++)
+        FrontRoomsWaterSubmerged.SetWaterLight(GlowLooks[glow]);
+        if (GlowBounce[glow] != FrontRoomsWaterSubmerged.BounceGain)
         {
-            var go = bodies[i];
-            var r = go != null ? go.GetComponent<Renderer>() : null;
-            if (r == null) continue;
-            var bb = r.bounds;
-            int nx = Mathf.Max(1, Mathf.CeilToInt(bb.size.x / GlowCell)), nz = Mathf.Max(1, Mathf.CeilToInt(bb.size.z / GlowCell));
-            float cx = bb.size.x / nx, cz = bb.size.z / nz;
-            var ws = go.GetComponent<FrontRoomsWaterSurface>();
-            var range = Mathf.Clamp((ws != null ? ws.roomHeight : 3f) * 2.5f, 4f, 30f);
-            for (var x = 0; x < nx && glowLights.Count < GlowMax; x++)
-                for (var z = 0; z < nz && glowLights.Count < GlowMax; z++)
-                {
-                    var lg = new GameObject(GlowName + " " + glowLights.Count);
-                    lg.transform.SetParent(go.transform, true);
-                    // pointing up from just over the surface: it lights what is above the water, never the water itself
-                    lg.transform.SetPositionAndRotation(new Vector3(bb.min.x + (x + .5f) * cx, bb.max.y + .03f, bb.min.z + (z + .5f) * cz),
-                        Quaternion.LookRotation(Vector3.up, Vector3.forward));
-                    var l = lg.AddComponent<Light>();
-                    l.type = LightType.Spot;
-                    l.spotAngle = 170f;
-                    l.innerSpotAngle = 90f;
-                    l.range = range;
-                    l.shadows = LightShadows.None;
-                    glowLights.Add(l);
-                    glowArea.Add(cx * cz);
-                }
+            FrontRoomsWaterSubmerged.BounceGain = GlowBounce[glow];
+            FrontRoomsWaterSubmerged.Publish(true);
         }
-        nextGlow = 0f;
-        UpdateGlow();
+        Niches();
     }
 
-    /// <summary>Each water light's colour and strength from the lamps over its cell and the water under it (see GlowNames).</summary>
-    void UpdateGlow()
+    /// <summary>While I is on, the district's underwater lamps (FrontRoomsStructuresKit.Underwater) are wet niches of the water
+    /// over them (FrontRoomsWaterSubmerged: a niche belongs to the lowest surface above it; one under no body throws nothing),
+    /// at the intensity first seen (as built), so a lamp that dims or dies takes its glow with it.</summary>
+    void Niches()
     {
-        if (glowLights.Count == 0) return;
-        var gain = GlowGain[glow];
-        var a = FrontRoomsWaterSubmerged.Absorption;
-        for (var i = 0; i < glowLights.Count; i++)
+        foreach (var l in niches) FrontRoomsWaterSubmerged.UnregisterNiche(l);
+        niches.Clear();
+        var d = host != null ? host.Current : null;
+        if (glow == 0 || bodies.Count == 0 || d == null || d.Root == null) return;
+        foreach (var l in d.Root.GetComponentsInChildren<Light>(true))
         {
-            var l = glowLights[i];
-            if (l == null) continue;
-            var body = l.transform.parent;
-            var ws = body != null ? body.GetComponent<FrontRoomsWaterSurface>() : null;
-            var bi = body != null ? bodies.IndexOf(body.gameObject) : -1;
-            var depth = bi >= 0 && bi < bodyDepth.Count ? bodyDepth[bi] : 1f;
-            var scale = ws != null ? Mathf.Max(ws.absorbScale, 0f) : 1f;
-            var e = Irradiance(l.transform.position);
-            var up = Vector3.zero;
-            for (var ch = 0; ch < 3; ch++)
-            {
-                var t = Mathf.Exp(-PathFactor * a[ch] * scale * depth);
-                // in, down and up through the water, off the basin; the surface sends Trapping of the upwelling light back down
-                var back = (1f - SurfaceReflect) * BasinAlbedo * t * (1f - Trapping) / (1f - BasinAlbedo * Trapping * t);
-                up[ch] = e[ch] * (SurfaceReflect + back);
-            }
-            // a Lambertian patch of this exitance seen from above: intensity = flux / pi
-            var flux = up * (glowArea[i] / Mathf.PI * gain);
-            var peak = Mathf.Max(flux.x, Mathf.Max(flux.y, flux.z));
-            if (peak <= 1e-5f) { l.intensity = 0f; continue; }
-            l.color = new Color(flux.x / peak, flux.y / peak, flux.z / peak).gamma;
-            l.intensity = peak;
+            if (l == null || l.transform.parent == null || l.transform.parent.name != NicheLamp) continue;
+            if (!nicheBase.TryGetValue(l, out var b)) nicheBase[l] = b = l.intensity;
+            FrontRoomsWaterSubmerged.RegisterNiche(l, b);
+            niches.Add(l);
         }
     }
 
@@ -568,14 +528,25 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     void ApplyRipple()
     {
         rippleChanged = true;
-        FrontRoomsWaterRings.AutoSteps = ripple == 0;
+        FrontRoomsWaterRings.TodayLook();
+        FrontRoomsWaterRings.AutoSteps = ripple != 1 && !OwnStrides;
         FrontRoomsWaterRipples.Gain = ripple == 3 ? 1.5f : 1f;
         FrontRoomsWaterRipples.Patchiness = ripple == 3 ? .6f : .25f;
+        switch (ripple)
+        {
+            case 4: case 5: FrontRoomsWaterRings.NaturalLook(); break;
+            case 6: FrontRoomsWaterRings.RimSoftness = 1f; break;
+            case 7: FrontRoomsWaterRings.RimSoftness = 1f; FrontRoomsWaterRings.SourceShape = 1f; break;
+            case 8: FrontRoomsWaterRings.RimSoftness = 1f; FrontRoomsWaterRings.Currents = .05f; break;
+            case 9: FrontRoomsWaterRings.RimSoftness = 1f; FrontRoomsWaterRings.EchoGain = .5f; break;
+            case 10: FrontRoomsWaterRings.RimSoftness = 1f; FrontRoomsWaterRings.LifeScale = .8f; break;
+            case 11: FrontRoomsWaterRings.RimSoftness = 1f; FrontRoomsWaterRings.Gait = 1f; break;
+        }
         haveFeet = false;
         nextStats = 0f;
     }
 
-    /// <summary>Ripple 3 and 4: the walker's strides in shallow water, one foot after the other. Each lands beside the
+    /// <summary>Ripple 3, 4 and 6: the walker's strides in shallow water, one foot after the other. Each lands beside the
     /// walking line (FootSide), a few centimetres off (FootJitter), after its own stride length and with its own strength,
     /// so the rings cross. Deeper than DeepWade the rings' own wake takes over (ReportBody).</summary>
     void Strides(Vector3 feet)
@@ -596,7 +567,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         var side = new Vector3(dir.y, 0f, -dir.x) * (leftFoot ? -FootSide : FootSide);
         leftFoot = !leftFoot;
         var jitter = new Vector3((float)strideRandom.NextDouble() - .5f, 0f, (float)strideRandom.NextDouble() - .5f) * (2f * FootJitter);
-        FrontRoomsWaterRings.Footstep(feet + side + jitter, Mathf.Lerp(.45f, 1f, (float)strideRandom.NextDouble()));
+        FrontRoomsWaterRings.Footstep(feet + side + jitter, Mathf.Lerp(.45f, 1f, (float)strideRandom.NextDouble()), dir);   // U 6's shape follows the walk
     }
 
     /// <summary>The water's depth over the feet when they stand in one of the bodies, else -1.</summary>
@@ -769,7 +740,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             }
             sources.Add(src);
         }
-        BuildGlow();
+        Niches();
     }
 
     /// <summary>The flat rectangles of one stand-in mesh: triangles whose three corners share a height, grouped by shared
@@ -885,9 +856,9 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         // the two lamps that light this water most carry the ripple's caustics onto its floor (17 section 4.4)
         CausticLamps(c, hx + margin.x, hz + margin.y, room, out ws.causticSourceA, out ws.causticSourceB);
         ws.causticSourceRadius = CausticRadius;
+        ws.depth = depth > .02f ? depth - .02f : 1f;      // the bounce's colour: deeper water sends back a bluer light
         go.SetActive(true);                               // OnEnable (when its part is active): Water layer, planar, rings, submerged
         bodies.Add(go);
-        bodyDepth.Add(depth > .02f ? depth - .02f : 1f);
         go.name += " · " + ZoneOf(src.sharedMaterial);
         ZoneFor(go);
     }
@@ -922,6 +893,16 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         var box = new Bounds(new Vector3(b.center.x, y + (ws.roomHeight - ZoneBelow) * .5f, b.center.z),
             new Vector3(b.size.x + 2f * ws.roomMargin.x, ws.roomHeight + ZoneBelow, b.size.z + 2f * ws.roomMargin.y));
         FrontRoomsZoneLookVolume.Ensure(go.transform, zone, box, ZoneBlend, y);
+    }
+
+    /// <summary>The panel's zone line: where the scene places 游戏视觉's pool room volumes itself (FrontRoomsStructuresLook,
+    /// its Q key, on from the start since 11-04 21:35), the scene's switch; elsewhere Z's state.</summary>
+    string ZoneLine(FrontRoomsStructuresDistrict d)
+    {
+        var scene = host != null ? host.Look : null;
+        if (scene == null || !scene.HasPoolRooms(d)) return ZoneNames[zoneLook];
+        return scene.ZoneLookOn ? "场景的 Q 键：开，游戏视觉的泳池区域外观（Z 在这个区不另放）"
+            : "场景的 Q 键：关，整个区一组固定的泳池环境光（Z 在这个区不另放）";
     }
 
     /// <summary>True when the district holds a zone look volume this file did not make (one not under a water body).</summary>
@@ -963,6 +944,8 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
 
     void TearDownBodies()
     {
+        foreach (var l in niches) FrontRoomsWaterSubmerged.UnregisterNiche(l);
+        niches.Clear();
         foreach (var go in bodies)
         {
             if (go == null) continue;
@@ -970,9 +953,6 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             Destroy(go);
         }
         bodies.Clear();
-        bodyDepth.Clear();
-        glowLights.Clear();                                    // children of the bodies: destroyed with them
-        glowArea.Clear();
         foreach (var m in bodyMeshes) if (m != null) Destroy(m);
         bodyMeshes.Clear();
         foreach (var s in sources)
@@ -1054,17 +1034,19 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             var body = FrontRoomsStructuresSigns.BodyFontAsset;
             if (body != null) style.font = body;
         }
-        var text = "水面：" + LookNames[(int)look] + "\n波纹：" + RippleNames[ripple] + "\n水光：" + GlowNames[glow] + "\n区域外观：" + ZoneNames[zoneLook] + "\n平台档：" + TierNames[tier] + "\n光追：" + RTName(FrontRoomsGlassRT.Quality) + "  ·  " + FrontRoomsGlassRT.Status + "\n" + statsLine;
+        var text = "水面：" + LookNames[(int)look] + "\n波纹：" + RippleNames[ripple] + "\n水光：" + GlowNames[glow] + "\n区域外观：" + ZoneLine(host.Current) + "\n平台档：" + TierNames[tier] + "\n光追：" + RTName(FrontRoomsGlassRT.Quality) + "  ·  " + FrontRoomsGlassRT.Status + "\n" + statsLine;
         const float w = 560f;
-        var h = style.CalcHeight(new GUIContent(text), w - 24f) + 44f;
+        const string head = "水 · K 换水面  ·  U 波纹  ·  I 水光  ·  Z 区域外观  ·  P 平台档  ·  J 光追  ·  K、U、I 按住 Shift 往回";
+        var hh = style.CalcHeight(new GUIContent(head), w - 24f);
+        var h = style.CalcHeight(new GUIContent(text), w - 24f) + 24f + hh;
         var r = new Rect(24f, Screen.height - 44f - h, w, h);
         var old = GUI.color;
         GUI.color = new Color(0f, 0f, 0f, .55f);
         GUI.DrawTexture(r, Texture2D.whiteTexture);
         GUI.color = Accent;
-        GUI.Label(new Rect(r.x + 12f, r.y + 8f, w - 24f, 20f), "水 · K 换水面（Shift K 往回）  ·  U 波纹  ·  I 水光  ·  Z 区域外观  ·  P 平台档  ·  J 光追", style);
+        GUI.Label(new Rect(r.x + 12f, r.y + 8f, w - 24f, hh), head, style);
         GUI.color = Paper;
-        GUI.Label(new Rect(r.x + 12f, r.y + 30f, w - 24f, h - 36f), text, style);
+        GUI.Label(new Rect(r.x + 12f, r.y + 10f + hh, w - 24f, h - 16f - hh), text, style);
         GUI.color = old;
     }
 }

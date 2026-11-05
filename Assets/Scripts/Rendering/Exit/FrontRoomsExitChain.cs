@@ -289,9 +289,9 @@ public sealed class FrontRoomsExitChain : MonoBehaviour
             lods[i] = new LOD(FrontRoomsExitChainKit.LodHeights[i], new Renderer[] { r });
         }
         var group = root.gameObject.AddComponent<LODGroup>();
-        group.fadeMode = LODFadeMode.None;
         group.SetLODs(lods);
         group.RecalculateBounds();
+        FrontRoomsLodFade.Apply(group);
         return root.gameObject;
     }
 

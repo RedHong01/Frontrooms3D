@@ -189,7 +189,8 @@ public static class FrontRoomsTrofferKit
     /// <summary>
     /// A lamp a kit built, as the Relay's body reads it (read only; the lamp logic never sees this): its lens and the whole
     /// fixture as world XZ rectangles, the world height of the ceiling plane it hangs from and of its lowest point, its shape,
-    /// and its Light (the map's "Light" beside the lens; null where the builder has none, as in the stream rooms).
+    /// and its Light (the map's "Light" beside the lens, or the one its builder handed over, SetLampLight: the Run! rig's strips; null
+    /// where the builder has none, as in the stream rooms).
     /// </summary>
     public struct LiveLamp
     {
@@ -208,6 +209,8 @@ public static class FrontRoomsTrofferKit
         public float plane;
         public LiveLamp lamp;
         public bool lightSought, retired;
+        /// <summary>The builder handed the Light over (SetLampLight): it is not sought by name, and a moved lamp keeps it.</summary>
+        public bool lightGiven;
         public int stamp;
     }
 
@@ -236,6 +239,29 @@ public static class FrontRoomsTrofferKit
         Measure(e);
         Insert(e);
         liveCount++;
+    }
+
+    /// <summary>
+    /// The Light of a lamp whose builder does not name it "Light" beside the lens (the game visual line's Run! rig, card 3, 2026-11-04: its strip
+    /// Light keeps the name the sound line reads, "run b wrap light k"), handed over after the kit registered the lens: the body's contact
+    /// reads it as it reads the map's Light (white armed, red under the alarm's A and B, nothing while it is dark). Every other lamp is
+    /// found by name as before. True when the lamp was registered.
+    /// </summary>
+    public static bool SetLampLight(Renderer lens, Light light)
+    {
+        if (lens == null) return false;
+        var found = false;
+        foreach (var list in live.Values)
+            for (var i = 0; i < list.Count; i++)
+            {
+                var e = list[i];
+                if (e.lens != lens || e.retired) continue;
+                e.lamp.light = light;
+                e.lightSought = true;
+                e.lightGiven = true;
+                found = true;
+            }
+        return found;
     }
 
     static void Insert(LiveEntry e)
@@ -337,6 +363,11 @@ public static class FrontRoomsTrofferKit
                     // moved (a chunk rebuilt or shifted): a fresh entry where it is now, this one retired
                     var moved = new LiveEntry { lens = e.lens, root = e.root, parts = e.parts, plane = e.plane, stamp = queryStamp };
                     moved.lamp.shape = e.lamp.shape;
+                    if (e.lightGiven)
+                    {
+                        moved.lamp.light = e.lamp.light;
+                        moved.lightSought = moved.lightGiven = true;
+                    }
                     e.retired = true;
                     Measure(moved);
                     pending.Add(moved);   // hashed after the walk (the lists are being read)

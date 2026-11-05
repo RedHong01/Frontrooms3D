@@ -684,20 +684,30 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         FrontRoomsOfficeKit.Dress(go.transform, new Rect(6.08f, 3.08f, 8.84f, 5.84f), 2.9f, 2042, new[] { new Rect(13.4f, 3.8f, 1.5f, 1.4f) }, none);
     }
 
-    // ---------------------------------------------------------------- the game's zone grades for the Office and Run! floors
+    // ---------------------------------------------------------------- the game's zone grades for the Office and Run! floors,
+    // and 游戏视觉's pool zone look over F0
 
     void BuildVolumes()
     {
         FrontRoomsPostStack.EnsureZoneVolume(Root, "Office", new Bounds(new Vector3(12f, F2 + 1.6f, 10.5f), new Vector3(24f, 3.4f, 21f)));
         FrontRoomsPostStack.EnsureZoneVolume(Root, "Run_B", new Bounds(new Vector3(12f, F1 + 1.45f, 10.5f), new Vector3(24f, 3.1f, 21f)));
+        // F0 is one room (the hall, its basin, the gallery, the B4-L and the core's pool storey) in PoolLevel (level water, 70
+        // section 2), as the map's AddPoolLooks: 3 m under the deck to 0.2 m over the lid, the basin's water (-0.05) carries the
+        // height fog (the splash trough is no pool water). FrontRoomsStructuresLook switches it off above F0 (F1-F3 keep their
+        // own looks; its box and blend would reach F1's eye).
+        kit.Host.Look.PoolRoom(this, "F0 pool hall", "PoolLevel", 0f, 0f, 24f, 21f, 0f, Lid0, -.05f);
+        kit.Host.Look.PoolRoomNote(this, "只在 F0 泳池层：F1-F3 用各层自己的外观。");
     }
 
     // ---------------------------------------------------------------- the sign (70 section 4, verbatim) and the metric marks
 
     void BuildSigns()
     {
-        // The arrival point stands over the void's edge: the sign goes on clear floor to the right, out of the main view.
-        kit.Sign(new Vector3(11.55f, F3 + 1.5f, 7.3f), new Vector3(10.5f, F3 + 1.5f, 8.0f), "SP2 · 井：穿过整栋楼的一口竖井",
+        // The arrival stands 1 m behind the glass over the void, with the notch's drop on its right: the sign stands on clear
+        // floor 2.5 m straight behind it (turn round), its face's centre 2.50 m from the arrival eye (20_placard_type.md v2.4,
+        // E's FAR; was 1.27 m behind-right), in gallery cell (3, 1), leaving 0.8 m to the x 9 wall and 0.8 m to the notch's
+        // guard corner, so the walker and the Relay pass it either side.
+        kit.Sign(new Vector3(10.5f, F3 + 1.5f, 5.506f), new Vector3(10.5f, F3 + 1.5f, 8.0f), "SP2 · 井：穿过整栋楼的一口竖井",
             "从 Level 0 的玻璃栏板往下看，经过办公层、Run! 设备层，约 17 米下面是泳池的青绿色水面。每层井口的形状都不一样，只有办公层有桥，Run! 设备层有水顺着井的南墙流进泳池。东边的楼梯连通四层，也是 Relay 的路；泳池层另有一部大圆楼梯。游戏里一次只加载一层，往下看到的会是替身竖井；这里把四层都真的叠起来，让你判断深度。\n"
             + "灰盒占位：四层的栏杆、桥、楼梯细部、玻璃砖地灯、大圆楼梯顶上的天窗、流水和泳池水；泳池层的瓷砖贴图只在这个场景里，其他三层的墙面、地毯、吊顶和灯是游戏自己的。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
             + "要你决定：1 用这口井做全楼的地标吗？ 2 井口用 3×3 格的方井，还是 2×5 格的窄槽（31 §3.5，这里没有做）？ 3 Level 0 这一格换成玻璃栏板才看得到水面（实心半墙会挡住），可以吗？ 4 大圆楼梯顶上用方形天窗，还是换成穹顶（60 Q2）？", F3);

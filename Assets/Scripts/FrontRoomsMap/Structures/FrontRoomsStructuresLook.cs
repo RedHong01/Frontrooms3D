@@ -10,10 +10,15 @@ using UnityEngine.Rendering.Universal;
 /// (.30, .36, .38) / (.32, .38, .40) / (.36, .44, .44), fog (.11, .16, .17) ExponentialSquared .010, and a structures-only
 /// runtime VolumeProfile: white balance -12, tint -2, post-exposure +.45, contrast -4, saturation +4; bathroom_rooms/16 section 5)
 /// and the dark zone its night (DESIGN section 6). DynamicGI.UpdateEnvironment after each switch. Realtime reflection
-/// probes are rendered once after a district's build. It also keeps the light budget of the scene's own lamps (lamps on
+/// probes are captured two frames after the walker arrives in their district and again when it changes, with every lamp of
+/// the district on for that frame (the pool glaze GZ-A, research/level_space/73_pool_glaze.md section 3.4); the lenses of the
+/// pool family's lamps carry reflection proxies only those captures see (section 3.3). The section "the pool glaze's lamps
+/// and probes" below has both. It also keeps the light budget of the scene's own lamps (lamps on
 /// within 16 m of the walker with a 3 m fade, one in three shadowed within 9 m; view lamps stay on), the map's lamps in P
 /// keep the map's own. No shared asset is ever changed: the URP asset, the film look profile and every game material stay
 /// as they are. Numbers are starting values, tuned by eye on the walk.
+/// The pool rooms of SP1, SP2's F0 and SP6 also carry 游戏视觉's pool zone look, on by default (Q: today's fixed trilight and
+/// grade instead); the section "游戏视觉's pool zone look" below says how the two share the frame and never fight.
 /// </summary>
 public sealed class FrontRoomsStructuresLook : MonoBehaviour
 {
@@ -98,18 +103,18 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 Trilight(new Color(.44f, .49f, .51f), new Color(.50f, .555f, .575f), new Color(.66f, .72f, .72f), new Color(.11f, .16f, .17f), .010f);
                 Grade(poolProfile, 1f);
                 // The halls' own probes (rendered once) carry the tile's reflections; elsewhere the game's default cube.
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.Level0);
                 break;
             case Preset.PoolNight:
                 // SP1's night key (70 section 3): the three trilight colours halved, the same grade.
                 Trilight(new Color(.22f, .245f, .255f), new Color(.25f, .28f, .29f), new Color(.33f, .36f, .36f), new Color(.06f, .08f, .085f), .010f);
                 Grade(poolProfile, 1f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.Level0);
                 break;
             case Preset.PoolDark:
                 Trilight(new Color(.02f, .045f, .055f), new Color(.025f, .055f, .065f), new Color(.03f, .07f, .075f), new Color(.02f, .045f, .05f), .012f);
                 Grade(darkProfile, 1f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.DeadLamp, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.DeadLamp);
                 break;
             case Preset.RunB:
                 // Run! B's armed bounce (the rig's SH: floor .06, walls .25, ceiling .40, tint (.93, .97, 1)), for SP2's F1,
@@ -118,13 +123,13 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 var tint = new Color(.93f, .97f, 1f);
                 Trilight((tint * .06f).gamma, (tint * .25f).gamma, (tint * .40f).gamma, FrontRoomsLook.FogColor, FrontRoomsLook.FogDensity);
                 Grade(null, 0f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.Level0);
                 break;
             case Preset.RunBTripped:
                 // Run! B's tripped bounce (floor .025, walls .050, ceiling .070, white; linear, so through .gamma).
                 Trilight((Color.white * .025f).gamma, (Color.white * .05f).gamma, (Color.white * .07f).gamma, FrontRoomsLook.FogColor, FrontRoomsLook.FogDensity);
                 Grade(null, 0f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.DeadLamp, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.DeadLamp);
                 break;
             case Preset.RunBRed:
                 // SP7's red looks (71 section 6.3): the tripped ambient tinted linear (1.00, 0.30, 0.24) at floor .05, walls
@@ -132,26 +137,41 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 var red = new Color(1f, .30f, .24f);
                 Trilight((red * .05f).gamma, (red * .06f).gamma, (red * .08f).gamma, FrontRoomsLook.FogColor, FrontRoomsLook.FogDensity);
                 Grade(null, 0f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.DeadLamp, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.DeadLamp);
                 break;
             case Preset.Level0Tall:
                 // SP3's V4 room (70 section 1: Level 0 with the Tall reflection in V4).
                 FrontRoomsLook.ApplyAmbient();
                 Grade(null, 0f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Tall, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.Tall);
                 break;
             case Preset.Office:
                 FrontRoomsLook.ApplyAmbient();
                 Grade(null, 0f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Office, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.Office);
                 break;
             default:
                 FrontRoomsLook.ApplyAmbient();
                 Grade(null, 0f);
-                FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
+                Reflection(FrontRoomsLook.ReflectionZone.Level0);
                 break;
         }
         environmentDirty = 0f;
+    }
+
+    // The preset's own reflection cube, set at once as before; inside a pool zone (zone look on) the zone's cube stays shown
+    // (ZoneTick picks it, the game's rule), so a preset change there does not flash the preset's cube for a frame.
+    void Reflection(FrontRoomsLook.ReflectionZone zone)
+    {
+        presetReflection = zone;
+        ShowReflection(ZoneLookOn && zoneCubeHeld ? zoneCube : zone, 0f, true);
+    }
+
+    void ShowReflection(FrontRoomsLook.ReflectionZone zone, float blendSeconds, bool always = false)
+    {
+        if (!always && zone == shownReflection) return;
+        shownReflection = zone;
+        FrontRoomsLook.SetZoneReflection(zone, blendSeconds);
     }
 
     static void Trilight(Color sky, Color equator, Color ground, Color fog, float density)
@@ -171,10 +191,13 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     {
         if (poolVolume == null) return;
         if (profile != null) poolVolume.sharedProfile = profile;
-        poolVolume.weight = weight;
+        // the preset's weight; with the zone look on it gives way where a zone weighs in (ZoneTick, GradeShare)
+        gradeWeight = weight;
+        poolVolume.weight = weight * GradeShare;
     }
 
-    /// <summary>A realtime box probe over a hall (world bounds), rendered once a frame or two after it is made (after the build).</summary>
+    /// <summary>A realtime box probe over a hall (world bounds), rendered a frame or two after it is made (after the build): in
+    /// its district's capture, with the district's lamps on, when the walker is in that district (GZ-A), else as it is.</summary>
     public ReflectionProbe Probe(Transform parent, Bounds world, int resolution = 1024)
     {
         try
@@ -196,6 +219,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
             p.importance = 2;
             pendingProbes.Add(p);
             probeFrames = 2;
+            known.Add(p);
             return p;
         }
         catch (System.Exception e)
@@ -203,6 +227,225 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
             FrontRoomsPoolMaterials.LogOnce("probe", "a reflection probe failed: " + e.Message);
             return null;
         }
+    }
+
+    /// <summary>Render every realtime scripted probe under root again a few frames from now (after a change of look); the
+    /// current district's go through its capture (GZ-A: its lamps on), so a re-render here is never a second one.</summary>
+    public void RerenderProbes(Transform root)
+    {
+        if (root == null) return;
+        if (here != null && here.Root == root) { RequestCapture(here); return; }
+        foreach (var p in root.GetComponentsInChildren<ReflectionProbe>(false))
+            if (p != null && p.mode == ReflectionProbeMode.Realtime && p.refreshMode == ReflectionProbeRefreshMode.ViaScripting && !pendingProbes.Contains(p))
+                pendingProbes.Add(p);
+        if (pendingProbes.Count > 0) probeFrames = Mathf.Max(probeFrames, 3);
+    }
+
+    // ---------------------------------------------------------------- 游戏视觉's pool zone look
+
+    /// <summary>
+    /// 游戏视觉's pool zone look (pool_zone_look: Rendering/ZoneLook; research/bathroom_rooms/70_look_build.md "Zone look") over
+    /// every pool room of SP1, SP2's F0 and SP6, placed as the map's AddPoolLooks places it: one look volume per room through
+    /// FrontRoomsZoneLook.AddMapZone, over the room's footprint from 3 m under its floor to 0.2 m over its ceiling, blend 2.5 m,
+    /// the height fog on the room's water when all its pool water shares one height (none otherwise). Its ambient, haze,
+    /// height fog and grade show here as in the game. On by default since 11-04 20:4x; Q switches to the scene's own fixed
+    /// trilight and grade and back. (It was off at first: at a lamp share of 1, PoolLevel's ambient washed the porcelain slate
+    /// grey in scene 4's lamps, tile luma 11-39 % under today's tuned trilight. 游戏视觉's pool_zone_look_tune gave the share
+    /// that stands in for the fixtures scene 4 lacks, and with it the porcelain holds: see ZoneLookOn.)
+    /// While it is on, the scene's own look gives way wherever a zone weighs in: the global pool grade by the zone's weight at
+    /// the camera, as URP weighs the zone grade (inside a room the zone grade alone), the default reflection cube to the game's
+    /// pool cube inside a pool zone (FrontRooms3DGame's rule: weight over 0.5 at the player), and a district's rooms are off
+    /// wherever its own preset is not a pool one (SP2's F1-F3, which F0's box and blend would reach). The ambient and the fog
+    /// need nothing: the zone look writes them per render context over the preset's trilight. Lamps are never touched. Each
+    /// switch re-renders the district's probes, so the tile reflects the look on screen. 游戏视觉's assets and numbers are used
+    /// as they are. With it off, every frame is today's.
+    /// Default ON (W/water_light/for_water_line.md section 2.5: the bar is the porcelain's luma within 5 % of the scene's own
+    /// trilight at the six zone stops). Measured 11-04 (render10, W/level_space/renders/scene4/zone2, zone_measure.py; Q on
+    /// with the lamp share below against Q off, key I off): SP1 stops 0 / 2 -2.7 / -2.6 %, SP2 stops 5 / 8 -3.5 / -2.5 %,
+    /// SP6 stops 0 / 1 -3.9 / -4.3 %; SP1 at night (share 0.7) -3.7 / -4.0 %; SP2's Level 0 arrival +0.1 % (no zone reaches it);
+    /// with key I on -2.3 to -3.8 %. The zone look stays a touch cooler than the scene's own: tile B-G +3.5 to +7.2 with Q on
+    /// against -0.7 to +5.9 off by day, +2.0 / +2.5 against -7.2 / -6.8 at night.
+    /// </summary>
+    public bool ZoneLookOn { get; private set; } = true;
+    const float PoolLevelShare = 3f, PoolLevelNightShare = .7f;
+    float lampShare = 1f;
+
+    /// <summary>What the last frame found at the camera: the strongest zone ("" outside every zone) and its weight.</summary>
+    public string ZoneAtCamera { get; private set; } = "";
+    public float ZoneWeightAtCamera { get; private set; }
+    /// <summary>The share of the scene's own pool grade in the last frame (1 = today's, 0 = the zone grade alone).</summary>
+    public float GradeShare { get; private set; } = 1f;
+    /// <summary>The reflection cube shown now (the preset's, or the game's pool cube inside a pool zone).</summary>
+    public FrontRoomsLook.ReflectionZone ShownReflection => shownReflection;
+
+    /// <summary>AddPoolLooks' sizes: the box from 3 m under the floor to 0.2 m over the ceiling, blended over 2.5 m.</summary>
+    public const float PoolRoomBelow = 3f, PoolRoomAbove = .2f, PoolRoomBlend = 2.5f;
+
+    sealed class PoolRoomEntry
+    {
+        public FrontRoomsZoneLookVolume volume;
+        public FrontRoomsStructuresDistrict district;
+        public string name;
+    }
+
+    readonly List<PoolRoomEntry> poolRooms = new List<PoolRoomEntry>();
+    readonly Dictionary<FrontRoomsStructuresDistrict, string> poolNotes = new Dictionary<FrontRoomsStructuresDistrict, string>();
+    float gradeWeight;
+    FrontRoomsLook.ReflectionZone presetReflection = FrontRoomsLook.ReflectionZone.Level0, shownReflection = FrontRoomsLook.ReflectionZone.Level0;
+    FrontRoomsLook.ReflectionZone zoneCube = FrontRoomsLook.ReflectionZone.PoolLevel;
+    bool zoneCubeHeld;
+
+    static bool IsPoolPreset(Preset p) => p == Preset.Pool || p == Preset.PoolClub || p == Preset.PoolNight || p == Preset.PoolDark;
+
+    /// <summary>
+    /// One pool room's look volume, in district metres: the footprint x0..x1, z0..z1, the room's floor and ceiling, and waterY,
+    /// the height of all its pool water (NaN when it has none or more than one height: no height fog), as AddPoolLooks. Made
+    /// under the district's root (it sleeps with it); a failure logs once and the district goes on without it.
+    /// </summary>
+    public FrontRoomsZoneLookVolume PoolRoom(FrontRoomsStructuresDistrict d, string room, string zone, float x0, float z0, float x1, float z1, float floor, float ceiling, float waterY = float.NaN)
+    {
+        if (d == null || d.Root == null || string.IsNullOrEmpty(zone)) return null;
+        try
+        {
+            var holder = new GameObject("Pool look · " + d.Code + " " + room).transform;
+            holder.SetParent(d.Root, false);
+            float bottom = floor - PoolRoomBelow, top = ceiling + PoolRoomAbove;
+            var box = new Bounds(new Vector3((x0 + x1) * .5f, (bottom + top) * .5f, (z0 + z1) * .5f), new Vector3(Mathf.Abs(x1 - x0), top - bottom, Mathf.Abs(z1 - z0)));
+            var v = FrontRoomsZoneLook.AddMapZone(holder, zone, box, PoolRoomBlend, waterY);
+            if (v == null)
+            {
+                FrontRoomsPoolMaterials.LogOnce("pool look " + zone, "the pool zone look " + zone + " could not be placed in " + d.Code + ".");
+                Destroy(holder.gameObject);
+                return null;
+            }
+            v.enabled = ZoneLookOn;
+            poolRooms.Add(new PoolRoomEntry { volume = v, district = d, name = room });
+            return v;
+        }
+        catch (System.Exception e)
+        {
+            FrontRoomsPoolMaterials.LogOnce("pool look " + d.Code + " " + room, d.Code + " pool room " + room + ": the zone look was left out: " + e.Message);
+            return null;
+        }
+    }
+
+    /// <summary>A line of the district's own for the G panel's zone look paragraph (SP1's night, SP2's floors).</summary>
+    public void PoolRoomNote(FrontRoomsStructuresDistrict d, string note)
+    {
+        if (d != null && !string.IsNullOrEmpty(note)) poolNotes[d] = note;
+    }
+
+    /// <summary>True when the district has pool rooms with 游戏视觉's look.</summary>
+    public bool HasPoolRooms(FrontRoomsStructuresDistrict d)
+    {
+        if (d == null) return false;
+        foreach (var r in poolRooms) if (r.district == d && r.volume != null) return true;
+        return false;
+    }
+
+    /// <summary>The district's pool rooms' look volumes (logs, tests).</summary>
+    public List<FrontRoomsZoneLookVolume> PoolRoomVolumes(FrontRoomsStructuresDistrict d)
+    {
+        var list = new List<FrontRoomsZoneLookVolume>();
+        foreach (var r in poolRooms) if (r.district == d && r.volume != null) list.Add(r.volume);
+        return list;
+    }
+
+    /// <summary>Q: 游戏视觉's pool zone look on, or today's fixed trilight and grade; ZoneTick applies it this frame.</summary>
+    public void SetZoneLook(bool on)
+    {
+        ZoneLookOn = on;
+    }
+
+    /// <summary>
+    /// Every frame after Want (the bootstrap; the camera is the walker's view): the rooms' switch, the scene grade's share and
+    /// the reflection cube.
+    /// </summary>
+    public void ZoneTick(FrontRoomsStructuresDistrict d, Vector3 feet, Vector3 camera)
+    {
+        if (d != null) here = d;
+        // 游戏视觉's lamp share for PoolLevel (pool_zone_look_tune, main 11-04 16:48; W/water_light/for_water_line.md section 2):
+        // scene 4's pool rooms lack the P1-A and down-fill fixtures the zone's ambient was tuned with, so with Q on the share
+        // stands in for them, 3 by day and 0.7 under the night preset (3 x 0.235, the night trilight's linear share); only in
+        // our own pool districts (the pool route P keeps the map's 1). Set before the switch below, so a flip's probe capture
+        // already sees it.
+        var share = ZoneLookOn && here != null && HasPoolRooms(here) ? (current == Preset.PoolNight ? PoolLevelNightShare : PoolLevelShare) : 1f;
+        if (share != lampShare)
+        {
+            lampShare = share;
+            FrontRoomsZoneLook.SetLampShare("PoolLevel", share);
+        }
+        // The current district's rooms hold only where its own preset is a pool one; the other districts' keep their switch
+        // (their roots sleep), so coming back to a district does not flip them (its arrival capture renders its probes, GZ-A);
+        // a flip here re-renders them through that capture, once.
+        var poolHere = IsPoolPreset(current);
+        var flipped = false;
+        for (var i = poolRooms.Count - 1; i >= 0; i--)
+        {
+            var r = poolRooms[i];
+            if (r.volume == null) { poolRooms.RemoveAt(i); continue; }
+            var on = ZoneLookOn && (r.district != d || poolHere);
+            if (r.volume.enabled == on) continue;
+            r.volume.enabled = on;
+            if (r.district == d) flipped = true;
+        }
+        if (flipped && d != null) RerenderProbes(d.Root);
+
+        // URP weighs the zone grade at the camera, the zone look its ambient too: the scene's grade gives way by as much.
+        float w;
+        var zone = FrontRoomsZoneLook.ZoneAt(camera, out w);
+        ZoneAtCamera = zone ?? "";
+        ZoneWeightAtCamera = w;
+        GradeShare = ZoneLookOn ? 1f - Mathf.Clamp01(w) : 1f;
+        if (poolVolume != null)
+        {
+            var target = gradeWeight * GradeShare;
+            if (Mathf.Abs(poolVolume.weight - target) > 1e-4f) poolVolume.weight = target;
+        }
+
+        // The game's reflection cube inside a pool zone (FrontRooms3DGame: weight over 0.5 at the player's feet).
+        zoneCubeHeld = false;
+        if (ZoneLookOn)
+        {
+            float wf;
+            var at = FrontRoomsZoneLook.ZoneAt(feet, out wf);
+            if (wf > .5f && !string.IsNullOrEmpty(at))
+            {
+                zoneCubeHeld = true;
+                zoneCube = at == "PoolDark" ? FrontRoomsLook.ReflectionZone.PoolDead
+                    : at == "PoolLevel" ? FrontRoomsLook.ReflectionZone.PoolLevel : FrontRoomsLook.ReflectionZone.Pool;
+            }
+        }
+        ShowReflection(zoneCubeHeld ? zoneCube : presetReflection, .5f);
+    }
+
+    /// <summary>The status plate's words ("" in a district without pool rooms).</summary>
+    public string ZoneStatus(FrontRoomsStructuresDistrict d)
+    {
+        if (!HasPoolRooms(d)) return "";
+        if (!ZoneLookOn) return "泳池外观：场景原来的固定环境光（Q 换成游戏视觉的）";
+        return IsPoolPreset(current) ? "泳池外观：游戏视觉的区域外观（Q 换回原来的）" : "泳池外观：游戏视觉的，只在泳池层（Q 换回原来的）";
+    }
+
+    /// <summary>The flash after Q.</summary>
+    public string ZoneFlash(FrontRoomsStructuresDistrict d)
+    {
+        var s = ZoneLookOn
+            ? "泳池外观 · 游戏视觉的区域外观：每个泳池房间用游戏里的环境光、雾、水面薄雾和调色，进出房间时渐变；灯不变"
+            : "泳池外观 · 场景原来的：整个区一组固定的泳池环境光和调色（今天调好的）；灯不变";
+        return HasPoolRooms(d) ? s : s + "（这个区没有泳池房间：SP1、SP2 的 F0 和 SP6 才有）";
+    }
+
+    /// <summary>The G panel's paragraph ("" in a district without pool rooms).</summary>
+    public string ZoneGuide(FrontRoomsStructuresDistrict d)
+    {
+        if (!HasPoolRooms(d)) return "";
+        string note;
+        poolNotes.TryGetValue(d, out note);
+        return "泳池外观（Q）：现在是" + (ZoneLookOn ? "游戏视觉的区域外观" : "场景原来的固定环境光") + "。默认开着：这个区每个泳池房间都用游戏视觉的区域外观，"
+            + "和游戏里一样：环境光、雾、水面上的一层薄雾和调色，进出房间时在 2.5 米内渐变；瓷砖的亮度和之前调好的瓷白相差不到 5%，颜色稍微偏冷一点。"
+            + "按 Q 换回这个场景原来的一组固定泳池环境光和调色，再按一次换回来。两种都不改灯。"
+            + (string.IsNullOrEmpty(note) ? "" : note);
     }
 
     // ---------------------------------------------------------------- the scene's own lamps
@@ -216,6 +459,9 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         public bool mayShadow, view, mustShadow;
         public int district;
         public float scale = 1f;
+        // GZ-A: its reflection proxies (null: none) and whether its lenses were looked at for them
+        public List<Renderer> proxies;
+        public bool proxyChecked;
     }
 
     readonly List<Lamp> lamps = new List<Lamp>();
@@ -271,12 +517,25 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         budgetClock = 0f;
     }
 
-    /// <summary>Scale one lamp (0 keeps it off; SP1's night lines and dimmed hall lamps). Unknown lights are ignored.</summary>
+    /// <summary>Scale one lamp (0 keeps it off; SP1's night lines and dimmed hall lamps). Unknown lights are ignored. Its
+    /// reflection proxies follow at once, and a lamp of the district the walker is in has that district's probes captured
+    /// again (GZ-A: a lamp state change). Scene 4's pool lamps are steady (nothing flickers), so that is one capture a key.</summary>
     public void Scale(Light light, float scale)
     {
         if (light == null) return;
         foreach (var l in lamps)
-            if (l.light == light) { l.scale = Mathf.Max(0f, scale); break; }
+            if (l.light == light)
+            {
+                var s = Mathf.Max(0f, scale);
+                var changed = Mathf.Abs(l.scale - s) > 1e-4f;
+                l.scale = s;
+                if (changed)
+                {
+                    Drive(l);
+                    if (here != null && l.district == here.Key) RequestCapture(here);
+                }
+                break;
+            }
         budgetClock = 0f;
     }
 
@@ -309,32 +568,469 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
             foreach (var p in pendingProbes)
             {
                 if (p == null || !p.isActiveAndEnabled) continue;
+                // the current district's go into its capture (its lamps on, GZ-A); any other renders as before
+                if (here != null && here.Root != null && p.transform.IsChildOf(here.Root)) { RequestCapture(here, p); continue; }
                 try { p.RenderProbe(); }
                 catch (System.Exception e) { FrontRoomsPoolMaterials.LogOnce("probe render", "a reflection probe did not render: " + e.Message); }
             }
             pendingProbes.Clear();
         }
+        // GZ-A: the capture's frame. A finished capture gives the budget back, a due one forces its district's lamps on; either
+        // runs the budget in this frame, before the probes render (they render with this frame's cameras).
+        var startCapture = CaptureTick(district);
         FrontRoomsPoolMaterials.Animate(Time.time);
         budgetClock -= dt;
-        if (budgetClock > 0f) return;
-        budgetClock = .1f;
+        if (budgetClock <= 0f)
+        {
+            budgetClock = .1f;
+            foreach (var l in lamps)
+            {
+                if (l.light == null) continue;
+                var mine = l.district == district;
+                var d = Vector3.Distance(eye, l.light.transform.position);
+                // while its district's probes are captured every lamp of it is on: the view flag for all of them (GZ-A)
+                var view = l.view || l.district == forcedDistrict;
+                var level = (!mine && l.district != 0 ? 0f : view && mine ? 1f : Mathf.Clamp01((19f - d) / 3f)) * l.scale;
+                var on = level > .001f;
+                if (l.light.enabled != on) l.light.enabled = on;
+                if (on) l.light.intensity = l.intensity * level;
+                var shadow = on && (l.mustShadow || (l.mayShadow && d < 9f)) ? LightShadows.Soft : LightShadows.None;
+                if (l.light.shadows != shadow) l.light.shadows = shadow;
+            }
+        }
+        if (startCapture) RenderCapture();
+    }
+
+    // ---------------------------------------------------------------- the pool glaze's lamps and probes (GZ-A)
+    //
+    // Red picked GZ-C on 2026-11-04 ("选这个", research/level_space/73_pool_glaze.md section 6), landed in the order A, B, C;
+    // A is this scene's own (section 3), B and C are 游戏视觉's tile package. The glaze shows a lamp only when the lamp is
+    // 50-200 times a lit wall; the lenses Red sees are 2-5 times (Red's levels, kept), and the probes used to be rendered once
+    // after the build, with the walker's budget already putting far lamps out. Two parts here, as the option sheet's GZ-A
+    // column rendered them (its clone rig, W/level_space/glaze/clone_src):
+    // Reflection proxies (section 3.3). Every lens of a pool-family lamp (a lamp of the district whose preset where it hangs is
+    // a pool one: SP1, SP2's F0, SP6, the kit row's tile hall) gets a copy of its lens mesh 2 mm in front of it along the
+    // lamp's beam, on layer 27, unlit at the lamp's tint x ProxyGain; the oculus (no lens of its own) a 1.1 m disc in its
+    // shaft at the light. Not the wall boxes: their lens faces the lid, and the lit lid is captured as it is. Nor SP2's
+    // laylight: its 6 x 6 m diffuser is no lens (at a compact lens's gain it would flood SP2's probe). A proxy follows its
+    // lamp's state (Scale: the night key, a lamp put out or dimmed) through its own property block, never the walker's
+    // distance budget: a lamp that is on is on in every reflection. Made the first time the district's probes are captured,
+    // from the lenses there are then (the kit's quad or round lens, the troffer kit's, a district's own round lenses).
+    // Only reflection-probe captures render layer 27. Every other camera skips it: the walker's from its creation; each frame
+    // before anything renders every enabled camera and the water mirrors' viewer (FrontRoomsWaterPlanar copies its viewer's
+    // mask into each mirror camera, so the mirrors skip it too); and every camera as it begins rendering
+    // (RenderPipelineManager.beginCameraRendering, so a camera made later, the review harness's, skips it from its first
+    // frame; GlassRT takes its instances by the rendering camera's mask, so it leaves them out too). The water mirrors are
+    // Reflection cameras like the probes' own, so a camera is told apart as a probe's by its eye on a probe of this look or a
+    // 90-degree square view.
+    // Probe capture (section 3.4). A district's probes are captured two frames after the walker arrives in it (Entered),
+    // again after one of its keys (Changed: SP1's night key and flume, SP6's dome light), a state change of one of its lamps
+    // (Scale) and a flip of the zone look (Q, through RerenderProbes, once), and whenever something renders one of its probes
+    // while its lamps are not forced (the water preview re-renders them after its own keys and on arrival): each time with
+    // every lamp of the district on for the frame the probes render, then the budget returns. Sizes and settings unchanged.
+
+    /// <summary>The reflection proxies' layer: unused in the project (the game's are 4, 5, 28-31); only probe captures render it.</summary>
+    public const int ProxyLayer = 27;
+    public const int ProxyMask = 1 << ProxyLayer;
+    /// <summary>
+    /// A proxy's drive: its lamp's tint (linear) times this, passed as the option sheet's rig passed it, as a material colour,
+    /// which Unity reads as sRGB and linearises once more (MaterialPropertyBlock.SetColor in a linear project): about 1200-1800
+    /// on the GPU, not 30 times the tint (73 section 3.3 wrote linear). ProxyRadiance keeps that level, the sheet's GZ-A, at
+    /// a lamp's full state and dims it linearly with the lamp. On this scale the design's 15-60 tuning range is steep: 15 is
+    /// about a fifth of 30.
+    /// </summary>
+    public const float ProxyGain = 30f;
+    /// <summary>How far the proxy sits in front of its lens, along its lamp's beam (m).</summary>
+    public const float ProxyOffset = .002f;
+    /// <summary>The oculus' proxy: a disc of this diameter at its light, inside its 1.2 m shaft.</summary>
+    public const float OculusDisc = 1.1f;
+    /// <summary>The most frames a capture keeps its district's lamps forced on while its probes have not been seen rendering.</summary>
+    public const int CaptureFramesMax = 8;
+    const string ProxyName = "Reflection proxy (layer 27, probes only)";
+
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    Material proxyMaterial;
+    Mesh proxyDisc;
+    MaterialPropertyBlock proxyBlock;
+    bool proxyShaderMissing;
+    // the district the walker is in (Entered, ZoneTick); the capture asked for (district, all its probes or some), its
+    // count-down; the capture in flight (its district's lamps forced on, its probes, which were seen rendering, their ids)
+    FrontRoomsStructuresDistrict here, captureFor;
+    readonly List<ReflectionProbe> captureOnly = new List<ReflectionProbe>();
+    bool captureAll;
+    int captureFrames = -1, forcedDistrict = -1, forcedFrames, captureFrame;
+    readonly List<ReflectionProbe> capturing = new List<ReflectionProbe>();
+    readonly List<int> captureIds = new List<int>();
+    readonly HashSet<ReflectionProbe> seen = new HashSet<ReflectionProbe>();
+    // every probe this look made or captured (a camera at one of them is that probe's capture)
+    readonly List<ReflectionProbe> known = new List<ReflectionProbe>();
+    readonly List<Transform> lensBuffer = new List<Transform>();
+    Camera[] cameraBuffer = new Camera[8];
+    bool loggedProbeCamera, loggedUnseen;
+    readonly HashSet<CameraType> loggedSkip = new HashSet<CameraType>();
+
+    /// <summary>The walker arrived in a district (the bootstrap, when it becomes the current one): its probes are captured two
+    /// frames from now, with its lamps on.</summary>
+    public void Entered(FrontRoomsStructuresDistrict d)
+    {
+        if (d == null) return;
+        here = d;
+        RequestCapture(d);
+    }
+
+    /// <summary>One of the district's keys changed it (SP1's night key and flume, SP6's dome light): its probes again.</summary>
+    public void Changed(FrontRoomsStructuresDistrict d)
+    {
+        if (d != null && d == here) RequestCapture(d);
+    }
+
+    /// <summary>A camera of a tool's own skips the reflection proxies (call it before the camera renders or is mirrored by
+    /// FrontRoomsWaterPlanar.RenderFor; the scene does it for every camera it can reach). Reflection cameras are left alone
+    /// here: the probes' captures must see the proxies (OnBeginCamera tells the water mirrors apart).</summary>
+    public static void CullProxies(Camera c)
+    {
+        if (c != null && c.cameraType != CameraType.Reflection && (c.cullingMask & ProxyMask) != 0) c.cullingMask &= ~ProxyMask;
+    }
+
+    /// <summary>A proxy's radiance at its lamp's full state, as the GPU gets it (linear): the lamp's tint (linear) x ProxyGain,
+    /// linearised once more, which is what the option sheet drew (ProxyGain).</summary>
+    public static Color ProxyRadiance(Color lampColor) => (lampColor.linear * ProxyGain).linear;
+
+    // An ask for a capture of d's probes (all, or one) two frames from now; asks for the same district coalesce, an ask for
+    // another one replaces it (only the district the walker is in is captured).
+    void RequestCapture(FrontRoomsStructuresDistrict d, ReflectionProbe only = null)
+    {
+        if (d == null || d.Root == null) return;
+        if (captureFor != d)
+        {
+            captureFor = d;
+            captureAll = false;
+            captureOnly.Clear();
+            captureFrames = -1;
+        }
+        if (only == null) captureAll = true;
+        else if (!captureOnly.Contains(only)) captureOnly.Add(only);
+        // Tick counts the frame of the ask (it runs after the bootstrap's jumps and keys): the capture is two frames after it
+        if (captureFrames < 0) captureFrames = 3;
+    }
+
+    // Once a frame, in Tick before the budget: a capture in flight ends when its probes were seen rendering with the lamps on
+    // (or say they are done, or the frames run out) and the budget comes back; a due capture then starts: its district's
+    // proxies made and driven, its lamps forced on. True when the probes are to render this frame (RenderCapture).
+    bool CaptureTick(int district)
+    {
+        if (forcedDistrict >= 0)
+        {
+            forcedFrames--;
+            var seenAll = SeenAll();
+            var done = seenAll || (FinishedAll() && Time.frameCount - captureFrame >= 2);
+            if (!done && forcedFrames > 0 && forcedDistrict == district) return false;
+            if (!seenAll && forcedDistrict == district && !loggedUnseen)
+            {
+                loggedUnseen = true;
+                Debug.LogWarning(FrontRoomsStructures.Log + "a probe capture (GZ-A) ended without its probes seen rendering ("
+                    + (done ? "they say they are done" : "after " + CaptureFramesMax + " frames") + "): if the pool glaze shows no lamp images, "
+                    + "the probes' cameras were not recognised and layer " + ProxyLayer + " was culled from them.");
+            }
+            forcedDistrict = -1;
+            capturing.Clear();
+            captureIds.Clear();
+            seen.Clear();
+            budgetClock = 0f;
+        }
+        if (captureFrames < 0 || --captureFrames > 0) return false;
+        captureFrames = -1;
+        var d = captureFor;
+        captureFor = null;
+        var all = captureAll;
+        captureAll = false;
+        if (d == null || d != here || d.Root == null || !d.Root.gameObject.activeInHierarchy || d.Key != district) { captureOnly.Clear(); return false; }
+        if (all)
+        {
+            foreach (var p in d.Root.GetComponentsInChildren<ReflectionProbe>(false))
+                if (Capturable(p)) capturing.Add(p);
+        }
+        else
+            foreach (var p in captureOnly)
+                if (Capturable(p) && p.transform.IsChildOf(d.Root) && !capturing.Contains(p)) capturing.Add(p);
+        captureOnly.Clear();
+        if (capturing.Count == 0) return false;
+        foreach (var p in capturing) if (!known.Contains(p)) known.Add(p);
+        EnsureProxies(d);
+        foreach (var l in lamps) if (l.district == d.Key) Drive(l);
+        forcedDistrict = d.Key;
+        forcedFrames = CaptureFramesMax;
+        seen.Clear();
+        budgetClock = 0f;
+        return true;
+    }
+
+    static bool Capturable(ReflectionProbe p) =>
+        p != null && p.isActiveAndEnabled && p.mode == ReflectionProbeMode.Realtime && p.refreshMode == ReflectionProbeRefreshMode.ViaScripting;
+
+    void RenderCapture()
+    {
+        captureIds.Clear();
+        captureFrame = Time.frameCount;
+        foreach (var p in capturing)
+        {
+            var id = -1;
+            try { id = p.RenderProbe(); }
+            catch (System.Exception e) { FrontRoomsPoolMaterials.LogOnce("probe render", "a reflection probe did not render: " + e.Message); }
+            captureIds.Add(id);
+        }
+    }
+
+    // A capture is done when every probe was seen rendering while the lamps were on (OnBeginCamera), or, in case its cameras
+    // were not recognised, when every one says it has finished and two frames have passed since the ask to render.
+    bool SeenAll()
+    {
+        foreach (var p in capturing) if (p != null && !seen.Contains(p)) return false;
+        return true;
+    }
+
+    bool FinishedAll()
+    {
+        for (var i = 0; i < capturing.Count; i++)
+        {
+            var p = capturing[i];
+            if (p == null) continue;
+            var id = i < captureIds.Count ? captureIds[i] : -1;
+            if (id < 0 || !p.IsFinishedRendering(id)) return false;
+        }
+        return true;
+    }
+
+    // A probe of the current district rendered: while its lamps are forced it is the capture's (or as good as); otherwise
+    // someone rendered it under the budget (the water preview's own re-render): capture it again, with the lamps on.
+    void ProbeRendered(ReflectionProbe p)
+    {
+        if (here == null || here.Root == null || p == null) return;
+        if (forcedDistrict >= 0 && forcedDistrict == here.Key)
+        {
+            if (capturing.Contains(p)) seen.Add(p);
+            return;
+        }
+        if (Capturable(p) && p.transform.IsChildOf(here.Root)) RequestCapture(here, p);
+    }
+
+    // ---------------------------------------------------------------- the proxies
+
+    // The district's pool-family lamps get their proxies, once per lamp (a lamp made later gets its own at the next capture).
+    void EnsureProxies(FrontRoomsStructuresDistrict d)
+    {
+        int made = 0, boxes = 0, bare = 0;
         foreach (var l in lamps)
         {
-            if (l.light == null) continue;
-            var mine = l.district == district;
-            var d = Vector3.Distance(eye, l.light.transform.position);
-            var level = (!mine && l.district != 0 ? 0f : l.view && mine ? 1f : Mathf.Clamp01((19f - d) / 3f)) * l.scale;
-            var on = level > .001f;
-            if (l.light.enabled != on) l.light.enabled = on;
-            if (on) l.light.intensity = l.intensity * level;
-            var shadow = on && (l.mustShadow || (l.mayShadow && d < 9f)) ? LightShadows.Soft : LightShadows.None;
-            if (l.light.shadows != shadow) l.light.shadows = shadow;
+            if (l.district != d.Key || l.proxyChecked || l.light == null) continue;
+            l.proxyChecked = true;
+            var lamp = l.light.transform.parent;
+            if (lamp == null || !PoolLamp(d, l.light.transform.position)) continue;
+            if (lamp.name.IndexOf("wall box", System.StringComparison.Ordinal) >= 0) { boxes++; continue; }
+            var n = MakeProxies(l, lamp);
+            if (n == 0) bare++;
+            made += n;
         }
+        if (made + boxes + bare > 0)
+            Debug.Log(FrontRoomsStructures.Log + d.Code + " reflection proxies (GZ-A): " + made + " on layer " + ProxyLayer + " at the lamp's tint x " + ProxyGain
+                + " (seen only by its probes), " + boxes + " wall boxes left as they are, " + bare + " lamps without a lens.");
+    }
+
+    static bool PoolLamp(FrontRoomsStructuresDistrict d, Vector3 world)
+    {
+        try { return IsPoolPreset(d.PresetAt(world)); }
+        catch (System.Exception) { return false; }
+    }
+
+    int MakeProxies(Lamp l, Transform lamp)
+    {
+        if (!ProxyReady()) return 0;
+        // the lamp's beam in the lamp's own space: the kit's lens faces its lamp's +z, the troffer kit's faces down
+        var beam = lamp.InverseTransformDirection(l.light.transform.forward);
+        beam = beam.sqrMagnitude > 1e-8f ? beam.normalized : Vector3.forward;
+        lensBuffer.Clear();
+        foreach (Transform c in lamp)
+            if (c.name.StartsWith("Lens", System.StringComparison.Ordinal)) lensBuffer.Add(c);
+        var made = 0;
+        foreach (var c in lensBuffer)
+        {
+            var mf = c.GetComponent<MeshFilter>();
+            if (mf == null || mf.sharedMesh == null || c.GetComponent<MeshRenderer>() == null) continue;
+            AddProxy(l, lamp, mf.sharedMesh, c.localPosition + beam * ProxyOffset, c.localRotation, c.localScale);
+            made++;
+        }
+        lensBuffer.Clear();
+        // the oculus (SP6's dome) has no lens of its own: a disc of its shaft at the light, facing down its beam
+        if (made == 0 && lamp.name.IndexOf("oculus", System.StringComparison.Ordinal) >= 0)
+        {
+            var t = l.light.transform;
+            AddProxy(l, lamp, Disc(), t.localPosition + beam * ProxyOffset, t.localRotation, new Vector3(OculusDisc, OculusDisc, 1f));
+            made++;
+        }
+        return made;
+    }
+
+    bool ProxyReady()
+    {
+        if (proxyMaterial != null) return true;
+        if (proxyShaderMissing) return false;
+        var sh = Shader.Find("Universal Render Pipeline/Unlit");
+        if (sh == null)
+        {
+            proxyShaderMissing = true;
+            FrontRoomsPoolMaterials.LogOnce("proxy shader", "URP Unlit is missing: no reflection proxies, so the pool glaze shows no lamps (GZ-A).");
+            return false;
+        }
+        proxyMaterial = new Material(sh) { name = "Structures / reflection proxy (layer 27, probes only)", hideFlags = HideFlags.DontSave };
+        if (proxyMaterial.HasProperty("_Cull")) proxyMaterial.SetFloat("_Cull", 0f);
+        proxyMaterial.SetColor(BaseColorId, Color.white);
+        return true;
+    }
+
+    void AddProxy(Lamp l, Transform lamp, Mesh mesh, Vector3 position, Quaternion rotation, Vector3 scale)
+    {
+        var go = new GameObject(ProxyName);
+        go.layer = ProxyLayer;
+        go.transform.SetParent(lamp, false);
+        go.transform.localPosition = position;
+        go.transform.localRotation = rotation;
+        go.transform.localScale = scale;
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.AddComponent<MeshRenderer>();
+        r.sharedMaterial = proxyMaterial;
+        r.shadowCastingMode = ShadowCastingMode.Off;
+        r.receiveShadows = false;
+        r.lightProbeUsage = LightProbeUsage.Off;
+        r.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        if (l.proxies == null) l.proxies = new List<Renderer>();
+        l.proxies.Add(r);
+        Drive(l);
+    }
+
+    Mesh Disc()
+    {
+        if (proxyDisc != null) return proxyDisc;
+        const int n = 32;
+        var v = new Vector3[n + 1];
+        var t = new int[n * 3];
+        for (var i = 0; i < n; i++)
+        {
+            var a = i * Mathf.PI * 2f / n;
+            v[i + 1] = new Vector3(Mathf.Cos(a) * .5f, Mathf.Sin(a) * .5f, 0f);
+            t[i * 3] = 0;
+            t[i * 3 + 1] = i + 1;
+            t[i * 3 + 2] = (i + 1) % n + 1;
+        }
+        proxyDisc = new Mesh { name = "Structures / reflection proxy disc", hideFlags = HideFlags.DontSave };
+        proxyDisc.vertices = v;
+        proxyDisc.triangles = t;
+        proxyDisc.RecalculateNormals();
+        proxyDisc.RecalculateBounds();
+        return proxyDisc;
+    }
+
+    // A lamp's proxies follow its state, never the budget: hidden while it is out (scale 0), else its radiance x its scale.
+    // SetVector, not SetColor: the radiance is already what the GPU should get (ProxyRadiance), HDR and linear.
+    void Drive(Lamp l)
+    {
+        if (l.proxies == null) return;
+        var on = l.light != null && l.scale > .001f;
+        var c = on ? ProxyRadiance(l.light.color) * l.scale : Color.black;
+        if (proxyBlock == null) proxyBlock = new MaterialPropertyBlock();
+        foreach (var r in l.proxies)
+        {
+            if (r == null) continue;
+            if (r.gameObject.activeSelf != on) r.gameObject.SetActive(on);
+            if (!on) continue;
+            r.GetPropertyBlock(proxyBlock);
+            proxyBlock.SetVector(BaseColorId, new Vector4(c.r, c.g, c.b, 1f));
+            r.SetPropertyBlock(proxyBlock);
+        }
+    }
+
+    // ---------------------------------------------------------------- which cameras see layer 27
+
+    void OnEnable()
+    {
+        RenderPipelineManager.beginCameraRendering += OnBeginCamera;
+        Application.onBeforeRender += OnBeforeRender;
+    }
+
+    void OnDisable()
+    {
+        RenderPipelineManager.beginCameraRendering -= OnBeginCamera;
+        Application.onBeforeRender -= OnBeforeRender;
+        // The lamp share is the zone look's static state: hand the game back its own 1 when scene 4 stops (Play mode without
+        // a domain reload would otherwise carry 3 into the game's pool level).
+        if (lampShare != 1f)
+        {
+            lampShare = 1f;
+            FrontRoomsZoneLook.SetLampShare("PoolLevel", 1f);
+        }
+    }
+
+    // Before anything renders this frame (the water's mirrors render from this callback too, after it: they subscribe when
+    // their first water appears): every enabled camera, and the camera the mirrors copy, skip the proxies.
+    void OnBeforeRender()
+    {
+        var n = Camera.allCamerasCount;
+        if (cameraBuffer.Length < n) cameraBuffer = new Camera[Mathf.NextPowerOfTwo(n)];
+        n = Camera.GetAllCameras(cameraBuffer);
+        for (var i = 0; i < n; i++) CullProxies(cameraBuffer[i]);
+        CullProxies(FrontRoomsWaterPlanar.Viewer);
+    }
+
+    // Every camera as it begins rendering, before its culling: a reflection probe's capture keeps layer 27 (and tells a running
+    // capture its probe rendered); every other camera loses it, the water mirrors (Reflection cameras too) included.
+    void OnBeginCamera(ScriptableRenderContext context, Camera camera)
+    {
+        if (camera == null) return;
+        if (camera.cameraType == CameraType.Reflection)
+        {
+            var probe = ProbeOf(camera);
+            if (probe != null || CubeFace(camera))
+            {
+                if (!loggedProbeCamera)
+                {
+                    loggedProbeCamera = true;
+                    Debug.Log(FrontRoomsStructures.Log + "reflection proxies (GZ-A): probe captures render layer " + ProxyLayer + " (first one: camera '" + camera.name
+                        + "', " + (probe != null ? "at the probe " + probe.name : "a 90-degree square view") + "); every other camera skips it.");
+                }
+                if (probe != null) ProbeRendered(probe);
+                return;
+            }
+        }
+        if ((camera.cullingMask & ProxyMask) == 0) return;
+        camera.cullingMask &= ~ProxyMask;
+        if (loggedSkip.Add(camera.cameraType))
+            Debug.Log(FrontRoomsStructures.Log + "reflection proxies (GZ-A): layer " + ProxyLayer + " taken out of camera '" + camera.name + "' (" + camera.cameraType + ").");
+    }
+
+    // The probe this camera captures: its eye (as it renders: the view matrix, not only the transform) on one of this look's.
+    ReflectionProbe ProbeOf(Camera camera)
+    {
+        Vector3 eye = camera.cameraToWorldMatrix.GetColumn(3);
+        for (var i = known.Count - 1; i >= 0; i--)
+        {
+            var p = known[i];
+            if (p == null) { known.RemoveAt(i); continue; }
+            if ((p.transform.position - eye).sqrMagnitude < 1e-4f) return p;
+        }
+        return null;
+    }
+
+    // A cube face: 90 degrees, square (the water mirrors keep their viewer's field of view and aspect).
+    static bool CubeFace(Camera camera)
+    {
+        var m = camera.projectionMatrix;
+        return Mathf.Abs(Mathf.Abs(m.m00) - 1f) < .01f && Mathf.Abs(Mathf.Abs(m.m11) - 1f) < .01f;
     }
 
     void OnDestroy()
     {
         if (poolProfile != null) Destroy(poolProfile);
         if (darkProfile != null) Destroy(darkProfile);
+        if (proxyMaterial != null) Destroy(proxyMaterial);
+        if (proxyDisc != null) Destroy(proxyDisc);
     }
 }

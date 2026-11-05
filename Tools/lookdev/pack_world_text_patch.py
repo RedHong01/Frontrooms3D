@@ -13,6 +13,11 @@ full copy: the build carries the cells, and the game copies their compressed blo
   base            the English sheet in this project, e.g. Assets/Resources/Surfaces/Textures/Prop_EvacPlan_A.png
   --root DIR      where Assets/... is written (default: this project); the base and its .meta are read from this project
   --full          write a full copy (the swap kind) instead
+  --patch         keep the patch form whatever share of the sheet differs (game visual, 2026-11-04, the German EXIT in
+                  its wider housing: every cell of its face and diffuser maps differs, and its copies replace a landed
+                  patch in place, where a full copy beside the patch would lose to it: FrontRoomsWorldTextImport uses
+                  the patch). Any other reason for a full copy stops the tool with nothing written. Without it,
+                  nothing changes.
 
 Writes Assets/Resources/WorldText/<code>/<the base's path under Resources>~patch.json, ~patch0.png, ~patch1.png ... and
 ~patchtail.png, with a .meta for each new file (the base's settings and a new GUID, as FrontRoomsWorldTextImport gives them; json and folders
@@ -171,7 +176,10 @@ def main():
     ap.add_argument("base")
     ap.add_argument("--root", default=PROJECT)
     ap.add_argument("--full", action="store_true")
+    ap.add_argument("--patch", action="store_true")
     a = ap.parse_args()
+    if a.full and a.patch:
+        sys.exit("--full and --patch exclude each other")
     base_rel = a.base.replace("\\", "/")
     if not base_rel.startswith(RES):
         sys.exit("the base must be under " + RES)
@@ -215,8 +223,10 @@ def main():
             if not cell:
                 break
     sizes = atlas_sizes(len(cells), cell) if cell else []
-    if cell and sum(w * h for w, h, _ in sizes) > 0.75 * W * H:
+    if cell and sum(w * h for w, h, _ in sizes) > 0.75 * W * H and not a.patch:
         cell, blocks = None, "the cells would come to %.0f%% of the sheet" % (100.0 * sum(w * h for w, h, _ in sizes) / (W * H))
+    if a.patch and not cell:
+        sys.exit("--patch: no patch for %s (%s); nothing written" % (stem_rel, blocks))
     written = []
     if not cell:
         out = os.path.join(copy_dir, name + ".png")

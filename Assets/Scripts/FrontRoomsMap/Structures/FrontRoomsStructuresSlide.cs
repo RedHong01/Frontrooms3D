@@ -117,7 +117,26 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
 
         try { host.Look.Probe(Root, new Bounds(Site + new Vector3(0f, Lid * .5f, 10.5f), new Vector3(21f, Lid, 21f)), 1024); }
         catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP1 probe", "SP1 probe: " + e.Message); }
+        kit.Safe("pool zone look", BuildZoneLook);
         Debug.Log(FrontRoomsStructures.Log + "SP1 riding line: " + pieces.Count + " pieces, " + S[S.Count - 1].ToString("0.0") + " m, from +" + TubSeat + " to +0.00 (" + Mathf.RoundToInt((TubSeat - level) / Course) + " courses).");
+    }
+
+    // 游戏视觉's pool zone look (FrontRoomsStructuresLook.PoolRoom, as the map's AddPoolLooks): one PoolLevel volume per room
+    // (70 section 2: every pool here is level water; the map gives every pool-level cell PoolLevel). The height fog sits on a
+    // room's water only where all of it shares one height: the hall's catch pool (-0.05) and the court's basins (+0.50 to
+    // +2.30) do not, so the hall has none; the crossing room's ankle sheet (-0.03) does. The tub and the flume are no pool water.
+    void BuildZoneLook()
+    {
+        var look = kit.Host.Look;
+        const string zone = "PoolLevel";
+        look.PoolRoom(this, "hall", zone, -10.5f, 0f, 10.5f, 21f, 0f, Lid);
+        look.PoolRoom(this, "start room", zone, -10.5f, 0f, 4.5f, 6f, Upper, UpperLid);
+        look.PoolRoom(this, "upper corridor", zone, 4.5f, 0f, 10.5f, 3f, Upper, UpperLid);
+        look.PoolRoom(this, "tower", zone, TowerCentre.x - 1.8f, TowerCentre.z - 1.8f, TowerCentre.x + 1.8f, TowerCentre.z + 1.8f, 0f, UpperLid);
+        look.PoolRoom(this, "core B3", zone, 10.5f, 0f, 13.5f, 9f, 0f, UpperLid);
+        look.PoolRoom(this, "crossing room", zone, -19.5f, 0f, -10.5f, 21f, -.15f, 6.6f, -.03f);
+        look.PoolRoom(this, "service void", zone, -19.5f, 21f, -4.5f, 30f, 0f, 4.5f);
+        look.PoolRoomNote(this, "夜景（L）只换灯：开着泳池外观时，环境光和调色跟着区域外观走。");
     }
 
     // ---------------------------------------------------------------- the riding line (70 section 3's table)
@@ -877,7 +896,10 @@ public sealed class FrontRoomsStructuresSlide : FrontRoomsStructuresDistrict
     {
         var dir = (new Vector3(ArrivalLook.x, 0f, ArrivalLook.z) - Arrival).normalized;
         var right = new Vector3(dir.z, 0f, -dir.x);
-        var at = Arrival + dir * 2f + right * 2.1f;
+        // 50 degrees right of the main view's axis, the face's centre 2.50 m from the arrival eye (20_placard_type.md v2.4, E's
+        // FAR; was 2 ahead + 2.1 right, 2.91 m): in the arrival frame it takes +36 to +54 degrees (was +35 to +54), a little
+        // less of the arcade's near end, its right third beyond the frame; 2 m north of the z 9 aqueduct, clear of the tower.
+        var at = Arrival + dir * 1.5996f + right * 1.9063f;
         kit.Sign(new Vector3(at.x, 1.5f, at.z), Arrival + Vector3.up * 1.5f, "SP1 · 滑梯：瓷砖墙在下面托着（你选的 A）",
             "泳池层。双层高的瓷砖大厅，滑道骑在一道瓷砖拱墙上，塔从天花板穿到楼上的起滑间（楼面 +9.0 米，起滑面 +9.3 米）。滑道从西墙出去，穿过一间你永远走不到的房间，在墙后转一圈，再从北墙回来，落进 0.9 米深的落水池，全长约 79 米。东北角是一层层往下溢水的台地，头顶悬着一块办公室吊顶。站进起滑间的池子按 E 滑一次（约 15 秒，中途不能停），滑完按 R 回到池子；N 切换夜景，F 切换滑道里有没有水。东墙外的楼梯是走回起滑间的路，也是 Relay 的路。\n"
             + "灰盒占位：滑道（没有真实的玻璃钢和螺栓）、拱墙细部、起滑灯、监视器、规则牌、水和焦散；瓷砖用的是 150 毫米瓷白砖贴图（只在这个场景里）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"

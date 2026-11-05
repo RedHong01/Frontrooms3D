@@ -26,6 +26,12 @@ using UnityEngine.Rendering;
 /// to this district: the game's setting is never read or written). Beyond the 14th cell a Tall release hall lit like SP5's
 /// dock; its frame holds a blind panel until the head seats there. A static Relay stand-in at x -0.6, z 6. No sound, no
 /// moving Relay. Greybox where no kit exists, and the sign says so.
+/// Treatments (X; research/level_space/72_unreachable_end.md section 3, Red 2026-11-04: make each of them in scene 4): X cycles
+/// 72's five ends (Shift+X back) and resets the room; 1 is today's SP7 and runs the code above unchanged (no hook is called).
+/// Treatments 2-5 (FrontRoomsStructuresRunEnd*, one file each) act in the receding variants: the frame trips them at FD1 and
+/// hands them FrontRoomsStructuresRunEndRoom (the head, the cells and their reveal, the bands, the lamps through holds and
+/// hooks, the walker, the fog, the hall); today's schedule does not run under them. A second placard on the vestibule's west
+/// wall lists the five; the plate names the current one. N goes to the current treatment's own option.
 /// </summary>
 public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
 {
@@ -80,6 +86,66 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     readonly float[] revealAt = new float[Cells];
     bool plateDirty = true;
 
+    // ---------------------------------------------------------------- treatments (X): 72 section 3's five ends
+    // 0..4 = #1..#5. #1 (0) is today's SP7: activeEnd stays null and every line of today's code runs as before.
+    readonly FrontRoomsStructuresRunEnd[] ends =
+    {
+        new FrontRoomsStructuresRunEndToday(),
+        new FrontRoomsStructuresRunEndFarShore(),
+        new FrontRoomsStructuresRunEndLightLeaves(),
+        new FrontRoomsStructuresRunEndLookBack(),
+        new FrontRoomsStructuresRunEndDreamRun(),
+    };
+    readonly bool[] endBuilt = new bool[5], endFailed = new bool[5];
+    int treatment;                          // X: the treatment picked (0 = #1, today's)
+    FrontRoomsStructuresRunEnd activeEnd;   // the treatment driving the room now, or null (today's code)
+    RoomLink room;
+    bool endMoving, endWaiting;             // the treatment's end moves / waits to start (B's pulses wait, the door stays shut)
+    bool endTouched, endFault, partOpen, hallTouched;
+    float endTime;
+    readonly List<float> endLines = new List<float>();
+    // The walker as a treatment reads it (frame.velocity, frame.own, the gait) and the pushes it gave (room.Push).
+    Vector3 lastFeet, pushed;
+    bool feetKnown;
+    float lastStamina = 1f;
+    CharacterController walkerBody;
+    // Lamp holds (room.HoldStrip / HoldHead) and what each lamp showed last frame.
+    StripHold[] stripHolds;
+    HeadHold[] headHolds;
+    FrontRoomsStructuresRunEndStrip[] stripShown;
+    FrontRoomsStructuresRunEndHead[] headShown;
+    // The fog override (room.Fog), applied after SP7's preset.
+    bool fogOn;
+    Color fogColour, savedFogColour;
+    float fogDensity, savedFogDensity;
+    // The frame's shared objects as they stood before any treatment ran (put back before every reset once one has run).
+    bool snapped;
+    readonly List<TransformSnap> transformSnaps = new List<TransformSnap>();
+    readonly List<RendererSnap> rendererSnaps = new List<RendererSnap>();
+    readonly List<LightSnap> lightSnaps = new List<LightSnap>();
+    readonly List<ColliderSnap> colliderSnaps = new List<ColliderSnap>();
+    // The treatments' requests (integration of 11-04): a walker where restored solids come back is jumped home; the goal
+    // unit, the panic bar and the head's machine as handles; the head wall's pieces; the marks' words; the stand-in room behind
+    // a short-opening door; the ambient override; B's pulse eased under a treatment; the textures a treatment made.
+    bool walkerBlocked;
+    readonly List<Collider> restoredColliders = new List<Collider>();
+    readonly Collider[] overlapBuffer = new Collider[32];
+    Transform goalUnit, goalBar, headMachine, shortRoom;
+    readonly List<Rect> wallPieces = new List<Rect>();
+    readonly List<Rect> slotRects = new List<Rect>();
+    readonly List<TextMesh> markTexts = new List<TextMesh>();
+    bool marksTouched;
+    StripLamp shortLamp;
+    Light shortFill;
+    bool shortFailed;
+    float shortLevel;
+    readonly List<Texture> ownedTextures = new List<Texture>();
+    bool ambientOn;
+    Color ambientSky, ambientEquator, ambientGround, savedSky, savedEquator, savedGround, savedAmbientLight;
+    float pulseGateFrom, pulseGateTarget, pulseGateT0 = float.NegativeInfinity;
+    float pulseFirstNow = 3f, pulseFirstOld = 3f, pulseFirstT0 = float.NegativeInfinity;
+    HeadLamp probeHead;
+
     struct Step
     {
         public float from, to, tell, travel, seat, dwell, amp;
@@ -109,6 +175,17 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     bool entranceOpen, goalOpen;
     GameObject archDetector, doorDetector;
     TextMesh plateText;
+    // For the treatments: the dress's root and pieces, the fire-door frames as parts, C42's glow, the treatments' placard, the
+    // vestibule's Level 0 ambient (for the placard rebuilt on X).
+    Transform dressRoot;
+    readonly List<Renderer> dressRenderers = new List<Renderer>();
+    readonly List<Renderer> longShell = new List<Renderer>();
+    readonly List<Collider> dressColliders = new List<Collider>();
+    readonly Transform[] fireFrames = new Transform[2];
+    Renderer goalLite;
+    GameObject endSign;
+    SphericalHarmonicsL2 vestibuleSH;
+    bool vestibuleSHSet;
     MaterialPropertyBlock block;
     Material haloWhite, haloRed;
     static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
@@ -181,6 +258,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         if (rig == null) rig = new RunRigLayout();
         block = new MaterialPropertyBlock();
         kit = new FrontRoomsStructuresKit(host, this);
+        room = new RoomLink(this);
         lower = FrontRoomsPoolMaterials.Surface("RunB_BlockLower", new Color(.55f, .56f, .55f));
         upper = FrontRoomsPoolMaterials.Surface("RunB_BlockUpper", new Color(.78f, .78f, .74f));
         floorMat = FrontRoomsPoolMaterials.Surface("RunB_Floor", new Color(.62f, .61f, .58f));
@@ -231,6 +309,8 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     void VestibuleAmbient()
     {
         var sh = FrontRoomsStructuresLook.TrilightSH(FrontRoomsLook.AmbientSky, FrontRoomsLook.AmbientEquator, FrontRoomsLook.AmbientGround);
+        vestibuleSH = sh;
+        vestibuleSHSet = true;
         var block = new MaterialPropertyBlock();
         var count = 0;
         foreach (var r in Root.GetComponentsInChildren<Renderer>(true))
@@ -294,15 +374,18 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         };
         var dress = FrontRoomsRunDress.Build(Root, l);
         if (dress == null) throw new InvalidOperationException("the Run! B dress returned nothing");
+        dressRoot = dress;
         var origin = Root.position;
         foreach (var r in dress.GetComponentsInChildren<Renderer>(true))
         {
             if (r == null) continue;
+            dressRenderers.Add(r);
             var b = r.bounds;
-            if (b.size.z > 4.5f) continue;
+            if (b.size.z > 4.5f) { longShell.Add(r); continue; }
             var z0 = b.min.z - origin.z;
             cellRenderers[CellOf(z0 + .05f)].Add(r);
         }
+        dressColliders.AddRange(dress.GetComponentsInChildren<Collider>(true));
     }
 
     // The tripped heads (70 section 9; Red's "TA and TB combined"): a T-A unit at z 3 on the east wall; T-B remote heads at z 9
@@ -388,12 +471,16 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP7 notice", "SP7: the NOTICE plate failed: " + e.Message); }
     }
 
-    // A door frame (dark bronze casing) on a 1.0 x 2.1 opening centred at x, on the wall plane z (district metres).
+    // A door frame (dark bronze casing) on a 1.0 x 2.1 opening centred at x, on the wall plane z (district metres). Its inner
+    // faces stand CasingStop proud of the opening's jambs and head (render stage 11-04: flush, they shared the wall opening's
+    // faces and z-fought in stair steps whenever a jamb was seen at a slant; render-only, the opening's collider is the wall's).
+    const float CasingStop = .004f;
+
     void Frame(float x, float z)
     {
-        kit.Box(x - .56f, 0f, z - .1f, x - .5f, 2.16f, z + .1f, frameMat, false);
-        kit.Box(x + .5f, 0f, z - .1f, x + .56f, 2.16f, z + .1f, frameMat, false);
-        kit.Box(x - .56f, 2.1f, z - .1f, x + .56f, 2.16f, z + .1f, frameMat, false);
+        kit.Box(x - .56f, 0f, z - .1f, x - .5f + CasingStop, 2.16f, z + .1f, frameMat, false);
+        kit.Box(x + .5f - CasingStop, 0f, z - .1f, x + .56f, 2.16f, z + .1f, frameMat, false);
+        kit.Box(x - .56f, 2.1f - CasingStop, z - .1f, x + .56f, 2.16f, z + .1f, frameMat, false);
     }
 
     // An RN-F leaf hinged at <paramref name="hingeLocal"/> (parent space), swinging toward +z: the kit's F5 lite (15 x 15 in,
@@ -438,6 +525,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             var gr = glow.GetComponent<Renderer>();
             gr.sharedMaterial = FrontRoomsPoolMaterials.Glow("SP7 goal lite (C42)", C42 * 2.4f);
             gr.shadowCastingMode = ShadowCastingMode.Off;
+            goalLite = gr;
         }
         var bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
         bar.name = "panic bar";
@@ -446,6 +534,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         bar.transform.localPosition = new Vector3(.5f, 1.0f, lit ? -.06f : .06f);
         bar.transform.localScale = new Vector3(.8f, .05f, .05f);
         bar.GetComponent<Renderer>().sharedMaterial = FrontRoomsPoolMaterials.Steel;
+        if (lit) goalBar = bar.transform;
         if (lit)
         {
             // C42's driver (greybox): a small steel box on the leaf's hall face above the lite, clear of its view.
@@ -488,8 +577,15 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     void BuildFireFrames()
     {
         kit.Shell(Ceil, 0f);
+        var n = 0;
         foreach (var z in new[] { Fd1, Fd2 })
         {
+            // Each frame is its own part (the same pieces, its own collider), so a treatment can move or hide it (72 section 3.2:
+            // FD2 rides the far shore's island).
+            var framePart = kit.BeginPart(n == 0 ? "SP7 FD1 frame (z 9, the trip plane)" : "SP7 FD2 frame (z 18)");
+            if (n < fireFrames.Length) fireFrames[n] = framePart;
+            n++;
+            kit.Shell(Ceil, 0f);
             // 0.16 block on the cell line, a 2.0 x 2.1 frame centred with dark-bronze casing, the pair of 1.0 m leaves held
             // open at 90 degrees on magnets against the walls on the entrance side (2.0 x 2.1 m clear: the Relay's 2.05 passes).
             kit.WallX(z, -HalfW, HalfW, 0f, Ceil, upper, new List<FrontRoomsStructuresKit.Opening> { new FrontRoomsStructuresKit.Opening(-1f, 1f, 0f, 2.1f) }, .16f);
@@ -497,9 +593,10 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             kit.Box(1.06f, 0f, z - .081f, HalfW, 1.2f, z - .083f, lower, false);
             kit.Box(-HalfW, 0f, z + .081f, -1.06f, 1.2f, z + .083f, lower, false);
             kit.Box(1.06f, 0f, z + .081f, HalfW, 1.2f, z + .083f, lower, false);
-            kit.Box(-1.06f, 0f, z - .1f, -1f, 2.16f, z + .1f, frameMat, false);
-            kit.Box(1f, 0f, z - .1f, 1.06f, 2.16f, z + .1f, frameMat, false);
-            kit.Box(-1.06f, 2.1f, z - .1f, 1.06f, 2.16f, z + .1f, frameMat, false);
+            // The casing CasingStop proud of the opening's jambs and head (see Frame: flush, they z-fought).
+            kit.Box(-1.06f, 0f, z - .1f, -1f + CasingStop, 2.16f, z + .1f, frameMat, false);
+            kit.Box(1f - CasingStop, 0f, z - .1f, 1.06f, 2.16f, z + .1f, frameMat, false);
+            kit.Box(-1.06f, 2.1f - CasingStop, z - .1f, 1.06f, 2.16f, z + .1f, frameMat, false);
             var castKeep = kit.Mesh.CastShadows;
             kit.Mesh.CastShadows = false;
             kit.Box(-1.045f, 0f, z - 1.08f, -1.0f, 2.08f, z - .1f, leafMat);
@@ -512,6 +609,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
                 kit.Box(s * 1.35f - .015f, 1.885f, z - .965f, s * 1.35f + .015f, 1.915f, z - .935f, FrontRoomsPoolMaterials.Steel, false);
                 kit.Box(Mathf.Min(s * 1.35f, s * 1.045f), 1.885f, z - .965f, Mathf.Max(s * 1.35f, s * 1.045f), 1.915f, z - .935f, FrontRoomsPoolMaterials.Steel, false);
             }
+            kit.EndPart();
         }
     }
 
@@ -637,35 +735,23 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     {
         head = kit.BeginPart("SP7 head (moving end: wall, RN-F goal door, goal head, C42)");
         kit.Shell(Ceil, 0f);
-        const float t = .08f;
+        const float t = FrontRoomsStructuresRunEndRoom.HeadWallHalf;
         // Block-faced end wall (the two tones), the door opening 1.0 x 2.1 with its frame; solid for the walker. Over 2.25 m the
         // wall is slotted where the fixtures of the cells it uncovers cross its outline (70 section 9: the side heads and the
         // remote EMT on both walls, the tray, the strip, the main), brush seals lining each slot (greybox).
         foreach (var r in WallPieces())
         {
+            wallPieces.Add(r);
             if (r.yMin < 1.2f - .001f) kit.Box(r.xMin, r.yMin, -t, r.xMax, Mathf.Min(1.2f, r.yMax), t, lower);
             if (r.yMax > 1.2f + .001f) kit.Box(r.xMin, Mathf.Max(1.2f, r.yMin), -t, r.xMax, r.yMax, t, upper);
         }
-        foreach (var sl in Slots)
-        {
-            kit.Box(sl.x - .012f, sl.y, -t - .004f, sl.x + .003f, HeadTop, t + .004f, rubber, false);
-            kit.Box(sl.x + sl.width - .003f, sl.y, -t - .004f, sl.x + sl.width + .012f, HeadTop, t + .004f, rubber, false);
-            if (sl.y > Band + .01f) kit.Box(sl.x, sl.y - .012f, -t - .004f, sl.x + sl.width, sl.y + .003f, t + .004f, rubber, false);
-        }
-        kit.Box(-HeadHalf, 0f, -t - .0035f, -.56f, .102f, -t, cove, false);
-        kit.Box(.56f, 0f, -t - .0035f, HeadHalf, .102f, -t, cove, false);
+        foreach (var sl in Slots) slotRects.Add(Rect.MinMaxRect(sl.x, sl.y, sl.x + sl.width, HeadTop));
+        const float coveDepth = FrontRoomsStructuresRunEndRoom.HeadCoveDepth, coveTop = FrontRoomsStructuresRunEndRoom.HeadCoveTop, casing = FrontRoomsStructuresRunEndRoom.HeadCasingHalf;
+        kit.Box(-HeadHalf, 0f, -t - coveDepth, -casing, coveTop, -t, cove, false);
+        kit.Box(casing, 0f, -t - coveDepth, HeadHalf, coveTop, -t, cove, false);
         kit.Box(-.56f, 0f, -.1f, -.5f, 2.16f, .1f, frameMat, false);
         kit.Box(.5f, 0f, -.1f, .56f, 2.16f, .1f, frameMat, false);
         kit.Box(-.56f, 2.1f, -.1f, .56f, 2.16f, .1f, frameMat, false);
-        // The guide pin under the wall (in the slot at x 0.95) and the two trolleys in the soffit corners.
-        kit.Box(.93f, 0f, .02f, .97f, .03f, .06f, FrontRoomsPoolMaterials.Steel, false);
-        foreach (var s in new[] { -1f, 1f })
-        {
-            kit.Box(s * 1.30f - .07f, 2.78f, -.16f, s * 1.30f + .07f, 2.845f, .16f, FrontRoomsPoolMaterials.Steel, false);
-            // The trolley's hanger: an arm over the side slot to a plate on the slot's inner edge, down to the band.
-            kit.Box(Mathf.Min(s * 1.105f, s * 1.30f), 2.76f, -.03f, Mathf.Max(s * 1.105f, s * 1.30f), 2.78f, .03f, FrontRoomsPoolMaterials.Steel, false);
-            kit.Box(Mathf.Min(s * 1.085f, s * 1.105f), Band, -.05f, Mathf.Max(s * 1.085f, s * 1.105f), 2.78f, .05f, FrontRoomsPoolMaterials.Steel, false);
-        }
         // The goal head's bracket: an arm from the wall over the door to a plate 1.2 m out, the twin-head unit under it.
         kit.Box(-.025f, 2.6f, -1.18f, .025f, 2.65f, -t, FrontRoomsPoolMaterials.Steel, false);
         kit.Box(-.05f, 2.30f, -1.2f, .05f, 2.65f, -1.18f, FrontRoomsPoolMaterials.Steel, false);
@@ -676,6 +762,27 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         kit.EndPart();
         foreach (var r in head.GetComponentsInChildren<Renderer>(true))
             if (r.sharedMaterial == lower || r.sharedMaterial == upper || r.sharedMaterial == cove) headWall.Add(r);
+        // The head's machine (the slots' brush seals, the guide pin, the trolleys and their hangers): the same pieces, render
+        // only, in their own part under the head (built at z 0 as the head is), so an end that never moves can hide it (#5).
+        headMachine = kit.BeginPart("SP7 head machine (brush seals, guide pin, trolleys, hangers)");
+        kit.Shell(Ceil, 0f);
+        foreach (var sl in Slots)
+        {
+            kit.Box(sl.x - .012f, sl.y, -t - .004f, sl.x + .003f, HeadTop, t + .004f, rubber, false);
+            kit.Box(sl.x + sl.width - .003f, sl.y, -t - .004f, sl.x + sl.width + .012f, HeadTop, t + .004f, rubber, false);
+            if (sl.y > Band + .01f) kit.Box(sl.x, sl.y - .012f, -t - .004f, sl.x + sl.width, sl.y + .003f, t + .004f, rubber, false);
+        }
+        // The guide pin under the wall (in the slot at x 0.95) and the two trolleys in the soffit corners.
+        kit.Box(.93f, 0f, .02f, .97f, .03f, .06f, FrontRoomsPoolMaterials.Steel, false);
+        foreach (var s in new[] { -1f, 1f })
+        {
+            kit.Box(s * 1.30f - .07f, 2.78f, -.16f, s * 1.30f + .07f, 2.845f, .16f, FrontRoomsPoolMaterials.Steel, false);
+            // The trolley's hanger: an arm over the side slot to a plate on the slot's inner edge, down to the band.
+            kit.Box(Mathf.Min(s * 1.105f, s * 1.30f), 2.76f, -.03f, Mathf.Max(s * 1.105f, s * 1.30f), 2.78f, .03f, FrontRoomsPoolMaterials.Steel, false);
+            kit.Box(Mathf.Min(s * 1.085f, s * 1.105f), Band, -.05f, Mathf.Max(s * 1.085f, s * 1.105f), 2.78f, .05f, FrontRoomsPoolMaterials.Steel, false);
+        }
+        kit.EndPart();
+        headMachine.SetParent(head, false);
         // Rubber sweeps on the side edges (pressed when seated, relaxed while moving).
         foreach (var s in new[] { -1f, 1f })
         {
@@ -702,6 +809,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         unit.transform.SetParent(head, false);
         unit.transform.localPosition = new Vector3(0f, rig.unitBoxCentreY - .0955f, -1.2f);
         unit.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+        goalUnit = unit.transform;
         goalHeads = BuildUnitHeads(unit.transform, true, new Vector3(0f, 1.15f, -.05f), new Vector3(0f, 0f, -.7f), false, 0f, 0f, -1);
     }
 
@@ -933,6 +1041,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         lightGo.transform.localPosition = new Vector3(0f, -.092f, 0f);
         lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         var l = lightGo.AddComponent<Light>();
+        FrontRoomsMapWorld.ShippedShadowFilter(l);
         l.type = LightType.Spot;
         l.spotAngle = rig.wrapOuter;
         l.innerSpotAngle = rig.wrapInner;
@@ -1067,6 +1176,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             lightGo.transform.SetParent(lamp.transform, false);
             lightGo.transform.localPosition = lensAnchor + new Vector3(0f, 0f, .017f);
             var light = lightGo.AddComponent<Light>();
+            FrontRoomsMapWorld.ShippedShadowFilter(light);
             light.type = LightType.Spot;
             light.color = rig.floodColor;
             light.shadows = LightShadows.None;
@@ -1112,18 +1222,31 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
 
     void BuildSigns()
     {
-        // 70 section 9's sign, flat on the vestibule's east wall facing west, centre (1.42, 1.5, -4.0), out of the main view;
+        // 70 section 9's sign, flat on the vestibule's east wall facing west, centre (1.42, 1.5, -4.044), out of the main view;
         // its text verbatim with the plan's key letters (70: L length, C light, G entrance, V Reduce Flashing -> V, L, O, F here,
         // as 70 allows). Two changes for what happened after 70's 06:22 edit, so the sign never asks what Red has answered or
         // lists a stand-in that is gone: Red said yes to the red tube on 11-04 (the brighter level, then the brightest column;
         // 70 section 10 already marks it answered, on on arrival), so it left the greybox list (the strip kit's own tube now)
         // and its open item (the measurements renumbered 1).
-        kit.Sign(new Vector3(HalfW - .03f, 1.5f, -4.0f), new Vector3(-1.2f, 1.5f, -4.0f), "SP7 · Run!：会往后退的门",
+        // z -4.044 (was -4.0): the placard spec v2.4 puts every arrival 2.5 m from its district sign; the arrival eye
+        // (0, 1.62, -2) to this panel's face centre (panel 1.575 m tall) is 2.500 m here (2.464 at -4.0). The settings plate
+        // beside it (z -5.7..-4.7) stays 56 mm clear of the panel's end.
+        kit.Sign(new Vector3(HalfW - .03f, 1.5f, -4.044f), new Vector3(-1.2f, 1.5f, -4.044f), "SP7 · Run!：会往后退的门",
             "游戏里的 Run!（Run! B 的设备走廊），平地，最长 14 格、42 米。你 11 月 3 日对 71 的九个决定回了\"全部按推荐\"，这里照推荐搭好，让你亲眼走一遍；走过以后你说可以，会退的门、Run 门入口和红色灯光才进游戏；觉得哪里不对，直接告诉我们。走法和游戏一样：Ctrl 冲刺（体力 5 秒），Shift 慢走。进来时是\"会退的 9→14 格\"：跨过 9 米那道防火门框，警报触发，尽头的墙和门往后退：先猛缩两格，再一格一格退，最后重重停住，门就是真门，推开是一间亮着的大厅。走路时门只在第一下猛缩时变远，按住 Shift 慢走才会一直越退越远；冲到离门 12 米以内，剩下的一段一口气滑到底。\n"
-            + "按键：V 长度（普通 7 / 9 / 12 / 14 格，会退 9→12 / 9→14 格）；B 后退方式（T2 砖块拆开再砌回，电脑和 iPad 用；T1 整面墙滑走，网页版用）；L 触发后的灯光（今天的 / A 警报回路 / B 警报脉冲，你同意的推荐 / C 红潮）；H 红灯管；O 入口（拱门 / 带小方窗的 Run 门，只在普通长度）；F 减少闪烁；T 手动触发，再按一次恢复：白光从入口一格一格亮回来（你喜欢的那段）；Y 把门放回原位再试。旁边的小牌子显示现在的设置。\n"
+            + "按键：V 长度（普通 7 / 9 / 12 / 14 格，会退 9→12 / 9→14 格）；B 后退方式（T2 砖块拆开再砌回，电脑和 iPad 用；T1 整面墙滑走，网页版用）；L 触发后的灯光（今天的 / A 警报回路 / B 警报脉冲，你同意的推荐 / C 红潮）；H 红灯管；O 入口（拱门 / 带小方窗的 Run 门，只在普通长度）；F 减少闪烁；T 手动触发，再按一次恢复：白光从入口一格一格亮回来（你喜欢的那段）；Y 把门放回原位再试；X 换后退的做法（72 号文档的五种，Shift+X 往回，对面墙上的牌子写了每一种怎么试）；N 当前做法自己的选项（有的话）。旁边的小牌子显示现在的设置。\n"
             + "灰盒占位：砖块重组的路径（简单程序动画）、轨道、门吸、密封条、墙上的\"印子\"；灯光由场景 4 专用的脚本模拟，正式效果等游戏视觉做；没有声音，没有会动的 Relay。不到 14 格时尽头的门在这里打不开，因为门后是还没亮出来的走廊（游戏里这扇门永远不锁）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
             + "还没定的：1 要在游戏里实测、这里测不出来的：机器人测被追着领先 8 米冲进会退的房间能不能逃掉、冲到门口关上门的人有多少真能甩掉它、12 格和 14 格在 100 个种子里放得下多少；B 的光敏安全用 Harding FPA 或 PEAT 测。", 0f);
-        // The plate beside the sign: the current settings, in the placard's colours.
+        // The treatments' placard (X) on the west wall, across from this one.
+        BuildEndSign();
+        // Its blade (20_placard_type.md v2.5, E-blade), built once (its title never changes, so X leaves it): the arrival reads
+        // the treatments' placard 56 degrees off its face, so its code and title also hang on a blade square to the west wall
+        // (face x -1.42), inner edge 50 mm off it, bottom 2.10, its title on two lines before the bracket (the blade's 12-em
+        // measure), top 2.36 (0.54 under the lid; 0.52 under the troffer's west edge); front face z -4.299, 2.500 m from the
+        // arrival eye, behind the arrival as the placard (turn round), read 18.5 degrees to the side and 14 up. The vestibule's
+        // Level 0 ambient reaches it (VestibuleAmbient runs after this).
+        FrontRoomsStructuresSigns.Blade(Root, Root.TransformPoint(new Vector3(-HalfW, 0f, -4.314f)), Root.TransformDirection(Vector3.right),
+            Root.TransformPoint(Arrival + Vector3.up * FrontRoomsStructuresWalker.Eye), "SP7 · 后退的五种做法（按 X 换）", Root.position.y);
+        // The plate beside the sign: the current settings, in the placard's colours (taller since the treatments: X's lines).
         var plate = new GameObject("SP7 settings plate");
         plate.transform.SetParent(Root, false);
         plate.transform.localPosition = new Vector3(HalfW - .02f, 1.5f, -5.2f);
@@ -1133,11 +1256,11 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         UnityEngine.Object.Destroy(panel.GetComponent<Collider>());
         panel.transform.SetParent(plate.transform, false);
         panel.transform.localPosition = new Vector3(0f, 0f, .01f);
-        panel.transform.localScale = new Vector3(1.0f, .45f, .015f);
+        panel.transform.localScale = new Vector3(1.0f, .74f, .015f);
         panel.GetComponent<Renderer>().sharedMaterial = FrontRoomsPoolMaterials.Lit("placard panel E", new Color(.086f, .082f, .075f), .1f);
         var textGo = new GameObject("Text");
         textGo.transform.SetParent(plate.transform, false);
-        textGo.transform.localPosition = new Vector3(-.46f, .195f, -.002f);
+        textGo.transform.localPosition = new Vector3(-.46f, .34f, -.002f);
         plateText = textGo.AddComponent<TextMesh>();
         var font = FrontRoomsStructuresSigns.BodyFontAsset;
         if (font != null) plateText.font = font;
@@ -1157,22 +1280,34 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         }
         // The Relay stand-in (71 section 10): x -0.6, z 6, facing north.
         kit.Relay(new Vector3(-.6f, 0f, 6f), new Vector3(-.6f, 0f, 20f));
-        // Metric marks (M).
-        kit.Mark(new Vector3(1.3f, 1.95f, 1.5f), Vector3.left, "1.5 米 · 拱门入口在这里触发");
-        kit.Mark(new Vector3(1.3f, 2.25f, 2.5f), Vector3.left, "2.5 米 · Run 门入口在这里触发");
-        kit.Mark(new Vector3(1.3f, 2.3f, Fd1 - .3f), Vector3.left, "FD1 · 9 米 · 会退的房间在这里触发");
-        kit.Mark(new Vector3(1.3f, 2.3f, Fd2 - .3f), Vector3.left, "FD2 · 18 米 · 没看向尽头时最晚在这里开始退");
-        kit.Mark(new Vector3(1.3f, 1.7f, 20.6f), Vector3.left, "7 格 · 21 米");
-        kit.Mark(new Vector3(1.3f, 1.7f, 26.6f), Vector3.left, "9 格 · 27 米（今天）");
-        kit.Mark(new Vector3(1.3f, 1.7f, 35.6f), Vector3.left, "12 格 · 36 米");
-        kit.Mark(new Vector3(1.3f, 1.7f, 41.6f), Vector3.left, "14 格 · 42 米（上限）");
+        // Metric marks (M); their labels are kept for a treatment's own words (its Mark hook).
+        for (var i = 0; i < MarkText.Length; i++)
+        {
+            kit.Mark(MarkAt[i], Vector3.left, MarkText[i]);
+            var mark = Root.Find("Mark · " + MarkText[i]);
+            markTexts.Add(mark != null ? mark.GetComponent<TextMesh>() : null);
+        }
     }
+
+    static readonly Vector3[] MarkAt =
+    {
+        new Vector3(1.3f, 1.95f, 1.5f), new Vector3(1.3f, 2.25f, 2.5f), new Vector3(1.3f, 2.3f, Fd1 - .3f), new Vector3(1.3f, 2.3f, Fd2 - .3f),
+        new Vector3(1.3f, 1.7f, 20.6f), new Vector3(1.3f, 1.7f, 26.6f), new Vector3(1.3f, 1.7f, 35.6f), new Vector3(1.3f, 1.7f, 41.6f),
+    };
+
+    static readonly string[] MarkText =
+    {
+        "1.5 米 · 拱门入口在这里触发", "2.5 米 · Run 门入口在这里触发", "FD1 · 9 米 · 会退的房间在这里触发", "FD2 · 18 米 · 没看向尽头时最晚在这里开始退",
+        "7 格 · 21 米", "9 格 · 27 米（今天）", "12 格 · 36 米", "14 格 · 42 米（上限）",
+    };
 
     // ---------------------------------------------------------------- the room: reset, trip, the reset re-strike
 
     // Y, V, entering and leaving: the head back on its rest line, the hidden cells off, the record cleared, armed.
     void ResetRoom(bool moveWalker, FrontRoomsStructures host = null)
     {
+        // A treatment that no longer applies leaves; once one has run, the shared objects go back as built first (X, below).
+        EndBeforeReset();
         recedePending = recedeRunning = receded = false;
         beatPhase = Beat.Done;
         steps.Clear();
@@ -1206,14 +1341,25 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         {
             var p = host.Walker.transform.position - Site;
             if (p.z > Rest - .45f && p.z < HallZ0) host.Jump(this, 0);
+            // A treatment's moved solids came back round the walker (EndBeforeReset's restore): home too (no one is put inside).
+            else if (walkerBlocked) host.Jump(this, 0);
             else lastWalkerZ = p.z;
         }
         plateDirty = true;
         Evaluate();
+        // The treatment that applies (built the first time) enters and re-arms (X, below).
+        EndAfterReset();
+        walkerBlocked = false;
     }
 
     bool MagnetFor(float line)
     {
+        if (activeEnd != null)
+        {
+            // A treatment's own lines (its Lines hook).
+            foreach (var l in endLines) if (Mathf.Abs(l - line) < .01f) return true;
+            return false;
+        }
         if (Mathf.Abs(line - Rest) < .01f) return true;
         if (!Receding) return false;
         if (Mathf.Abs(line - 33f) < .01f || Mathf.Abs(line - Final) < .01f) return true;
@@ -1282,10 +1428,18 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         phase = Phase.Tripped;
         clock = 0f;
         SetAlarmLatch(true);
-        if (Receding && !receded && Mathf.Abs(headZ - Rest) < .01f)
+        // Today's schedule (under a treatment only when it asks for it: UsesTodayRecede).
+        if (Receding && !receded && Mathf.Abs(headZ - Rest) < .01f && (activeEnd == null || activeEnd.UsesTodayRecede))
         {
             recedePending = true;
             BuildSchedule();
+        }
+        if (activeEnd != null)
+        {
+            var e = activeEnd;
+            try { e.Trip(room); }
+            catch (Exception ex) { EndFault(e, "trip", ex); }
+            PulseEaseReset();
         }
         plateDirty = true;
     }
@@ -1297,6 +1451,16 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         clock = 0f;
         // A recede still waiting for its look is called off with the alarm; one already moving finishes (never stops midway).
         if (!recedeRunning) recedePending = false;
+        if (activeEnd != null)
+        {
+            // Today's re-strike runs on every lamp: the treatment's holds go, its wait is called off; then it hears of it.
+            ReleaseHoldsNow();
+            endWaiting = false;
+            var e = activeEnd;
+            try { e.ResetStarted(room); }
+            catch (Exception ex) { EndFault(e, "reset started", ex); }
+            PulseEaseReset();
+        }
         plateDirty = true;
     }
 
@@ -1327,6 +1491,9 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     public override void Tick(FrontRoomsStructures host, float dt, bool isCurrent)
     {
         if (!isCurrent || host == null || host.Walker == null) return;
+        // X / Shift+X (the treatment) and a treatment's fault both reset the room, so they come before the walker is read.
+        TreatmentKey(host);
+        if (endFault) EndRecover(host);
         var p = host.Walker.transform.position - Site;
         // The trip: crossing the arm line inside the corridor (never on a jump: Arrived sets the last z).
         if (phase == Phase.Armed && lastWalkerZ < ArmZ && p.z >= ArmZ && Mathf.Abs(p.x) < 1.5f && p.z < Length) Trip();
@@ -1342,6 +1509,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             if (ready && (Vector3.Angle(fwd, Root.forward) <= GazeDegrees || p.z >= Fd2)) { recedeRunning = true; beatPhase = Beat.Tell; beatClock = 0f; tellShown = false; }
         }
         if (recedeRunning) Advance(dt, p.z);
+        if (activeEnd != null) EndTick(host, dt, p);
         if (phase == Phase.Resetting && clock >= ResetEnd)
         {
             phase = Phase.Armed;
@@ -1350,7 +1518,15 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
             ApplyPending();
             ApplyTube();
             plateDirty = true;
+            if (activeEnd != null)
+            {
+                var e = activeEnd;
+                try { e.Rearmed(room); }
+                catch (Exception ex) { EndFault(e, "rearmed", ex); }
+                PulseEaseReset();
+            }
         }
+        if (activeEnd != null || shortRoom != null) ShortRoomTick(dt);
         stutterClock += dt;
         Evaluate();
         shadowClock -= dt;
@@ -1473,6 +1649,7 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         foreach (var pair in magnets)
             if (pair.Value != null) pair.Value.SetActive(MagnetFor(pair.Key) && cellShown[CellOf(pair.Key - .2f)]);
         if (blindPart != null) blindPart.gameObject.SetActive(to < Length - .01f);
+        if (activeEnd != null) EndSeated(from, to);
     }
 
     void Finished()
@@ -1484,6 +1661,12 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         if (!seatedLines.Contains(headZ)) seatedLines.Add(headZ);
         if (Stops.Count > 2) Stops[2] = FrontRoomsStructuresStop.Facing("尽头前回头看", Site + new Vector3(.5f, 0f, headZ - 2.5f), Site + new Vector3(-.6f, 1.4f, 6f));
         plateDirty = true;
+        if (activeEnd != null)
+        {
+            var e = activeEnd;
+            try { e.Done(room); }
+            catch (Exception ex) { EndFault(e, "done", ex); }
+        }
     }
 
     // The trapezoidal travel (71 section 4.5: peak = length / (travel - 0.175 s)): ramps of fraction r at both ends.
@@ -1547,6 +1730,8 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
 
     void Evaluate()
     {
+        // A treatment's lamps: today's drive, its holds and its hooks (X, below). #1 never takes this branch.
+        if (activeEnd != null) { EvaluateDriven(); return; }
         var t = clock;
         foreach (var s in strips)
         {
@@ -1691,7 +1876,11 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     // 12 pulses at most (counted from the trip), none while the head moves.
     float Pulse(float t, int c)
     {
-        if (recedePending || recedeRunning) return 1f;
+        // Under a treatment the gate and the schedule's start ease over 0.4 s when they change (PulseEased, X below; the
+        // treatments' request); #1 runs the lines after this one as before.
+        if (activeEnd != null) return PulseEased(t, .15f * c);
+        // (endMoving and endWaiting are a treatment's; both stay false under #1.)
+        if (recedePending || recedeRunning || endMoving || endWaiting) return 1f;
         var first = 3f;
         if (finalSeatTime >= 0f) first = Mathf.Max(3f, finalSeatTime + 1f);
         var level = 1f;
@@ -1884,17 +2073,75 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         string Later(int pending, string now) => pending < 0 ? "" : "  <color=#96938B>（下次：" + now + "）</color>";
         var state = phase == Phase.Armed ? (receded ? "待触发（已退过，按 Y 放回原位）" : "待触发（走过 " + ArmZ.ToString("0.#") + " 米）") : phase == Phase.Tripped ? "警报中（按 T 恢复）" : "恢复中";
         plateText.text = "长度（V）：<color=#F4DF3B>" + PlateVariant[variant] + "</color>\n"
-            + "后退方式（B）：<color=#F4DF3B>" + (bodyT2 ? "T2 重组" : "T1 后退") + "</color>" + Later(pendingBody, pendingBody == 1 ? "T2 重组" : "T1 后退") + "\n"
+            + "后退方式（B）：<color=#F4DF3B>" + (bodyT2 ? "T2 重组" : "T1 后退") + "</color>" + Later(pendingBody, pendingBody == 1 ? "T2 重组" : "T1 后退") + (activeEnd != null && !activeEnd.UsesBody ? "  <color=#96938B>（这种做法不用）</color>" : "") + "\n"
             + "触发后的灯光（L）：<color=#F4DF3B>" + PlateLook[look] + "</color>" + Later(pendingLook, pendingLook >= 0 ? PlateLook[pendingLook] : "") + "\n"
             + "红灯管（H）：<color=#F4DF3B>" + (tube ? "开" : "关") + "</color>" + Later(pendingTube, pendingTube == 1 ? "开" : "关") + "\n"
             + "入口（O）：<color=#F4DF3B>" + (doorEntrance ? "Run 门" : "拱门") + "</color>" + (Receding ? "（会退的只用拱门）" : "") + Later(pendingDoor, pendingDoor == 1 ? "Run 门" : "拱门") + "\n"
             + "减少闪烁（F）：<color=#F4DF3B>" + (reduce ? "开" : "关") + "</color>\n"
-            + "<color=#96938B>" + state + "</color>";
+            + PlateTreatment()
+            + "<color=#96938B>" + state + EndStatus(" · ") + "</color>";
+    }
+
+    // The plate's treatment lines (X): the current one, one line on what to try (or what it does in this length), N's line.
+    string PlateTreatment()
+    {
+        var e = CurrentEnd;
+        var sb = new StringBuilder();
+        sb.Append("后退的做法（X）：<color=#F4DF3B>").Append(e.Number).Append(' ').Append(e.Name).Append("</color>\n");
+        string note;
+        if (endFailed[treatment]) note = "这一种出错了，现在跑的是今天的（日志里有原因）";
+        else if (!Receding && !e.RunsInPlain) note = e.PlainLine;
+        else note = e.TryLine.Length > 0 ? "试：" + e.TryLine : "";
+        PlateLines(sb, note);
+        if (activeEnd != null)
+        {
+            var option = "";
+            try { option = activeEnd.OptionLine ?? ""; }
+            catch (Exception ex) { EndFault(activeEnd, "option line", ex); }
+            PlateLines(sb, option);
+        }
+        return sb.ToString();
+    }
+
+    // A muted note on the plate, wrapped to the plate's width, each line in its own colour tag.
+    static void PlateLines(StringBuilder sb, string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        foreach (var line in FrontRoomsStructuresSigns.Wrap(text, 27).Split('\n'))
+            if (line.Length > 0) sb.Append("<color=#96938B>").Append(line).Append("</color>\n");
+    }
+
+    // The active treatment's own words of state, after a separator, or nothing.
+    string EndStatus(string separator)
+    {
+        if (activeEnd == null) return "";
+        var s = "";
+        try { s = activeEnd.Status(room) ?? ""; }
+        catch (Exception ex) { EndFault(activeEnd, "status", ex); }
+        return s.Length > 0 ? separator + s : "";
     }
 
     // ---------------------------------------------------------------- keys, doors, the hall's plate
 
     public override FrontRoomsStructuresLook.Preset PresetAt(Vector3 world)
+    {
+        var today = TodayPresetAt(world);
+        if (activeEnd == null && !fogOn && !ambientOn) return today;
+        // A treatment may pick another preset; a fog or ambient override goes on after the preset (X, below). Inside the stand-in
+        // room behind a short-opening door the look is the armed corridor's (a plain lit room, as the hall's).
+        if (activeEnd != null && InShortRoom(world - Site)) today = FrontRoomsStructuresLook.Preset.RunB;
+        var preset = today;
+        if (activeEnd != null)
+        {
+            var e = activeEnd;
+            try { preset = e.PresetAt(room, world - Site, today); }
+            catch (Exception ex) { EndFault(e, "preset", ex); preset = today; }
+        }
+        FogAfterPreset(preset);
+        return preset;
+    }
+
+    FrontRoomsStructuresLook.Preset TodayPresetAt(Vector3 world)
     {
         var p = world - Site;
         // No Level 0 look in the vestibule any more: from the arrival the corridor showed in Level 0's trilight and reflection,
@@ -1918,14 +2165,34 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
                 variant = (variant + 1) % RestLine.Length;
                 ResetRoom(true, host);
                 message = "长度：" + VariantNames[variant] + (Final < Length - .01f ? "（尽头的门在场景 4 里打不开）" : "") + (Receding ? "；会退的只用拱门" : "");
+                // The treatment picked by X, when it is not today's: running here or not.
+                if (treatment != 0) message += "；后退的做法 " + CurrentEnd.Number + (activeEnd != null ? "" : endFailed[treatment] ? "：出错了，用的是今天的" : "：" + CurrentEnd.PlainLine);
                 return true;
             case UnityEngine.InputSystem.Key.B:
             {
                 var next = !(pendingBody >= 0 ? pendingBody == 1 : bodyT2);
                 if (armed) { bodyT2 = next; pendingBody = -1; } else pendingBody = next ? 1 : 0;
                 plateDirty = true;
-                message = "后退方式：" + (next ? "T2 砖块拆开再砌回去" : "T1 整面墙滑走") + later;
+                message = "后退方式：" + (next ? "T2 砖块拆开再砌回去" : "T1 整面墙滑走") + later + (activeEnd != null && !activeEnd.UsesBody ? "（现在的做法不用这一项）" : "");
                 return true;
+            }
+            case UnityEngine.InputSystem.Key.N:
+            {
+                // The current treatment's own option (none under #1: the host says the key is not here, as before).
+                if (activeEnd == null) return false;
+                var e = activeEnd;
+                try
+                {
+                    if (!e.Option(room, out message)) return false;
+                    plateDirty = true;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    EndFault(e, "option", ex);
+                    message = null;
+                    return false;
+                }
             }
             case UnityEngine.InputSystem.Key.L:
             {
@@ -2002,7 +2269,10 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         foreach (var st in strips) if (st != null && st.red != null) st.red.enabled = tube;
     }
 
-    bool GoalCanOpen => Mathf.Abs(headZ - Length) < .01f && !recedeRunning;
+    // Scene 4: the hall is only behind z 42. Under a treatment its DoorReachable hook says whether the door can be pushed now, and
+    // one that OpensShort has its door open wherever the head stands (the stand-in room behind it).
+    bool GoalCanOpen => activeEnd == null ? Mathf.Abs(headZ - Length) < .01f && !recedeRunning
+        : (Mathf.Abs(headZ - Length) < .01f || EndOpensShort()) && EndDoorReachable();
 
     public override string Describe(Collider c, out bool hold)
     {
@@ -2011,8 +2281,8 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         if (c == entranceLeafCollider) return entranceOpen ? "E  ·  关门" : "E  ·  开门";
         if (c == goalLeafCollider)
         {
-            if (!GoalCanOpen) return "这扇门在场景 4 里打不开（长度不到 14 格；游戏里门永远不锁）";
-            return goalOpen ? "E  ·  关门" : "E  ·  开门（推杠）";
+            if (!GoalCanOpen) return EndDoorPrompt("这扇门在场景 4 里打不开（长度不到 14 格；游戏里门永远不锁）", false);
+            return EndDoorPrompt(goalOpen ? "E  ·  关门" : "E  ·  开门（推杠）", true);
         }
         return null;
     }
@@ -2072,7 +2342,8 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
     public override string Status(FrontRoomsStructures host)
     {
         var state = phase == Phase.Armed ? (receded ? "已退过（Y 放回）" : "待触发") : phase == Phase.Tripped ? (recedePending && !recedeRunning ? "警报中 · 等你看向尽头" : recedeRunning ? "警报中 · 尽头在退" : "警报中") : "恢复中";
-        return PlateVariant[variant] + " · " + (bodyT2 ? "T2" : "T1") + " · 灯光 " + PlateLook[Look] + " · 红灯管" + (tube ? "开" : "关") + " · " + (doorEntrance ? "Run 门" : "拱门") + " · 减少闪烁" + (reduce ? "开" : "关") + " · " + state;
+        return "做法 " + CurrentEnd.Number + " " + CurrentEnd.Name + (activeEnd == null && treatment != 0 ? "（这里不起作用）" : "") + " · "
+            + PlateVariant[variant] + " · " + (bodyT2 ? "T2" : "T1") + " · 灯光 " + PlateLook[Look] + " · 红灯管" + (tube ? "开" : "关") + " · " + (doorEntrance ? "Run 门" : "拱门") + " · 减少闪烁" + (reduce ? "开" : "关") + " · " + state + EndStatus(" · ");
     }
 
     public override void Guide(FrontRoomsStructures host, StringBuilder sb)
@@ -2082,7 +2353,20 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
         sb.AppendLine();
         sb.AppendLine("按键：V 长度；B 后退方式 T2 / T1；L 触发后的灯光（今天的、A、B、C）；H 红灯管；O 入口（拱门、Run 门，只在普通长度）；F 减少闪烁；T 手动触发 / 恢复；Y 把门放回原位；E 开门；[ ] 换站点；R 回到站点；M 尺寸；C Relay 体型。B、L、H、O 在警报中按下，等下次待触发时生效。");
         sb.AppendLine();
+        // The treatments (X): the five, the current one, its own lines.
+        sb.Append("后退的五种做法（72 号文档；X 换，Shift+X 往回，换了就复位；N 当前做法的附加选项）：");
+        for (var i = 0; i < ends.Length; i++) sb.Append(i > 0 ? "；" : "").Append(ends[i].Number).Append(' ').Append(ends[i].Name);
+        sb.AppendLine("。都只在会退的长度里起作用；每一种怎么试，写在入口西墙的牌子上。");
+        sb.AppendLine("现在是 " + CurrentEnd.Number + " " + CurrentEnd.Name + (endFailed[treatment] ? "（出错了，跑的是今天的）" : activeEnd == null && treatment != 0 ? "（" + CurrentEnd.PlainLine + "）" : "") + "。");
+        if (activeEnd != null)
+        {
+            var e = activeEnd;
+            try { e.Guide(room, sb); }
+            catch (Exception ex) { EndFault(e, "guide", ex); }
+        }
+        sb.AppendLine();
         sb.AppendLine("要你决定（在对话里按编号告诉总控）：");
+        sb.AppendLine("SP7-2 五种做法都走过以后，选哪一种？回一个编号，比如\"2\"；也可以组合，比如\"2，加上 3 的灯光\"。");
         sb.AppendLine("SP7-1 走过以后：会退的门、Run 门入口和红色灯光，放进游戏吗？（71 的九个决定你已回了\"全部按推荐\"，这里照做；走过觉得哪里不对，直接说。）");
         sb.AppendLine("红灯管：你 11 月 4 日回了\"加，用更亮档\"，又选了最亮那一档；这里默认开，按 H 关掉对比。");
         sb.AppendLine("还没定的（游戏里测，这里测不出来）：被追着领先 8 米冲进会退的房间能不能逃掉；冲到门口关上门的人有多少真能甩掉它；12 格和 14 格在 100 个种子里放得下多少；B 的光敏安全用 Harding FPA 或 PEAT 测。");
@@ -2094,8 +2378,1738 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
 
     public override void Release()
     {
+        // The treatments free what they made; the fog goes back.
+        for (var i = 0; i < ends.Length; i++)
+        {
+            if (!endBuilt[i] || ends[i] == null) continue;
+            try { ends[i].Release(room); }
+            catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP7 end release " + i, "SP7: treatment " + ends[i].Number + " release: " + e.Message); }
+        }
+        ClearFogNow();
+        ClearAmbientNow();
         foreach (var m in owned) if (m != null) UnityEngine.Object.Destroy(m);
         owned.Clear();
+        foreach (var tx in ownedTextures) if (tx != null) UnityEngine.Object.Destroy(tx);
+        ownedTextures.Clear();
         base.Release();
+    }
+
+    // ================================================================ treatments (X): the frame's side (72 section 3)
+    //
+    // X picks a treatment and resets the room. ResetRoom calls EndBeforeReset first (a treatment that no longer applies exits;
+    // once one has run, its lamp holds, the fog and every shared object go back as they stood before any treatment ran) and
+    // EndAfterReset last (the treatment that applies is built the first time, enters, re-arms in its Reset and names its
+    // lines). While one is active: Trip, Tick, the seats, T's re-strike, the lamps, the preset, the door and N go through its
+    // hooks, each in a try/catch; a fault logs once, the treatment is left out and the next frame resets the room without it.
+
+    bool liteTouched;
+
+    FrontRoomsStructuresRunEnd CurrentEnd => ends[Mathf.Clamp(treatment, 0, ends.Length - 1)];
+
+    FrontRoomsStructuresRunEndPhase EndPhase => phase == Phase.Armed ? FrontRoomsStructuresRunEndPhase.Armed
+        : phase == Phase.Tripped ? FrontRoomsStructuresRunEndPhase.Tripped : FrontRoomsStructuresRunEndPhase.Resetting;
+
+    // The treatment that drives the room for the pick and the variant, or null (today's code: #1, a plain variant, a fault).
+    FrontRoomsStructuresRunEnd WantedEnd()
+    {
+        var e = CurrentEnd;
+        if (e == null || e.IsToday || endFailed[treatment]) return null;
+        if (!Receding && !e.RunsInPlain) return null;
+        return e;
+    }
+
+    // X / Shift+X while SP7 is current (the host routes no X to a district): the next or previous treatment, the room reset.
+    void TreatmentKey(FrontRoomsStructures host)
+    {
+        var k = Keyboard.current;
+        if (k == null || !k.xKey.wasPressedThisFrame) return;
+        var back = k.leftShiftKey.isPressed || k.rightShiftKey.isPressed;
+        treatment = ((treatment + (back ? -1 : 1)) % ends.Length + ends.Length) % ends.Length;
+        ResetRoom(true, host);
+        BuildEndSign();
+        plateDirty = true;
+        host.Flash(TreatmentMessage());
+    }
+
+    string TreatmentMessage()
+    {
+        var e = CurrentEnd;
+        var s = "后退的做法：" + e.Number + " " + e.Name;
+        if (endFailed[treatment]) return s + "（出错了，现在跑的是今天的，日志里有原因）";
+        if (!Receding && !e.RunsInPlain) return s + "（" + e.PlainLine + "）";
+        return e.TryLine.Length > 0 ? s + "。" + e.TryLine : s;
+    }
+
+    void EndRecover(FrontRoomsStructures host)
+    {
+        endFault = false;
+        ResetRoom(true, host);
+        BuildEndSign();
+        plateDirty = true;
+        if (host != null) host.Flash("后退的做法 " + CurrentEnd.Number + " 出错了，现在跑的是今天的（日志里有原因）。");
+    }
+
+    void EndFault(FrontRoomsStructuresRunEnd e, string where, Exception ex)
+    {
+        var i = Array.IndexOf(ends, e);
+        var n = e != null ? e.Number : 0;
+        FrontRoomsPoolMaterials.LogOnce("SP7 end " + n + " " + where, "SP7: treatment " + n + " failed in " + where + " and is left out (the room runs today's SP7): " + ex);
+        if (i > 0) endFailed[i] = true;
+        endFault = true;
+    }
+
+    bool EndSafe(FrontRoomsStructuresRunEnd e, string where, Action a)
+    {
+        try
+        {
+            a();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            EndFault(e, where, ex);
+            return false;
+        }
+    }
+
+    void EndBeforeReset()
+    {
+        var want = WantedEnd();
+        if (activeEnd != null && activeEnd != want)
+        {
+            var old = activeEnd;
+            activeEnd = null;
+            EndSafe(old, "exit", () => old.Exit(room));
+            if (old.Own != null) old.Own.gameObject.SetActive(false);
+        }
+        if (activeEnd == null && !endTouched) return;
+        ReleaseHoldsNow();
+        ClearFogNow();
+        ClearAmbientNow();
+        endMoving = endWaiting = false;
+        CloseRoomPart();
+        if (snapped) RestoreSnapshot();
+        RestoreMarks();
+        ShortRoomOff();
+        endTouched = activeEnd != null;
+    }
+
+    void EndAfterReset()
+    {
+        var want = WantedEnd();
+        if (want != null && want != activeEnd)
+        {
+            // Today's room is kept as it stands before any treatment touches it (the first time only, before any build).
+            if (!snapped) TakeSnapshot();
+            if (!EnsureBuilt(want)) return;
+            if (want.Own != null) want.Own.gameObject.SetActive(true);
+            activeEnd = want;
+            endTouched = true;
+            endTime = 0f;
+            feetKnown = false;
+            pushed = Vector3.zero;
+            SeedShown();
+            if (!EndSafe(want, "enter", () => want.Enter(room))) return;
+        }
+        if (activeEnd == null) return;
+        endTouched = true;
+        var e = activeEnd;
+        if (!EndSafe(e, "reset", () => e.Reset(room))) return;
+        endLines.Clear();
+        if (!EndSafe(e, "lines", () => e.Lines(room, endLines))) return;
+        RefreshMagnetsNow();
+        ApplyMarks(e);
+        PulseEaseReset();
+        ShortRoomTick(0f);
+        plateDirty = true;
+        // The lamps as the re-armed treatment drives them, this frame already.
+        Evaluate();
+    }
+
+    // Built once, the first time it becomes active: its own root under the district's, its Build in a try/catch.
+    bool EnsureBuilt(FrontRoomsStructuresRunEnd e)
+    {
+        var i = Array.IndexOf(ends, e);
+        if (i <= 0 || endFailed[i]) return false;
+        if (endBuilt[i]) return true;
+        endBuilt[i] = true;
+        var own = new GameObject("SP7 end " + e.Number + " (" + e.GetType().Name + ")").transform;
+        own.SetParent(Root, false);
+        e.Bind(own);
+        var t0 = Time.realtimeSinceStartup;
+        var ok = EndSafe(e, "build", () => e.Build(room));
+        CloseRoomPart();
+        if (ok)
+        {
+            Debug.Log(FrontRoomsStructures.Log + "SP7 treatment " + e.Number + " built in " + ((Time.realtimeSinceStartup - t0) * 1000f).ToString("0") + " ms.");
+            return true;
+        }
+        own.gameObject.SetActive(false);
+        if (snapped) RestoreSnapshot();
+        return false;
+    }
+
+    void CloseRoomPart()
+    {
+        if (!partOpen) return;
+        partOpen = false;
+        if (kit != null) kit.EndPart();
+    }
+
+    Transform BeginEndPart(FrontRoomsStructuresRunEnd end, string name)
+    {
+        CloseRoomPart();
+        var part = kit.BeginPart(name);
+        if (end != null && end.Own != null) part.SetParent(end.Own, false);
+        partOpen = true;
+        return part;
+    }
+
+    void EndTick(FrontRoomsStructures host, float dt, Vector3 p)
+    {
+        endTime += dt;
+        var f = EndFrame(host, dt, p);
+        var e = activeEnd;
+        try { e.Tick(room, f); }
+        catch (Exception ex) { EndFault(e, "tick", ex); }
+    }
+
+    // The walker as a treatment reads it: feet, eye and view in district metres, its velocity with and without the pushes,
+    // its gait (stamina falls only while it sprints).
+    FrontRoomsStructuresRunEndFrame EndFrame(FrontRoomsStructures host, float dt, Vector3 p)
+    {
+        var w = host.Walker;
+        var f = new FrontRoomsStructuresRunEndFrame { dt = dt, clock = clock, time = endTime, phase = EndPhase, feet = p };
+        f.eye = w.EyePosition - Site;
+        var fwd = w.View != null ? w.View.transform.forward : w.transform.forward;
+        f.view = (Root != null ? Root.InverseTransformDirection(fwd) : fwd).normalized;
+        var push = pushed;
+        pushed = Vector3.zero;
+        if (feetKnown && dt > 1e-5f)
+        {
+            var v = (p - lastFeet) / dt;
+            // A jump (R, [ ], a reset) is not a speed.
+            if (v.sqrMagnitude < 400f)
+            {
+                f.velocity = v;
+                f.own = (p - lastFeet - push) / dt;
+            }
+        }
+        lastFeet = p;
+        feetKnown = true;
+        f.speed = new Vector2(f.own.x, f.own.z).magnitude;
+        f.stamina01 = w.Stamina01;
+        f.sprinting = f.stamina01 < lastStamina - 1e-5f || f.speed > 4.6f;
+        lastStamina = f.stamina01;
+        f.gait = f.sprinting ? FrontRoomsStructuresRunEndGait.Sprint
+            : f.speed > 2.2f ? FrontRoomsStructuresRunEndGait.Walk
+            : f.speed > .25f ? FrontRoomsStructuresRunEndGait.Slow : FrontRoomsStructuresRunEndGait.Still;
+        if (walkerBody == null) walkerBody = w.GetComponent<CharacterController>();
+        f.grounded = walkerBody != null && walkerBody.isGrounded;
+        f.axisAngle = Vector3.Angle(f.view, Vector3.forward);
+        f.yawOff = new Vector2(f.view.x, f.view.z).sqrMagnitude > 1e-8f ? Mathf.Atan2(f.view.x, f.view.z) * Mathf.Rad2Deg : 0f;
+        return f;
+    }
+
+    // room.Push: the walker moved through its own CharacterController (it collides and steps); a hair down keeps it grounded.
+    bool PushWalker(Vector3 delta)
+    {
+        var w = kit != null && kit.Host != null ? kit.Host.Walker : null;
+        if (w == null || w.Frozen || w.Riding) return false;
+        if (walkerBody == null) walkerBody = w.GetComponent<CharacterController>();
+        if (walkerBody == null || !walkerBody.enabled) return false;
+        var world = Root != null ? Root.TransformVector(delta) : delta;
+        walkerBody.Move(world + Vector3.down * .002f);
+        pushed += delta;
+        return true;
+    }
+
+    void EndSeated(float from, float to)
+    {
+        var e = activeEnd;
+        try { e.Seated(room, from, to); }
+        catch (Exception ex) { EndFault(e, "seated", ex); }
+    }
+
+    bool EndDoorReachable()
+    {
+        var e = activeEnd;
+        try { return e.DoorReachable(room); }
+        catch (Exception ex)
+        {
+            EndFault(e, "door", ex);
+            return false;
+        }
+    }
+
+    bool EndOpensShort()
+    {
+        var e = activeEnd;
+        if (e == null) return false;
+        try { return e.OpensShort; }
+        catch (Exception ex)
+        {
+            EndFault(e, "opens short", ex);
+            return false;
+        }
+    }
+
+    // The goal door's prompt under a treatment (its DoorPrompt hook last); #1's words come back as they came in.
+    string EndDoorPrompt(string today, bool canOpen)
+    {
+        var e = activeEnd;
+        if (e == null) return today;
+        var atHall = Mathf.Abs(headZ - Length) < .01f;
+        if (!atHall && EndOpensShort())
+            today = !canOpen ? "门还没停稳（等它停下再推）" : goalOpen ? "E  ·  关门" : "E  ·  开门（推杠；场景 4 里门后是占位的小房间）";
+        else if (!canOpen && atHall) today = "门还没停稳（等它停下再推）";
+        try
+        {
+            var s = e.DoorPrompt(room, today);
+            return string.IsNullOrEmpty(s) ? today : s;
+        }
+        catch (Exception ex)
+        {
+            EndFault(e, "door prompt", ex);
+            return today;
+        }
+    }
+
+    // room.Seat without the strike: the cells open already in the room's state (a step nobody saw).
+    void SeatQuiet(float from, float to)
+    {
+        var c0 = Mathf.RoundToInt(from / CellLen);
+        var c1 = Mathf.RoundToInt(to / CellLen);
+        for (var c = Mathf.Max(0, c0); c < c1 && c < Cells; c++)
+        {
+            if (cellOpen[c]) continue;
+            SetCell(c, true);
+            revealAt[c] = float.NegativeInfinity;
+        }
+        RefreshMagnetsNow();
+        if (blindPart != null) blindPart.gameObject.SetActive(to < Length - .01f);
+        if (activeEnd != null) EndSeated(from, to);
+    }
+
+    void OpenCellFor(int c, bool strike)
+    {
+        if (c < 0 || c >= Cells) return;
+        var was = cellOpen[c];
+        SetCell(c, true);
+        if (strike) revealAt[c] = phase == Phase.Armed ? float.NegativeInfinity : clock;
+        else if (!was) revealAt[c] = float.NegativeInfinity;
+    }
+
+    void CloseCellFor(int c)
+    {
+        if (c < 0 || c >= Cells) return;
+        SetCell(c, false);
+        revealAt[c] = float.NegativeInfinity;
+    }
+
+    void RefreshMagnetsNow()
+    {
+        foreach (var pair in magnets)
+            if (pair.Value != null) pair.Value.SetActive(MagnetFor(pair.Key) && cellShown[CellOf(pair.Key - .2f)]);
+    }
+
+    // ---------------------------------------------------------------- treatments: the lamps (today's drive, holds, hooks)
+
+    sealed class StripHold
+    {
+        public bool on, releasing;
+        public float t0, fade;
+        public FrontRoomsStructuresRunEndStrip from, to;
+    }
+
+    sealed class HeadHold
+    {
+        public bool on, releasing;
+        public float t0, fade;
+        public FrontRoomsStructuresRunEndHead from, to;
+    }
+
+    void EnsureEndArrays()
+    {
+        if (stripHolds == null || stripHolds.Length != strips.Count)
+        {
+            stripHolds = new StripHold[strips.Count];
+            for (var i = 0; i < stripHolds.Length; i++) stripHolds[i] = new StripHold();
+            stripShown = new FrontRoomsStructuresRunEndStrip[strips.Count];
+        }
+        if (headHolds == null || headHolds.Length != heads.Count)
+        {
+            headHolds = new HeadHold[heads.Count];
+            for (var i = 0; i < headHolds.Length; i++) headHolds[i] = new HeadHold();
+            headShown = new FrontRoomsStructuresRunEndHead[heads.Count];
+        }
+    }
+
+    void SeedShown()
+    {
+        EnsureEndArrays();
+        for (var i = 0; i < strips.Count; i++) if (strips[i] != null) stripShown[i] = TodayStripDrive(strips[i], clock);
+        for (var i = 0; i < heads.Count; i++) if (heads[i] != null) headShown[i] = TodayHeadDrive(heads[i], clock);
+    }
+
+    void ReleaseHoldsNow()
+    {
+        if (stripHolds != null) foreach (var h in stripHolds) h.on = h.releasing = false;
+        if (headHolds != null) foreach (var h in headHolds) h.on = h.releasing = false;
+    }
+
+    void HoldStripNow(int i, FrontRoomsStructuresRunEndStrip target, float fade)
+    {
+        EnsureEndArrays();
+        var h = stripHolds[i];
+        h.from = stripShown[i];
+        h.to = Normalise(strips[i], target);
+        h.t0 = endTime;
+        h.fade = Mathf.Max(0f, fade);
+        h.on = true;
+        h.releasing = false;
+    }
+
+    void ReleaseStripNow(int i, float fade)
+    {
+        EnsureEndArrays();
+        var h = stripHolds[i];
+        if (!h.on && !h.releasing) return;
+        h.from = stripShown[i];
+        h.t0 = endTime;
+        h.fade = Mathf.Max(0f, fade);
+        h.on = false;
+        h.releasing = h.fade > 0f;
+    }
+
+    void HoldHeadNow(int i, FrontRoomsStructuresRunEndHead target, float fade)
+    {
+        EnsureEndArrays();
+        var h = headHolds[i];
+        h.from = headShown[i];
+        h.to = Normalise(heads[i], target);
+        h.t0 = endTime;
+        h.fade = Mathf.Max(0f, fade);
+        h.on = true;
+        h.releasing = false;
+    }
+
+    void ReleaseHeadNow(int i, float fade)
+    {
+        EnsureEndArrays();
+        var h = headHolds[i];
+        if (!h.on && !h.releasing) return;
+        h.from = headShown[i];
+        h.t0 = endTime;
+        h.fade = Mathf.Max(0f, fade);
+        h.on = false;
+        h.releasing = h.fade > 0f;
+    }
+
+    FrontRoomsStructuresRunEndStrip StripHoldApply(int i, FrontRoomsStructuresRunEndStrip today)
+    {
+        var h = stripHolds[i];
+        if (!h.on && !h.releasing) return today;
+        var k = h.fade <= 0f ? 1f : FrontRoomsStructuresRunEnd.Smooth((endTime - h.t0) / h.fade);
+        if (h.on)
+        {
+            var held = FrontRoomsStructuresRunEndStrip.Lerp(h.from, h.to, k);
+            held.open = today.open;
+            return held;
+        }
+        if (k >= 1f)
+        {
+            h.releasing = false;
+            return today;
+        }
+        var back = FrontRoomsStructuresRunEndStrip.Lerp(h.from, today, k);
+        back.open = today.open;
+        return back;
+    }
+
+    FrontRoomsStructuresRunEndHead HeadHoldApply(int i, FrontRoomsStructuresRunEndHead today)
+    {
+        var h = headHolds[i];
+        if (!h.on && !h.releasing) return today;
+        var k = h.fade <= 0f ? 1f : FrontRoomsStructuresRunEnd.Smooth((endTime - h.t0) / h.fade);
+        FrontRoomsStructuresRunEndHead r;
+        if (h.on) r = FrontRoomsStructuresRunEndHead.Lerp(h.from, h.to, k);
+        else if (k >= 1f)
+        {
+            h.releasing = false;
+            return today;
+        }
+        else r = FrontRoomsStructuresRunEndHead.Lerp(h.from, today, k);
+        r.open = today.open;
+        r.goal = today.goal;
+        return r;
+    }
+
+    Color RedHue => rig.redTubeLinear.maxColorComponent > 1e-4f ? rig.redTubeLinear / rig.redTubeLinear.maxColorComponent : AlarmRedLinear;
+
+    // A colour left at zero is the rig's own; open is the cell's.
+    FrontRoomsStructuresRunEndStrip Normalise(StripLamp s, FrontRoomsStructuresRunEndStrip d)
+    {
+        if (d.whiteColour.maxColorComponent <= 0f) d.whiteColour = rig.wrapColor.linear;
+        if (d.redColour.maxColorComponent <= 0f) d.redColour = RedHue;
+        if (d.lensColour.maxColorComponent <= 0f) d.lensColour = rig.stripLensEmission;
+        if (d.tubeColour.maxColorComponent <= 0f) d.tubeColour = rig.redTubeLinear.gamma;
+        d.open = s == null || s.cell < 0 || cellOpen[s.cell];
+        return d;
+    }
+
+    FrontRoomsStructuresRunEndHead Normalise(HeadLamp h, FrontRoomsStructuresRunEndHead d)
+    {
+        if (d.colour.maxColorComponent <= 0f) d.colour = rig.floodColor;
+        if (d.lensColour.maxColorComponent <= 0f) d.lensColour = rig.headLensEmission;
+        d.open = h == null || h.cell < 0 || cellOpen[h.cell];
+        d.goal = h != null && h.goal;
+        return d;
+    }
+
+    // Today's drive of one strip at t, as Evaluate computes it (a closed cell's strip at 0), in the struct.
+    FrontRoomsStructuresRunEndStrip TodayStripDrive(StripLamp s, float t)
+    {
+        var d = Normalise(s, new FrontRoomsStructuresRunEndStrip());
+        if (!d.open) return d;
+        StripLevels(s, t, out d.white, out d.red, out d.lens, out d.tube);
+        return d;
+    }
+
+    FrontRoomsStructuresRunEndHead TodayHeadDrive(HeadLamp h, float t)
+    {
+        var d = Normalise(h, new FrontRoomsStructuresRunEndHead());
+        if (d.open) d.level = HeadLevel(h, t);
+        return d;
+    }
+
+    // Evaluate under a treatment: per lamp today's drive, its hold, its hook, then the lamp lit as SetStrip lights it (with the
+    // struct's colours); the pilots as today.
+    void EvaluateDriven()
+    {
+        EnsureEndArrays();
+        var t = clock;
+        var e = activeEnd;
+        try
+        {
+            for (var i = 0; i < strips.Count; i++)
+            {
+                var s = strips[i];
+                if (s == null || s.light == null) continue;
+                var d = StripHoldApply(i, TodayStripDrive(s, t));
+                e.Strip(room, i, ref d);
+                d = Normalise(s, d);
+                stripShown[i] = d;
+                SetStripDrive(s, d);
+            }
+            for (var i = 0; i < heads.Count; i++)
+            {
+                var h = heads[i];
+                if (h == null || h.light == null) continue;
+                var d = HeadHoldApply(i, TodayHeadDrive(h, t));
+                e.Head(room, i, ref d);
+                d = Normalise(h, d);
+                headShown[i] = d;
+                SetHeadDrive(h, d);
+            }
+        }
+        catch (Exception ex) { EndFault(e, "lamps", ex); }
+        var pilot = phase == Phase.Tripped ? 0f : 1f;
+        foreach (var p in pilots)
+        {
+            if (p == null || p.renderer == null) continue;
+            if (p.cell >= 0 && !cellOpen[p.cell]) continue;
+            block.Clear();
+            p.renderer.GetPropertyBlock(block, p.index);
+            block.SetColor(EmissionId, rig.pilotEmission * pilot);
+            p.renderer.SetPropertyBlock(block, p.index);
+        }
+    }
+
+    // SetStrip with the struct's colours (the same sums: the Light white + red, the lens, the red tube's bounce or burn, the halo).
+    void SetStripDrive(StripLamp s, FrontRoomsStructuresRunEndStrip d)
+    {
+        if (s == null || s.light == null) return;
+        var white = rig.wrapIntensity * s.scale * Mathf.Max(0f, d.white);
+        var red = RedLight * Mathf.Max(0f, d.red);
+        var sum = white + red;
+        s.light.enabled = sum > .0005f;
+        if (sum > .0005f)
+        {
+            var c = (d.whiteColour * white + d.redColour * red) / sum;
+            s.light.color = c.gamma;
+            s.light.intensity = sum;
+        }
+        if (s.lens != null)
+        {
+            block.Clear();
+            s.lens.GetPropertyBlock(block);
+            block.SetColor(EmissionId, d.lensColour * Mathf.Max(0f, d.lens));
+            s.lens.SetPropertyBlock(block);
+        }
+        if (s.red != null)
+        {
+            var bounce = rig.redTubeBounce * Mathf.Max(0f, d.lens);
+            var burn = d.tubeColour * Mathf.Clamp01(d.tube);
+            block.Clear();
+            s.red.GetPropertyBlock(block);
+            block.SetColor(EmissionId, new Color(Mathf.Max(bounce.r, burn.r), Mathf.Max(bounce.g, burn.g), Mathf.Max(bounce.b, burn.b), 1f));
+            s.red.SetPropertyBlock(block);
+        }
+        if (s.halo != null)
+        {
+            var redHalo = d.red > d.lens && haloRed != null;
+            var level = redHalo ? Mathf.Clamp01(d.red) : Mathf.Max(0f, d.lens);
+            if (redHalo && s.halo.sharedMaterial != haloRed) s.halo.sharedMaterial = haloRed;
+            else if (!redHalo && haloWhite != null && s.halo.sharedMaterial != haloWhite) s.halo.sharedMaterial = haloWhite;
+            s.halo.enabled = level > .0005f;
+            block.Clear();
+            block.SetFloat(DensityId, level);
+            s.halo.SetPropertyBlock(block);
+        }
+    }
+
+    void SetHeadDrive(HeadLamp h, FrontRoomsStructuresRunEndHead d)
+    {
+        if (h == null || h.light == null) return;
+        var v = h.baseIntensity * Mathf.Max(0f, d.level);
+        h.light.intensity = v;
+        h.light.enabled = v > .0005f;
+        h.light.color = d.colour;
+        SetLens(h.lens, h.lensIndex, d.lensColour * Mathf.Max(0f, d.level));
+    }
+
+    // ---------------------------------------------------------------- treatments: the fog override, the placard
+
+    void SetFogOverride(Color colour, float density)
+    {
+        if (!fogOn)
+        {
+            savedFogColour = RenderSettings.fogColor;
+            savedFogDensity = RenderSettings.fogDensity;
+        }
+        fogOn = true;
+        fogColour = colour;
+        fogDensity = Mathf.Max(0f, density);
+        RenderSettings.fogColor = fogColour;
+        RenderSettings.fogDensity = fogDensity;
+    }
+
+    void ClearFogNow()
+    {
+        if (!fogOn) return;
+        fogOn = false;
+        RenderSettings.fogColor = savedFogColour;
+        RenderSettings.fogDensity = savedFogDensity;
+    }
+
+    // After the preset: the preset applied now (the host's Want after this is then a no-op) and its fog kept for the clear,
+    // then the override's fog on top.
+    void FogAfterPreset(FrontRoomsStructuresLook.Preset preset)
+    {
+        if (!fogOn && !ambientOn) return;
+        var look = kit != null && kit.Host != null ? kit.Host.Look : null;
+        if (look != null && look.Current != preset)
+        {
+            look.Want(preset);
+            savedFogColour = RenderSettings.fogColor;
+            savedFogDensity = RenderSettings.fogDensity;
+            SaveAmbient();
+        }
+        if (fogOn)
+        {
+            RenderSettings.fogColor = fogColour;
+            RenderSettings.fogDensity = fogDensity;
+        }
+        if (ambientOn) PutAmbient(ambientSky, ambientEquator, ambientGround);
+    }
+
+    // room.Ambient (#2's warm gap): the trilight while set, over the preset's; the preset's kept for the clear.
+    void SetAmbientOverride(Color sky, Color equator, Color ground)
+    {
+        if (!ambientOn) SaveAmbient();
+        ambientOn = true;
+        ambientSky = sky;
+        ambientEquator = equator;
+        ambientGround = ground;
+        PutAmbient(sky, equator, ground);
+    }
+
+    void ClearAmbientNow()
+    {
+        if (!ambientOn) return;
+        ambientOn = false;
+        PutAmbient(savedSky, savedEquator, savedGround);
+        RenderSettings.ambientLight = savedAmbientLight;
+    }
+
+    void SaveAmbient()
+    {
+        savedSky = RenderSettings.ambientSkyColor;
+        savedEquator = RenderSettings.ambientEquatorColor;
+        savedGround = RenderSettings.ambientGroundColor;
+        savedAmbientLight = RenderSettings.ambientLight;
+    }
+
+    static void PutAmbient(Color sky, Color equator, Color ground)
+    {
+        if (RenderSettings.ambientSkyColor != sky) RenderSettings.ambientSkyColor = sky;
+        if (RenderSettings.ambientEquatorColor != equator) RenderSettings.ambientEquatorColor = equator;
+        if (RenderSettings.ambientGroundColor != ground) RenderSettings.ambientGroundColor = ground;
+        if (RenderSettings.ambientLight != sky) RenderSettings.ambientLight = sky;
+    }
+
+    // ---------------------------------------------------------------- treatments: the requests (the curves, the drive at a place)
+
+    // room.WhiteDrop / Afterglow / RedRise / PulseAt / Restrike / RestrikeAt are the frame's own (above); a lamp's place along
+    // the corridor as a continuous cell index from strip 0 (strip c at 1.8 + 3c has index c).
+    static float CellIndexAt(float z) => (z - 1.8f) / CellLen;
+
+    float RestrikeStart(float z)
+    {
+        var cell = Mathf.Floor(Mathf.Max(0f, z) / Mathf.Max(.1f, rig.resetCellLength));
+        return (reduce ? 0f : rig.resetRiseStart) + cell * rig.resetCellSeconds;
+    }
+
+    // StripLevels for a strip hung at z (room.TodayStripAt): its own cell's state (the reveal), every place-dependent time from
+    // z, continuously; at the strip's own z the same numbers as StripLevels (which #1 runs, unchanged).
+    void StripLevelsAt(StripLamp s, float t, float z, out float w, out float r, out float lens, out float rt)
+    {
+        w = 1f;
+        r = 0f;
+        lens = 1f;
+        rt = 0f;
+        var c = s.cell;
+        var ci = CellIndexAt(z);
+        var late = c >= 0 && !float.IsNegativeInfinity(revealAt[c]);
+        var tr = late ? t - revealAt[c] : 0f;
+        if (phase == Phase.Armed)
+        {
+            w = s.stutter ? Stutter() : 1f;
+            lens = w;
+            return;
+        }
+        if (phase == Phase.Resetting)
+        {
+            w = Restrike(t, z);
+            if (late) w *= Smooth(tr / .4f);
+            lens = w;
+            return;
+        }
+        switch (Look)
+        {
+            case 0:
+                w = late ? 0f : WhiteDrop(t);
+                lens = late ? 0f : Mathf.Lerp(Afterglow(t), 1f, w);
+                rt = late ? Strike(t - Mathf.Max(revealAt[c], rig.headDelay + rig.headStagger * z)) : RigHeadRise(t, z);
+                return;
+            case 1:
+            case 2:
+            {
+                var t0 = .15f * ci;
+                if (late)
+                {
+                    w = 0f;
+                    r = Strike(t - Mathf.Max(revealAt[c], .35f + t0));
+                    lens = 0f;
+                }
+                else if (reduce)
+                {
+                    var k = Smooth((t - t0) / rig.reducedEnvelope);
+                    w = 1f - k;
+                    r = k;
+                    lens = w;
+                }
+                else
+                {
+                    w = t < t0 ? 1f : WhiteDrop(t - t0);
+                    r = RedRise(t - .35f - t0);
+                    lens = t < t0 ? 1f : Mathf.Lerp(Afterglow(t - t0), 1f, w);
+                }
+                if (Look == 2 && !reduce) r *= PulseEased(t, t0);
+                rt = r;
+                return;
+            }
+            default:
+            {
+                var tc = .25f + z / 3.2f;
+                var k = Smooth((t - tc) / (reduce ? rig.reducedEnvelope : rig.resetRise));
+                w = 1f - k;
+                r = k;
+                if (late) { var st = Strike(tr); w *= st; r *= st; }
+                lens = w;
+                rt = r;
+                return;
+            }
+        }
+    }
+
+    FrontRoomsStructuresRunEndStrip TodayStripDriveAt(StripLamp s, float t, float z)
+    {
+        if (Mathf.Abs(z - s.z) < 1e-4f) return TodayStripDrive(s, t);
+        var d = Normalise(s, new FrontRoomsStructuresRunEndStrip());
+        if (!d.open) return d;
+        StripLevelsAt(s, t, z, out d.white, out d.red, out d.lens, out d.tube);
+        return d;
+    }
+
+    FrontRoomsStructuresRunEndHead TodayHeadDriveAt(HeadLamp h, float t, float z)
+    {
+        var d = Normalise(h, new FrontRoomsStructuresRunEndHead());
+        if (!d.open) return d;
+        if (probeHead == null) probeHead = new HeadLamp();
+        probeHead.z = z;
+        probeHead.cell = h.cell;
+        probeHead.goal = h.goal;
+        d.level = HeadLevel(probeHead, t);
+        return d;
+    }
+
+    // room.TrippedStrip: the look's own tripped strip once its front has passed (the cell open or not).
+    FrontRoomsStructuresRunEndStrip TrippedStripDrive(StripLamp s, float t)
+    {
+        var d = Normalise(s, new FrontRoomsStructuresRunEndStrip());
+        switch (Look)
+        {
+            case 0:
+                d.tube = 1f;
+                break;
+            case 1:
+            case 2:
+                d.red = Look == 2 && !reduce ? Pulse(t, Mathf.Max(0, s.cell)) : 1f;
+                d.tube = d.red;
+                break;
+            default:
+                d.red = d.tube = 1f;
+                break;
+        }
+        return d;
+    }
+
+    // room.TrippedSince: when today's drive of the strip stands at its tripped state (StripLevels' times, per look).
+    float TrippedSinceFor(StripLamp s)
+    {
+        if (phase != Phase.Tripped) return float.PositiveInfinity;
+        var c = s.cell;
+        var late = c >= 0 && !float.IsNegativeInfinity(revealAt[c]);
+        var env = reduce ? rig.reducedEnvelope : rig.resetRise;
+        float done;
+        switch (Look)
+        {
+            case 0:
+                done = reduce ? rig.reducedHeadDelay + rig.reducedEnvelope : Mathf.Max(rig.mainsDrop, rig.headDelay + rig.headStagger * s.z + rig.headRise);
+                if (late) done = Mathf.Max(done, Mathf.Max(revealAt[c], rig.headDelay + rig.headStagger * s.z) + env);
+                return done;
+            case 1:
+            case 2:
+            {
+                var t0 = .15f * Mathf.Max(0, c);
+                done = reduce ? t0 + rig.reducedEnvelope : .35f + t0 + rig.resetRise;
+                if (late) done = Mathf.Max(done, Mathf.Max(revealAt[c], .35f + t0) + env);
+                return done;
+            }
+            default:
+                done = .25f + s.z / 3.2f + env;
+                if (late) done = Mathf.Max(done, revealAt[c] + env);
+                return done;
+        }
+    }
+
+    // ---------------------------------------------------------------- treatments: B's pulse eased (Pulse under a treatment)
+
+    // When the gate (the end moving or waiting) or the schedule's start (the final seat) changes, the pulse level eases from
+    // where it stood over B's own 0.4 s rise instead of snapping (a dipping strip never jumps back to full).
+    const float PulseEase = .4f;
+
+    bool PulseGated => recedePending || recedeRunning || endMoving || endWaiting;
+    float PulseFirst => finalSeatTime >= 0f ? Mathf.Max(3f, finalSeatTime + 1f) : 3f;
+
+    // At every trip, re-strike, re-arm and reset (the clock starts again): the ease state as the room stands, nothing easing.
+    void PulseEaseReset()
+    {
+        pulseGateFrom = pulseGateTarget = PulseGated ? 1f : 0f;
+        pulseGateT0 = float.NegativeInfinity;
+        pulseFirstNow = pulseFirstOld = PulseFirst;
+        pulseFirstT0 = float.NegativeInfinity;
+    }
+
+    float PulseGateLevel(float t)
+    {
+        var u = (t - pulseGateT0) / PulseEase;
+        return u >= 1f ? pulseGateTarget : Mathf.Lerp(pulseGateFrom, pulseGateTarget, Smooth(u));
+    }
+
+    // B's schedule alone (Pulse's loop): 12 pulses from first, a lamp delay seconds after the entrance's.
+    static float PulseLevel(float t, float delay, float first)
+    {
+        var level = 1f;
+        for (var k = 0; k < 12; k++)
+        {
+            var s = t - (first + 2.5f * k + delay);
+            if (s < 0f) break;
+            if (s < .06f) level = Mathf.Min(level, 1f - .65f * (s / .06f));
+            else if (s < .16f) level = Mathf.Min(level, .35f);
+            else if (s < .56f) level = Mathf.Min(level, .35f + .65f * Smooth((s - .16f) / .4f));
+        }
+        return level;
+    }
+
+    float PulseEased(float t, float delay)
+    {
+        var gate = PulseGated ? 1f : 0f;
+        if (gate != pulseGateTarget)
+        {
+            pulseGateFrom = PulseGateLevel(t);
+            pulseGateTarget = gate;
+            pulseGateT0 = t;
+        }
+        var first = PulseFirst;
+        if (first != pulseFirstNow)
+        {
+            pulseFirstOld = pulseFirstNow;
+            pulseFirstNow = first;
+            pulseFirstT0 = t;
+        }
+        var level = PulseLevel(t, delay, pulseFirstNow);
+        var u = (t - pulseFirstT0) / PulseEase;
+        if (u < 1f) level = Mathf.Lerp(PulseLevel(t, delay, pulseFirstOld), level, Smooth(u));
+        return Mathf.Lerp(level, 1f, PulseGateLevel(t));
+    }
+
+    // ---------------------------------------------------------------- treatments: the marks' words
+
+    void ApplyMarks(FrontRoomsStructuresRunEnd e)
+    {
+        for (var i = 0; i < markTexts.Count && i < MarkText.Length; i++)
+        {
+            var tm = markTexts[i];
+            if (tm == null) continue;
+            var s = MarkText[i];
+            try { s = e.Mark(room, i, MarkText[i]); }
+            catch (Exception ex)
+            {
+                EndFault(e, "mark", ex);
+                s = MarkText[i];
+            }
+            if (string.IsNullOrEmpty(s)) s = MarkText[i];
+            if (tm.text != s)
+            {
+                tm.text = s;
+                marksTouched = true;
+            }
+        }
+    }
+
+    void RestoreMarks()
+    {
+        if (!marksTouched) return;
+        marksTouched = false;
+        for (var i = 0; i < markTexts.Count && i < MarkText.Length; i++)
+            if (markTexts[i] != null && markTexts[i].text != MarkText[i]) markTexts[i].text = MarkText[i];
+    }
+
+    // ---------------------------------------------------------------- treatments: the stand-in room behind a short-opening door
+
+    // 72 3.4: "a player who never looks back meets a plain room"; C38: the door is never locked. Scene 4 has its hall only behind
+    // 42 m, so under a treatment that OpensShort a lit STAND-IN room waits behind the goal door while the head stands short of
+    // it: 2.94 m deep in the corridor's section behind the head wall (Run! B's block in its two tones and cove, the corridor
+    // floor's own surface on a plain slab, a lid at 2.45 m under the services that run on through the hidden cells), lit by one
+    // R-B strip while the door is open (up over 0.25 s; F: 0.5 s); it rides the head, its back wall solid.
+    const float ShortDepth = 3.02f, ShortHalf = 1.38f, ShortLid = 2.45f;
+    // Render stage 11-04 (renders/scene4/run_ends1, #5 film F1 after E): from the doorway of a tripped room the strip alone lit
+    // the floor and the walls' feet, the back wall's upper half and the lid stayed dark (the tripped ambient is the alarm's dim
+    // red), so the stand-in read as a dark closet. A soft fill in the room's middle stands in for the strip's bounce (in the
+    // armed room the RunB ambient does it): no shadows, its 2.4 m range ends in the room (the corridor's floor and walls
+    // beyond the head wall are 2.1-2.2 m from it, where the range's own falloff leaves under 3 % of its light).
+    const float ShortFillIntensity = .9f, ShortFillRange = 2.4f;
+
+    void ShortRoomTick(float dt)
+    {
+        var want = activeEnd != null && headZ < Length - .01f && EndOpensShort();
+        if (want && shortRoom == null && !shortFailed) BuildShortRoom();
+        if (shortRoom == null) return;
+        if (shortRoom.gameObject.activeSelf != want) shortRoom.gameObject.SetActive(want);
+        var target = want && goalOpen ? 1f : 0f;
+        var rate = dt / (reduce ? rig.reducedEnvelope : .25f);
+        var level = dt <= 0f ? target : Mathf.MoveTowards(shortLevel, target, rate);
+        if (shortLamp != null && (level != shortLevel || dt <= 0f)) SetStrip(shortLamp, level, 0f, level, 0f);
+        SetShortFill(level);
+        shortLevel = level;
+    }
+
+    void SetShortFill(float level)
+    {
+        if (shortFill == null) return;
+        var v = ShortFillIntensity * level;
+        if (shortFill.intensity != v) shortFill.intensity = v;
+        var on = v > .001f;
+        if (shortFill.enabled != on) shortFill.enabled = on;
+    }
+
+    void ShortRoomOff()
+    {
+        if (shortRoom == null) return;
+        shortRoom.gameObject.SetActive(false);
+        shortLevel = 0f;
+        if (shortLamp != null) SetStrip(shortLamp, 0f, 0f, 0f, 0f);
+        SetShortFill(0f);
+    }
+
+    // A point (district metres) inside the stand-in room while it shows.
+    bool InShortRoom(Vector3 p)
+    {
+        if (shortRoom == null || !shortRoom.gameObject.activeInHierarchy) return false;
+        var z = p.z - headZ;
+        return z > FrontRoomsStructuresRunEndRoom.HeadWallHalf && z < ShortDepth && Mathf.Abs(p.x) < HalfW && p.y > -.5f && p.y < Ceil;
+    }
+
+    void BuildShortRoom()
+    {
+        if (kit == null || head == null) { shortFailed = true; return; }
+        try
+        {
+            CloseRoomPart();
+            var part = kit.BeginPart("STAND-IN SP7 room behind the goal door (a treatment that opens short of 42 m)");
+            partOpen = true;
+            kit.Shell(ShortLid, 0f);
+            const float z0 = FrontRoomsStructuresRunEndRoom.HeadWallHalf + .002f, z1 = ShortDepth, x = ShortHalf, lid = ShortLid;
+            foreach (var s in new[] { -1f, 1f })
+            {
+                // The side walls 4 cm inside the corridor's own (they cover its EMT and the remote heads' mounts), the cove on them.
+                var xa = Mathf.Min(s * x, s * (x + .03f));
+                var xb = Mathf.Max(s * x, s * (x + .03f));
+                kit.Box(xa, 0f, z0, xb, 1.2f, z1, lower, false);
+                kit.Box(xa, 1.2f, z0, xb, lid, z1, upper, false);
+                var xc = Mathf.Min(s * (x - .0035f), s * x);
+                var xd = Mathf.Max(s * (x - .0035f), s * x);
+                kit.Box(xc, 0f, z0, xd, .102f, z1, cove, false);
+            }
+            // The back wall (solid: the walker stops here), its cove.
+            kit.Box(-x - .03f, 0f, z1, x + .03f, 1.2f, z1 + .1f, lower);
+            kit.Box(-x - .03f, 1.2f, z1, x + .03f, lid, z1 + .1f, upper);
+            kit.Box(-x, 0f, z1 - .0035f, x, .102f, z1, cove, false);
+            // The floor (a plain slab 2 mm proud, render only: the corridor's floor carries the walker) and the lid.
+            kit.Box(-x, 0f, z0, x, .002f, z1, floorMat, false);
+            kit.Box(-x - .03f, lid, z0, x + .03f, lid + .04f, z1 + .1f, soffitMat, false);
+            kit.EndPart();
+            partOpen = false;
+            part.SetParent(head, false);
+            part.localPosition = Vector3.zero;
+            shortRoom = part;
+            // One R-B strip on the lid's centre line, the corridor's white (off the alarm circuit: no red tube), its cone kept short.
+            shortLamp = Strip(part, new Vector3(0f, lid, 1.6f), 1f, 3.2f, false, "STAND-IN room strip");
+            if (shortLamp != null && shortLamp.red != null) { shortLamp.red.enabled = false; shortLamp.red = null; }
+            if (shortLamp != null && shortLamp.light != null)
+            {
+                shortLamp.light.spotAngle = Mathf.Min(shortLamp.light.spotAngle, 120f);
+                shortLamp.light.innerSpotAngle = Mathf.Min(shortLamp.light.innerSpotAngle, 80f);
+            }
+            if (shortLamp != null) SetStrip(shortLamp, 0f, 0f, 0f, 0f);
+            // The fill (see ShortFillIntensity): a point light at the room's middle, the strip's colour, off until the door opens.
+            var fillGo = new GameObject("STAND-IN room fill (its strip's bounce)");
+            fillGo.transform.SetParent(part, false);
+            fillGo.transform.localPosition = new Vector3(0f, 1.3f, 1.62f);
+            shortFill = fillGo.AddComponent<Light>();
+            FrontRoomsMapWorld.ShippedShadowFilter(shortFill);
+            shortFill.type = LightType.Point;
+            shortFill.color = rig.wrapColor;
+            shortFill.range = ShortFillRange;
+            shortFill.shadows = LightShadows.None;
+            shortFill.intensity = 0f;
+            shortFill.enabled = false;
+            shortLevel = 0f;
+            part.gameObject.SetActive(false);
+            Debug.Log(FrontRoomsStructures.Log + "SP7: the stand-in room behind the goal door built (a treatment that opens short).");
+        }
+        catch (Exception e)
+        {
+            CloseRoomPart();
+            shortFailed = true;
+            shortRoom = null;
+            shortLamp = null;
+            shortFill = null;
+            FrontRoomsPoolMaterials.LogOnce("SP7 short room", "SP7: the stand-in room behind the goal door failed (the door stays shut short of 42 m): " + e.Message);
+        }
+    }
+
+    // ---------------------------------------------------------------- treatments: a piece of the dress cut to a box (room.CutPiece)
+
+    struct CutVert
+    {
+        public Vector3 p, d, n;
+        public Vector2 uv;
+    }
+
+    readonly List<CutVert> cutPoly = new List<CutVert>(), cutTmp = new List<CutVert>();
+
+    static CutVert CutLerp(CutVert a, CutVert b, float k) => new CutVert
+    {
+        p = Vector3.Lerp(a.p, b.p, k), d = Vector3.Lerp(a.d, b.d, k), n = Vector3.Lerp(a.n, b.n, k), uv = Vector2.Lerp(a.uv, b.uv, k),
+    };
+
+    // One plane of the box (Sutherland-Hodgman): keep d[axis] >= v (low) or <= v (high).
+    void CutPlane(int axis, float v, bool low)
+    {
+        cutTmp.Clear();
+        var n = cutPoly.Count;
+        for (var i = 0; i < n; i++)
+        {
+            var a = cutPoly[i];
+            var b = cutPoly[(i + 1) % n];
+            var da = low ? a.d[axis] - v : v - a.d[axis];
+            var db = low ? b.d[axis] - v : v - b.d[axis];
+            if (da >= 0f) cutTmp.Add(a);
+            if ((da >= 0f) != (db >= 0f)) cutTmp.Add(CutLerp(a, b, da / (da - db)));
+        }
+        cutPoly.Clear();
+        cutPoly.AddRange(cutTmp);
+    }
+
+    // FrontRooms/Surface's world planar frame for a face of normal n (district = world axes: the root has no rotation), as #2's
+    // boxes make it: +x (-z, y), -x (z, y), +y (x, -z), -y (x, z), +z (x, y), -z (-x, y).
+    static Vector2 PlanarUv(Vector3 w, Vector3 n)
+    {
+        var ax = Mathf.Abs(n.x);
+        var ay = Mathf.Abs(n.y);
+        var az = Mathf.Abs(n.z);
+        if (ax >= ay && ax >= az) return n.x >= 0f ? new Vector2(-w.z, w.y) : new Vector2(w.z, w.y);
+        if (ay >= az) return n.y >= 0f ? new Vector2(w.x, -w.z) : new Vector2(w.x, w.z);
+        return n.z >= 0f ? new Vector2(w.x, w.y) : new Vector2(-w.x, w.y);
+    }
+
+    Renderer CutPieceNow(FrontRoomsStructuresRunEnd end, Renderer piece, Bounds box, Transform parent, Material material, bool planarUv)
+    {
+        if (piece == null) return null;
+        var mf = piece.GetComponent<MeshFilter>();
+        var src = mf != null ? mf.sharedMesh : null;
+        if (src == null || !src.isReadable) return null;
+        if (parent == null) parent = end != null && end.Own != null ? end.Own : Root;
+        var toDistrict = Root.worldToLocalMatrix * piece.transform.localToWorldMatrix;
+        var toParent = parent.worldToLocalMatrix * piece.transform.localToWorldMatrix;
+        var vs = src.vertices;
+        var ns = src.normals;
+        var uvs = src.uv;
+        var hasN = ns != null && ns.Length == vs.Length;
+        var hasUv = uvs != null && uvs.Length == vs.Length;
+        var outV = new List<Vector3>();
+        var outN = new List<Vector3>();
+        var outUv = new List<Vector2>();
+        var subs = new List<List<int>>();
+        var lo = box.min;
+        var hi = box.max;
+        for (var sm = 0; sm < src.subMeshCount; sm++)
+        {
+            var list = new List<int>();
+            subs.Add(list);
+            if (src.GetTopology(sm) != MeshTopology.Triangles) continue;
+            var tri = src.GetTriangles(sm);
+            for (var k = 0; k + 2 < tri.Length; k += 3)
+            {
+                cutPoly.Clear();
+                for (var j = 0; j < 3; j++)
+                {
+                    var vi = tri[k + j];
+                    cutPoly.Add(new CutVert { p = vs[vi], d = toDistrict.MultiplyPoint3x4(vs[vi]), n = hasN ? ns[vi] : Vector3.zero, uv = hasUv ? uvs[vi] : Vector2.zero });
+                }
+                var face = Vector3.Cross(cutPoly[1].d - cutPoly[0].d, cutPoly[2].d - cutPoly[0].d);
+                for (var axis = 0; axis < 3 && cutPoly.Count >= 3; axis++)
+                {
+                    CutPlane(axis, lo[axis], true);
+                    if (cutPoly.Count >= 3) CutPlane(axis, hi[axis], false);
+                }
+                if (cutPoly.Count < 3) continue;
+                var b0 = outV.Count;
+                foreach (var cv in cutPoly)
+                {
+                    outV.Add(toParent.MultiplyPoint3x4(cv.p));
+                    var nn = hasN ? toParent.MultiplyVector(cv.n) : toParent.MultiplyVector(Vector3.zero);
+                    outN.Add(nn.sqrMagnitude > 1e-12f ? nn.normalized : Vector3.up);
+                    outUv.Add(planarUv ? PlanarUv(cv.d + Site, face) : cv.uv);
+                }
+                for (var j = 1; j + 1 < cutPoly.Count; j++)
+                {
+                    list.Add(b0);
+                    list.Add(b0 + j);
+                    list.Add(b0 + j + 1);
+                }
+            }
+        }
+        if (outV.Count == 0) return null;
+        var mesh = new Mesh { name = "SP7 cut " + piece.name, hideFlags = HideFlags.DontSave };
+        if (outV.Count > 65000) mesh.indexFormat = IndexFormat.UInt32;
+        mesh.SetVertices(outV);
+        mesh.SetNormals(outN);
+        mesh.SetUVs(0, outUv);
+        mesh.subMeshCount = subs.Count;
+        for (var sm = 0; sm < subs.Count; sm++) mesh.SetTriangles(subs[sm], sm);
+        if (!hasN) mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+        Meshes.Add(mesh);
+        var go = new GameObject("cut " + piece.name);
+        go.transform.SetParent(parent, false);
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = go.AddComponent<MeshRenderer>();
+        if (material != null)
+        {
+            var mats = new Material[subs.Count];
+            for (var i = 0; i < mats.Length; i++) mats[i] = material;
+            r.sharedMaterials = mats;
+        }
+        else r.sharedMaterials = piece.sharedMaterials;
+        r.shadowCastingMode = piece.shadowCastingMode;
+        r.receiveShadows = piece.receiveShadows;
+        return r;
+    }
+
+    // ---------------------------------------------------------------- treatments: a walker inside what the restore put back
+
+    // The walker's capsule (2 cm thinner, so a walker merely touching a face is not inside) against the given colliders.
+    bool WalkerInside(List<Collider> list)
+    {
+        var w = kit != null && kit.Host != null ? kit.Host.Walker : null;
+        if (w == null || list.Count == 0) return false;
+        if (walkerBody == null) walkerBody = w.GetComponent<CharacterController>();
+        var cc = walkerBody;
+        if (cc == null || !cc.enabled) return false;
+        Physics.SyncTransforms();
+        var tr = cc.transform;
+        var scale = tr.lossyScale;
+        var radius = Mathf.Max(.05f, cc.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z)) - .02f);
+        var half = Mathf.Max(0f, cc.height * Mathf.Abs(scale.y) * .5f - radius);
+        var centre = tr.TransformPoint(cc.center);
+        var up = tr.up;
+        var n = Physics.OverlapCapsuleNonAlloc(centre + up * half, centre - up * half, radius, overlapBuffer, ~0, QueryTriggerInteraction.Ignore);
+        for (var i = 0; i < n; i++)
+            if (overlapBuffer[i] != null && overlapBuffer[i] != cc && list.Contains(overlapBuffer[i])) return true;
+        return false;
+    }
+
+    // The treatments' placard (X): on the vestibule's west wall facing east, across from the room's sign; rebuilt on X so it
+    // names the current one (one line each on what to try, from each treatment's TryLine). At z -4.062 (was -4.0) the arrival
+    // eye (0, 1.62, -2) is 2.500 m from its face centre (placard spec v2.4): the body is laid out to a panel 1.310 m tall with
+    // any of the five named (2.449 m at -4.0); only the "error" note of #2 or #5 adds a line (1.355 m: 2.502 m).
+    void BuildEndSign()
+    {
+        if (kit == null) return;
+        if (endSign != null)
+        {
+            endSign.SetActive(false);
+            UnityEngine.Object.Destroy(endSign);
+            endSign = null;
+        }
+        try
+        {
+            endSign = kit.Sign(new Vector3(-HalfW + .03f, 1.5f, -4.062f), new Vector3(1.2f, 1.5f, -4.062f), "SP7 · 后退的五种做法（按 X 换）", EndSignBody(), 0f);
+            if (endSign != null && vestibuleSHSet) ApplyVestibuleSH(endSign);
+        }
+        catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP7 end sign", "SP7: the treatments' placard failed: " + e.Message); }
+    }
+
+    string EndSignBody()
+    {
+        var cur = CurrentEnd;
+        var sb = new StringBuilder();
+        sb.Append("72 号文档给你挑的五种做法，都在这里做出来了，请每一种都走一遍。按 X 换下一种，Shift+X 换回上一种；一换房间就复位，门回到原位。五种都只在会退的长度里起作用（V：会退 9→12 格、9→14 格），普通长度和今天一样。现在是：")
+            .Append(cur.Number).Append(' ').Append(cur.Name).Append(endFailed[treatment] ? "（出错了，跑的是今天的）" : "").Append("。\n");
+        sb.Append("走过后告诉我们（每一种怎么试）：");
+        for (var i = 0; i < ends.Length; i++)
+        {
+            var e = ends[i];
+            if (i > 0) sb.Append(' ');
+            sb.Append(e.Number).Append(' ').Append(e.Name);
+            if (e.TryLine.Length > 0) sb.Append('：').Append(e.TryLine);
+        }
+        sb.Append('\n');
+        sb.Append("灰盒占位：第 2 到 5 种新加的模型、动画和灯光（毛坯、工作灯、传送带这些）是简单程序做的，正式效果等游戏视觉做；第 4、5 种的门不到 42 米也推得开，门后是一间亮着的占位小房间（场景 4 的大厅只在 42 米）；没有声音，没有会动的 Relay。\n");
+        sb.Append("要你决定：SP7-2 五种都走过以后选哪一种？回一个编号，比如\"2\"；也可以组合，比如\"2，加上 3 的灯光\"。");
+        return sb.ToString();
+    }
+
+    // Level 0's trilight on a vestibule thing made after the build (the placard rebuilt on X), as VestibuleAmbient gives it.
+    void ApplyVestibuleSH(GameObject go)
+    {
+        if (go == null || !vestibuleSHSet) return;
+        var mpb = new MaterialPropertyBlock();
+        foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+        {
+            if (r == null) continue;
+            r.lightProbeUsage = LightProbeUsage.CustomProvided;
+            r.GetPropertyBlock(mpb);
+            mpb.CopySHCoefficientArraysFrom(new[] { vestibuleSH });
+            r.SetPropertyBlock(mpb);
+            mpb.Clear();
+        }
+    }
+
+    // ---------------------------------------------------------------- treatments: the room as it stood before any ran
+
+    sealed class TransformSnap
+    {
+        readonly Transform t, parent;
+        readonly Vector3 position, scale;
+        readonly Quaternion rotation;
+        readonly bool active;
+
+        public TransformSnap(Transform t)
+        {
+            this.t = t;
+            parent = t.parent;
+            position = t.localPosition;
+            rotation = t.localRotation;
+            scale = t.localScale;
+            active = t.gameObject.activeSelf;
+        }
+
+        public void Parent()
+        {
+            if (t != null && parent != null && t.parent != parent) t.SetParent(parent, false);
+        }
+
+        public void Pose()
+        {
+            if (t == null) return;
+            t.localPosition = position;
+            t.localRotation = rotation;
+            t.localScale = scale;
+            if (t.gameObject.activeSelf != active) t.gameObject.SetActive(active);
+        }
+
+        /// <summary>It stands elsewhere than as built (parent, pose or active state): its colliders come back somewhere else.</summary>
+        public bool Moved => t != null && (t.parent != parent || t.localPosition != position || t.localRotation != rotation || t.localScale != scale || t.gameObject.activeSelf != active);
+
+        public void Colliders(List<Collider> into)
+        {
+            if (t == null) return;
+            foreach (var c in t.GetComponentsInChildren<Collider>(true)) if (c != null && !into.Contains(c)) into.Add(c);
+        }
+    }
+
+    sealed class ColliderSnap
+    {
+        readonly Collider c;
+        readonly bool enabled;
+
+        public ColliderSnap(Collider c)
+        {
+            this.c = c;
+            enabled = c.enabled;
+        }
+
+        public Collider Collider => c;
+        public bool Changed => c != null && c.enabled != enabled;
+
+        public void Restore()
+        {
+            if (c != null && c.enabled != enabled) c.enabled = enabled;
+        }
+    }
+
+    sealed class RendererSnap
+    {
+        readonly Renderer r;
+        readonly bool enabled;
+        readonly Material[] materials;
+
+        public RendererSnap(Renderer r)
+        {
+            this.r = r;
+            enabled = r.enabled;
+            materials = r.sharedMaterials;
+        }
+
+        public void Restore()
+        {
+            if (r == null) return;
+            if (r.enabled != enabled) r.enabled = enabled;
+            var now = r.sharedMaterials;
+            var same = now.Length == materials.Length;
+            for (var i = 0; same && i < now.Length; i++) same = now[i] == materials[i];
+            if (!same) r.sharedMaterials = materials;
+        }
+    }
+
+    sealed class LightSnap
+    {
+        readonly Light l;
+        readonly LightType type;
+        readonly Color colour;
+        readonly float intensity, range, spot, inner;
+        readonly Texture cookie;
+        readonly bool enabled;
+
+        public LightSnap(Light l)
+        {
+            this.l = l;
+            type = l.type;
+            colour = l.color;
+            intensity = l.intensity;
+            range = l.range;
+            spot = l.spotAngle;
+            inner = l.innerSpotAngle;
+            cookie = l.cookie;
+            enabled = l.enabled;
+        }
+
+        public void Restore()
+        {
+            if (l == null) return;
+            if (l.type != type) l.type = type;
+            l.color = colour;
+            l.intensity = intensity;
+            l.range = range;
+            if (type == LightType.Spot)
+            {
+                l.spotAngle = spot;
+                l.innerSpotAngle = inner;
+            }
+            if (l.cookie != cookie) l.cookie = cookie;
+            l.enabled = enabled;
+        }
+    }
+
+    // The frame's shared objects (the head, the dress, the fire-door frames, the track, the blind panel, bands, magnets, the
+    // lamps and units, the T2 blocks' root) with every child: transforms and parents, active states, renderers' enabled
+    // states and materials, lights' settings.
+    void TakeSnapshot()
+    {
+        snapped = true;
+        transformSnaps.Clear();
+        rendererSnaps.Clear();
+        lightSnaps.Clear();
+        colliderSnaps.Clear();
+        var roots = new List<Transform>();
+        if (head != null) roots.Add(head);
+        if (dressRoot != null) roots.Add(dressRoot);
+        foreach (var f in fireFrames) if (f != null) roots.Add(f);
+        if (trackPart != null) roots.Add(trackPart);
+        if (blindPart != null) roots.Add(blindPart);
+        foreach (var b in bandParts.Values) if (b != null) roots.Add(b.transform);
+        foreach (var m in magnets.Values) if (m != null) roots.Add(m.transform);
+        if (strips.Count > 0 && strips[0] != null && strips[0].root != null && strips[0].root.transform.parent != null) roots.Add(strips[0].root.transform.parent);
+        for (var c = 0; c < Cells; c++) foreach (var go in cellObjects[c]) if (go != null) roots.Add(go.transform);
+        foreach (var r in dressRenderers) if (r != null) roots.Add(r.transform);
+        var seenT = new HashSet<Transform>();
+        var seenR = new HashSet<Renderer>();
+        var seenL = new HashSet<Light>();
+        var seenC = new HashSet<Collider>();
+        if (blocksRoot != null && seenT.Add(blocksRoot)) transformSnaps.Add(new TransformSnap(blocksRoot));
+        foreach (var root in roots)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t != null && seenT.Add(t)) transformSnaps.Add(new TransformSnap(t));
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true)) if (r != null && seenR.Add(r)) rendererSnaps.Add(new RendererSnap(r));
+            foreach (var l in root.GetComponentsInChildren<Light>(true)) if (l != null && seenL.Add(l)) lightSnaps.Add(new LightSnap(l));
+            foreach (var c in root.GetComponentsInChildren<Collider>(true)) if (c != null && seenC.Add(c)) colliderSnaps.Add(new ColliderSnap(c));
+        }
+    }
+
+    void RestoreSnapshot()
+    {
+        // What comes back elsewhere (a moved or re-shown part, a collider switched on again): tested against the walker once it
+        // stands, so a reset never puts a solid round the walker (ResetRoom then jumps it home).
+        restoredColliders.Clear();
+        foreach (var s in transformSnaps) if (s.Moved) s.Colliders(restoredColliders);
+        foreach (var s in colliderSnaps) if (s.Changed && !restoredColliders.Contains(s.Collider)) restoredColliders.Add(s.Collider);
+        foreach (var s in transformSnaps) s.Parent();
+        foreach (var s in transformSnaps) s.Pose();
+        foreach (var s in rendererSnaps) s.Restore();
+        foreach (var s in lightSnaps) s.Restore();
+        foreach (var s in colliderSnaps) s.Restore();
+        if (restoredColliders.Count > 0 && WalkerInside(restoredColliders)) walkerBlocked = true;
+        if (liteTouched && goalLite != null)
+        {
+            liteTouched = false;
+            block.Clear();
+            goalLite.SetPropertyBlock(block);
+        }
+        if (hallTouched)
+        {
+            hallTouched = false;
+            foreach (var s in hallStrips) SetStrip(s, 1f, 0f, 1f, 0f);
+        }
+    }
+
+    // ---------------------------------------------------------------- the room API (FrontRoomsStructuresRunEndRoom) over SP7
+
+    sealed class RoomLink : FrontRoomsStructuresRunEndRoom
+    {
+        readonly FrontRoomsStructuresRunRecede d;
+
+        public RoomLink(FrontRoomsStructuresRunRecede district) { d = district; }
+
+        public override FrontRoomsStructures Host => d.kit != null ? d.kit.Host : null;
+        public override FrontRoomsStructuresDistrict District => d;
+        public override Transform Root => d.Root;
+        public override Vector3 Site => d.Site;
+        public override FrontRoomsStructuresKit Kit => d.kit;
+        public override RunRigLayout Rig => d.rig;
+
+        public override Material Lower => d.lower;
+        public override Material Upper => d.upper;
+        public override Material FloorMat => d.floorMat;
+        public override Material Soffit => d.soffitMat;
+        public override Material Cove => d.cove;
+        public override Material FrameSteel => d.frameMat;
+        public override Material LeafMat => d.leafMat;
+        public override Material Rubber => d.rubber;
+        public override Material RedTubeStandIn => d.redTube;
+        public override Material HaloWhite => d.haloWhite;
+        public override Material HaloRed => d.haloRed;
+
+        public override void Own(Material m)
+        {
+            if (m != null && !d.owned.Contains(m)) d.owned.Add(m);
+        }
+
+        public override void Own(Mesh m)
+        {
+            if (m != null) d.Meshes.Add(m);
+        }
+
+        public override void Own(Texture t)
+        {
+            if (t != null && !d.ownedTextures.Contains(t)) d.ownedTextures.Add(t);
+        }
+
+        public override Vector3 Feet => Walker != null ? Local(Walker.transform.position) : Vector3.zero;
+
+        public override int Variant => d.variant;
+        public override bool Receding => d.Receding;
+        public override float RestLine => d.Rest;
+        public override float FinalLine => d.Final;
+        public override int Look => d.Look;
+        public override bool Tube => d.tube;
+        public override bool Reduce => d.reduce;
+        public override bool BodyT2 => d.bodyT2;
+        public override float RedLight => d.RedLight;
+
+        public override FrontRoomsStructuresRunEndPhase Phase => d.EndPhase;
+        public override float Clock => d.clock;
+        public override bool Receded => d.receded;
+        public override float FinalSeatTime => d.finalSeatTime;
+
+        public override bool HeadMoving
+        {
+            get => d.recedeRunning || d.endMoving;
+            set
+            {
+                d.endMoving = value;
+                d.plateDirty = true;
+            }
+        }
+
+        public override bool Waiting
+        {
+            get => d.recedePending || d.endWaiting;
+            set
+            {
+                d.endWaiting = value;
+                d.plateDirty = true;
+            }
+        }
+
+        public override void Trip() => d.Trip();
+        public override void StartReset() => d.StartReset();
+
+        public override void Done()
+        {
+            d.endMoving = d.endWaiting = false;
+            d.Finished();
+        }
+
+        public override void Flash(string message)
+        {
+            var h = Host;
+            if (h != null && !string.IsNullOrEmpty(message)) h.Flash(message);
+        }
+
+        public override void Dirty() => d.plateDirty = true;
+
+        public override FrontRoomsStructuresWalker Walker => Host != null ? Host.Walker : null;
+        public override Camera View => Walker != null ? Walker.View : null;
+        public override bool Push(Vector3 delta) => d.PushWalker(delta);
+
+        public override Transform Head => d.head;
+        public override float HeadZ => d.headZ;
+        public override void PlaceHead(float z, bool moving) => d.PlaceHead(z, moving);
+        public override IReadOnlyList<Renderer> HeadWall => d.headWall;
+        public override IReadOnlyList<Transform> Sweeps => d.sweeps;
+        public override Transform GoalLeaf => d.goalLeaf;
+        public override Collider GoalLeafCollider => d.goalLeafCollider;
+        public override Renderer GoalLite => d.goalLite;
+
+        public override void SetLite(float scale)
+        {
+            if (d.goalLite == null) return;
+            d.liteTouched = true;
+            d.block.Clear();
+            d.goalLite.GetPropertyBlock(d.block);
+            d.block.SetColor(BaseColorId, C42 * 2.4f * Mathf.Max(0f, scale));
+            d.goalLite.SetPropertyBlock(d.block);
+        }
+
+        public override bool GoalOpen => d.goalOpen;
+
+        public override void CloseGoal()
+        {
+            d.goalOpen = false;
+            if (d.goalLeaf != null) d.goalLeaf.localRotation = Quaternion.identity;
+        }
+
+        public override Transform Blocks => d.blocksRoot;
+        public override void ShowBlocks(bool on) => d.ShowBlocks(on);
+        public override void FlyBlocks(float t, float travel, float from, float to) => d.FlyBlocks(t, travel, from, to);
+
+        // The head's box (the wall, the bracket and the goal head 1.2 m out, the trolleys), in world space.
+        public override Bounds HeadBounds() =>
+            new Bounds(World(new Vector3(0f, Ceiling * .5f, d.headZ - .55f)), new Vector3(2f * HalfWidth + .04f, Ceiling + .04f, 1.45f));
+
+        public override Transform GoalUnit => d.goalUnit;
+        public override Transform PanicBar => d.goalBar;
+        public override Transform HeadMachine => d.headMachine;
+        public override IReadOnlyList<Rect> HeadWallPieces => d.wallPieces;
+        public override IReadOnlyList<Rect> HeadSlots => d.slotRects;
+        public override Transform ShortRoom => d.shortRoom;
+
+        public override Renderer CutPiece(FrontRoomsStructuresRunEnd end, Renderer piece, Bounds box, Transform parent, Material material, bool planarUv) =>
+            d.CutPieceNow(end, piece, box, parent, material, planarUv);
+
+        static bool Valid(int c) => c >= 0 && c < Cells;
+        public override bool CellShown(int c) => Valid(c) && d.cellShown[c];
+        public override bool CellOpen(int c) => Valid(c) && d.cellOpen[c];
+        public override float RevealTime(int c) => Valid(c) ? d.revealAt[c] : float.NegativeInfinity;
+        public override void ShowCell(int c, bool on) => d.SetShown(c, on);
+        public override void OpenCell(int c, bool strike) => d.OpenCellFor(c, strike);
+        public override void CloseCell(int c) => d.CloseCellFor(c);
+        public override void ShowBetween(float from, float to) => d.ShowCells(Mathf.Max(0f, from), Mathf.Min(Length, to));
+
+        public override void Seat(float from, float to, bool strike)
+        {
+            from = Mathf.Max(0f, from);
+            to = Mathf.Min(Length, to);
+            if (strike) d.Seated(from, to);
+            else d.SeatQuiet(from, to);
+        }
+
+        public override IReadOnlyList<Renderer> CellRenderers(int c) => d.cellRenderers[Mathf.Clamp(c, 0, Cells - 1)];
+        public override IReadOnlyList<GameObject> CellObjects(int c) => d.cellObjects[Mathf.Clamp(c, 0, Cells - 1)];
+
+        public override void Leaving(float line)
+        {
+            foreach (var pair in d.bandParts)
+                if (Mathf.Abs(pair.Key - line) < .01f) { d.Leaving(pair.Key); return; }
+            d.Leaving(line);
+        }
+
+        public override GameObject Band(float line)
+        {
+            foreach (var pair in d.bandParts) if (Mathf.Abs(pair.Key - line) < .01f) return pair.Value;
+            return null;
+        }
+
+        public override GameObject Magnets(float line)
+        {
+            foreach (var pair in d.magnets) if (Mathf.Abs(pair.Key - line) < .01f) return pair.Value;
+            return null;
+        }
+
+        public override void RefreshMagnets() => d.RefreshMagnetsNow();
+        public override IReadOnlyList<float> SeatedLines => d.seatedLines;
+        public override Transform Track => d.trackPart;
+        public override Transform FireFrame(int i) => i >= 0 && i < d.fireFrames.Length ? d.fireFrames[i] : null;
+
+        public override Transform Dress => d.dressRoot;
+        public override IReadOnlyList<Renderer> DressRenderers => d.dressRenderers;
+        public override IReadOnlyList<Renderer> LongShell => d.longShell;
+        public override IReadOnlyList<Collider> DressColliders => d.dressColliders;
+
+        public override GameObject Blind => d.blindPart != null ? d.blindPart.gameObject : null;
+
+        public override void SetBlind(bool on)
+        {
+            if (d.blindPart != null) d.blindPart.gameObject.SetActive(on);
+        }
+
+        public override void SetHall(float level)
+        {
+            d.hallTouched = true;
+            foreach (var s in d.hallStrips) d.SetStrip(s, level, 0f, level, 0f);
+        }
+
+        public override int StripCount => d.strips.Count;
+        public override float StripZ(int i) => d.strips[i].z;
+        public override int StripCell(int i) => d.strips[i].cell;
+        public override Light StripLight(int i) => d.strips[i].light;
+        public override Transform StripRoot(int i) => d.strips[i].root != null ? d.strips[i].root.transform : null;
+        public override int HeadCount => d.heads.Count;
+        public override float HeadLampZ(int i) => d.heads[i].z;
+        public override int HeadCell(int i) => d.heads[i].cell;
+        public override bool IsGoalHead(int i) => d.heads[i].goal;
+        public override Light HeadLight(int i) => d.heads[i].light;
+        public override FrontRoomsStructuresRunEndStrip TodayStrip(int i) => d.TodayStripDrive(d.strips[i], d.clock);
+        public override FrontRoomsStructuresRunEndHead TodayHead(int i) => d.TodayHeadDrive(d.heads[i], d.clock);
+
+        public override FrontRoomsStructuresRunEndStrip ShownStrip(int i)
+        {
+            d.EnsureEndArrays();
+            return d.stripShown[i];
+        }
+
+        public override FrontRoomsStructuresRunEndHead ShownHead(int i)
+        {
+            d.EnsureEndArrays();
+            return d.headShown[i];
+        }
+
+        public override void HoldStrip(int i, FrontRoomsStructuresRunEndStrip target, float fade) => d.HoldStripNow(i, target, fade);
+        public override void ReleaseStrip(int i, float fade) => d.ReleaseStripNow(i, fade);
+
+        public override bool StripHeld(int i)
+        {
+            d.EnsureEndArrays();
+            return d.stripHolds[i].on;
+        }
+
+        public override void HoldHead(int i, FrontRoomsStructuresRunEndHead target, float fade) => d.HoldHeadNow(i, target, fade);
+        public override void ReleaseHead(int i, float fade) => d.ReleaseHeadNow(i, fade);
+
+        public override bool HeadHeld(int i)
+        {
+            d.EnsureEndArrays();
+            return d.headHolds[i].on;
+        }
+
+        public override void ReleaseLamps(float fade)
+        {
+            for (var i = 0; i < d.strips.Count; i++) d.ReleaseStripNow(i, fade);
+            for (var i = 0; i < d.heads.Count; i++) d.ReleaseHeadNow(i, fade);
+        }
+
+        public override FrontRoomsStructuresRunEndStrip TodayStripAt(int i, float z) => d.TodayStripDriveAt(d.strips[i], d.clock, z);
+        public override FrontRoomsStructuresRunEndHead TodayHeadAt(int i, float z) => d.TodayHeadDriveAt(d.heads[i], d.clock, z);
+        public override FrontRoomsStructuresRunEndStrip TrippedStrip(int i) => d.TrippedStripDrive(d.strips[i], d.clock);
+        public override float TrippedSince(int i) => d.TrippedSinceFor(d.strips[i]);
+        public override float WhiteDrop(float t) => d.WhiteDrop(t);
+        public override float Afterglow(float t) => d.Afterglow(t);
+        public override float RedRise(float t) => d.RedRise(t);
+        public override float PulseAt(float t, float z) => d.PulseEased(t, .15f * CellIndexAt(z));
+        public override float Restrike(float tr, float z) => d.Restrike(tr, z);
+        public override float RestrikeAt(float z) => d.RestrikeStart(z);
+
+        public override void Fog(Color colour, float density) => d.SetFogOverride(colour, density);
+        public override void ClearFog() => d.ClearFogNow();
+        public override Color PresetFogColour => d.fogOn ? d.savedFogColour : RenderSettings.fogColor;
+        public override float PresetFogDensity => d.fogOn ? d.savedFogDensity : RenderSettings.fogDensity;
+        public override void Ambient(Color sky, Color equator, Color ground) => d.SetAmbientOverride(sky, equator, ground);
+        public override void ClearAmbient() => d.ClearAmbientNow();
+        public override Transform BeginPart(FrontRoomsStructuresRunEnd end, string name) => d.BeginEndPart(end, name);
+        public override void EndPart() => d.CloseRoomPart();
+
+        public override Transform NewObject(FrontRoomsStructuresRunEnd end, string name)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(end != null && end.Own != null ? end.Own : d.Root, false);
+            return go.transform;
+        }
     }
 }

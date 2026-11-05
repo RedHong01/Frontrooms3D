@@ -1,0 +1,26 @@
+OK  | TITLE POOL ZONE LOOK Q · ON VS OFF | 991 of 3148 px
+OK  | SP1 S00 · Q OFF | label 285 + data 170 of 954 px | luma 177.8
+OK  | SP1 S00 · Q ON | label 267 + data 493 of 954 px | luma 173.0 · -2.7 % · share 3
+OK  | SP1 S02 · Q OFF | label 285 + data 170 of 954 px | luma 179.4
+OK  | SP1 S02 · Q ON | label 267 + data 493 of 954 px | luma 174.7 · -2.6 % · share 3
+OK  | SP2 S05 · Q OFF | label 285 + data 170 of 954 px | luma 169.1
+OK  | SP2 S05 · Q ON | label 267 + data 493 of 954 px | luma 163.2 · -3.5 % · share 3
+OK  | SP2 S08 · Q OFF | label 285 + data 170 of 954 px | luma 200.5
+OK  | SP2 S08 · Q ON | label 267 + data 493 of 954 px | luma 195.4 · -2.5 % · share 3
+OK  | SP6 S00 · Q OFF | label 285 + data 170 of 954 px | luma 178.8
+OK  | SP6 S00 · Q ON | label 267 + data 493 of 954 px | luma 171.8 · -3.9 % · share 3
+OK  | SP6 S01 · Q OFF | label 285 + data 170 of 954 px | luma 155.2
+OK  | SP6 S01 · Q ON | label 267 + data 493 of 954 px | luma 148.5 · -4.3 % · share 3
+OK  | SP1 NIGHT S00 · Q OFF | label 384 + data 153 of 954 px | luma 98.3
+OK  | SP1 NIGHT S00 · Q ON | label 366 + data 510 of 954 px | luma 94.7 · -3.7 % · share 0.7
+OK  | SP1 NIGHT S02 · Q OFF | label 384 + data 153 of 954 px | luma 96.8
+OK  | SP1 NIGHT S02 · Q ON | label 366 + data 510 of 954 px | luma 92.9 · -4.0 % · share 0.7
+OK  | SP2 S00 L0 · Q OFF | label 339 + data 170 of 954 px | luma 143.3
+OK  | SP2 S00 L0 · Q ON | label 321 + data 323 of 954 px | luma 143.4 · +0.1 %
+OK  | NUMBERS · DAY | label 248 + data 442 of 954 px | zone_measure.py, key I off
+OK  | NUMBERS · NIGHT, SWEEP | label 401 + data 340 of 954 px | zone_share_sweep.tsv
+OK  | Q DEFAULT · SP1 S00 | label 359 + data 476 of 954 px | on at start · 173.0 · -2.7 %
+OK  | Q DEFAULT · SP2 S05 | label 359 + data 476 of 954 px | on at start · 162.8 · -3.7 %
+OK  | Q DEFAULT · SP6 S00 | label 359 + data 476 of 954 px | on at start · 171.9 · -3.9 %
+OK  | DECISION | label 136 + data 561 of 954 px | glaze_a Look.cs ZoneLookOn = true
+ALL LABELS FIT

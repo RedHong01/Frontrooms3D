@@ -1169,6 +1169,7 @@ public sealed class FrontRoomsStructuresKit
         lightGo.transform.SetParent(go.transform, false);
         lightGo.transform.localPosition = new Vector3(0f, 0f, .05f);
         var light = lightGo.AddComponent<Light>();
+        FrontRoomsMapWorld.ShippedShadowFilter(light);
         light.type = type;
         if (type == LightType.Spot)
         {
@@ -1231,6 +1232,7 @@ public sealed class FrontRoomsStructuresKit
         lightGo.transform.localPosition = new Vector3(0f, -FrontRooms.Map.ModuleUnits.LampDrop, 0f);
         lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         var light = lightGo.AddComponent<Light>();
+        FrontRoomsMapWorld.ShippedShadowFilter(light);
         light.type = LightType.Spot;
         light.spotAngle = 162f;
         light.innerSpotAngle = 96f;

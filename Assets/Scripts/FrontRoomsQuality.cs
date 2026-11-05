@@ -424,17 +424,31 @@ public static class FrontRoomsQuality
         downsampleField.SetValue(s, on);
     }
 
-    // Motion vectors come from the surface shader's MotionVectors pass (游戏视觉's); without it STP would smear every moving
-    // door and prop, so FSR 1 stays.
+    static Shader surfaceShader;
+    static bool surfaceMotionVectors;
+
+    // Motion vectors come from the surface shader's MotionVectors pass (游戏视觉's, in main since 2026-11-04 22:4x); without
+    // it STP would smear every moving door and prop, so FSR 1 stays. Until a shader has drawn once Unity reports one pass and
+    // no tags (游戏视觉's probe, 21:47), so a false answer is asked again (RecheckMotionVectors) and a true one is kept.
     static bool SurfaceWritesMotionVectors()
     {
-        var shader = Shader.Find("FrontRooms/Surface");
-        if (shader == null) return false;
+        if (surfaceMotionVectors) return true;
+        if (surfaceShader == null) surfaceShader = Shader.Find("FrontRooms/Surface");
+        if (surfaceShader == null) return false;
         var lightMode = new ShaderTagId("LightMode");
         var motionVectors = new ShaderTagId("MotionVectors");
-        for (var i = 0; i < shader.passCount; i++)
-            if (shader.FindPassTagValue(i, lightMode) == motionVectors) return true;
+        for (var i = 0; i < surfaceShader.passCount; i++)
+            if (surfaceShader.FindPassTagValue(i, lightMode) == motionVectors) return surfaceMotionVectors = true;
         return false;
+    }
+
+    // Runner: a handheld whose asset carries STP asks again until the surface shader shows its MotionVectors pass, then
+    // applies once, so SHARP turns into STP a moment after the first frames instead of never.
+    internal static void RecheckMotionVectors()
+    {
+        if (!Handheld || surfaceMotionVectors || orig == null || !orig.StpBuilt || !SurfaceWritesMotionVectors()) return;
+        Apply();
+        Changed?.Invoke();
     }
 
     // A global override volume above the film look and the zone grades. BLOOM LOW overrides one parameter only. A handheld
@@ -497,7 +511,7 @@ public sealed class FrontRoomsQualityRunner : MonoBehaviour
 {
     static FrontRoomsQualityRunner instance;
     int lastW, lastH;
-    float nextPowerPoll;
+    float nextPowerPoll, nextMotionPoll;
 
     public static void Ensure()
     {
@@ -519,6 +533,11 @@ public sealed class FrontRoomsQualityRunner : MonoBehaviour
             var first = lastW == 0;
             lastW = w; lastH = h;
             if (!first) FrontRoomsQuality.ScreenChanged();
+        }
+        if (Time.unscaledTime >= nextMotionPoll)
+        {
+            nextMotionPoll = Time.unscaledTime + .5f;
+            FrontRoomsQuality.RecheckMotionVectors();
         }
         if (Time.unscaledTime >= nextPowerPoll)
         {

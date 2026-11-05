@@ -3741,6 +3741,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         lightGo.transform.localPosition = new Vector3(0f, -ModuleUnits.LampDrop, 0f);
         lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         var light = lightGo.AddComponent<Light>();
+        ShippedShadowFilter(light);
         light.type = LightType.Spot;
         light.spotAngle = 162f;
         light.innerSpotAngle = 96f;
@@ -3788,6 +3789,18 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var north = new GridCoord(cell.x, cell.y + 1);
         var kind = InStartArea(north) || InStartArea(cell) ? EdgeKind.Wall : ExitKind(cell, north, EdgeNoGenerate(cell, north));
         return kind == EdgeKind.Open && Cache.ZoneOf(north).height == height;
+    }
+
+    /// <summary>
+    /// 技术美术调研 row 16 (Red 2026-11-04 14:14, "按推荐"): a light made in code with no UniversalAdditionalLightData filters its
+    /// soft shadows Low in a player, while the Editor adds the component on pipeline settings and shows High. Every lamp the
+    /// map, the stairwell and scene 4 make gets the component at once, Low set, bias left on pipeline settings, so the Editor
+    /// and the clones show what ships (High measured +11..+40 % GPU for a change at the noise floor: research/tech_art/21_measured.md).
+    /// </summary>
+    public static void ShippedShadowFilter(Light light)
+    {
+        if (light == null) return;
+        UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(light).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;
     }
 
     readonly ZoneTheme[] borderThemes = new ZoneTheme[4];

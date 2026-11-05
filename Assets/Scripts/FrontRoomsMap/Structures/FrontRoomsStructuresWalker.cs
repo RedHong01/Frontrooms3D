@@ -9,7 +9,8 @@ using UnityEngine.InputSystem;
 /// FrontRoomsInput.ReadFrame (the game's bindings: WASD or arrows, mouse look in degrees, LeftCtrl run, Shift slow, E use);
 /// gait as FrontRooms3DGame (walk 3.2, run 5.5 ahead only within 70 degrees, slow 0.45 x walk, 5 s of stamina, back after
 /// 1 s at 1/s, winded until 1 s is back); gravity -9.81; pitch +-75. Camera as the game's: FOV 76, near 0.06, far 80
-/// (a district may raise far), the film look's camera setup, tag MainCamera. Click locks the cursor, Esc frees it.
+/// (a district may raise far), the film look's camera setup, tag MainCamera, never layer 27 (the pool glaze's reflection
+/// proxies, FrontRoomsStructuresLook). Click locks the cursor, Esc frees it.
 /// E goes to the host (pads, the map's doors in P). C swaps in the Relay's 2.05 m capsule (70 section 10, R6).
 /// Frozen (SP1's ride, later) stops the body and leaves the look.
 /// </summary>
@@ -68,6 +69,9 @@ public sealed class FrontRoomsStructuresWalker : MonoBehaviour
         cameraObject.AddComponent<AudioListener>();
         try { FrontRoomsPostStack.ConfigureCamera(view); }
         catch (System.Exception e) { FrontRoomsPoolMaterials.LogOnce("camera", "the film camera setup failed: " + e.Message); }
+        // The pool glaze's reflection proxies (layer 27, GZ-A) are for the reflection probes only: the view never draws them,
+        // and every camera copied from it (the water's mirrors, the review harness's shot cameras) inherits that.
+        FrontRoomsStructuresLook.CullProxies(view);
 
         var walker = go.AddComponent<FrontRoomsStructuresWalker>();
         walker.host = host;

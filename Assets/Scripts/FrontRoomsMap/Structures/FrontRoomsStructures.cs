@@ -18,8 +18,12 @@ using UnityEngine.InputSystem;
 /// Keys (Keyboard; the walker's game bindings are untouched): 1-6 SP1-SP6, 7 the pool route P, 8 the kit row, 9 SP7 (71
 /// section 10), 0 the hub (E on a pad does the same); R back to the current stop; [ ] previous and next stop; L the
 /// district's light key (alias N, T); F flume water (SP7: Reduce Flashing); V variant; B, Y, O, H SP7's body, head-back,
-/// entrance and red-tube keys; C the Relay's 2.05 m body; M metric overlays; G the guide panel.
+/// entrance and red-tube keys; C the Relay's 2.05 m body; M metric overlays; G the guide panel; Q 游戏视觉's pool zone look in
+/// the pool rooms of SP1, SP2's F0 and SP6 (on by default; off = the scene's own fixed trilight; FrontRoomsStructuresLook).
 /// Red picks by telling the coordinator the question's code (for example "SP1-2"); there is no keep or cut switch in the scene.
+/// The pool tile carries the glaze Red picked (GZ-C on 2026-11-04, landed A first; research/level_space/73_pool_glaze.md
+/// section 3): the LS set's v2 maps, smoothness 0.87 and cavity 0.7 on the shared tile and band (Glaze), and the lamps'
+/// reflection proxies with the probes captured on arrival and on each change, every lamp on (FrontRoomsStructuresLook).
 /// </summary>
 [DisallowMultipleComponent]
 public sealed class FrontRoomsStructures : MonoBehaviour
@@ -32,6 +36,9 @@ public sealed class FrontRoomsStructures : MonoBehaviour
 
     public const string Log = "[FrontRooms] STRUCTURES · ";
     public const float RowZ = -768f;
+    /// <summary>GZ-A's pool tile and band (73 section 3.2): smoothness x mask R (0.85 before; no specular AA yet, so a small
+    /// step) and cavity (0.8 before). Base colour, bump and the rest stay as FrontRoomsPoolMaterials makes them.</summary>
+    public const float GlazeSmoothness = .87f, GlazeCavity = .7f;
 
     readonly List<FrontRoomsStructuresDistrict> districts = new List<FrontRoomsStructuresDistrict>();
     FrontRoomsStructuresDistrict current, hub;
@@ -78,13 +85,30 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         profileCopy.buildRadius = 2;
 
         FrontRoomsPoolMaterials.SetTileSet(tileBase, tileNormal, tileMask);
+        Glaze();
         look = FrontRoomsStructuresLook.Create(transform);
         CreateDistricts();
         hub = districts[0];
         walker = FrontRoomsStructuresWalker.Create(this, hub.Site + new Vector3(0f, 0f, 1.5f), 0f);
         started = true;
         Jump(hub, 0);
-        Debug.Log(Log + "ready: hub built; districts build on their first visit. Keys: 1-6 SP1-SP6, 7 pool route, 8 kit row, 9 SP7, 0 hub, G guide.");
+        Debug.Log(Log + "ready: hub built; districts build on their first visit. Keys: 1-6 SP1-SP6, 7 pool route, 8 kit row, 9 SP7, 0 hub, G guide, Q pool zone look.");
+    }
+
+    /// <summary>
+    /// GZ-A's material (73 section 3.2) on the shared pool tile and aqua band, in place, right after SetTileSet and before any
+    /// district builds: every renderer built later takes these very materials (a later SetTileSet would remake them under the
+    /// built renderers, which is why the option sheet's rig set its values in place too). In this scene every pool tile
+    /// shares them, the pool route's (P) as well; the game never hands in the LS set, so its pool keeps today's values.
+    /// </summary>
+    static void Glaze()
+    {
+        foreach (var m in new[] { FrontRoomsPoolMaterials.Tile, FrontRoomsPoolMaterials.Band })
+        {
+            if (m == null) continue;
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", GlazeSmoothness);
+            if (m.HasProperty("_OcclusionStrength")) m.SetFloat("_OcclusionStrength", GlazeCavity);
+        }
     }
 
     /// <summary>
@@ -190,6 +214,8 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         }
         if (d.Root != null) d.Root.gameObject.SetActive(true);
         try { d.Enter(this); } catch (Exception e) { Debug.LogError(Log + d.Code + " enter: " + e); }
+        // GZ-A (73 section 3.4): the district's probes are captured two frames after the arrival, with every lamp of it on
+        look.Entered(d);
     }
 
     public void Flash(string message)
@@ -276,6 +302,8 @@ public sealed class FrontRoomsStructures : MonoBehaviour
             catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("tick " + d.Code, d.Code + " tick: " + e.Message); }
         }
         look.Want(current.PresetAt(feet));
+        // 游戏视觉's pool zone look and the scene's own share the frame (the zone weighed at the camera, as URP weighs its grade)
+        look.ZoneTick(current, feet, walker.View != null ? walker.View.transform.position : walker.EyePosition);
         look.Tick(walker.EyePosition, current.Key, dt);
     }
 
@@ -306,6 +334,11 @@ public sealed class FrontRoomsStructures : MonoBehaviour
             foreach (var d in districts) if (d.Built && !d.Failed) d.ShowMetrics(this, metrics);
             Flash(metrics ? "尺寸标记：开" : "尺寸标记：关");
         }
+        if (k.qKey.wasPressedThisFrame)
+        {
+            look.SetZoneLook(!look.ZoneLookOn);
+            Flash(look.ZoneFlash(current));
+        }
         Key[] districtKeys = { Key.L, Key.N, Key.T, Key.F, Key.V, Key.B, Key.Y, Key.O, Key.H };
         foreach (var key in districtKeys)
         {
@@ -316,6 +349,8 @@ public sealed class FrontRoomsStructures : MonoBehaviour
             catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("key " + current.Code + key, current.Code + " key " + key + ": " + e.Message); }
             if (handled && !string.IsNullOrEmpty(message)) Flash(message);
             else if (!handled) Flash(current.Code + " 没有这个按键。");
+            // GZ-A: a district key changes what its probes see (SP1's night key and flume, SP6's dome light): captured again
+            if (handled) look.Changed(current);
         }
     }
 
@@ -378,7 +413,8 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         Box(new Rect(24f, 22f, 4f, 50f), Accent);
         Text(new Rect(38f, 16f, 1400f, 34f), d.Title, titleStyle, Paper);
         var stop = d.Stops.Count > 0 ? d.Stops[Mathf.Clamp(d.StopIndex, 0, d.Stops.Count - 1)].name : "";
-        Text(new Rect(38f, 52f, 1400f, 20f), "场景 4 · 新结构  ·  " + d.Code + (stop.Length > 0 ? "  ·  站点 " + (d.StopIndex + 1) + "/" + d.Stops.Count + " " + stop : "") + (walker.RelayBody ? "  ·  Relay 体型" : "") + "  ·  " + d.Status(this), smallStyle, Muted);
+        var zone = look.ZoneStatus(d);
+        Text(new Rect(38f, 52f, 1400f, 20f), "场景 4 · 新结构  ·  " + d.Code + (stop.Length > 0 ? "  ·  站点 " + (d.StopIndex + 1) + "/" + d.Stops.Count + " " + stop : "") + (walker.RelayBody ? "  ·  Relay 体型" : "") + "  ·  " + d.Status(this) + (zone.Length > 0 ? "  ·  " + zone : ""), smallStyle, Muted);
 
         var cx = Screen.width * .5f;
         var cy = Screen.height * .5f;
@@ -395,12 +431,14 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         if (flash != null && Time.time < flashUntil) Text(new Rect(cx - 380f, cy + 112f, 760f, 48f), flash, centreStyle, Accent);
 
         Text(new Rect(24f, Screen.height - 30f, 1800f, 20f),
-            "点击：看  ·  WASD 走  ·  左 Ctrl 跑  ·  Shift 慢走  ·  E 使用  ·  1-6 区域  ·  7 泳池路线  ·  8 模组件  ·  9 SP7  ·  0 大厅  ·  R 回到站点  ·  [ ] 换站点  ·  L 灯  ·  V 变体  ·  C Relay 体型  ·  M 尺寸  ·  G 说明  ·  Esc 鼠标",
+            "点击：看  ·  WASD 走  ·  左 Ctrl 跑  ·  Shift 慢走  ·  E 使用  ·  1-6 区域  ·  7 泳池路线  ·  8 模组件  ·  9 SP7  ·  0 大厅  ·  R 回到站点  ·  [ ] 换站点  ·  L 灯  ·  Q 泳池外观  ·  V 变体  ·  C Relay 体型  ·  M 尺寸  ·  G 说明  ·  Esc 鼠标",
             smallStyle, Muted);
 
         if (!guide) return;
         var sb = new StringBuilder();
         try { d.Guide(this, sb); } catch (Exception e) { sb.AppendLine("（说明出错：" + e.Message + "）"); }
+        var zoneGuide = look.ZoneGuide(d);
+        if (zoneGuide.Length > 0) sb.AppendLine().AppendLine(zoneGuide);
         if (d.Cost.Length > 0) sb.AppendLine().Append("成本（灰盒）：").Append(d.Cost);
         var text = sb.ToString();
         var w = Mathf.Min(520f, Screen.width * .36f);

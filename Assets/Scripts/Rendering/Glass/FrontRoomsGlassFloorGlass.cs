@@ -230,6 +230,7 @@ public sealed class FrontRoomsGlassFloorGlass : MonoBehaviour
             go.transform.SetParent(transform, false);
             go.SetActive(false);
             FloorLods = go.AddComponent<LODGroup>();
+            FrontRoomsLodFade.Enable(FloorLods);   // its levels are set below and again when the glass settles
             FloorRenderer = MakeRenderer(Lod0Name, go.transform, Vector3.zero, floorMesh);
             FloorLod1Renderer = MakeRenderer(Lod1Name, go.transform, Vector3.zero, floorLod1);
             ApplyFloor(FloorRenderer, block ?? new MaterialPropertyBlock());

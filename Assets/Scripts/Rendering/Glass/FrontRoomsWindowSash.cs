@@ -427,9 +427,9 @@ public sealed class FrontRoomsWindowSash : MonoBehaviour
         var hero = node.GetComponent<MeshRenderer>();
         var far = Draw("LOD1", node, Vector3.zero, lite, materials, ShadowCastingMode.Off).GetComponent<MeshRenderer>();
         var group = node.gameObject.AddComponent<LODGroup>();
-        group.fadeMode = LODFadeMode.None;
         group.SetLODs(new[] { new LOD(HeroLodHeight, new Renderer[] { hero }), new LOD(LiteLodHeight, new Renderer[] { far }) });
         group.RecalculateBounds();
+        FrontRoomsLodFade.Apply(group);
     }
 
     static void Kill(Object o)

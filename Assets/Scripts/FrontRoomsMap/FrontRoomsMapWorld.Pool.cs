@@ -723,6 +723,7 @@ public sealed partial class FrontRoomsMapWorld
         go.transform.localPosition = localPosition;
         go.transform.localRotation = localRotation;
         var light = go.AddComponent<Light>();
+        ShippedShadowFilter(light);
         light.type = type;
         if (type == LightType.Spot)
         {

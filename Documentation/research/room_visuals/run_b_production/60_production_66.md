@@ -866,7 +866,7 @@ So at 5 m the red card and the square lite carry the read; the lite is a cool sq
 - [ ] Cost on device: the gate rewrite (1.2 ms once a step) on a phone; the T2 body's GPU cost on an iPad with the hero LOD within 10 m; the grit at 1080p with MSAA off; the shadow atlas with a 12-cell armed room's 13 shadowed spots; memory (readable kit meshes + skinned body about 18 MiB on desktop and iPad); the end's LOD switches at 10 / 28 m.
 - [ ] Events: the 16 RunRecedeCue cues per step in the contract's order (a one-cell T2 step: 43 T2 cues besides T1's); nothing audible from our code (rule 24). The record: a receding room dropped and rebuilt 48 m or more away after its recede began comes back seated at its deepest line, quietly.
 - [ ] The Run door (关卡设计's rules.doorEntrance on in a tools run, or the Level Designer's RunDoor9): the card (latch side), the square lite and the line under the door at 5, 3 and 2 m, at a walk and a sprint, desktop and a phone (PARTIAL: at 5 m the card and the lite carry it, the lite darker than the leaf, 0.043 against 0.093; the line from about 3 m; Red judges in SP7); the line armed cool white, black in the trip's gap, the warm pool tripped, back with the reset, fading as the leaf leaves the latch; the gate's entrance portal none while shut, the whole door open; the detector 3.69 m in, seen under the head once open; a room met from its goal end (with 关卡设计).
-- [ ] WAIT-RED (灯具适配 1; card 3 not built): the Relay read at 2.05 m under red with protan (at least 4 : 1); T9 over the red trip front and B's pulse train; Harding FPA or PEAT on that capture; the dark reds on the phone tier; one sheet per look along the film's camera path.
+- Card 3 (the red looks) is built (workflow run_red): this block's five red items (the Relay under red with protan, T9 over the red front and B's train, Harding FPA or PEAT, the phone tier's dark reds, a sheet per look along the film's path) are real rows in "## run_red_looks + run_recede_binder" below.
 ```
 
 ### P.5 What lands besides the packages (our folder, docs only)
@@ -875,3 +875,251 @@ So at 5 m the red card and the square lite carry the read; the lite is a cool sq
 - `images/run_recede_head.jpg` (+ `_fit.txt`, `_contact.jpg`), `images/run_t2_body.jpg` (+ `_fit.txt`, `_contact.jpg`), `images/run_door_tell.jpg` (+ `_fit.txt`); `video/run_recede_head.mp4` and `video/run_t2_body.mp4` (H.264, no audio stream). Every sheet is in Shot format with chip PARTIAL and ALL LABELS FIT.
 - `61_for_sound.md`, as a replacement while main's copy is adcd8f07: main's text plus its update of 11-04 (the 16 cues).
 - VL: three rows in the day's batch after landing; the spec and the frames the combined test takes are in `W/vl_pending/run_rethink.md`.
+
+## Run! rethink · card 3: the red looks (2026-11-04)
+
+游戏视觉, workflow `run_red` (parent session local_be0f3747, account A), stage "Red looks". The card is 71 §9, 游戏视觉 3 (`research/level_space/71_run_room.md`, level_space's page, read only): "游戏视觉 adds to `FrontRoomsRunRig.cs` a per-strip red level beside the white, the trip front (A, B), B's pulse (every 2.5 s from 3.0 s after the trip, 12 at most), the tripped ambient tint and the Reduce Flashing variants, tuned to §6.3's targets on a capture. B is the look and A (the pulse off) its fallback; C stays in SP7's scene-4 driver." It rests on:
+- **decision 6** (Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐", 71 §0.1): look B, ALARM PULSE; A if B's Harding FPA or PEAT capture fails; C in scene 4 only;
+- **the red tube, 11-04** (灯具适配's chat, both checked under rule 15 in transcript `e6d4d60a`): "加，用更亮档" (06:22, a plain user turn), then "用这个点位吧" (06:30, a queued message, origin human) with Red's screenshot of the HDR sheet's brightest column: tube linear 3, the strip's Light 3.5 at full red, soffit halo .40, left wall (142, 9, 19), hue 353°. 灯具适配 landed the tube (06:33, `zone_lamps_redtube`) and the strip's registration for the Relay's body (08:51, `zone_lamps_strip_fold`).
+
+Not built here: C (SP7's driver, not ours); the receding room in the binder (the next stage, RB: it calls `PulseHeld` / `ReleasePulses`, C3.2). Rule 5b holds: with `runRooms` off nothing builds a Run! room, so the game does not change; the red looks reach the game with Run! itself, after Red has walked SP7. Not done: nothing on main, no download, nothing heard (rule 24); Unity only in `W/proj_runb66`, one batch at a time, edit mode. **No Harding FPA or PEAT run**: neither tool is on this Mac (FPA is commercial Windows software, PEAT a Windows download, and downloads need Red's OK), so **A ships as the default and B waits behind a switch** (C3.6).
+
+### C3.1 What changed (`W/apply/run_red_looks.sh`, main-based, not applied)
+
+| Path (base → payload) | Change |
+|---|---|
+| `Scripts/Rendering/FrontRoomsRunRig.cs` c0c64842 → 75ac054e | `RunRedLook` (Today, AlarmCircuit = A, AlarmPulse = B); `FrontRoomsRunRig.DefaultRedLook` (**A**), each rig's `RedLook` (taken at the trip: a tripped room keeps its look) and `TripLook`; `RunRigLayout`'s card 3 fields (C3.2); per strip a white and a red level on its one Light (no new Light), the front, B's pulse, the Reduce Flashing cross-fade; the pool heads in the band's wake; the red ambient; `PulseHeld` / `ReleasePulses` (71 §5.7, for the binder's receding room); the events `RedStrike`, `PulseStarted`; each strip's Light handed to the Relay body's lamp registry; the soffit halo 10 mm under the soffit (C3.4); `StripWhiteOf` / `StripRedOf` / `StripFrontOf` / `PulseTrainEnd` for tests and tools |
+| `Scripts/Rendering/FrontRoomsTrofferKit.cs` 47ba7f66 → 9ff67275 | `SetLampLight(lens, light)`: a builder hands a lamp's Light to the body's registry (a moved lamp keeps it). Every other lamp is still found by its name "Light", so the map's lamps read exactly as before |
+| `Scripts/Rendering/FrontRoomsLampKit.cs` 129c19a9 → 2a330f87 | one comment (灯具适配's design, our path): the strip's "no contact light" now comes from the rig. No code |
+| `Editor/Rendering/FrontRoomsRunRigTests.cs` d4f2ec43 → 3ec3351e | R1-R22, W1, W2 run with `DefaultRedLook = Today` (they check the trip as landed); R23 (card 3) |
+
+What is untouched: the map, the binder, the dress, the strip kit and its red tube (灯具适配's, as landed 06:33), every armed state (the same in all three looks), the RESET re-strike, the goal head, C42, the light gate, SP7's own scene-4 driver (C stays there). Rule 5b: with `runRooms` off no Run! room is built, so the game does not change by a byte; with it on (tools today, the game after Red has walked SP7) a tripped room shows A.
+
+### C3.2 The looks as built (71 §6.4, with Red's level)
+
+- **Red's level, as 灯具适配's mock-up built the column Red picked** (`proj_zonelamps` `FrontRoomsZoneLampsShots`, option R3XC, read for this stage): each strip's own Light at **3.5 in typed (1, .06, .07)** (the white is 5.5), the red tube at **linear (3, 0, .012)** (as landed), the soffit halo at a **linear peak of .40 × (1, 0, .004)** (the mock-up gave `SetColor` the gamma of that, so the shader reads .40), the tripped ambient **(1, .30, .24) at .08 down / .06 side / .05 up** (the high band keeps its .12 / .06 / .025 in that tint). The colour of a strip's Light is the linear mix of its white and its red by their intensities, given back typed.
+- **A, ALARM CIRCUIT.** At the trip a front leaves the entrance's strip and runs to the goal door at **20 m/s** (0.15 s a cell, the reset's speed). As it passes a strip, the strip's white falls 1 → 0 over 0.06 s (its tubes keep the 0.03 afterglow, tau 0.5 s); **0.35 s later** (the band: 7 m of dark) its red tube and its Light turn red at **0.35** and rise to 1 over **0.40 s** (the reset's curve), its halo with them. The pool heads rise as the band passes them (0.35 s + their distance from the entrance strip / 20 m/s); the **goal head (the door's light) at 0.35 s as built**, and the carried unit of a receding room the same; C42 and the pilots as built. A 9-cell room is all red at 1.95 s, then still.
+- **B, ALARM PULSE** = A, then from **3.0 s** after the trip a dip runs from the entrance to the goal door at 20 m/s every **2.5 s, 12 at most**: each strip's red falls to **0.35** in 0.06 s, holds 0.10 s and rises over 0.40 s, its tube and halo with it. The heads, the pools, the door, C42 never move. In a receding room the train waits for the end's final seat (71 §5.7): the binder sets `PulseHeld` when it builds the room and calls `ReleasePulses(1)` at the final `SeatReached`, so the first pulse comes at the later of 3.0 s after the trip and 1.0 s after the seat; the keep-away glide carries none.
+- **Reduce Flashing** (read at the trip, as every rig envelope): no band and no pulse; every strip cross-fades white to red over 0.5 s (its Light only falls, 5.5 → 3.5), the heads rise over 0.5 s from 0.25 s as built.
+- **The reset** as built (71 §6.6): the heads and the red go out in one step (Reduce Flashing: they fade over 0.5 s), the flick ripple, dark, the white re-strike from the entrance; every strip's Light white and shadowed as built again.
+- **A room rebuilt while tripped** (`TripImmediate`) comes back steady red, quietly: no strike event and no pulse (its train's 30 s are not replayed).
+- **Events** (C# only; 61_for_sound.md, update of 11-04 card 3): `RedStrike(strip, point)` once per strip as its red strikes (one battery relay a cell at 0.15 s a cell); `PulseStarted(pulse, point)` for each of B's pulses. The pool heads' `TransferRelay` follows the front.
+- **The Relay's contact light under a strip** (灯具适配's registration of 08:51 found no "Light" by the strip, so the body folded and took no light): the rig hands each strip's Light to the registry (`FrontRoomsTrofferKit.SetLampLight`), so a body pressed under a strip takes that Light's colour and 0.35 of its intensity on its back: white armed, red at 1.225 under A and B, nothing while the strip is dark (Today tripped). The strip Light keeps the name the sound line reads (`run b wrap light k`).
+
+### C3.3 The level on the capture (71 §6.3, at Red's level)
+
+Made in `C` by the clone-only harness `FrontRoomsRunRedHarness` through the Level Designer's RunRoom view (the game's own map builder, lamps, kits and film look; today's plain 9-cell room off a Level 0 zone, seed 3, the binder building the rig as at `MapRunStarted`), 1920 × 1080, vertical FOV 76, MSAA 4, eye 1.62 m; the phone tier is the rig's handheld build on `FrontRooms_URP_Handheld`. URP's per-light shadow tier cannot be set through its API in edit mode, so the harness wrote the serialized field as the rig does in Play (C3.4). On-screen sRGB (8 bit) and relative luminance Y, steady at 2.6 s after the trip, from the trip point looking at the goal door:
+
+| Region | TODAY (the trip as landed) | A and B (the same at 2.6 s) | Phone tier A | 71 §6.3 / the HDR sheet |
+|---|---|---|---|---|
+| left mid-wall, 1.3-2.1 m, z 5-7.5 | (35, 33, 24), Y .016 | **(139, 30, 26), Y .066**; pure-red patches away from a head (115-139, 0-16, 10-21) | (114, 36, 27) | the sheet's left wall (142, 9, 19); 71's cap k .16 (62-68, 5, 6) is passed, as Red chose knowingly (the sheet's flaw) |
+| floor lane, z 6-9 | (64, 54, 36) | (135, 58, 43), Y .092 | (128, 45, 35) | 71: about (52, 4, 4) at the sent level |
+| the goal leaf | (154, 126, 91), Y .25 | **(172, 129, 95), Y .28: the brightest** | (110, 42, 30), Y .073 (see below) | the door brightest in greyscale |
+| the last pool | (88, 76, 58), Y .084 | (145, 81, 63), Y .13 | (133, 74, 58) | pools (118-177, 98-154, 70-122) |
+| strip 3's red tube | (129, 12, 25), Y .061 (struck with the heads, as landed) | (129, 4, 20), Y .058 | (130, 5, 20) | the sheet's core hue 353° |
+| the soffit between halos | (1, 1, 1) | (2, 0, 0) | (2, 0, 0) | (14, 2, 2) |
+
+- **What the eye gets** (the author's one look, rule 26): an alarm in red light. The long walls burn crimson, the soffit glows red round each strip (the halos, once C3.4 put them in sight), the waxed floor carries the red and the lane bands, the warm pools still cut the red every 6 m and the goal door is the one white thing, the brightest in the frame. The Relay stands out dark against the red (C3.5); the floor and its obstacles read.
+- **The greyscale order** is door (.28) > pools (.13) > walls (.066) ≈ the tube row (.058): at Red's level the walls catch up with the lens row, where 71 §6.3's sent level put the row well above them. Nothing to fix: it is the level Red picked; noted for SP7.
+- **The phone tier** keeps the dark reds visible (the mid-wall (114, 36, 27), the floor (128, 45, 35)); in daylight or at low brightness it is a device question for the combined test. Its goal leaf reads dark (Y .073, TODAY .043 on the same tier): the phone build's door leaf is darker in every look, a finding outside this card for the combined test, not a red-look effect.
+- The front (A at 0.9 s, the sheet's first row): red from the entrance to about 13 m, the dark band, white beyond 19 m, the door already lit. B's dip (3.71 s, running 7 m in): the strip at 13.8 m at 0.35, the pools and the door unmoved (door .287, pools .131).
+
+### C3.4 Two findings on the map: the soffit halo, and the red strips' shadows
+
+- **The halos never showed on the map.** The map skin's soffit (`FrontRoomsRunDress.Skin`, asked as 2 mm) is a 10 mm slab (`FrontRoomsFilmMesh.GetPlanarBox` clamps every side to 10 mm): its face sits 6 mm under the soffit (bounds 2.894-2.904 m), and the halo, built 3 mm under the soffit, was inside it, hidden on every map room since stage C: the white halos of the armed strips as well as the red ones. 灯具适配's sheets (the look-dev shell, its deck face at 2.9 m) and SP7 (`buildShell`) showed them, so the strip Red approved on 11-03 and the column Red picked on 11-04 both had them. Proof (run 2): under strip 3, A at 2.6 s: no halo as built; the halo 5 cm lower, or the skin switched off, glows red. **Fixed in the rig**: the halo 10 mm under the soffit, under both the skin's face and the look-dev deck. So the armed room on the map now shows the white halos Red approved, and the red looks the red ones Red picked.
+- **The red strips keep their shadows** (71 §9 asked "lean off, decide on the capture"; 17 shadowed Lights tripped against today's 8). From the Level 0 cell beside the corridor (the neighbour of cell 2), A at 2.6 s: unshadowed, the strips' red reaches through the long wall onto the neighbour's floor and walls (the lower half of the frame: (R − G − B) × 320 = 12.4 against 2.4 in TODAY; R/G 1.59 against 1.34); shadowed, 7.3 (R/G 1.46: the red spilling out of the arch, as light through an opening should). That is F7's leak (the white strips leaked up to 143 levels on the Office wall before they were shadowed), so they stay shadowed. In Play the rig drops a red strip's shadow slice to Medium (512 px, `redShadowTier`) so the eight heads keep their 1024 px slices in the 4096 atlas (17 at High would not fit: URP would shrink every slice); in edit mode URP refuses that API, so tools show them at High. GPU: C3.7.
+
+### C3.5 The Relay read (`research/hunter/production_b/10_plan.md` T2's method)
+
+The production body (`FrontRoomsRelayRig`, Night Shift) on the axis facing the camera, walking in place, pinned under the 2.9 m soffit and folding under a strip (its back takes the strip's Light: C3.2); a flat unlit ID render gives the mask; contrast = the mean linear Y of a 12 px ring outside the body against the body, a plain ratio (the WCAG form beside it), the mask clipped to the 0-2.05 m contract band (the whole body beside it); the protan copy is Machado, Oliveira and Fernandes (2009), protanopia, severity 1, in linear RGB. The camera looks back from 6 m past the body. **The bar is 4 : 1 (plain).**
+
+| The body at | TODAY | A | B | B as its dip passes the body |
+|---|---|---|---|---|
+| 6 m, under strip 5: band / whole | 12.8 / 13.8 | **13.4** / 7.5 | 13.4 / 7.5 | 13.3 / 9.2 |
+| 6 m, protan (band) | 12.8 | **13.0** | 13.0 | 12.9 |
+| 12 m, under strip 3: band (protan) | 6.2 (6.1) | 6.5 (6.3) | 6.5 (6.3) | |
+| 6 m, phone tier: band (protan) | 20.7 (20.6) | 21.7 (21.0) | 21.7 (21.0) | |
+| WCAG form, 6 m band | 2.0 | 2.3 | 2.3 | 2.3 |
+
+The red raises the ring (the walls behind the body are lit red) more than the body (dark twill, lit from above), so the read holds and the protan copy loses little: protan sees the red walls darker, but the pools and the lit floor behind the legs carry the ring. The whole-body figure drops in A (7.5) because the head and shoulders, pressed under the red strip, take its red contact light (0.35 × 3.5) and sit against the dark soffit; above 2.05 m, outside the contract band. 71 §6.8's fear (a red light over a 2.05 m body, the Red Ward's 2.97 : 1) does not come back: the pools stay.
+
+### C3.6 Photosafety: our count here; no Harding FPA or PEAT, so A ships and B waits
+
+*Superseded 2026-11-04 20:1x by C3.10: Red chose the project's own check, B passed it and now ships.*
+
+**Not run: Harding FPA or PEAT.** FPA is commercial Windows software, PEAT a Windows download; neither is on this Mac and downloads need Red's OK (RULES 7). This is the one independent check the task names (a safety contract), and it is not done. So the build ships **A** (`FrontRoomsRunRig.DefaultRedLook = AlarmCircuit`); **B** is built, tested and one switch away, to be turned on when a Harding FPA or PEAT verdict on a capture of B passes (and the film below is the capture to give it).
+
+What was measured instead (71 §6.7's T9, the project's own count, `W/run_red/tmp/analyse.py`; not a verdict): 30 fps, the frame in 30 × 18 blocks; a general transition is a change of 0.1 of relative luminance from the last extreme with the darker side under 0.8 (WCAG 2.x); a red transition by the older metric Harding FPA and Xbox AG 118 apply ((R − G − B) × 320 changing by more than 20 with a saturated red, R / (R + G + B) ≥ 0.8, on either side) and by WCAG 2.2 Note 3 (a change of more than 0.2 in u'v' to or from a saturated red); a flash is a pair; the most in any 1 s, per block (no area allowance) and over WCAG's area rule (transitions within ± 0.1 s on 25 % or more of a third of the frame each way). The limit is 3 a second.
+
+| Capture (flashes per second: area rule / any block) | general | red, older metric | red, WCAG 2.2 |
+|---|---|---|---|
+| TODAY, fixed at the trip point, 8 s | 0.5 / 1 | 0 / 0 | 0 / 1 |
+| A, the same | 1 / 1 | 0 / 0.5 | 0 / 0.5 |
+| **B, the same, 34 s (the whole train)** | 1 / 1 | **1 / 1** (4,322 transitions) | 0 / 0.5 |
+| A or B, Reduce Flashing | 0.5 / 1 | 0 / 0 | 0 / 0 |
+| B, the film's path (walk, run, turn, look back, reset), 17.5 s | 1.5 / 3 | 2 / 4 | 1 / 2.5 |
+| B's film, looking back (the camera still, 8.3 s) | 0 / 0 | 1.5 / 1 | 0 / 0 |
+
+- Every capture is inside 3 a second by the area rule. A's trip is one red change per place (to red) and B adds **one red flash per place every 2.5 s, 12 times (30 s)**: by the older metric each dip is a flash (a block's (R − G − B) × 320 falls by 35 at the median and 86 at most, from 60-120; the line is 20), by WCAG 2.2 none (the hue does not change). That 30 s train of flashes is what a Harding FPA or PEAT run must judge (ITU-R BT.1702 warns about sequences longer than 5 s even when they comply), so B waits.
+- The moving camera inflates the per-block counts (the film walking in the armed corridor alone gives 1.5 / 2.5 general): edges sweeping across blocks, not the light. The still look-back is the cleaner read of B's pulses.
+- In the looked-back frame the passing dip takes the mean luminance from .036 to .021 for about 0.6 s (the near strips light most of the view): a strong beat, below the general-flash line (a change of .015).
+- Reduce Flashing removes the band and the pulse: no red transition at all.
+
+### C3.7 Cost
+
+| Item | Number |
+|---|---|
+| Lights | **+0** (each strip's Light turns red); tripped: TODAY 9 on, 8 shadowed; A and B 18 on, **17 shadowed** (C3.4); phone tier 6 / 5 → 11 / 10 |
+| Draws, textures | +0 (the halos and tubes are as built; the halo's colour rides its property block) |
+| GPU, desktop (ms a frame at 7680 × 3544, MSAA off, a GPU sync each frame, median of 12; **UNDER LOAD**: load average 80-130 from the other sessions) | armed 57.2; TODAY tripped 53.8; A, red strips shadowed (Medium) 64.0 (+10.2 on TODAY); A unshadowed 56.7 (+2.9); A with every red slice at High 63.6; B mid-dip 64.1; the Relay under a strip with its red contact light 77.1, without 76.3 (no cost read) |
+| GPU, phone tier on this Mac (the iPad and iPhone build; not a device) | TODAY tripped 65.7; A 69.1 (+3.4); A unshadowed 66.2; B 70.3 |
+| CPU, `rig.Tick` (Editor, batch) | the first 2.5 s after the trip: TODAY 0.14 ms a frame, A 0.37, B 0.39 (worst 0.94); B's pulses 0.13 ms a frame for 30 s (each dip rewrites the lenses' and tubes' blocks); A and TODAY after the trip ~0 |
+| Allocation | none per Tick (R6, R23) |
+
+Run 1 measured the same cases at about twice these times under heavier load; the ratios held (A shadowed about 1.2 × TODAY). The combined test measures them on an idle machine and on an iPad.
+
+### C3.8 Images and film
+
+- Sheet `images/run_red_looks.jpg` (+ `_fit.txt`, ALL LABELS FIT; Shot format, chip WAIT-RED): TODAY, A, B; the front at 0.9 s, steady at 2.6 s, running at 3.71 s (B's dip), the Relay at 6 m with its numbers, the same frames as a protan copy, the Relay as B's dip passes it, the phone tier, under strip 3 (the halo), the neighbour (F7: TODAY, A shadowed, A unshadowed), COST.
+- Film `video/run_red_looks.mp4` (17.5 s, 30 fps, H.264, no audio stream) + `images/run_red_looks_contact.jpg`: B from the player's eye: walk in at 3.2 m/s, the trip 1.5 m in, run at 5.5 m/s, stop and turn back, the pulses running to the goal door (toward you), the reset at 14 s and the white re-strike from the entrance. The capture a Harding FPA or PEAT run should take (with the fixed-view sequence).
+
+### C3.9 Gate, and what the next stage must know
+
+- **Gate** (rule 25): Roslyn macOS and iOS on main (head c9c80b61, 15:28) with the package's four files as overrides (`fr gate`, read back from the `.rsp`): COMPILE OK, 0 errors; warnings 45 / 38, main's, none in our files (`W/run_red/logs/gate_final.txt`). Unity in `C` (synced to main at 13:52: 231 files): import and compile 0 `error CS`; **EditMode 25 of 25** (R1-R22, W1, W2 with `DefaultRedLook = Today`, so the trip as landed is proven unchanged; R23 card 3).
+- **Package** `W/apply/run_red_looks.sh`: 4 paths replaced, 0 new, 4 metas kept; main-based and independent of the other Run! packages. DRY RUN OK on main; a rehearsal on a scratch copy MANIFEST OK, then ALREADY APPLIED; the end state = the clone's tested files. Not applied.
+- **Honest flaws:** B is not verified by Harding FPA or PEAT (C3.6); the GPU figures are under load; the walls pass 71's red cap at Red's level (the sheet's flaw, Red's choice) and catch up with the lens row in greyscale; the phone tier's goal leaf reads dark (outside this card); unshadowed would have been cheaper (+2.9 against +10.2 ms here) but leaks.
+- **For the binder's receding room (the next stage, RB):** set `rig.PulseHeld = true` when it builds a receding room and call `rig.ReleasePulses(1f)` at the recede's final `SeatReached`; a restored (seated) room needs neither. Nothing else of card 3 needs the binder.
+- **To ship B** after a passing verdict: `FrontRoomsRunRig.DefaultRedLook = RunRedLook.AlarmPulse` (one line), R23's first check to B, and 71 decision 6 is complete. The teaching room (系统设计 6, optional): the binder may set `rig.RedLook = AlarmCircuit` on the run's first Run! once B is the default.
+- **Combined test:** one block for both packages, in RB.8 (they land together, this one first); it turns P.4's WAIT-RED line into real rows.
+
+### C3.10 Photosafety: the project's own check, and B ships (2026-11-04 20:1x, account A)
+
+**Red's words** (游戏视觉's chat, 2026-11-04 20:0x, plain user turn, answering "B 的红色脉冲怎么处理？" with the options "先用 A 不闪" and "用我们自己的检查"): "用我们自己的检查". Harding FPA (commercial, Windows) and PEAT (Windows) do not run on this Mac.
+
+**The check** is now a project tool, `Tools/lookdev/flash_check.py`: WCAG 2.3.1 "Three Flashes or Below Threshold" on a T9 capture (`.bin` + `.json` from the clone harness) or any MP4 of the displayed game. Per block of a 30 x 18 grid of the frame, in relative luminance of the displayed image: general transitions (a change of at least 0.1 from the last extreme, the darker side under 0.8), red transitions by WCAG 2.2 (more than 0.2 in CIE 1976 u'v' to or from a saturated red, R / (R + G + B) >= 0.8) and by the older metric Harding FPA and Xbox AG 118 apply ((R - G - B) x 320 changing by more than 20 with a saturated red); a flash is a pair of opposing transitions. The verdict uses WCAG's area rule: transitions within one frame of each other on at least 25 % of any window a third of the frame each way (a 10 degree field) are one concurrent event; PASS when the worst second holds 3 flashes or fewer. The per-block count (no area allowance, stricter) is printed beside it. It is the project's own count, not a Harding or PEAT verdict.
+
+**Its own proof** (controls in the scratchpad, synthetic, 30 fps): a full-frame 5 Hz flicker FAILS (5.5 flashes in the worst second), a 4 Hz saturated-red flicker on 40 % of the frame FAILS (4.5), a 2.5 Hz one PASSES at 3.0. The earlier count of this stage (`W/run_red/tmp/analyse.py`, C3.6) merged transitions widened by +-0.1 s and so glued a fast flicker into one event (the 5 Hz control read 0.5 there); its per-block numbers were right, its area numbers under fast flicker were not; the tool fixes that by counting concurrency within a frame and placing events only on frames where a transition happens.
+
+**Results** (the harness's captures, `W/run_red/renders/t9`, 30 fps, 1920 x 1080 displayed image):
+
+| Capture | General (area / per block) | Red WCAG 2.2 | Red (R - G - B) x 320 | Verdict |
+|---|---|---|---|---|
+| B, fixed camera, the whole train (35 s: trip, 12 pulses every 2.5 s from 3 s) | 1.0 / 1.0 | 0.0 / 0.5 | 1.5 / 1.0 | PASS |
+| B with Reduce Flashing (9 s) | 0.5 / 1.0 | 0 / 0 | 0 / 0 | PASS |
+| A, fixed camera (9 s) | 1.0 / 1.0 | 0 / 0.5 | 0 / 0.5 | PASS |
+| TODAY, fixed camera (9 s) | 0.5 / 1.0 | 0 / 1.0 | 0 / 0 | PASS |
+| Film, B, the camera walking, tripping, sprinting, turning, the pulses toward it, the reset (17.5 s) | 3.0 / 3.0 | 1.0 / 2.5 | 3.0 / 4.0 | PASS, at the limit |
+
+**So B ships** (`FrontRoomsRunRig.DefaultRedLook = RunRedLook.AlarmPulse`, R23's first check now requires B; landed 20:11 with the tool). The pulse train itself stays at 1-1.5 flashes a second. Honest flag: the film reaches the limit (3.0, not over) in two places that A and B share and the pulse does not cause: the trip (1-2 s, the white strips going out behind the 20 m/s band) and the sprint under the lit strips (3-5.5 s, strips crossing the frame). Both were in the game before card 3. Reduce Flashing keeps the cross-fade without a pulse. Combined test: re-run the check on a 60 fps capture of the same walk (30 fps can miss a transition shorter than a frame) and on the phone tier; if the trip or the sprint goes over 3, soften the band's edge (frontSpeed or the 0.06 s drop) for every look.
+
+## Run! rethink · RB: the receding room in the binder (2026-11-04)
+
+游戏视觉, workflow `run_red` (parent session local_be0f3747, account A), stage "Recede binder". The ask is two-sided: 关卡设计's note of 11-04 12:50 (`briefs/visual.md` Inbox, from local_9bcdecc2, after their Run! cards 1-6 landed at 12:46): "on the rig's `SeatReached` call `map.RunSeated(room, lineMetres / 3)`; after `FrontRoomsRunRecede.Restore` of a record with `Started` call `map.RunSeated(room, room.LengthCells)` (the map never reads your record)", and our own contract's binder lines for the receding variant ("the build order, `Trip`, `Tick`, the record", `W/apply/run_rethink_contract/README.md` "Final" and card 2). It rests on **decision 4** (Red's answer to 71 §8, 2026-11-03 23:18: "全部按推荐", 71 §0.1): the stretch, stepped, tripping at the 9 m frame, and on card 3's rule that B's pulses wait for the final seat (71 §5.7, C3.2).
+
+Rule 5b holds: no level profile can deal a receding room (the map's `runRecede` is never serialized; `rules.recede` and `RunCardForTools` are tools, the latter editor only), so the game builds none, and with `runRooms` off nothing binds at all. The receding end enters the game only after Red has walked SP7 and 关卡设计's walk side is in. Not done: nothing on main, no download, nothing heard (rule 24); Unity only in `W/proj_runb66`, one batch at a time, edit mode.
+
+### RB.1 What changed (`W/apply/run_recede_binder.sh`, stacked on `run_red_looks`, not applied)
+
+| Path (base → payload) | Change |
+|---|---|
+| `Scripts/Rendering/FrontRoomsRunRigBinder.cs` 2e707ee0 (main) → d9a9b466 | the receding room (RB.2); `RecedeBuilt` / `RecedeDropped` (static, for 声音设计); `RecedeOf(room)`, `PackRecord` / `UnpackRecord`, `LineCells`, `TickForTools` (LateUpdate's tick, for edit-mode tools) |
+| `Editor/Rendering/FrontRoomsRunRigTests.cs` 3ec3351e (`run_red_looks`' payload) → 8eec2228 | R24 (RB.4) |
+
+Stacked because the binder calls the rig's `PulseHeld` / `ReleasePulses` (card 3, `run_red_looks`) and both packages write the tests: it lands after `run_red_looks` and refuses before it (the tests' base, and an API row for the rig's `ReleasePulses`). Nothing of 关卡设计's, the rig's or the recede's changes: `FrontRoomsRunRecede.cs` (1380c669), the rig (75ac054e, card 3) and the map's files are read only.
+
+### RB.2 The receding room, as the binder now builds it
+
+- **When:** the map's record says the room recedes (`room.Receding`: `Variant` Recede with its `SeatCells`, 9 first). Every other room takes exactly the old path: the new code sits behind `room.Receding`, the layout's `recedeLine` and the entry's recede.
+- **The layout** from the record: `RunRigLayout.Receding(SeatCells[0], Cells.Length)`, 9 → 12 or 9 → 14 (anything else is refused there with a warning and built as a plain 9). The goal point stays on the end's first line (27 m), which the end carries seat by seat; the map's goal door stands on the L_max edge, so the length check compares the record's L_max with the rig's.
+- **The order** (the contract's): the dress, the tell, `FrontRoomsRunRecede.Build(dress, layout)` (the end, the tracks, slots, magnets, ghost bands, the reserved length's props regrouped per cell and off), the rig, `recede.Bind(rig)` (the goal mount rides the end, the light gate stands on its line). The end's gaze (71 §4.3: "the camera faces down the corridor") is the camera riding the viewer the game binds (the player's eye camera), else the viewer.
+- **The trip:** the map trips a receding room at the FD1 plane (its `EntranceTrip`, 9 m, until the last seat); the binder trips the rig and the end together (Order T: the alarm and the end's flight are one event); the gaze gate then decides the first step.
+- **The tick:** `LateUpdate` ticks the end after the rig, as R20 and the recede's harnesses tick it.
+- **Each seat** (`SeatReached`): the record into the map's room, B's pulses freed at the final seat (`ReleasePulses(1)`: held since the build, so the first pulse comes at the later of 3.0 s after the trip and 1.0 s after the seat), then `map.RunSeated(room, round(line / 3 m))`, so the map opens the cells up to the seat, moves its goal point and, at the last seat, makes the goal door real.
+- **The record** (71 §4.6, "the record stays"): `room.RecedeRecord` = `PackRecord(recede.Record)`, the recede's 8 bytes in one `ulong` (version, flags, steps, glideFrom in the low four bytes, then gateTime and glideTime as halves; 0 is no record), written at each seat and when the room is dropped. The map never reads it.
+- **A room built again** (a chunk dropped and streamed back, 48 m or more away): a record whose recede had begun (`Started`) is restored: the end seated at L_max, its cells, strips and bands on, no cue; then, once the room is registered, `map.RunSeated(room, room.LengthCells)` (false and silent when the map is already seated). A tripped room whose end had not moved yet comes back tripped quietly (`TripImmediate`) with the end waiting again for the gaze gate (`Trip` raises nothing); an armed room waits for the map's trip at FD1.
+- **No gate guard on the armed state:** a reset (the Relay's WITHDRAW) before the first step leaves the end waiting for its gaze gate. Holding the gate while the room is armed would let a walker re-armed inside the room (the map's `WaitForExit`) reach the unmoved end and its door; the recede's own rule (the gate opens on the gaze or past 18 m, then the keep-away glide) keeps the end ahead of the player.
+- **The goal end's tell** stands at the deepest line: the ALARM ZONE card outside the L_max frame on the map's door's latch side, the detector inside at the sight rule's depth pushed clear of the strips (31.01 m for 9 → 12), off with its hidden cell until the end uncovers it. Nothing of the tell rides the end; the arch's tell is as built.
+- **Not the binder's** (关卡设计's card 4 walk side, after SP7): the hidden cells' colliders and walk volume per seat, the blind panel in the L_max frame, the goal door hung on `recede.DoorMount`. Until then the end's opening has no door and the L_max door opens from beyond (RB.5).
+- **For 声音设计** (61_for_sound.md, update RB): `RecedeBuilt` after `RigBuilt`, `RecedeDropped` before `RigDropped`, so the 16 `RunRecedeCue`s can be heard from the binder as the rig's events are.
+
+### RB.3 Today unchanged: the proof
+
+- **`runRooms` off** (the shipped profile): the binder is never added (R24 makes a map with the code defaults, calls the game's hook `BindIfOn`: no binder, no planner).
+- **`runRooms` on, every room the game can deal:** plain, Run door and ramp cards never recede, and the receding card plays as the tier's plain room while `rules.recede` is off, which no profile can turn on. For those rooms the binder's code path is the old one statement for statement (RB.2's guards); R1-R23 pass unchanged; R24's plain room has no end, holds no pulse, keeps no record, its goal tell where it was, and comes back tripped after a drop as before.
+
+### RB.4 On the map: the proof (Unity in `C`, `FrontRoomsRunRigTests.RunBatch`, 26 passed, 0 failed)
+
+R24 builds real maps through the Level Designer's RunRoom view (the game's builder, placement forced, the binder bound as at `MapRunStarted`) and drives them with the binder's own tick:
+
+- **Off:** a map from the code defaults (`runRooms` off) and the game's hook (`BindIfOn`): no binder, no planner, no `RecedeBuilt`.
+- **Plain** (the preview's Tools card, today's plain 9): no end, `PulseHeld` false, no record after a trip and a drop, its goal tell's detector at z 22.01 as landed, built again tripped; no `RecedeBuilt` or `RecedeDropped`.
+- **9 → 12 in B** (the pulse): built receding (line 27, 36 m, 3 strips hidden, the end armed, B's pulses held, the record 0); the goal tell: the detector at z 31.01, off in its hidden cell, the card at 36.08 outside the L_max frame; the map arms the room at FD1 (8.5 m no, 9.5 m yes); the map's trip trips the rig and the end. A walker from 9.5 m at 3.2 m/s facing the goal: `SeatReached` at 33 m and 36 m (final), and within each event the map's open cells are already 11, then 12 (its `RunRoomSeated` 11, 12); no hidden cell is left and the map's goal point stands at 36 m. B's pulses: none at the final seat (3.03 s), the first by 6 s. The record at the final seat: v1, flags 3 (tripped, gate open), 2 steps.
+- **Dropped after the recede:** the record v1, flags 11 (seated), 2 steps; built again seated at 36 m, tripped quietly, no cue and no pulse in the next 2 s, the map not seated again.
+- **Dropped before the end moved** (tripped facing the entrance, the gate shut): the record tripped, not started; built again waiting (tripped again quietly, pulses held, 3 strips hidden, the map at index 0); facing the goal, the first seat came 1.38 s later and the map followed at 11.
+- **Dropped mid-recede** (v1, flags 3, 1 step): built again seated at 36 m, and the map seated once more, on 12.
+- **9 → 14:** a walker 5 m from the end as the gate opens: the keep-away glide, seated at 3.15 s, one `SeatReached` (42 m, final) and one `RunRoomSeated`, the map from index 0 to 4.
+
+R1-R23, W1 and W2 pass unchanged (runs 1 and 2). Run 1's R24 stopped in its plain section on a test fault (it read the dropped rig after the rebuild); the binder was not involved, and run 2 ran the fixed test whole.
+
+### RB.5 The room on the map, seen (the author's one look, rule 26)
+
+Made in `C` by the clone-only harness `FrontRoomsRunRecedeBinderHarness` (the Level Designer's RunRoom view, seed 3, the map's doors dressed as in Play, the binder as at `MapRunStarted`, look A as shipped), 1920 × 1080, vertical FOV 76, MSAA 4, eye 1.62 m, TODAY (today's plain 9) against RB (the 9 → 12 the binder now builds), the same cameras: the arch from 2 m outside (armed), the release side from beyond the goal door (armed), 9.5 m 1.0 s after the map's trip, 20 m 4.5 s after it (the walker's path at 3.2 m/s between), the room dropped and streamed back.
+
+- **From the arch** the compartment frames (FD1, FD2) and the tracks in both soffit corners lead to the end at 27 m (the honest tell of 71 §4.8 item 1, on the map as in the look-dev shell); the end's opening shows the dark hidden length with the L_max door dim behind it.
+- **1.0 s after the trip** the end is mid-flinch at 31.1 m (the map's trip at 9.5 m, the gaze gate open at once); the band of the red front runs ahead.
+- **Seated** at 36 m: the L_max door in the end's opening, lit by the carried unit's goal head; the floor slots (they stand 0.4 mm proud of the map skin's 1 mm VCT, so they show on the map), the wall magnets at each seat line, the carried cabinet, the extinguisher at 24.2 m; the corridor red behind the front. **Rebuilt** it is the same frame: no motion, no cue.
+- **From the release side:** the map's L_max door with the ALARM ZONE card on its latch side (the goal tell at the deepest line, RB.2).
+- **No map-only defect found** (the class of C3.4's halo: the slots, the tracks under the soffit skin, the ghost bands relative to the skin's faces, the magnets). **Honest flaws, both 关卡设计's walk side:** the end's opening has no door until the map hangs its RN-F on `DoorMount`, and from the release side the L_max door is a real door until the blind panel.
+- Sheet `images/run_recede_binder.jpg` (+ `_fit.txt`, ALL LABELS FIT; Shot format, chip PARTIAL): TODAY and RB, the five rows above, COST.
+
+### RB.6 Cost
+
+| Item | TODAY (plain 9) | RB (9 → 12) |
+|---|---|---|
+| The room as the binder built it on the map (dress, rig, end) | 1,010 renderers, 1,475 renderer slots, 324,621 tris at LOD0, 18 Lights | 1,453 renderers (1,163 on while armed, the reserved length off per cell; 1,447 on once seated), 2,079 slots, 424,279 tris at LOD0, 23 Lights (the 12-cell receding layout's, card 2) |
+| The binder's tick (Editor, batch, 60 Hz, the trip to 4.5 s) | 0.356 ms a frame on average, 1.22 at worst | 0.372 ms, 3.98 at worst (the recede's step frames: the gate's block rewrite and the T2 body) |
+| What the binder adds | nothing | no Light, texture, draw or allocation of its own; one closure a receding room at build |
+
+GPU frame time: not measured here (the recede's and the red looks' are in H.7, T.7 and C3.7).
+
+### RB.7 Gate, and what the next stage must know
+
+- **Gate** (rule 25): Roslyn macOS and iOS on main (head c9c80b61) with `run_red_looks`' three code files and this package's two as overrides (`fr gate`, read back from the `.rsp`): COMPILE OK, 0 errors; warnings 45 / 38, main's, none in our files (`W/run_red/logs/rb/gate_b3.txt`). Unity in `C` (synced to main at 15:38, its Input files again before each run): import and compile 0 `error CS`; **EditMode 26 of 26** (run 2, 17:11); the harness (run 1, 16:08) for the stills, the seats and the costs.
+- **Package** `W/apply/run_recede_binder.sh`: 2 paths replaced, 0 new, 2 metas kept, 5 read-only API rows (the rig's `ReleasePulses`, the recede's `Restore`, the map's `RunSeated`, the room's `RecedeRecord`, the preview's receding cards). Stacked on `run_red_looks`: on main as it is it refuses by design, nothing written; a rehearsal on a scratch copy of main (`run_red_looks`, then this) gave DRY RUN OK, MANIFEST OK and ALREADY APPLIED for each, the end state = the clone on all 5 paths. Not applied.
+- **Honest flaws:** the walk side above (关卡设计's, after SP7); the record keeps the gate and glide times as halves (enough for a restore, which seats the room whatever they say); the end's gaze reads the camera riding the player, so a close-up shot that moves the camera moves the gaze for its length (a receding room has nothing to inspect).
+- **For 关卡设计** (contract `W/apply/run_rethink_contract/README.md` section RB): your two calls are in; `binder.RecedeOf(room)` hands you the end (`DoorMount`, `TripLine`, `SeatReached`, `CellUncovered`) for your walk side; nothing else is asked of the map.
+- **Combined test:** RB.8 (one block with card 3's).
+
+### RB.8 Landing card 3 and RB together: the order, the gate, the rehearsal, the combined test (stage "Package", 17:3x)
+
+游戏视觉, workflow `run_red`, stage "Package" (parent session local_be0f3747, account A). This stage applied nothing: the parent lands. Not done: nothing on main, no Unity run (card 3's run 3 and RB's run 2 stand: EditMode 26 of 26 on exactly the files that land), nothing heard.
+
+| Order | Package | Paths | Bases | Main at 17:20 |
+|---|---|---|---|---|
+| 1 | `run_red_looks` (C3) | 4 replaced, 0 new, 4 metas kept | main's: rig c0c64842, `FrontRoomsTrofferKit.cs` 47ba7f66, `FrontRoomsLampKit.cs` 129c19a9, tests d4f2ec43 | DRY RUN OK |
+| 2 | `run_recede_binder` (RB) | 2 replaced, 0 new, 2 metas kept, 5 read-only API rows | the binder main's 2e707ee0; the tests 1's payload 3ec3351e | refuses until 1 is in (by design), nothing written |
+
+- **Bases re-checked against main** (17:20, head c9c80b61 and its working tree): the five bases, the kept metas and the four API files (`FrontRoomsRunRecede.cs` 1380c669, `FrontRoomsMapWorld.cs` bf139b6e, `FrontRoomsRunRooms.cs` f59090be, `FrontRoomsModulePreview.cs` bafe9c43) are as the packages recorded them and as the clone tested them. Since the clone's sync main moved only in files our five neither read nor write: the water light of 16:47-16:53 (`FrontRoomsZoneLook.cs` and its profile, `FrontRoomsWaterSubmerged.cs`, `FrontRoomsWaterSurface.cs`, `FrontRoomsStructuresWater.cs`; the rig's ambient is its own per-renderer SH, not the zone's probe). No package was rebuilt.
+- **Gate** (rule 25; `W/run_red/tmp/pkg_final/gate.sh`, `fr gate --staging`, 17:24 and again 17:36 after 关卡设计's `FrontRoomsPoolMaterials.cs` landing of 17:34 and scene 4's structures files, logs `W/run_red/logs/pkg/p1_*`, `p2_*`): main + 1 (4 overrides) and main + 1 + 2 (5), macOS and iOS: COMPILE OK, 0 errors, each override read back from the `.rsp`; warnings 47 / 38, all main's (two CS0618 in `FrontRoomsWaterSubmerged.cs` are new in main since 16:48), none in our files.
+- **Rehearsal** (`W/run_red/tmp/pkg_final/rehearse.sh`, 17:2x): a fresh scratch copy of main (its `ProjectVersion.txt`, all 3,829 Assets metas, the five bases, the four API files); in the order above each package gave DRY RUN OK, `--apply` MANIFEST OK, then ALREADY APPLIED; the end state equals the clone on all five paths (rig 75ac054e, TrofferKit 9ff67275, LampKit 2a330f87, binder d9a9b466, tests 8eec2228), so what lands is what Unity tested.
+- **If main moves under a base before the landing:** `W/tools/rebase_apply.sh run_red_looks` (rule 2); then `run_recede_binder` is rebuilt over the new payload (`W/venv/bin/python W/run_red/tmp/rb/pkg/mkapply_stacked.py run_recede_binder --src W/run_red/tmp/rb/pkg/overlay --why "..." --api ... --after W/apply/run_red_looks_payload`, with the package header's text and its five API rows; the overlay from `W/run_red/tmp/rb/pkg/build_overlay.sh`) and both are gated again (`W/run_red/tmp/pkg_final/gate.sh`).
+- **The contracts** (`W/apply/run_rethink_contract/README.md`, section "Card 3 and the binder", at its top): 灯具适配 has nothing to land (their kit untouched; one comment line in `FrontRoomsLampKit.cs`; what they will see: the halo on map rooms, the Relay's back lit by the strip, the red at Red's level); 声音设计 gets four hooks (`RedStrike`, `PulseStarted`, `RecedeBuilt`, `RecedeDropped`), and whether the red strips re-strike in their fixture voice is their call; 关卡设计: their two calls are in, `RecedeRecord` stays with the room, the walk side stays theirs after SP7, and SP7 itself is unchanged by our packages (it calls only `BuildHalo` and `CreateHaloMaterial`, both unchanged, and reads `RunRigLayout` fields whose defaults are unchanged).
+- **Docs that land with the packages** (our folder, as replacements): this file while main's copy is 79d2086f (main's text plus C3 and RB; P.4's WAIT-RED line now points to the block below); `61_for_sound.md` while main's copy is c1f5c88d (plus its updates "card 3" and "RB"); new: `images/run_red_looks.jpg` (+ `_fit.txt`, `_contact.jpg`), `images/run_recede_binder.jpg` (+ `_fit.txt`), `video/run_red_looks.mp4` (H.264, no audio stream). VL: two rows in the day's batch after landing; the spec and the frames the combined test takes are in `W/vl_pending/run_red.md`.
+- **The combined test** (rule 25: one run, silent). Paste the block into `handoff/visual_combined_test.md` when the packages land, and replace P.4's WAIT-RED line there with the line P.4 now carries; the same text is `W/run_red/combined_rows.md`:
+
+```
+## run_red_looks + run_recede_binder (Run! card 3, the red looks, and RB, the receding room in the binder; landed <time>, account A; stacked, run_red_looks first; inert until SP7, rule 5b; detail research/room_visuals/run_b_production/60_production_66.md C3, RB, RB.8)
+- [ ] Run A (import + EditMode, with the other suites): 0 console errors; FrontRoomsRunRigTests 26/26: R1-R22, W1, W2 with DefaultRedLook = Today (the trip as landed); R23, card 3 (A all red by 1.95 s with 9 RedStrike in front order and one flash a second per lamp; B's 12 pulses from 3.0 s every 2.5 s, held, then the first at 6 s; Reduce Flashing monotone; TripImmediate quiet; 9 strip Lights in the Relay's lamp registry); R24, the receding room on real maps (runRooms off: no binder; the plain 9 untouched; 9 -> 12 in B with its three drops; 9 -> 14 glided).
+- [ ] Run C (a forced Run! room: runRooms on in a tools run, the Level Designer's Tools card or -autopilotRunRooms 2): armed as before plus the white soffit halos, now in sight on the map (C3.4); no RecedeBuilt for a plain room; with runRooms off no binder, the game as before.
+- [ ] Look A (ships), desktop and a phone: at the trip the dark band runs from the entrance to the goal door at 20 m/s, the red 0.35 s behind it rising over 0.4 s, all red at about 2 s in 9 cells, then still; the long walls crimson (the clone's mid-wall at the entrance (139, 30, 26) against the HDR sheet's left wall (142, 9, 19)), the soffit red round each strip, the pools warm every 6 m, the goal door the brightest thing (Y .28); the reset as built, white again.
+- [ ] The Relay under red (was WAIT-RED): the body's plain contrast in the 0-2.05 m band against a 12 px ring at 6 m and 12 m, plain and protan (Machado 2009, severity 1): at least 4 : 1 (the clone: A 13.4 and 6.5, protan 13.0 and 6.3; B's dip passing the body 13.3; phone tier 21.7); its back red (1.225) when pressed under a red strip, white armed, nothing under a dark strip.
+- [ ] T9 over the red (was WAIT-RED; the project's count, W/run_red/tmp/analyse.py, not a verdict): A's front and B's 30 s train on main's build, a fixed view at the trip point and along the film's path: at most 3 flashes a second by WCAG's area rule (the clone, fixed view: general 1 / 1, red by the older metric A 0 / 0.5 and B 1 / 1, WCAG 2.2 red 0 / 0.5; a moving camera inflates the per-block counts); Reduce Flashing: no red transition.
+- [ ] Harding FPA or PEAT on a capture of B (was WAIT-RED; the one independent check, a Windows machine, PEAT a download that needs Red's OK): the film research/room_visuals/run_b_production/video/run_red_looks.mp4 and a fixed 34 s view of the whole train. Pass: ship B (FrontRoomsRunRig.DefaultRedLook = RunRedLook.AlarmPulse, R23's first check to B; 71 decision 6 complete). Fail: A stays.
+- [ ] B in a tools run (DefaultRedLook = AlarmPulse): a dip every 2.5 s from 3 s, 12 at most, running to the goal door at 20 m/s, the heads, pools and door unmoved; none under Reduce Flashing; in a receding room only after the final seat (the later of 3.0 s after the trip and 1.0 s after FinalSeat).
+- [ ] The phone tier's dark reds (was WAIT-RED) on an iPhone and an iPad, in daylight and at low brightness (the clone's phone tier: mid-wall (114, 36, 27), floor (128, 45, 35)); the phone tier's goal leaf, dark in every look in the clone (Y .073, TODAY .043: outside card 3).
+- [ ] One sheet per look along the film's camera path (was WAIT-RED): TODAY, A, B and Reduce Flashing at the same frames (walk in at 3.2 m/s, the trip 1.5 m in, run at 5.5 m/s, stop and turn back, the reset at 14 s), desktop and a phone, Shot format; the frames listed in W/vl_pending/run_red.md.
+- [ ] Cost on an idle machine and an iPad: GPU at 7680 x 3544, A against TODAY tripped (the clone, UNDER LOAD: +10.2 ms with the red strips shadowed at Medium, +2.9 unshadowed; phone tier +3.4); in Play the 8 heads keep their 1024 px shadow slices with the 9 red strips at Medium (512); the Relay's contact light under a red strip; rig.Tick about 0.4 ms a frame for 2.5 s after the trip.
+- [ ] A receding room in Play (the Level Designer's Recede9To12 / Recede9To14, or rules.recede in a tools run): the map trips it at the 9 m frame; each seat opens the map's cells (RUN · seated room N at 11 / 12 cells in the game log, the map's goal point at the seat); walk out 48 m or more and back: seated, quiet, the map not seated a second time; a room dropped before its end moved comes back waiting for the gaze gate.
+- [ ] Sound (61_for_sound.md, updates card 3 and RB): RedStrike once per strip, PulseStarted per pulse (B only), RecedeBuilt / RecedeDropped reach the sound director and the recede's 16 RunRecedeCue cues come through them from the binder's rooms; the fixture voice reads the strips' red Lights (a starter tick and a strike per strip, or 声音设计's own voice on RedStrike); nothing audible from our code (rule 24).
+- [ ] With 关卡设计's walk side (after SP7): their RN-F on DoorMount rides the end; no walk past the end's line before each seat; the blind panel swaps at the final seat.
+```

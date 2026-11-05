@@ -88,6 +88,8 @@ public sealed partial class FrontRoomsKeyMapView
         public float Length;
         public readonly Tween Grow = new Tween(1f);
         public Rect Hit;
+        // Its padlock, or where its changed dot shows, in map units (touch: Bounds holds it).
+        public Rect Mark;
         public string RoutedTo;
         public bool IsFixed => Binds.Length == 0;
     }
@@ -110,6 +112,9 @@ public sealed partial class FrontRoomsKeyMapView
     // The words' scale, 1 on the desktop; the touch sheet's map sets its labels at the touch sizes (17 / 11 pt), and their pads and
     // offsets with them.
     readonly float ts;
+    // Touch: from a label's ink to its padlock's or changed dot's, at either side: a word space as the labels' own words stand
+    // (Bayon's .26 em with the bearings round it: ZOOM to STEP is .317 em, 5.40 pt at 17 pt), 5.41 pt.
+    const float MarkGap = 7f;
     bool showNotes = true;
 
     /// <summary>Each callout's note line (what the button does; PRESS A BUTTON while it listens), or the action word alone with
@@ -422,11 +427,58 @@ public sealed partial class FrontRoomsKeyMapView
         Place(c.Under.rectTransform, bar.x, bar.y, bar.width, bar.height);
         c.Hit = new Rect(bar.x / k, bar.y / k, bar.width / k, bar.height / k);
         // The changed dot (settings' rule: a changed row shows a dot before its control) and the padlock sit before the action word.
-        var mark = c.OnRight ? ax + aw + 8f * ts : ax - 12f * ts;
-        Place(c.Dot.rectTransform, mark, y + 8f * ts, 6f, 6f);
+        var dot = c.OnRight ? ax + aw + 8f * ts : ax - 12f * ts;
+        var padlock = c.OnRight ? ax + aw + 8f * ts : ax - 13f * ts;
+        // On touch both stand MarkGap from the word's ink at either side, measured on its glyphs as they draw (平面视觉, 11-04: set
+        // from its advance, an iPad's padlock stood 3.95-5.70 pt from a left label's ink and 7.52-7.97 from a right one's).
+        if (ts < 1f && InkSpan(c.ActionText, out var inkLeft, out var inkRight))
+        {
+            dot = c.OnRight ? ax + inkRight + MarkGap * ts : ax + inkLeft - MarkGap * ts - 6f;
+            padlock = c.OnRight ? ax + inkRight + MarkGap * ts : ax + inkLeft - MarkGap * ts - 7f;
+        }
+        Place(c.Dot.rectTransform, dot, y + 8f * ts, 6f, 6f);
         var shapes = new[] { new Rect(1f, 0f, 5f, 1f), new Rect(1f, 0f, 1f, 4f), new Rect(5f, 0f, 1f, 4f), new Rect(0f, 4f, 7f, 5f) };
         for (var i = 0; i < c.Lock.Count; i++)
-            Place(c.Lock[i].rectTransform, (c.OnRight ? ax + aw + 8f * ts : ax - 13f * ts) + shapes[i].x, y + 6f * ts + shapes[i].y, shapes[i].width, shapes[i].height);
+            Place(c.Lock[i].rectTransform, padlock + shapes[i].x, y + 6f * ts + shapes[i].y, shapes[i].width, shapes[i].height);
+        c.Mark = c.Lock.Count > 0 ? new Rect(padlock / k, (y + 6f * ts) / k, 7f / k, 9f / k) : new Rect(dot / k, (y + 8f * ts) / k, 6f / k, 6f / k);
+    }
+
+    /// <summary>Touch: where a label's words have ink, in px from their rect's left edge: the outer edges of the glyphs' boxes as the
+    /// text draws them (each glyph at the size it renders, on its whole-pixel advance; 11-04: an iPad drew ZOOM STEP 0.73 pt wider
+    /// than its advances, the phone 0.94 narrower). False with nothing to measure.</summary>
+    static bool InkSpan(Text t, out float left, out float right)
+    {
+        left = right = 0f;
+        if (string.IsNullOrEmpty(t.text) || t.font == null) return false;
+        // The text's own pixels per point (a dynamic font draws at its canvas's scale), the canvas looked up past a folded, hidden map.
+        var scale = t.pixelsPerUnit;
+        if (t.canvas == null && t.font.dynamic)
+        {
+            var canvas = t.GetComponentInParent<Canvas>(true);
+            if (canvas != null) scale = canvas.scaleFactor;
+        }
+        var rect = t.rectTransform.rect;
+        var settings = t.GetGenerationSettings(rect.size);
+        settings.scaleFactor = scale;
+        var gen = t.cachedTextGeneratorForLayout;
+        if (!gen.Populate(t.text, settings)) return false;
+        // Four vertices a glyph; a space's (or a line end's) box is empty and says nothing of the ink.
+        var verts = gen.verts;
+        var min = float.MaxValue;
+        var max = float.MinValue;
+        for (var i = 0; i + 3 < verts.Count; i += 4)
+        {
+            var from = Mathf.Min(Mathf.Min(verts[i].position.x, verts[i + 1].position.x), Mathf.Min(verts[i + 2].position.x, verts[i + 3].position.x));
+            var to = Mathf.Max(Mathf.Max(verts[i].position.x, verts[i + 1].position.x), Mathf.Max(verts[i + 2].position.x, verts[i + 3].position.x));
+            if (to - from < .01f) continue;
+            min = Mathf.Min(min, from);
+            max = Mathf.Max(max, to);
+        }
+        if (!(max > min)) return false;
+        // The vertices are in px about the rect's pivot.
+        left = min / scale - rect.xMin;
+        right = max / scale - rect.xMin;
+        return true;
     }
 
     string NoteFor(Callout c)
@@ -516,6 +568,9 @@ public sealed partial class FrontRoomsKeyMapView
             var xMin = float.MaxValue; var yMin = float.MaxValue; var xMax = float.MinValue; var yMax = float.MinValue;
             void Add(Rect r) { xMin = Mathf.Min(xMin, r.xMin); yMin = Mathf.Min(yMin, r.yMin); xMax = Mathf.Max(xMax, r.xMax); yMax = Mathf.Max(yMax, r.yMax); }
             foreach (var c in callouts) Add(c.Hit);
+            // Touch: each label's padlock or changed dot too, which can stand past its bar (11-04: an OnRight padlock ended 2.36 pt
+            // past it with the notes off, the phone's LOOK 0.92 pt past the map the sheet fitted).
+            if (ts < 1f) foreach (var c in callouts) Add(c.Mark);
             foreach (var v in keys) Add(v.Home);
             foreach (var m in mouse) Add(m.Rect);
             foreach (var part in padParts) Add(part.Home);
@@ -525,6 +580,29 @@ public sealed partial class FrontRoomsKeyMapView
 
     /// <summary>The chosen action's label, in px from the drawing's origin (the list follows it).</summary>
     public Rect ChosenRect => new Rect(Chosen.Hit.x * k, Chosen.Hit.y * k, Chosen.Hit.width * k, Chosen.Hit.height * k);
+
+    /// <summary>Touch: the words the map sets, for the touch sheet's list edges (FrontRoomsTouchControlsView.TickEdgeWords, 平面视觉
+    /// 11-04: a word an edge leaves less than half its caps of is hidden whole, its drawing clipped): each callout's action word and
+    /// note line, each with its label's bar in <paramref name="bars"/>, then every legend, with none. In <paramref name="marks"/>
+    /// what a word carries: the action word its changed dot and, on a fixed action, its padlock's four parts (11-04: they annotate
+    /// the word, so they hide and show with it); a note and a legend carry none. A PlayStation pad's marks are drawn, as the parts
+    /// are. In <paramref name="leaders"/> the word's callout's leader, every run, bend and stub of it, which goes with its bar
+    /// (11-04, later: a leader is its callout's, not the drawing's; it points at a word, so it hides once no word of its callout
+    /// shows); a legend has none. It is the callout's own list, so a run added when the leader is routed again (Declutter, a moved
+    /// key) goes too. The map keeps these for its life, so its host lists them once and reads their caps itself.</summary>
+    public void ListWords(List<Text> words, List<Image> bars, List<Image[]> marks, List<IReadOnlyList<Image>> leaders)
+    {
+        foreach (var c in callouts)
+        {
+            var carried = new Image[1 + c.Lock.Count];
+            carried[0] = c.Dot;
+            for (var i = 0; i < c.Lock.Count; i++) carried[1 + i] = c.Lock[i];
+            words.Add(c.ActionText); bars.Add(c.Under); marks.Add(carried); leaders.Add(c.Segs);
+            words.Add(c.NoteText); bars.Add(c.Under); marks.Add(null); leaders.Add(c.Segs);
+        }
+        foreach (var v in keys) if (v.Legend != null) { words.Add(v.Legend); bars.Add(null); marks.Add(null); leaders.Add(null); }
+        foreach (var part in padParts) if (part.Legend != null) { words.Add(part.Legend); bars.Add(null); marks.Add(null); leaders.Add(null); }
+    }
 
     /// <summary>Chooses the action named <paramref name="action"/> (the first one, for MOVE).</summary>
     public void Choose(string action)

@@ -38,7 +38,7 @@
   {
    "name": "stem_l",
    "pos": [
-    0.105,
+    0.179,
     -0.4,
     0.0
    ]
@@ -46,7 +46,7 @@
   {
    "name": "stem_r",
    "pos": [
-    -0.105,
+    -0.179,
     -0.4,
     0.0
    ]
@@ -54,7 +54,7 @@
   {
    "name": "lamp_a",
    "pos": [
-    0.05439999999999999,
+    0.11280000000000001,
     -0.4688,
     0.0
    ]
@@ -62,7 +62,7 @@
   {
    "name": "lamp_b",
    "pos": [
-    -0.048,
+    -0.11279999999999996,
     -0.4688,
     0.0
    ]
@@ -84,26 +84,26 @@
  "exitSign": {
   "faces": 2,
   "openingM": [
-   0.32,
+   0.564,
    0.186
   ],
-  "letterHeightM": 0.0896,
-  "strokeM": 0.0112,
+  "letterHeightM": 0.1524,
+  "strokeM": 0.01905,
   "faceSlot": "ExitSign_Face",
   "diffuserSlot": "ExitSign_Diffuser",
   "deadSlot": "ExitSign_Diffuser_Dead",
   "chevrons": "none",
   "lampField": {
    "lampA": [
-    0.33,
+    0.3,
     0.7,
-    0.08,
+    0.15,
     0.2
    ],
    "lampB": [
-    0.65,
     0.7,
-    0.08,
+    0.7,
+    0.15,
     0.2
    ],
    "fill": 0.06,
@@ -111,13 +111,13 @@
     [
      0.12,
      0.7,
-     0.08,
+     0.04539007092198582,
      0.2
     ],
     [
      0.88,
      0.7,
-     0.08,
+     0.04539007092198582,
      0.2
     ]
    ],
@@ -127,16 +127,30 @@
   "legend": "AUSGANG",
   "legendMode": "stencil",
   "legendFace": "EXIT die face (exit_sign_geom E X I T) extended by \u5e73\u9762\u89c6\u89c9: exit_dieface.swift",
-  "legendCapM": 0.08963,
-  "legendWidth": 0.85,
+  "legendCapM": 0.1524,
+  "legendWidth": 1.0,
   "letterShares": {
-   "A": 0.4991,
-   "B": 0.5009,
-   "DC": 0.857
+   "A": 0.4861,
+   "B": 0.5139,
+   "DC": 0.4845
+  },
+  "housingM": [
+   0.59,
+   0.212
+  ],
+  "wideHousing": {
+   "stemXM": 0.179,
+   "screwXM": 0.242,
+   "canopyLM": 0.398,
+   "uvSqueeze": [
+    0.586441,
+    0.567376
+   ],
+   "note": "Red 11-04 \"\u52a0\u5bbd\u5fb7\u8bed\u6846\": the English pan stretched in width only; lamps A / B long sources"
   },
   "legendLod1": {
    "tolMm": 1.0,
-   "holeVerts": 168,
+   "holeVerts": 170,
    "plate": "tied holes without the punch fillets, one wall band"
   }
  },
@@ -151,34 +165,34 @@
   300
  ],
  "dropM": 0.4,
- "budgetNote": "legend AUSGANG: 9734 tris against 6500 +/- 15% (+50%)",
- "trianglesCheck": 9734,
+ "budgetNote": "legend AUSGANG: 9790 tris against 6500 +/- 15% (+51%)",
+ "trianglesCheck": 9790,
  "boundsMin": [
-  -0.17299999296665192,
+  -0.29499998688697815,
   -0.6119999885559082,
   -0.03943542763590813
  ],
  "boundsMax": [
-  0.17299999296665192,
+  0.29499998688697815,
   0.0,
   0.03943542763590813
  ],
- "triangles": 9734,
+ "triangles": 9790,
  "slots": [
   "ExitSign_Housing",
   "ExitSign_Face",
   "ExitSign_Diffuser",
   "Prop_Chrome"
  ],
- "trianglesLod1": 2235,
- "budgetNoteLod1": "legend AUSGANG LOD1: 2235 tris (rest 1171 as English's 2001 less its plate 828; LOD1 plates 1064) against 2000 (+12%)",
+ "trianglesLod1": 2247,
+ "budgetNoteLod1": "legend AUSGANG LOD1: 2247 tris (rest 1171 as English's 2001 less its plate 828; LOD1 plates 1076) against 2000 (+12%)",
  "frontAxis": "+Z",
  "footprintCentre": [
   -0.0,
   -0.0
  ],
  "footprintSize": [
-  0.34599998593330383,
+  0.5899999737739563,
   0.07887085527181625
  ],
  "placement": "Ceiling",

@@ -1,0 +1,26 @@
+OK  | TITLE GLAZE A IN SCENE 4 · LANDED CHECK | 1178 of 3148 px
+OK  | TODAY R1 | label 154 + data 408 of 1274 px | sp1 arrival · tile 165.8
+OK  | SHEET A R1 | label 182 + data 408 of 1274 px | sp1 arrival · tile 176.7
+OK  | LANDED R1 | label 174 + data 595 of 1274 px | sp1 arrival · tile 176.6 (A -0.0 %)
+OK  | TODAY R2 | label 154 + data 442 of 1274 px | sp1 pool edge · tile 168.1
+OK  | SHEET A R2 | label 182 + data 442 of 1274 px | sp1 pool edge · tile 178.6
+OK  | LANDED R2 | label 174 + data 629 of 1274 px | sp1 pool edge · tile 178.4 (A -0.1 %)
+OK  | TODAY R3 | label 154 + data 425 of 1274 px | sp6 corridor · tile 172.6
+OK  | SHEET A R3 | label 182 + data 425 of 1274 px | sp6 corridor · tile 178.7
+OK  | LANDED R3 | label 174 + data 612 of 1274 px | sp6 corridor · tile 178.0 (A -0.4 %)
+OK  | TODAY R4 | label 154 + data 391 of 1274 px | sp6 grotto · tile 165.3
+OK  | SHEET A R4 | label 182 + data 391 of 1274 px | sp6 grotto · tile 166.6
+OK  | LANDED R4 | label 174 + data 1020 of 1274 px | sp6 grotto · tile 140.7 (A -15.5 %) · bounce seam, see below
+OK  | TODAY R5 | label 154 + data 476 of 1274 px | sp6 wall 0.35 m · tile 202.7
+OK  | SHEET A R5 | label 182 + data 476 of 1274 px | sp6 wall 0.35 m · tile 203.0
+OK  | LANDED R5 | label 174 + data 663 of 1274 px | sp6 wall 0.35 m · tile 202.7 (A -0.2 %)
+OK  | TODAY FILM | label 176 + data 544 of 1274 px | sp1 strafe, f0090 of 180 (3.0 s)
+OK  | SHEET A FILM | label 204 + data 544 of 1274 px | sp1 strafe, f0090 of 180 (3.0 s)
+OK  | LANDED FILM | label 196 + data 544 of 1274 px | sp1 strafe, f0090 of 180 (3.0 s)
+OK  | TODAY R2 1:1 | label 226 + data 493 of 1274 px | back wall over the catch pool
+OK  | SHEET A R2 1:1 | label 254 + data 850 of 1274 px | back wall over the catch pool · v2: tiles on / off
+OK  | LANDED R2 1:1 | label 246 + data 833 of 1274 px | back wall over the catch pool · dish: images bend
+OK  | SHEET A R4 1:1 | label 254 + data 374 of 1274 px | spring line, old key I
+OK  | LANDED R4 · I ON | label 282 + data 561 of 1274 px | the bounce: dark seam, cyan vault
+OK  | LANDED R4 · I OFF | label 300 + data 459 of 1274 px | as A (old spots gone: -5 %)
+ALL LABELS FIT

@@ -1,0 +1,27 @@
+OK  | TITLE SP7 · FIVE ENDS IN SCENE 4 | 1145 of 3851 px
+OK  | 1 TODAY · TRIP | label 312 + data 294 of 952 px | t 0.2 s · 27 m
+OK  | 1 TODAY · MID | label 294 + data 294 of 952 px | t 1.5 s · 33 m
+OK  | 1 TODAY · CLIMAX | label 360 + data 294 of 952 px | t 3.0 s · 36 m
+OK  | 1 TODAY · DOOR | label 329 + data 294 of 952 px | t 7.5 s · 42 m
+OK  | 1 TODAY · BACK | label 326 + data 294 of 952 px | t 8.0 s · 42 m
+OK  | 2 FAR SHORE · TRIP | label 406 + data 294 of 952 px | t 0.1 s · 27 m
+OK  | 2 FAR SHORE · MID | label 388 + data 294 of 952 px | t 1.3 s · 33 m
+OK  | 2 FAR SHORE · CLIMAX | label 454 + data 294 of 952 px | t 2.8 s · 42 m
+OK  | 2 FAR SHORE · DOOR | label 423 + data 294 of 952 px | t 8.2 s · 42 m
+OK  | 2 FAR SHORE · BACK | label 420 + data 294 of 952 px | t 8.0 s · 42 m
+OK  | 3 LIGHT LEAVES · TRIP | label 454 + data 294 of 952 px | t 0.7 s · 28 m
+OK  | 3 LIGHT LEAVES · MID | label 436 + data 294 of 952 px | t 1.7 s · 36 m
+OK  | 3 LIGHT LEAVES · CLIMAX | label 502 + data 294 of 952 px | t 4.2 s · 42 m
+OK  | 3 LIGHT LEAVES · DOOR | label 471 + data 294 of 952 px | t 7.0 s · 42 m
+OK  | 3 LIGHT LEAVES · BACK | label 468 + data 294 of 952 px | t 7.4 s · 42 m
+OK  | 4 NO LOOK BACK · TRIP | label 471 + data 294 of 952 px | t 1.4 s · 27 m
+OK  | 4 NO LOOK BACK · MID | label 453 + data 294 of 952 px | t 2.0 s · 33 m
+OK  | 4 NO LOOK BACK · CLIMAX | label 519 + data 294 of 952 px | t 2.5 s · 33 m
+OK  | 4 NO LOOK BACK · DOOR | label 488 + data 294 of 952 px | t 7.9 s · 42 m
+OK  | 4 NO LOOK BACK · BACK | label 485 + data 294 of 952 px | t 8.2 s · 42 m
+OK  | 5 DREAM RUN · TRIP | label 415 + data 294 of 952 px | t 0.6 s · 27 m
+OK  | 5 DREAM RUN · MID | label 397 + data 294 of 952 px | t 2.5 s · 27 m
+OK  | 5 DREAM RUN · CLIMAX | label 463 + data 294 of 952 px | t 2.8 s · 27 m
+OK  | 5 DREAM RUN · DOOR | label 432 + data 294 of 952 px | t 2.8 s · 27 m
+OK  | 5 DREAM RUN · BACK | label 429 + data 294 of 952 px | t 2.8 s · 27 m
+ALL LABELS FIT

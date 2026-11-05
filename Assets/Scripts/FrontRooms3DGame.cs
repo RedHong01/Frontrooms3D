@@ -2148,7 +2148,14 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             {
                 if (streamLights[i] == null) continue;
                 streamLights[i].intensity = streamLightLevels[i] * (1f - streamFade);
-                if (streamFade >= 1f) Destroy(streamLights[i]);
+                if (streamFade >= 1f)
+                {
+                    // URP's per-light data requires its Light (RequireComponent): it goes first, or Unity refuses to
+                    // remove the Light ("Can't remove Light because UniversalAdditionalLightData depends on it").
+                    var urpData = streamLights[i].GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalLightData>();
+                    if (urpData != null) DestroyImmediate(urpData);
+                    Destroy(streamLights[i]);
+                }
             }
             return;
         }
@@ -2674,7 +2681,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         // A cell the map leaves out (the title's rooms, a stairwell: C22) has no zone or lamp of its own to read.
         // A26's hook: floor 1's station (InFrontRooms) takes Level 0's too, until the visual chat supplies its own cube
         // (61 7); its Dim and Off lamps are the room's design, not dead lamps.
-        if (inStartRooms || map.IsReserved(cell) || InFrontRooms) zone = FrontRoomsLook.ReflectionZone.Level0;
+        // Title rooms (游戏视觉's title_stream_rooms, contract C1): in the start rooms, the cube of the stream room the player
+        // stands in (Level 0 for every Level 0 room and whenever the title programme is Today, so this changes nothing then).
+        if (inStartRooms && roomStream != null) zone = roomStream.ReflectionZoneAtZ(playerRoot.position.z);
+        else if (inStartRooms || map.IsReserved(cell) || InFrontRooms) zone = FrontRoomsLook.ReflectionZone.Level0;
         else
         {
             var info = map.ZoneOf(cell);

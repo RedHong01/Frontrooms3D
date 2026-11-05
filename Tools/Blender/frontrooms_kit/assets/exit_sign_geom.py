@@ -261,3 +261,36 @@ def lamp_reader_mm(lamp):
 
 # Targets (S1 Table 1, mean of red signs 2 and 3R, relative to I).
 NIST_REL = {"E": 0.544, "X": 0.651, "I": 1.0, "T": 0.531}
+
+
+# ---------------------------------------------------------------- a housing widened for its legend (world text, de)
+# Red 2026-11-04 10:14 "加宽德语框" (research/localization/WORLD_TYPE.md §3 "A wider box for German", VL506): a legend
+# file with "openingMm" and "housingMm" (exit_legend_dieface.py's WIDE set: AUSGANG at EXIT's 152.4 mm letters and
+# 19.05 mm stroke) gets the English pan stretched in WIDTH ONLY: depth, height, the 13 mm frame border, the bead, the
+# seam, the knockout and the keyholes stay; the face screws stay as far from the corners as EXIT's (53 mm); the hanging
+# stems stand at EXIT's fraction of the width (+-105 of 346 -> +-179 of 590, to the whole mm) and the canopy reaches
+# both as EXIT's does (20 mm past each stem). The two 20 W lamps become two long sources at 0.30 / 0.70 of the opening,
+# spread 0.15 of its width (平面视觉's 0.14 left the last G at .499; 0.15 gives the end letters .537 / .518 of the brightest,
+# the middle five .85-1.00, max/min 1.93 as EXIT's 1.94; EXIT's two point lamps at their fractions leave the ends at .22);
+# the battery pair stays at EXIT's fractions with EXIT's bulbs (the same 25.6 mm spread in the opening). The face and
+# diffuser UVs are squeezed onto their materials' tiles (UV_SX_*: the language's maps keep the base's pixel size,
+# FrontRoomsWorldText swaps them on the GPU). Unset or a kept-box legend: every number above stays as it is.
+BASE_HOUSING_W, BASE_OPEN_W = HOUSING_W, OPEN_W
+UV_SX_FACE = UV_SX_DIFF = 1.0
+WIDE = bool(LEGEND is not None and LEGEND.get("housingMm") and LEGEND.get("openingMm"))
+if WIDE:
+    _ow, _oh = (float(v) for v in LEGEND["openingMm"])
+    _hw, _hh = (float(v) for v in LEGEND["housingMm"])
+    assert _oh == OPEN_H and _hh == HOUSING_H and abs((_hw - _ow) / 2.0 - BORDER) < 1e-9, \
+        "a widened housing keeps EXIT's height and frame border: opening %s, housing %s" % (LEGEND["openingMm"], LEGEND["housingMm"])
+    HOUSING_W, OPEN_W = _hw, _ow
+    SCREW_X = HOUSING_W / 2.0 - (BASE_HOUSING_W / 2.0 - SCREW_X)
+    _stem_en = STEM_X
+    STEM_X = float(round(STEM_X * HOUSING_W / BASE_HOUSING_W))
+    CANOPY_L = CANOPY_L + 2.0 * (STEM_X - _stem_en)
+    _dc_su = DC_LAMPS[0][2] * BASE_OPEN_W / OPEN_W
+    LAMP_A = (0.30, 0.70, 0.15, 0.20)
+    LAMP_B = (0.70, 0.70, 0.15, 0.20)
+    DC_LAMPS = ((0.12, 0.70, _dc_su, 0.20), (0.88, 0.70, _dc_su, 0.20))
+    UV_SX_FACE = BASE_HOUSING_W / HOUSING_W
+    UV_SX_DIFF = BASE_OPEN_W / OPEN_W

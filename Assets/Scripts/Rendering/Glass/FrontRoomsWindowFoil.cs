@@ -873,9 +873,9 @@ public sealed class FrontRoomsWindowFoil : MonoBehaviour
         var hero = node.GetComponent<MeshRenderer>();
         var far = Draw("LOD1", node, Vector3.zero, lite, materials, ShadowCastingMode.Off).GetComponent<MeshRenderer>();
         var group = node.gameObject.AddComponent<LODGroup>();
-        group.fadeMode = LODFadeMode.None;
         group.SetLODs(new[] { new LOD(HeroLodHeight, new Renderer[] { hero }), new LOD(LiteLodHeight, new Renderer[] { far }) });
         group.RecalculateBounds();
+        FrontRoomsLodFade.Apply(group);
     }
 
     // A single-LOD group that culls a small part (a clip, a lead) beyond about `metres` (a 60 deg view; the screen share of the
@@ -885,11 +885,11 @@ public sealed class FrontRoomsWindowFoil : MonoBehaviour
         var r = node != null ? node.GetComponent<MeshRenderer>() : null;
         if (r == null) return;
         var group = node.gameObject.AddComponent<LODGroup>();
-        group.fadeMode = LODFadeMode.None;
         group.SetLODs(new[] { new LOD(.01f, new Renderer[] { r }) });
         group.RecalculateBounds();
         var height = Mathf.Clamp(group.size / (2f * metres * .57735f), .0005f, .5f);
         group.SetLODs(new[] { new LOD(height, new Renderer[] { r }) });
+        FrontRoomsLodFade.Apply(group);
     }
 
     /// <summary>Beyond these distances a lead (1 mm conductors) and a clip are not drawn.</summary>

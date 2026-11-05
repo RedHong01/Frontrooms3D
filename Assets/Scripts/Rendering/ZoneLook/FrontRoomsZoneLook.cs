@@ -45,6 +45,8 @@ public static class FrontRoomsZoneLook
 
     public static readonly int HeightFogId = Shader.PropertyToID("_FR_HeightFog");
     public static readonly int HeightFogColorId = Shader.PropertyToID("_FR_HeightFogColor");
+    /// <summary>The blended lamp share at the render (1 = as tuned): FrontRooms/Surface's water bounce replaces only the tuned ambient.</summary>
+    public static readonly int AmbientShareId = Shader.PropertyToID("_FR_ZoneAmbientShare");
 
     // ------------------------------------------------------------------------------------------- registry
     static readonly List<FrontRoomsZoneLookVolume> volumes = new List<FrontRoomsZoneLookVolume>();
@@ -77,6 +79,7 @@ public static class FrontRoomsZoneLook
         viewer = null;
         LastZone = "";
         LastWeight = 0f;
+        lampShares.Clear();
         SceneManager.sceneUnloaded -= OnSceneUnloaded;
         SceneManager.sceneUnloaded += OnSceneUnloaded;
     }
@@ -337,6 +340,7 @@ public static class FrontRoomsZoneLook
         public float fogDensity;
         public SphericalHarmonicsL2 probe;
         public Vector4 heightFog, heightFogColor;
+        public float ambientShare;
     }
 
     static readonly Saved[] stack = new Saved[16];
@@ -412,6 +416,7 @@ public static class FrontRoomsZoneLook
             probe = RenderSettings.ambientProbe,
             heightFog = Shader.GetGlobalVector(HeightFogId),
             heightFogColor = Shader.GetGlobalVector(HeightFogColorId),
+            ambientShare = Shader.GetGlobalFloat(AmbientShareId),
         };
     }
 
@@ -426,6 +431,7 @@ public static class FrontRoomsZoneLook
         RenderSettings.fogDensity = s.fogDensity;
         Shader.SetGlobalVector(HeightFogId, s.heightFog);
         Shader.SetGlobalVector(HeightFogColorId, s.heightFogColor);
+        Shader.SetGlobalFloat(AmbientShareId, s.ambientShare);
     }
 
     /// <summary>The blended look at a position, from base values (what the context found). False when no zone weighs in.</summary>
@@ -437,6 +443,8 @@ public static class FrontRoomsZoneLook
         public float heightDensity, heightWaterY, heightScale;
         public Color heightLinear;
         public float fillScale;
+        /// <summary>The lamp share, weighted like the probe (1 = as tuned).</summary>
+        public float ambientShare;
         public string strongest;
         public float strongestWeight;
     }
@@ -485,31 +493,39 @@ public static class FrontRoomsZoneLook
                 blend.heightScale = baseHeight.z > 0f ? 1f / baseHeight.z : p.heightFogScale;
                 blend.heightLinear = new Color(baseHeightColor.x, baseHeightColor.y, baseHeightColor.z, 1f);
                 blend.fillScale = 1f;
+                blend.ambientShare = 1f;
                 blend.strongest = "";
             }
             var sh = p.AmbientProbe;
+            // the zone's lamps' share (SetLampShare; 1 = as tuned, the same floats as before)
+            var share = LampShareOf(v.zone);
+            var lit = share != 1f;
+            if (lit) sh = sh * share;
             blend.probe = blend.probe * (1f - w) + sh * w;
-            blend.fogLinear = Color.Lerp(blend.fogLinear, p.fogColor.linear, w);
+            blend.fogLinear = Color.Lerp(blend.fogLinear, lit ? p.fogColor.linear * share : p.fogColor.linear, w);
             blend.fogDensity = Mathf.Lerp(blend.fogDensity, p.fogDensity, w);
-            var hd = p.heightFog && v.HasWater ? p.heightFogDensity : 0f;
+            var waterY = v.WaterLevelWorld;
+            var hd = p.heightFog && (v.HasWater || LowestWaterIn(v, out waterY)) ? p.heightFogDensity : 0f;
             if (hd > 0f)
             {
+                var hl = lit ? p.heightFogColor.linear * share : p.heightFogColor.linear;
                 if (blend.heightDensity <= 0f)
                 {
                     // the first layer: its own water, scale and colour, faded in by its weight
-                    blend.heightWaterY = v.WaterLevelWorld;
+                    blend.heightWaterY = waterY;
                     blend.heightScale = p.heightFogScale;
-                    blend.heightLinear = p.heightFogColor.linear;
+                    blend.heightLinear = hl;
                 }
                 else
                 {
-                    blend.heightWaterY = Mathf.Lerp(blend.heightWaterY, v.WaterLevelWorld, w);
+                    blend.heightWaterY = Mathf.Lerp(blend.heightWaterY, waterY, w);
                     blend.heightScale = Mathf.Lerp(blend.heightScale, p.heightFogScale, w);
-                    blend.heightLinear = Color.Lerp(blend.heightLinear, p.heightFogColor.linear, w);
+                    blend.heightLinear = Color.Lerp(blend.heightLinear, hl, w);
                 }
             }
             blend.heightDensity = Mathf.Lerp(blend.heightDensity, hd, w);
-            blend.fillScale = Mathf.Lerp(blend.fillScale, p.fillScale, w);
+            blend.fillScale = Mathf.Lerp(blend.fillScale, lit ? p.fillScale * share : p.fillScale, w);
+            blend.ambientShare = Mathf.Lerp(blend.ambientShare, share, w);
             if (w > blend.strongestWeight) { blend.strongestWeight = w; blend.strongest = v.zone; }
         }
         return any;
@@ -538,6 +554,7 @@ public static class FrontRoomsZoneLook
         // mode (measured: in Trilight mode the probe read back unchanged and the frames did not move)
         if (RenderSettings.ambientMode != AmbientMode.Custom) RenderSettings.ambientMode = AmbientMode.Custom;
         RenderSettings.ambientProbe = b.probe;
+        Shader.SetGlobalFloat(AmbientShareId, b.ambientShare);
         RenderSettings.fog = true;
         if (RenderSettings.fogMode != FogMode.ExponentialSquared) RenderSettings.fogMode = FogMode.ExponentialSquared;
         RenderSettings.fogColor = b.fogLinear.gamma;
@@ -551,6 +568,50 @@ public static class FrontRoomsZoneLook
         {
             Shader.SetGlobalVector(HeightFogId, Vector4.zero);
         }
+    }
+
+    // ------------------------------------------------------------------------------------------- the zone's lamps and waters
+    // 70_look_build.md section 12.10 (scene 4 with its pool zone looks on, 2026-11-04): the zone's ambient, its haze colours
+    // and its share of the scene's fill are the bounce of its lamps, so they follow the lamps; a look volume over terraced
+    // water (AddPoolLooks gives no single height) lays its height fog on the lowest water in its box.
+    static readonly Dictionary<string, float> lampShares = new Dictionary<string, float>();
+
+    /// <summary>The share of a zone's lamp light that is on (linear), by which its ambient probe, its haze colours (exp2 and
+    /// height fog) and its fill are scaled: 1 as the profile is tuned (the default: nothing changes), 0.5 a night key that
+    /// halves the lamps, 0 dead; above 1 a scene without the zone's fixtures (scene 4 until P1-A / P2-A are built). zone
+    /// "" or null sets every zone without its own value. Whoever dims the zone's lamps sets it with them.</summary>
+    public static void SetLampShare(string zone, float share)
+    {
+        lampShares[zone ?? ""] = Mathf.Max(share, 0f);
+    }
+
+    /// <summary>A zone's lamp share (its own, else the one set for every zone, else 1).</summary>
+    public static float LampShareOf(string zone)
+    {
+        float s;
+        if (zone != null && lampShares.TryGetValue(zone, out s)) return s;
+        return lampShares.TryGetValue("", out s) ? s : 1f;
+    }
+
+    /// <summary>The lowest registered water (FrontRoomsWaterSubmerged) whose rectangle's centre lies in the volume's box.</summary>
+    static bool LowestWaterIn(FrontRoomsZoneLookVolume v, out float y)
+    {
+        y = 0f;
+        var found = false;
+        var n = FrontRoomsWaterSubmerged.BodyCount;
+        if (n == 0) return false;
+        var t = v.transform;
+        var half = v.size * .5f;
+        for (var i = 0; i < n; i++)
+        {
+            Rect r;
+            float wy;
+            if (!FrontRoomsWaterSubmerged.GetBody(i, out r, out wy)) continue;
+            var d = t.InverseTransformPoint(new Vector3(r.center.x, wy, r.center.y)) - v.center;
+            if (Mathf.Abs(d.x) > half.x || Mathf.Abs(d.y) > half.y || Mathf.Abs(d.z) > half.z) continue;
+            if (!found || wy < y) { y = wy; found = true; }
+        }
+        return found;
     }
 
     // the scene's directional lights (found when a volume registers, and again at most once a second while a zone applies)

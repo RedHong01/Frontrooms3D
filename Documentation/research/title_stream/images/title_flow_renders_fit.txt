@@ -1,0 +1,62 @@
+W/title_stream/sheets/_panels/panel_head_today.png | TODAY | programme Today | label 96 px + data 255 px in cell 954 px | FITS
+W/title_stream/sheets/_panels/panel_head_tour.png | TF-1 TOUR · REC | programme Tour | label 273 px + data 238 px in cell 954 px | FITS
+W/title_stream/sheets/_panels/panel_head_drift.png | TF-2 DRIFT | programme Drift | label 175 px + data 255 px in cell 954 px | FITS
+W/title_stream/sheets/_panels/panel_head_descent.png | TF-3 DESCENT | programme Descent | label 221 px + data 289 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r2_reveal_logo.png | TODAY · REVEAL LEVEL 0 | 0:15 · 31 lt · 1.0k dr | label 393 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r2_reveal_logo.png | TF-1 · REVEAL OFFICE | 0:15 · 19 lt · 3.1k dr | label 352 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r2_reveal_logo.png | TF-2 · REVEAL POOL | 0:15 · 15 lt · 0.6k dr | label 324 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r2_reveal_logo.png | TF-3 · REVEAL OFFICE | 0:15 · 19 lt · 3.2k dr | label 352 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r2_logo.png | TODAY · R2 LEVEL 0 | 0:17 · 35 lt · 0.9k dr · 7.2:1 | label 328 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r2_logo.png | TF-1 · R2 OFFICE | 0:17 · 23 lt · 3.0k dr · 7.8:1 | label 287 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r2_logo.png | TF-2 · R2 POOL | 0:17 · 17 lt · 0.5k dr · 5.4:1 | label 259 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r2_logo.png | TF-3 · R2 OFFICE | 0:17 · 23 lt · 3.1k dr · 7.8:1 | label 287 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r3_logo.png | TODAY · R3 LEVEL 0 | 0:28 · 35 lt · 0.9k dr · 6.7:1 | label 328 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r3_logo.png | TF-1 · R3 LEVEL 0 | 0:28 · 24 lt · 1.0k dr · 6.7:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r3_logo.png | TF-2 · R3 LEVEL 0 | 0:28 · 18 lt · 0.8k dr · 6.7:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r3_logo.png | TF-3 · R3 RUN! | 0:28 · 16 lt · 1.9k dr · 3.0:1 | label 252 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r4_logo.png | TODAY · R4 LEVEL 0 | 0:38 · 35 lt · 0.9k dr · 7.3:1 | label 328 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r4_logo.png | TF-1 · R4 RUN! | 0:38 · 16 lt · 1.7k dr · 3.1:1 | label 252 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r4_logo.png | TF-2 · R4 LEVEL 0 | 0:38 · 23 lt · 0.8k dr · 7.3:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r4_logo.png | TF-3 · R4 LOW | 0:38 · 12 lt · 1.5k dr · 11.7:1 | label 247 px + data 527 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r5_logo.png | TODAY · R5 LEVEL 0 | 0:49 · 35 lt · 0.9k dr · 6.8:1 | label 328 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r5_logo.png | TF-1 · R5 LEVEL 0 | 0:49 · 16 lt · 1.4k dr · 6.8:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r5_logo.png | TF-2 · R5 WAITING | 0:49 · 22 lt · 1.0k dr · 8.4:1 | label 305 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r5_logo.png | TF-3 · R5 WAITING | 0:49 · 19 lt · 0.9k dr · 8.4:1 | label 305 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r6_logo.png | TODAY · R6 LEVEL 0 | 0:59 · 35 lt · 0.9k dr · 7.5:1 | label 328 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r6_logo.png | TF-1 · R6 WAITING | 0:59 · 24 lt · 0.9k dr · 8.7:1 | label 305 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r6_logo.png | TF-2 · R6 LEVEL 0 | 0:59 · 23 lt · 0.6k dr · 7.5:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r6_logo.png | TF-3 · R6 POOL | 0:59 · 18 lt · 0.5k dr · 5.5:1 | label 259 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r7_logo.png | TODAY · R7 LEVEL 0 | 1:10 · 36 lt · 0.9k dr · 6.7:1 | label 328 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r7_logo.png | TF-1 · R7 LEVEL 0 | 1:10 · 24 lt · 0.5k dr · 6.7:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r7_logo.png | TF-2 · R7 LOW | 1:10 · 20 lt · 1.7k dr · 11.1:1 | label 247 px + data 527 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r7_logo.png | TF-3 · R7 DARK POOL | 1:10 · 11 lt · 1.6k dr · 17.0:1 | label 352 px + data 527 px in cell 954 px | FITS
+W/title_stream/renders/film_today/r8_logo.png | TODAY · R8 LEVEL 0 | 1:20 · 36 lt · 0.9k dr · 6.8:1 | label 328 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/r8_logo.png | TF-1 · R8 POOL | 1:20 · 24 lt · 1.6k dr · 3.7:1 | label 259 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/r8_logo.png | TF-2 · R8 LEVEL 0 | 1:20 · 20 lt · 2.3k dr · 6.8:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/r8_logo.png | TF-3 · R8 LEVEL 0 | 1:20 · 16 lt · 2.7k dr · 6.8:1 | label 308 px + data 510 px in cell 954 px | FITS
+W/title_stream/renders/film_today/ho_space_raw.png | TODAY · SPACE IN R8 LEVEL 0 | you start here · 36 lt | label 475 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/ho_space_raw.png | TF-1 · SPACE IN R8 POOL | you start here · 36 lt | label 406 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/ho_space_raw.png | TF-2 · SPACE IN R9 OFFICE | you start here · 32 lt | label 434 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/ho_space_raw.png | TF-3 · SPACE IN R9 OFFICE | you start here · 28 lt | label 434 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/film_today/ho_door_raw.png | TODAY · START DOOR, SAME ROOM | map behind it · 36 lt | label 528 px + data 357 px in cell 954 px | FITS
+W/title_stream/renders/film_tour/ho_door_raw.png | TF-1 · AIRLOCK R9 LEVEL 0 | start door ahead · 48 lt | label 446 px + data 408 px in cell 954 px | FITS
+W/title_stream/renders/film_drift/ho_door_raw.png | TF-2 · AIRLOCK R10 LEVEL 0 | start door ahead · 44 lt | label 472 px + data 408 px in cell 954 px | FITS
+W/title_stream/renders/film_descent/ho_door_raw.png | TF-3 · AIRLOCK R10 LEVEL 0 | start door ahead · 40 lt | label 472 px + data 408 px in cell 954 px | FITS
+W/title_stream/renders/phone_today/r2_logo.png | TODAY · PHONE R2 LEVEL 0 | 0:18 · 35 lt · 0.7k dr | label 438 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/phone_tour/r2_logo.png | TF-1 · PHONE R2 OFFICE | 0:18 · 23 lt · 2.6k dr | label 397 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/phone_drift/r2_logo.png | TF-2 · PHONE R2 POOL | 0:18 · 17 lt · 0.4k dr | label 369 px + data 374 px in cell 954 px | FITS
+W/title_stream/renders/phone_descent/r2_logo.png | TF-3 · PHONE R2 OFFICE | 0:18 · 23 lt · 2.8k dr | label 397 px + data 374 px in cell 954 px | FITS
+W/title_stream/sheets/_panels/panel_cost_today.png | TODAY · COST | measured, M3 Max | label 221 px + data 272 px in cell 954 px | FITS
+W/title_stream/sheets/_panels/panel_cost_tour.png | TF-1 · COST | measured, M3 Max | label 201 px + data 272 px in cell 954 px | FITS
+W/title_stream/sheets/_panels/panel_cost_drift.png | TF-2 · COST | measured, M3 Max | label 201 px + data 272 px in cell 954 px | FITS
+W/title_stream/sheets/_panels/panel_cost_descent.png | TF-3 · COST | measured, M3 Max | label 201 px + data 272 px in cell 954 px | FITS
+panel head_today | text bottom 224 px of 258 | FITS
+panel head_tour | text bottom 224 px of 258 | FITS
+panel head_drift | text bottom 224 px of 258 | FITS
+panel head_descent | text bottom 224 px of 258 | FITS
+panel cost_today | text bottom 714 px of 820 | FITS
+panel cost_tour | text bottom 750 px of 820 | FITS
+panel cost_drift | text bottom 750 px of 820 | FITS
+panel cost_descent | text bottom 750 px of 820 | FITS
+sheet /Users/redwang/FrontRoomsVisualWork/title_stream/sheets/title_flow_renders.jpg 3840x8429
+ALL LABELS FIT

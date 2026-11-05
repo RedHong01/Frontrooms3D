@@ -171,7 +171,10 @@ public sealed class FrontRoomsZoneLookProfile : ScriptableObject
                 p.nicheLight = new Color(1f, .80f, .58f);
                 p.nicheIntensity = 2.4f;
                 p.waterAbsorbScale = 4f;            // Q1 "wrong": the level's ankle water turquoise (x3-5)
-                p.thrownLight = 0f;                 // its moving light is the caustics of its hidden compact lamps (17 7 item 9)
+                // its ankle water's moving light is the caustics of its hidden compact lamps (17 7 item 9); a basin of the
+                // level with wet niches (scene 4's catch pools and court basins) throws their glow at the physical share
+                // (17 4.3, FrontRoomsWaterSubmerged.NicheGlow; 0 until 11-04 hid it under the zone look, 70 12.10)
+                p.thrownLight = 1f;
                 return true;
             case "PoolDark":
                 // Red's fixed dark zone (18 section 3; Q4 "follow"): every overhead dead, the wet niches only; the grade's white

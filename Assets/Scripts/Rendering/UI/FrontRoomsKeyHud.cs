@@ -89,6 +89,28 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     /// long without it, the close-up is taken as over (a safety net; EXAMINE must call InspectClosed).</summary>
     public const float CloseUpSafetySeconds = 2f;
 
+    /// <summary>
+    /// Device prompts G8 step 2 (the interaction line's contract, research/interaction/device_prompts/20_contracts.md sec. 2;
+    /// the graphic-visuals look round of 2026-11-04): a line that names USE draws the control as the prompt bar's chip for the
+    /// device in hand and keeps its verb in line 1's Bayon: "[E]  UNLOCK", "HOLD [E]  BREAK GLASS" (FrontRoomsPromptBar,
+    /// Prompt.Bound(Use, PadUse): the keys' keycap, a pad's disc, its X O square triangle or a pill; it follows the device in
+    /// hand and a rebind; solid over the world, the bar's Hud: paper with ink marks at rest, the accent while its button is
+    /// held). HOLD and TAP are the tables' words, on the keys too. Red's look call on the HUD chip sheet (2026-11-04): true, the
+    /// default, draws the chip; false gives back today's words ("E  .  UNLOCK") and changes nothing.
+    /// While on, the HUD also draws the map's USE lines (Use and Hold kinds: "E  .  OPEN DOOR", "HOLD E  .  BREAK GLASS";
+    /// WantsWords, OwnsPrompt) where the map drew them, at once and at full alpha as the map did; the game's yellow hold bar
+    /// stays the hold's progress (no ring). Words that name no USE control (LOCKED, STEP BACK) and a handheld played by touch
+    /// keep today's words.
+    /// </summary>
+    public static bool UseChips = true;
+    /// <summary>UseChips: the chip to the verb, and HOLD / TAP to the chip (or the chip to a "{0} HALTEN" word), in canvas units at
+    /// the chip's scale 1 (1080p desktop px); a handheld's chip scale (ChipScaleHandheld) applies to both (graphic visuals,
+    /// 2026-11-04: 12 and 8).</summary>
+    public const float ChipVerbGap = 12f, ChipWordGap = 8f;
+    /// <summary>UseChips: the chip's scale on a handheld with a pad or a keyboard, the touch sheet's prompt bar (11/13: Plex Mono 11
+    /// in a 20.3 pt band beside Bayon 17); 1 on the desktop (the desktop sheet's 24 px band, Plex Mono 13).</summary>
+    public const float ChipScaleHandheld = 11f / 13f;
+
     /// <summary>The strings, final (DECISIONS #29, research/desktop_ui/FIX_CARD_VL217.md sec. B): one constant each. "." is
     /// IBM Plex Mono in line 1 (Bayon has none). The floor token is on the tag only, never in a line. Each is also its row's
     /// key in the language tables: the constants stay English, and WriteLines and the panel put them through FrontRoomsLanguage.T
@@ -240,8 +262,15 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         // None, and a kind the map appends later until it gets its case above: the dot (no state, not waiting).
         return Aim.None;
     }
-    /// <summary>The eye's kinds: the game passes its words only for these (no string work for the others).</summary>
-    public static bool WantsWords(FrontRoomsMapWorld.AimKind k) { return k == FrontRoomsMapWorld.AimKind.Read || k == FrontRoomsMapWorld.AimKind.Examine; }
+    /// <summary>The eye's kinds: the game passes its words only for these (no string work for the others). With UseChips on, the
+    /// USE lines' kinds too (Use and Hold): the HUD draws their line with the chip (OwnsPrompt).</summary>
+    public static bool WantsWords(FrontRoomsMapWorld.AimKind k)
+    {
+        if (k == FrontRoomsMapWorld.AimKind.Read || k == FrontRoomsMapWorld.AimKind.Examine) return true;
+        if (!UseChips) return false;
+        var a = AimOf(k);
+        return a == Aim.Use || a == Aim.Hold;
+    }
 
     /// <summary>
     /// DECISIONS #20: a zone's key identity until the map's rule lands (D1.6 DressDoor / DressKey). A STUB, so the map is
@@ -347,8 +376,11 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
 
     /// <summary>True while this component draws the prompt lines: the map writes "" to its own prompt then. It also
     /// counts a state the CURRENT aim will build (SetAim this frame, before the map's prompt line: contract v2.3), so on the
-    /// frame a state starts the map does not show its words at full alpha for one frame (capture stage 2026-10-22, VL304).</summary>
-    public bool OwnsPrompt => vectorOk && (active != null || lineA > 0f || StateFor(aimIn) != null);
+    /// frame a state starts the map does not show its words at full alpha for one frame (capture stage 2026-10-22, VL304).
+    /// With UseChips on it also counts the map's USE line the current aim brings (DrawsUseLine), which this component draws
+    /// with the chip; a USE line drawn last frame does not count by itself (no state is leaving), so words that name no USE
+    /// control go back to the map's line on the frame they come.</summary>
+    public bool OwnsPrompt => vectorOk && (active != null || (lineA > 0f && !useLineNow) || StateFor(aimIn) != null || (UseChips && DrawsUseLine(aimIn, aimText)));
     /// <summary>True once the vector shader loaded: the map hides its own crosshair dot then.</summary>
     public bool OwnsDot => vectorOk;
     /// <summary>(d): the panel is exempt from the shot's takeover fade, from Unlocking until the shot's fade has lifted.</summary>
@@ -395,6 +427,19 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     FrontRoomsLanguage.Language linesLanguage;
     float line2A = 1f, line2Shown = -1f;   // line 2's own alpha: Broken shows WON'T SHUT only during its reaction (#29)
     float linesScale = -1f;   // the canvas scale the lines were laid out at (the runs' x and widths are whole screen px at it)
+    // UseChips (device prompts G8 step 2): line 1's chip, made with the first chip line, and the two Bayon runs a chip line may add
+    FrontRoomsPromptBar chip;
+    FrontRoomsPromptBar.Prompt[] chipPrompt;            // Prompt.Bound(Use, PadUse), the glyph alone: one array, set every frame
+    Text l1c, l1d; FrontRoomsUITextLayout l1cL, l1dL;   // the words after the chip ("{0} HALTEN"); the words after a second "." (ALARMED)
+    bool chipLine;              // line 1 is drawn with the chip now
+    bool linesChips;            // UseChips as the lines were last written
+    string chipControl;         // the control the chip line names (the harness's Line1Chips)
+    string chipSource;          // the words the chip line was built from, as the game or this HUD wrote them (Line1Drawn)
+    bool useLineNow;            // this frame's line 1 is the map's USE line, drawn here (no state showing)
+    float chipLaidW = -1f;      // the chip width line 1 was laid out with (a device switch or a rebind changes it)
+    // the last line split for the chip (the game passes the same words every frame): its words, generation and parts
+    string useText; int useGen = -1, useParseGen; bool useOk; string useLead, useTrail, useVerb, useControl;
+    Text mapPrompt; bool mapPromptLooked; TextGenerator mapProbe;   // the map's own prompt line (where a USE line sits)
     // #39 (2), the dwell (photosafety): dotOpen = a state is building or built (not leaving); tDot = when the dot last opened
     // or closed. For HM.MinDwellSeconds after each change the aim cannot turn it the other way; dwellHold = this frame holds
     // a state built whose aim has already left (its Step must not read the new aim's fields).
@@ -493,7 +538,8 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         // G6 (DECISIONS #38): line 1 is the prompt, with the map's promptText keyline (2 px desktop, 1 pt phone);
         // line 2 keeps the 1 unit keyline
         var pk = FrontRoomsHudStyle.PromptKeyline(handheld);
-        AddOutline(l1a, pk); AddOutline(l1dot, pk); AddOutline(l1b, pk); AddOutline(l2, FrontRoomsHudStyle.KeylineDistance);
+        // the dot (a 2 px Plex glyph) takes a closed 1 unit ring instead: Outline's four diagonal copies part around it
+        AddOutline(l1a, pk); l1dot.gameObject.AddComponent<FrontRoomsHudRingOutline>(); AddOutline(l1b, pk); AddOutline(l2, FrontRoomsHudStyle.KeylineDistance);
         linesGroup.alpha = 0f;
 
         // ---- panel root: a sibling right after the map's key panel, full canvas, its own canvas and group
@@ -632,6 +678,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     void OnBindingsChanged()
     {
         linesDirty = true;
+        useParseGen++;   // UseChips: a USE line is split again for the new control
         if (eyeS != null && active == eyeS) eyeS.Reword();
     }
 
@@ -641,6 +688,7 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     {
         linesLanguage = FrontRoomsLanguage.Current;
         linesDirty = true;
+        useParseGen++;   // UseChips: the HOLD / TAP words are this language's
         if (eyeS != null && active == eyeS) eyeS.Reword();
     }
 
@@ -812,6 +860,14 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
             active.Step(now, true, false);
             MarkDot(now);
         }
+        // UseChips: no state showing and the aim on a USE line the map would draw (Use / Hold): the HUD draws that line with the
+        // chip, at once and at full alpha as the map drew it (it has no build and no leave; the states' lines keep theirs)
+        useLineNow = false;
+        if (UseChips && active == null && DrawsUseLine(aimIn, aimText))
+        {
+            SetLines(aimIn, false, aimText, -1);
+            lineA = 1f; lineX = 0f; useLineNow = true;
+        }
 
         WriteUniforms();
         // a resolution change re-lays the three-run line out too (capture stage 2026-10-22: after a canvas-scale change
@@ -820,8 +876,10 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         // the device in hand names USE in "E . UNLOCK" and the eye's line (device prompts G8, 2026-11-03): a switch between the
         // keys and a pad (a handheld's touch, pad or keyboard mode) writes the lines again, on that frame only
         var device = handheld ? 10 + (int)FrontRoomsTouchControls.CurrentMode : FrontRoomsInput.PadInUse ? 1 : 0;
-        if (device != linesDevice) { linesDevice = device; linesDirty = true; if (eyeS != null && active == eyeS) eyeS.Reword(); }
+        if (device != linesDevice) { linesDevice = device; linesDirty = true; useParseGen++; if (eyeS != null && active == eyeS) eyeS.Reword(); }
+        if (UseChips != linesChips) { linesChips = UseChips; linesDirty = true; useParseGen++; }   // the harness turns the chips on or off
         if (linesDirty) WriteLines();
+        if (chipLine) StepChip();
         linesGroup.alpha = lineA;
         if (line2A != line2Shown) { line2Shown = line2A; var c2 = l2.color; c2.a = line2A; l2.color = c2; }   // only on a change (no per-frame mesh rebuild)
         linesRect.anchoredPosition = new Vector2(lineX * ls, 0f);
@@ -839,6 +897,10 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     {
         l1a.SetVerticesDirty(); l1dot.SetVerticesDirty(); l1b.SetVerticesDirty(); l2.SetVerticesDirty();
         labelKey.SetVerticesDirty(); meta.SetVerticesDirty();
+        if (chip == null) return;
+        // UseChips: the chip line's own runs and the bar's legend (allocates the list: a scale change only)
+        l1c.SetVerticesDirty(); l1d.SetVerticesDirty();
+        foreach (var t in chip.Root.GetComponentsInChildren<Text>(true)) t.SetVerticesDirty();
     }
 
     void SetLines(Aim kind, bool haveKey, string text, int number)
@@ -1475,11 +1537,14 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     {
         linesDirty = false;
         string a, dot = "", b = "", two = "";
+        string use = null;   // UseChips: line 1 as shown when it may name USE (its control is then drawn as the chip)
         if (linesKind == Aim.Broken) { a = FrontRoomsLanguage.T(Strings.Broken); two = FrontRoomsLanguage.T(Strings.WontShut); }
-        else if (linesKind == Aim.Read || linesKind == Aim.Examine)
+        else if (linesKind == Aim.Read || linesKind == Aim.Examine || linesKind == Aim.Use || linesKind == Aim.Hold)
         {
-            // the map's words, as shown (DisplayPrompt); "." is Plex Mono between two Bayon runs (lab 1067); no line 2
+            // the map's words, as shown (DisplayPrompt); "." is Plex Mono between two Bayon runs (lab 1067); no line 2. Use and
+            // Hold come here only with UseChips on (StepCrosshair: the HUD draws the map's USE line then)
             var s = linesText ?? "";
+            use = s;
             var i = s.IndexOf('\u00B7');
             if (i < 0) a = s; else { a = s.Substring(0, i); dot = "\u00B7"; b = s.Substring(i + 1); }
         }
@@ -1491,12 +1556,15 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
                 two = FrontRoomsLanguage.T(Strings.HasKey);
                 var line = TableWords(Strings.Unlock);
                 var unlock = WithUseControl(line, handheld);
+                use = unlock;
                 var i = (unlock ?? line).IndexOf('\u00B7');
                 if (unlock == null || i < 0) { a = i < 0 ? (unlock ?? line) : line.Substring(i + 1).Trim(); }
                 else { a = unlock.Substring(0, i); dot = "\u00B7"; b = unlock.Substring(i + 1); }
             }
         }
         else a = "";
+        if (UseChips && use != null && WriteChipLine(use, two)) return;
+        if (chipLine) HideChip();
         l1a.text = a; l1dot.text = dot; l1b.text = b; l2.text = two;
         var runs = dot.Length > 0;
         l1aL.centre = !runs;
@@ -1532,6 +1600,215 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
         var w = 0f;
         for (var i = 0; i < s.Length; i++) { CharacterInfo ci; if (f.GetCharacterInfo(s[i], out ci, size, t.fontStyle)) w += ci.advance / ppu + tracking; }
         return w;
+    }
+
+    // ---------------------------------------------------------------- the USE chip (UseChips; device prompts G8 step 2)
+    float ChipScale => handheld ? ChipScaleHandheld : 1f;
+
+    static float Snap(float v, float scale) { return Mathf.Round(v * scale) / scale; }
+
+    // The chip (a prompt bar of one glyph under line 1, so it fades and moves with the line) and the two runs a chip line may
+    // add, made with the first chip line: with UseChips off none of this exists.
+    void EnsureChip()
+    {
+        if (chip != null) return;
+        chip = FrontRoomsPromptBar.Create(linesRect, plex, Paper, FrontRoomsHudStyle.KeylineColor, ChipScale);
+        // graphic visuals 2026-11-04 (1): the bar's own Keyline mode, the HUD's 1 unit keyline (a 2 px Outline round a 1 px ring
+        // splits into a ghost, DECISIONS #38), and the bar's Hud mode, the solid chip over the world (graphic visuals 07:4x, the
+        // interaction line's 10:01: at rest the shape filled paper, ink marks, a 1 px keyline ring outside the shape; pressed the
+        // accent #F4DF3B, ink marks, a 1 px drop; an unfilled chip's paper edge and legend melt into a white door, L* 76)
+        chip.Keyline = true;
+        chip.Hud = true;
+        chip.Root.anchorMin = chip.Root.anchorMax = new Vector2(.5f, .5f);
+        chipPrompt = new[] { FrontRoomsPromptBar.Prompt.Bound(FrontRoomsInput.Bind.Use, FrontRoomsInput.Bind.PadUse, null) };
+        var f1 = handheld ? 17 : 20; var y1 = handheld ? -38f : -51f; var pk = FrontRoomsHudStyle.PromptKeyline(handheld);
+        l1c = NewText("Line 1 c", linesRect, bayon, f1, Paper, y1, 0f, false, out l1cL);
+        l1d = NewText("Line 1 d", linesRect, bayon, f1, Paper, y1, 0f, false, out l1dL);
+        AddOutline(l1c, pk); AddOutline(l1d, pk);
+    }
+
+    // Line 1 as [lead] chip [trail]  verb, centred as one (graphic visuals 2026-11-04: "[E]  UNLOCK", "HOLD [E]  BREAK GLASS"; on
+    // the keys the table's word, keycap, verb in every language, "HALTEN [E]  GLAS ZERSCHLAGEN"; a pad follows its "{0} HALTEN"
+    // row, "[A] HALTEN  GLAS ZERSCHLAGEN"). False when the line names no USE control of the device in hand.
+    bool WriteChipLine(string line, string two)
+    {
+        if (!ParseUse(line)) return false;
+        EnsureChip();
+        // a second "." (OPEN DOOR  .  ALARMED) stays today's Plex Mono dot between two Bayon runs
+        string v1 = useVerb, dot = "", v2 = "";
+        var k = useVerb.IndexOf('\u00B7');
+        if (k >= 0) { v1 = useVerb.Substring(0, k); dot = "\u00B7"; v2 = useVerb.Substring(k + 1); }
+        l1a.text = useLead; l1c.text = useTrail; l1b.text = v1; l1dot.text = dot; l1d.text = v2; l2.text = two;
+        chipControl = useControl; chipSource = line;
+        if (l1aL.centre) { l1aL.centre = false; l1a.SetVerticesDirty(); }
+        l1b.enabled = true; l1c.enabled = useTrail.Length > 0; l1dot.enabled = l1d.enabled = dot.Length > 0;
+        if (!chip.Root.gameObject.activeSelf) chip.Root.gameObject.SetActive(true);
+        chip.Set(chipPrompt);
+        chip.Tick();
+        chipLine = true;
+        LayoutChipLine();
+        return true;
+    }
+
+    // Back to words: the chip and its runs leave line 1.
+    void HideChip()
+    {
+        chipLine = false;
+        chip.Root.gameObject.SetActive(false);
+        l1c.enabled = l1d.enabled = false;
+        l1a.SetVerticesDirty();   // its centring comes back with the words (l1aL.centre)
+    }
+
+    // The runs left to right, centred as one, each on a whole screen pixel; the chip's middle on the verb's ink middle (as the
+    // settings tabs' chips since D-e), its band's foot on a whole pixel. A USE line taken over from the map sits on the map's
+    // own baseline (MapLineBaseline), every other line on line 1's.
+    void LayoutChipLine()
+    {
+        var sc = Mathf.Max(.01f, canvas.scaleFactor);
+        var s = ChipScale;
+        var gw = ChipWordGap * s; var gv = ChipVerbGap * s;
+        var wa = Width(l1a, l1a.text, 0f); var wc = Width(l1c, l1c.text, 0f);
+        var wb = Width(l1b, l1b.text, 0f); var wd = Width(l1dot, l1dot.text, 0f); var we = Width(l1d, l1d.text, 0f);
+        var cw = chipLaidW = chip.Width;
+        var total = (wa > 0f ? wa + gw : 0f) + cw + (wc > 0f ? gw + wc : 0f) + gv + wb + wd + we;
+        var x = Snap(-total / 2f, sc);
+        SetX(l1a, x);
+        if (wa > 0f) x = Snap(x + wa + gw, sc);
+        var cx = x;
+        x += cw;
+        if (wc > 0f) { x = Snap(x + gw, sc); SetX(l1c, x); x += wc; }
+        x = Snap(x + gv, sc);
+        SetX(l1b, x); SetX(l1dot, x + wb); SetX(l1d, x + wb + wd);
+        var b1 = linesKind == Aim.Use || linesKind == Aim.Hold ? MapLineBaseline(sc) : Snap(handheld ? -38f : -51f, sc);
+        var b2 = Snap(handheld ? -58f : -74f, sc);
+        SetY(l1a, b1); SetY(l1c, b1); SetY(l1b, b1); SetY(l1dot, b1); SetY(l1d, b1);
+        SetX(l2, 0f); SetY(l2, b2);
+        var band = chip.Root.sizeDelta.y;
+        var mid = b1 + InkMiddle(wb > 0f ? l1b : l1a);
+        chip.Root.anchoredPosition = new Vector2(cx, Snap(mid - band * .5f, sc) + band * .5f);
+    }
+
+    // The middle of a run's ink above its baseline, in canvas units: the glyph boxes of its characters at the size the generator
+    // renders them (Bayon's caps; a language's own face), as FrontRoomsDesktopSettingsView.InkMiddle sets the tabs' chips.
+    float InkMiddle(Text t)
+    {
+        var s = t.text; var f = t.font;
+        var fallback = t.fontSize * .35f;
+        if (f == null || string.IsNullOrEmpty(s)) return fallback;
+        var ppu = Mathf.Max(.01f, canvas.scaleFactor);
+        var size = Mathf.RoundToInt(t.fontSize * ppu);
+        f.RequestCharactersInTexture(s, size, t.fontStyle);
+        float top = float.NegativeInfinity, bottom = float.PositiveInfinity;
+        for (var i = 0; i < s.Length; i++)
+        {
+            CharacterInfo ci;
+            if (char.IsWhiteSpace(s[i]) || !f.GetCharacterInfo(s[i], out ci, size, t.fontStyle) || ci.maxY <= ci.minY) continue;
+            if (ci.maxY > top) top = ci.maxY;
+            if (ci.minY < bottom) bottom = ci.minY;
+        }
+        return top < bottom ? fallback : (top + bottom) * .5f / ppu;
+    }
+
+    // Where the map's own prompt line (the game's "Key prompt" Text beside this HUD under the crosshair) has its baseline, measured
+    // with that Text's own generator settings: a USE line drawn here sits where the map drew it (the desktop: line 1's -51; a
+    // handheld: the map's line centred at -26, above line 1's -38). Line 1's baseline when it is not found.
+    float MapLineBaseline(float sc)
+    {
+        var line1 = Snap(handheld ? -38f : -51f, sc);
+        if (!mapPromptLooked)
+        {
+            mapPromptLooked = true;
+            var t = crossRoot.parent != null ? crossRoot.parent.Find("Key prompt") : null;
+            if (t != null) t.TryGetComponent(out mapPrompt);
+        }
+        if (mapPrompt == null || mapPrompt.font == null) return line1;
+        var rt = mapPrompt.rectTransform;
+        if (mapProbe == null) mapProbe = new TextGenerator();
+        var settings = mapPrompt.GetGenerationSettings(rt.rect.size);
+        if (!mapProbe.PopulateWithErrors("E", settings, gameObject)) return line1;
+        var verts = mapProbe.verts;
+        if (verts.Count < 4) return line1;
+        var bottom = Mathf.Min(Mathf.Min(verts[0].position.y, verts[1].position.y), Mathf.Min(verts[2].position.y, verts[3].position.y));
+        var font = mapPrompt.font; var style = mapPrompt.fontStyle;
+        var ppu = Mathf.Max(.01f, mapPrompt.pixelsPerUnit);
+        var size = Mathf.RoundToInt(mapPrompt.fontSize * ppu);
+        CharacterInfo ci;
+        font.RequestCharactersInTexture("E", size, style);
+        if (!font.GetCharacterInfo('E', out ci, size, style))
+        {
+            size = Mathf.FloorToInt(mapPrompt.fontSize * ppu);
+            font.RequestCharactersInTexture("E", size, style);
+            if (!font.GetCharacterInfo('E', out ci, size, style)) return line1;
+        }
+        // the generator's quad has its foot at the baseline + minY (px); the Text's local origin is its pivot
+        var baseline = (bottom - ci.minY) / ppu + rt.localPosition.y - crossRoot.localPosition.y;
+        return Snap(baseline, sc);
+    }
+
+    // A line as shown split for the chip. The line is the map's words through DisplayPrompt or this HUD's own through
+    // WithUseControl, so its control is the device in hand's USE as bound: "E  .  OPEN DOOR", "HOLD F  .  BREAK GLASS" (the keys,
+    // WithKeyNames; in another language the game's LeadWords has put HOLD / TAP through the table), "A  .  ...",
+    // "HOLD CROSS  .  ...", "B HALTEN  .  ..." (a pad, WithPadNames and the tables' "HOLD {0}" and "TAP {0}"). On the keys the
+    // chip line leads with the table's HOLD / TAP whichever form the head came in (the settings-menu line, 2026-11-04 07:4x: both
+    // words have rows in all nine tables): word, keycap, verb in every language; a pad keeps its row's order. False for words that
+    // name no USE control (LOCKED, STEP BACK, a close-up's hints) and on a handheld played by touch (the verb alone; the USE
+    // button carries the control). One entry is cached: the game passes the same words every frame, so this allocates only when
+    // the words change.
+    bool ParseUse(string line)
+    {
+        if (useGen == useParseGen && string.Equals(line, useText, StringComparison.Ordinal)) return useOk;
+        useText = line; useGen = useParseGen; useOk = false;
+        useLead = useTrail = useVerb = useControl = null;
+        if (string.IsNullOrEmpty(line) || (handheld && FrontRoomsTouchControls.CurrentMode == FrontRoomsTouchControls.InputMode.Touch)) return false;
+        var dot = line.IndexOf("  \u00B7  ", StringComparison.Ordinal);
+        if (dot <= 0 || dot + 5 >= line.Length) return false;
+        var head = line.Substring(0, dot);
+        var control = FrontRoomsInput.PadInUse ? FrontRoomsInput.ControlName(FrontRoomsInput.Bind.PadUse) : FrontRoomsInput.UseKey;
+        string lead, trail;
+        if (head == control) lead = trail = "";
+        else if (Keyed(head, control, "HOLD")) { lead = FrontRoomsLanguage.T("HOLD"); trail = ""; }   // the keys: the table's word first
+        else if (Keyed(head, control, "TAP")) { lead = FrontRoomsLanguage.T("TAP"); trail = ""; }
+        else if (!Around(head, control, "HOLD {0}", out lead, out trail) && !Around(head, control, "TAP {0}", out lead, out trail)) return false;
+        useLead = lead; useTrail = trail; useControl = control;
+        useVerb = line.Substring(dot + 5).Trim();
+        useOk = useVerb.Length > 0;
+        return useOk;
+    }
+
+    // head is a keyboard prompt's lead word and its key: English as WithKeyNames writes it ("HOLD E"), or the word already
+    // through the table ("HALTEN E", the game's LeadWords in FrontRooms3DGame.Mobile.cs since 2026-11-04 07:37).
+    static bool Keyed(string head, string control, string word)
+    {
+        return string.Equals(head, word + " " + control, StringComparison.Ordinal)
+            || string.Equals(head, FrontRoomsLanguage.T(word) + " " + control, StringComparison.Ordinal);
+    }
+
+    // head is the table's key ("HOLD {0}") round the control, as WithPadNames writes it: the words before and after the control.
+    static bool Around(string head, string control, string key, out string before, out string after)
+    {
+        before = after = null;
+        var words = FrontRoomsLanguage.T(key);
+        var at = words.IndexOf("{0}", StringComparison.Ordinal);
+        if (at < 0 || !string.Equals(head, words.Replace("{0}", control), StringComparison.Ordinal)) return false;
+        before = words.Substring(0, at).Trim();
+        after = words.Substring(at + 3).Trim();
+        return true;
+    }
+
+    // The aim's words are a USE line the map would draw (Use / Hold) that the HUD can draw with the chip.
+    bool DrawsUseLine(Aim aim, string text)
+    {
+        return vectorOk && (aim == Aim.Use || aim == Aim.Hold) && text != null && ParseUse(text);
+    }
+
+    // Every frame line 1 is a chip line: while it shows, the bar follows the device in hand and a rebind and answers the press
+    // (the solid chip's accent fill, ink marks, 1 px drop: its Tick, the bar's Hud; no ring, the game's yellow bar is a hold's
+    // progress); a glyph of another width lays the line out again.
+    void StepChip()
+    {
+        if (lineA <= 0f) return;
+        chip.Tick();
+        if (!Mathf.Approximately(chip.Width, chipLaidW)) LayoutChipLine();
     }
 
     // ---------------------------------------------------------------- key panel, P4, U.3
@@ -1748,7 +2025,8 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
                 + "\tlabelA=" + F(labelGroup.alpha) + "\tmetaA=" + F(metaGroup.alpha) + "\ttGesture=" + F(tGesture) + "\tgesture=" + gestureOn
                 + "\tl1=" + l1a.text + l1dot.text + l1b.text + "\tl2=" + l2.text + "\tl2a=" + F(line2A) + "\tpx=" + F(PxPerUnit())
                 + "\ttoken=" + FloorToken(panelId.number) + "\teyeVar=" + Eye
-                + "\topen=" + dotOpen + "\ttDot=" + F(tDot) + "\tdwellHold=" + dwellHold;
+                + "\topen=" + dotOpen + "\ttDot=" + F(tDot) + "\tdwellHold=" + dwellHold
+                + (UseChips ? "\tchip=" + chipLine + "\tuseLine=" + useLineNow + "\tchipW=" + F(chipLaidW) : "");
         }
     }
     /// <summary>Harness: the crosshair root (for the capture's crop) and the panel root.</summary>
@@ -1760,9 +2038,19 @@ public sealed class FrontRoomsKeyHud : MonoBehaviour
     public float LineAlphaNow => lineA;
     public float DotAlphaNow => dotA;
     /// <summary>Playtests: line 1 as drawn this frame (its runs joined; "" while the line is at alpha 0 or the crosshair
-    /// group is hidden), so a check can tell the key HUD really draws the prompt it owns.</summary>
+    /// group is hidden), so a check can tell the key HUD really draws the prompt it owns. A chip line (UseChips) gives the
+    /// words it was built from, the chip standing for its control's name, so a check of the prompt's words reads the same with
+    /// the chips on or off (FrontRoomsInspectPlaytest's "as drawn" checks); Line1Chips gives the chip form.</summary>
     public string Line1Drawn => lineA > 0f && crossGroup != null && crossGroup.alpha > 0f
-        ? l1a.text + (l1dot.enabled ? l1dot.text + l1b.text : "") : "";
+        ? (chipLine ? chipSource : l1a.text + (l1dot.enabled ? l1dot.text + l1b.text : "")) : "";
+    /// <summary>Harness (UseChips): line 1 as drawn with the chip, the chip as its control's name in brackets
+    /// ("HOLD [E]  BREAK GLASS"); "" while no chip line shows.</summary>
+    public string Line1Chips => chipLine && lineA > 0f && crossGroup != null && crossGroup.alpha > 0f
+        ? (l1a.text.Length > 0 ? l1a.text + " " : "") + "[" + chipControl + "]" + (l1c.enabled ? " " + l1c.text : "")
+          + "  " + l1b.text + (l1dot.enabled ? l1dot.text + l1d.text : "") : "";
+    /// <summary>Harness (UseChips): line 1 is drawn with the chip; its bar (Root, Width) and the parts of its glyph.</summary>
+    public bool ChipLineNow => chipLine;
+    public FrontRoomsPromptBar ChipBar => chip;
     /// <summary>Playtests: the keyline distance on line 1 / line 2 (G6, DECISIONS #38).</summary>
     public float Line1KeylineDistance => l1a.GetComponent<Outline>().effectDistance.x;
     public float Line2KeylineDistance => l2.GetComponent<Outline>().effectDistance.x;

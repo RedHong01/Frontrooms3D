@@ -1,0 +1,56 @@
+/Users/redwang/FrontRoomsVisualWork/run_red/out/run_red_looks.jpg 2557x5570 u=1.333 tile=849
+TODAY front 0.9 s | mains out at once, pools up | label 204 of 823 px, data 297 of 603 px OK
+A front 0.9 s | red behind the band, white ahead | label 153 of 823 px, data 352 of 654 px OK
+B front 0.9 s | the same front: B = A + the pulse | label 154 of 823 px, data 363 of 653 px OK
+TODAY steady 2.6 s | mid-wall L (35, 33, 24) | label 215 of 823 px, data 253 of 592 px OK
+A steady 2.6 s | mid-wall L (139, 30, 26) | label 164 of 823 px, data 264 of 643 px OK
+B steady 2.6 s | mid-wall L (139, 30, 26) | label 165 of 823 px, data 264 of 642 px OK
+TODAY run 3.71 s | pools, 7 m in, running | label 197 of 823 px, data 242 of 610 px OK
+A run 3.71 s | steady red, 7 m in | label 146 of 823 px, data 198 of 661 px OK
+B run 3.71 s | B's dip at strip 4 (0.35) | label 147 of 823 px, data 275 of 660 px OK
+TODAY Relay 6 m | 0-2.05 m 12.8 : 1, whole 13.8 : 1 | label 182 of 823 px, data 363 of 625 px OK
+A Relay 6 m | 0-2.05 m 13.4 : 1, whole 7.5 : 1 | label 131 of 823 px, data 352 of 676 px OK
+B Relay 6 m | 0-2.05 m 13.4 : 1, whole 7.5 : 1 | label 132 of 823 px, data 352 of 675 px OK
+TODAY protan | protan copy: 0-2.05 m 12.8 : 1 | label 148 of 823 px, data 330 of 659 px OK
+A protan | protan copy: 0-2.05 m 13.0 : 1 | label 97 of 823 px, data 330 of 710 px OK
+B protan | protan copy: 0-2.05 m 13.0 : 1 | label 98 of 823 px, data 330 of 709 px OK
+TODAY Relay, dip | 12.8 : 1 (no dip in Today) | label 180 of 823 px, data 286 of 627 px OK
+A Relay, dip | 13.4 : 1 (no dip in A) | label 129 of 823 px, data 242 of 678 px OK
+B Relay, dip | B's dip over it 13.3, protan 12.9 | label 130 of 823 px, data 363 of 677 px OK
+TODAY phone tier | mid-wall L (43, 40, 27), 2.6 s | label 188 of 823 px, data 330 of 619 px OK
+A phone tier | mid-wall L (114, 36, 27), 2.6 s | label 137 of 823 px, data 341 of 670 px OK
+B phone tier | mid-wall L (114, 36, 27), 2.6 s | label 138 of 823 px, data 341 of 669 px OK
+TODAY under strip 3 | tube struck, Light off, no halo | label 228 of 823 px, data 341 of 579 px OK
+A under strip 3 | red Light 3.5, halo .40 linear | label 177 of 823 px, data 330 of 630 px OK
+B under strip 3 | the same at 2.6 s | label 178 of 823 px, data 187 of 629 px OK
+TODAY beside | lower half R/G 1.34, red 2.4 | label 141 of 823 px, data 308 of 666 px OK
+A beside, shadowed | lower half R/G 1.46, red 7.2 | label 214 of 823 px, data 308 of 593 px OK
+A beside, no shadows | lower half R/G 1.59, red 12.4 | label 235 of 823 px, data 319 of 572 px OK
+COST desktop armed                57.2 | 330 of 817 px OK
+COST desktop TODAY tripped        53.8 | 330 of 817 px OK
+COST desktop A red shadowed       64.0 | 330 of 817 px OK
+COST desktop A red unshadowed     56.7 | 330 of 817 px OK
+COST desktop B mid-dip            64.1 | 330 of 817 px OK
+COST Relay contact on / off  77.1 / 76.3 | 350 of 817 px OK
+COST phone tier TODAY / A   65.7 / 69.1 | 340 of 817 px OK
+COST load average 80-130 while measured | 340 of 817 px OK
+COST TODAY tripped 9 on, 8 shadowed | 300 of 817 px OK
+COST A, B tripped  18 on, 17 shadowed | 320 of 817 px OK
+COST general  A 1 / 1   B 1 / 1 | 260 of 817 px OK
+COST red old  A 0 / 0.5   B 1 / 1 | 280 of 817 px OK
+COST red 2.2  A 0 / 0.5   B 0 / 0.5 | 300 of 817 px OK
+COST Reduce Flashing  0.5 / 1 general | 320 of 817 px OK
+COST B: 12 pulses, one dip a place / 2.5 s | 370 of 817 px OK
+COST Harding FPA / PEAT: not run here | 320 of 817 px OK
+COST Relay 12 m  T 6.2  A 6.5  B 6.5 | 310 of 817 px OK
+COST   protan    T 6.1  A 6.3  B 6.3 | 310 of 817 px OK
+COST phone 6 m   T 20.7  A 21.7  B 21.6 | 340 of 817 px OK
+COST bar 4 : 1 (plain, 0-2.05 m band) | 320 of 817 px OK
+COST tests 25 pass, 0 fail (R1-R23) | 300 of 817 px OK
+COST CPU B pulses 0.13 ms a frame | 280 of 817 px OK
+COST +0 Lights, +0 textures, +0 draws | 320 of 817 px OK
+COST ships A; B behind DefaultRedLook | 320 of 817 px OK
+COST GPU | Editor on this Mac, synced | label 98 of 823 px, data 286 of 709 px OK
+COST lights | in-house T9, not FPA or PEAT | label 129 of 823 px, data 308 of 678 px OK
+COST read | plain ratio, ring 12 px | label 111 of 823 px, data 253 of 696 px OK
+ALL LABELS FIT

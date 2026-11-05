@@ -168,7 +168,7 @@ public sealed class FrontRoomsRunRestack : MonoBehaviour
                 lods[lv] = new LOD(h, new Renderer[] { r.renderers[lv] });
             }
             group.SetLODs(lods);
-            group.fadeMode = LODFadeMode.None;
+            FrontRoomsLodFade.Apply(group);
         }
         // the grit outlives a step by up to 3 s, so it hangs on the head (always on), not on the body (hidden at the seat)
         if (tier == Tier.Desktop) r.grit = FrontRoomsRunGrit.Create(head);

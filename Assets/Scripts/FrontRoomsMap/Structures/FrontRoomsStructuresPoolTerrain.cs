@@ -14,7 +14,8 @@ using UnityEngine;
 /// the Relay's way, a stair into the water); the grotto (a low vaulted water passage ending 12 m in at a lit niche); off the
 /// route the Casbah (tiled blocks at four levels in a flooded floor) and C8 (a covered basin under an access floor). All
 /// water is the level's wrong turquoise, nothing deeper than 1.20, nothing flickers. Whole modules on the cell grid (40 11.9).
-/// Greybox where no kit exists, listed on the sign.
+/// Greybox where no kit exists, listed on the sign. L switches the dome hall's light between A (today's) and B (S1 C: the vault
+/// in shadow, small bright lamps thrown down; the section "the dome hall's light" below); everything else in SP6 keeps A.
 /// </summary>
 public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistrict
 {
@@ -25,6 +26,37 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
     FrontRoomsStructuresKit kit;
     Material tile, nosing, sheet, fall;
     readonly List<Light> viewLamps = new List<Light>();
+
+    // The dome hall's light B (L; the section "the dome hall's light" below).
+    const float VaultShade = .20f, SoffitShade = .30f, WallShadeTop = .32f, WallShadeCurve = 1.25f, ShadeFrom = 1.8f, Liner = .006f;
+    const int ShadeCourses = 12;
+    static readonly Color MetalHalide = new Color(.90f, .97f, 1f);
+    static readonly Color SpotLens = new Color(8.6f, 9.3f, 9.6f), SoffitLens = new Color(7.4f, 8.0f, 8.3f), CornerLens = new Color(6.2f, 6.7f, 6.9f);
+    static readonly Color OculusDiffuser = new Color(2.4f, 2.55f, 2.65f);
+    static readonly Vector3 DomeProbeCentre = new Vector3(3f, 1.5f, 42f);
+    static readonly Vector2 Oculus = new Vector2(1.5f, 43.5f);
+    bool domeB, domeReady, domeShaded;
+    readonly List<Light> domeA = new List<Light>(), domeLampsB = new List<Light>();
+    readonly List<Renderer> domeHideB = new List<Renderer>(), domeShowB = new List<Renderer>();
+    readonly List<GameObject> domePartsB = new List<GameObject>();
+    readonly List<DomeShade> domeShades = new List<DomeShade>();
+    readonly List<Bounds> domeArms = new List<Bounds>();
+    readonly UnityEngine.Rendering.SphericalHarmonicsL2[] domeSH = new UnityEngine.Rendering.SphericalHarmonicsL2[1];
+    UnityEngine.Rendering.SphericalHarmonicsL2 domeBase;
+    MaterialPropertyBlock domeBlock;
+    ReflectionProbe domeProbe;
+    int domeProbeFrames;
+
+    // One renderer B shades: the room's own ambient probe times k. A shared one (the vault, which A draws too) gets back its
+    // probe use and property block exactly as built when A comes back.
+    sealed class DomeShade
+    {
+        public Renderer renderer;
+        public float k;
+        public bool shared;
+        public UnityEngine.Rendering.LightProbeUsage usage;
+        public MaterialPropertyBlock block;
+    }
 
     public FrontRoomsStructuresPoolTerrain(Vector3 site)
         : base(6, "SP6", "SP6 · 泳池层：深处的地形和大螺旋楼梯", "泳池层深处的地形和大螺旋楼梯。", site) { }
@@ -80,6 +112,29 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
             try { host.Look.Probe(Root, new Bounds(Site + b.center, b.size), 512); }
             catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP6 probe", "SP6 probe: " + e.Message); }
         }
+        kit.Safe("pool zone look", BuildZoneLook);
+        // Last: its nine lamps join the scene's budget after every lamp of SP6, and nine keeps every later lamp's turn in the
+        // budget's one-in-three shadow rule, so no other lamp in the scene changes.
+        kit.Safe("dome hall light B", BuildDomeLightB);
+    }
+
+    // 游戏视觉's pool zone look (FrontRoomsStructuresLook.PoolRoom, as the map's AddPoolLooks): one PoolLevel volume per room
+    // (the pool level; all water here is level water), 3 m under the room's floor to 0.2 m over its ceiling (the dome's crown,
+    // the grotto's vault). The height fog sits on a room's water where all of it shares one height; the weir terraces' four
+    // sheets (-0.03 to -1.83) do not, so that room has none, and the corridor is dry.
+    void BuildZoneLook()
+    {
+        var look = kit.Host.Look;
+        const string zone = "PoolLevel";
+        look.PoolRoom(this, "corridor", zone, 3f, -3f, 6f, 6f, 0f, Std);
+        look.PoolRoom(this, "BeachHall", zone, 0f, 6f, 12f, 21f, 0f, Tall, WadeSurf);
+        look.PoolRoom(this, "IslandChannel", zone, -6f, 21f, 9f, 36f, 0f, Tall, WadeSurf);
+        look.PoolRoom(this, "C9 wet block", zone, 3f, 30f, 6f, 36f, 0f, Std, WadeSurf);
+        look.PoolRoom(this, "WeirTerraces", zone, 9f, 24f, 21f, 42f, 0f, Tall);
+        look.PoolRoom(this, "DomeGallery", zone, -3f, 36f, 9f, 48f, DomeDeck, 6f, DeepSurf);
+        look.PoolRoom(this, "Grotto", zone, -3f, 48f, 3f, 60.3f, DeepFloor, -.6f, DeepSurf);
+        look.PoolRoom(this, "Casbah", zone, -18f, 3f, 0f, 21f, WadeFloor, Tall, WadeSurf);
+        look.PoolRoom(this, "C8 covered basin", zone, 6f, -3f, 15f, 3f, 0f, Std, -.6f);
     }
 
     // ---------------------------------------------------------------- helpers
@@ -524,7 +579,9 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         const int rings = 12, segs = 64;
         for (var i = 0; i < rings; i++)
         {
-            var r0 = rim * i / rings;
+            // The crown ring starts 2 mm off the apex (render9, 11-04): from the apex itself its quads had two corners on one
+            // point, so their normal was zero and their winding undecided, and the crown showed a hole r 0.5 m in A and B.
+            var r0 = i == 0 ? .002f : rim * i / rings;
             var r1 = rim * (i + 1) / rings;
             var y0 = centre.y + Mathf.Sqrt(R * R - r0 * r0);
             var y1 = centre.y + Mathf.Sqrt(R * R - r1 * r1);
@@ -550,6 +607,335 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         kit.Lid(oculus.x - .8f, oculus.y - .8f, oculus.x + .8f, oculus.y + .8f, 7.2f, tile, .1f, false);
         var l = kit.Lamp("oculus (metal-halide downlight)", LightType.Spot, new Vector3(oculus.x, 7.1f, oculus.y), Vector3.down, 21f, 18f, 120f, 14f, new Color(.95f, .98f, 1f), true, Vector3.zero, null, Color.black);
         viewLamps.Add(l);
+    }
+
+    // ---------------------------------------------------------------- the dome hall's light: A today's, B (L; S1 C)
+
+    // S1, the pool light (Red 11-04 ~14:1x, "每个都按推荐来做" on C: "先只在一个区试 B（比如 SP6 的穹顶厅），你走过、和 A 对比之后再定").
+    // A is today's: the whole room porcelain white, two wall boxes throwing up, the dome the brightest surface after the oculus.
+    // B, in Red's words: "地面和墙下部保持瓷白，天花和墙上部压暗（或者让上部的墙处在阴影里），灯做成更小、更亮的点，这样水会显得更深，
+    // 闪光也更明显": from about 2 m out still water shows the colour of the ceiling and the upper walls, and the lamps as its
+    // sparkle (bathroom_rooms/17 section 10.1, 10.6 item 2). B changes the dome hall only (x -3..9, z 36..48):
+    //  - The vault in shadow, by light. Scene 4's pool trilight stands in for the halls' bounce and its ground term lights every
+    //    surface that faces down, so the dome takes more of its light from the ambient than from its two boxes: putting the
+    //    boxes out alone would leave it near white. With no lamp throwing up in B, the vault gets a share of the room's own
+    //    ambient: per-renderer SH = the probe the room has now (the scene's trilight, or 游戏视觉's zone look's blend when Q has
+    //    it on, each by its own code) times a shade. The dome, its oculus shaft and the flat lid's corners (BuildDome's own
+    //    renderer group) VaultShade; the gallery's soffits (a liner 6 mm under them) SoffitShade; the walls' top third (twelve
+    //    liners 6 mm proud of the four faces, one per 0.15 m course from +1.80 to the springing at +3.60, so every step sits on
+    //    a joint) from .98 down to .34, so the shadow comes down the walls and meets the vault. Same tile, same porcelain white:
+    //    no finish changes, only light.
+    //  - Lamps thrown down only (every cone's upper edge at least 5 degrees under its lamp's horizon), small round lenses driven
+    //    about 30 times the lit tile (17 section 10.1 cue 3: glints 10-40 times their floor). The two up-throwing wall boxes and
+    //    the two soffit downlights are put out and hidden; in their place two compact wall spots at the boxes' places thrown
+    //    down onto the deck (the C7's head, the walk by the B2), two compact soffit downlights, two compact wall spots under the
+    //    gallery (the east wall over the deck, the north wall over the grotto's mouth), two recessed downlights in the flat lid
+    //    over the gallery's far corners (range 4 m: the gallery only; the Relay's end lit) and a lamp in the oculus shaft under
+    //    a diffuser, so the oculus is a bright disc in the dark vault. Nine lamps through kit.Lamp (the scene's budget and its
+    //    shadow filter), switched by Look.Scale; steady, nothing flickers, nothing red. No lamp of B reaches another room but
+    //    through an opening (checked on the plan; the south spot keeps its shadow on for that). In A the two up-throwing boxes
+    //    leak a little through the south wall onto the island room's lid by that wall (no shadows, as every A lamp); in B they
+    //    are out, so that leak goes with them.
+    // The wet niches, the B2's and the B4-M's lights, the eye uplight and the oculus lamp are the same in A and B. The dome
+    // hall's own probe is rendered again after each switch; the other halls keep theirs. Until L is pressed nothing is drawn or
+    // lit that A did not have: every piece of B is hidden or at scale 0, and the vault renderer is not touched.
+
+    void BuildDomeLightB()
+    {
+        try
+        {
+            BuildDomeB();
+            domeReady = true;
+        }
+        finally
+        {
+            // A, whatever happened above: no piece of B may stay lit or drawn
+            SetDomeB(false, true);
+        }
+    }
+
+    void BuildDomeB()
+    {
+        var look = kit.Host != null ? kit.Host.Look : null;
+        if (look == null || Root == null) throw new InvalidOperationException("no look or root");
+
+        // A's four lamps that B puts out, found where BuildDomeHall made them (that code is unchanged)
+        foreach (var l in kit.Lights)
+        {
+            var lamp = l != null ? l.transform.parent : null;
+            if (lamp == null || !InDomeHall(lamp.localPosition)) continue;
+            if (lamp.name != "Lamp · metal-halide wall box" && lamp.name != "Lamp · gallery soffit downlight") continue;
+            domeA.Add(l);
+            domeHideB.AddRange(lamp.GetComponentsInChildren<Renderer>(true));
+        }
+        if (domeA.Count != 4) FrontRoomsPoolMaterials.LogOnce("SP6 dome A lamps", "SP6 dome hall light B: " + domeA.Count + " of A's 4 lamps found (two wall boxes, two soffit downlights).");
+
+        // The vault: the renderer group BuildDome's pieces went into (tile at ceiling +6.0; nothing else in SP6 starts over +3.55).
+        foreach (var r in Root.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            if (r == null || r.sharedMaterial != tile) continue;
+            var b = r.bounds;
+            if (b.min.y > Site.y + DomeLid - .05f && b.Contains(Site + new Vector3(3f, 5f, 42f))) AddShade(r, VaultShade, true);
+        }
+        if (domeShades.Count != 1) FrontRoomsPoolMaterials.LogOnce("SP6 dome vault", "SP6 dome hall light B: " + domeShades.Count + " vault renderers found (1 expected).");
+        foreach (var p in Root.GetComponentsInChildren<ReflectionProbe>(true))
+            if (p != null && (p.transform.position - (Site + DomeProbeCentre)).sqrMagnitude < .01f) domeProbe = p;
+
+        // B's lamps. Their GameObjects stay active (the water preview gathers a room's lights from active ones); the budget
+        // switches each light by its scale. Order: the boxes' places (south, west), the soffit, under the gallery (east,
+        // north), the flat lid's far corners, the oculus.
+        var lamps = kit.BeginPart("SP6 dome hall light B · lamps");
+        // The south spot's cone, heading west of north from 0.27 m off the island room's wall, dips behind that wall plane at
+        // its west side (up to E .11 on the island's deck by the wall, measured on the plan): it always casts its shadow
+        // while on, as SP5's sodium heads (Look.Shadowed), so the wall keeps it in the dome hall.
+        look.Shadowed(WallSpotB(new Vector3(4.5f, 2f, 36.4f), new Vector3(1.8f, DomeDeck, 38.2f), Vector3.forward, 76f, 40f, 7f, 9f));
+        WallSpotB(new Vector3(-2.6f, 2f, 40.5f), new Vector3(-.6f, DomeDeck, 41.5f), Vector3.right, 80f, 44f, 6f, 9f);
+        DownB("compact soffit downlight (B)", new Vector3(1.5f, .99f, 46.5f), 120f, 64f, 1.8f, 6.5f, new Vector3(.12f, .12f, .06f), SoffitLens, .1f);
+        DownB("compact soffit downlight (B)", new Vector3(4.5f, .99f, 45f), 120f, 64f, 1.8f, 6.5f, new Vector3(.12f, .12f, .06f), SoffitLens, .1f);
+        WallSpotB(new Vector3(8.6f, .5f, 45f), new Vector3(6.3f, DomeDeck, 44.6f), Vector3.left, 78f, 42f, 3f, 7f);
+        WallSpotB(new Vector3(0f, .5f, 47.6f), new Vector3(0f, DeepSurf, 45.2f), Vector3.back, 78f, 42f, 2.6f, 7f);
+        DownB("recessed downlight (B)", new Vector3(7.8f, DomeLid - .016f, 46.8f), 90f, 50f, 1.3f, 4f, new Vector3(.15f, .15f, .04f), CornerLens, .12f);
+        DownB("recessed downlight (B)", new Vector3(-1.8f, DomeLid - .016f, 46.8f), 90f, 50f, 1.3f, 4f, new Vector3(.15f, .15f, .04f), CornerLens, .12f);
+        // The oculus: a lamp in the shaft lights its walls from the top (a lightwell fading into the vault), and a diffuser
+        // under the lamp housing's lid closes it: looked up into, the oculus is a bright disc.
+        AddLampB(kit.Lamp("oculus lightwell (B)", LightType.Point, new Vector3(Oculus.x, 6.9f, Oculus.y), Vector3.down, 0f, 0f, 1.1f, 2.1f, MetalHalide, true, Vector3.zero, null, Color.black), 0f);
+        var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        disc.name = "Oculus diffuser (B)";
+        UnityEngine.Object.Destroy(disc.GetComponent<Collider>());
+        disc.transform.SetParent(lamps, false);
+        disc.transform.localPosition = new Vector3(Oculus.x, 7.192f, Oculus.y);
+        disc.transform.localScale = new Vector3(1.2f, .002f, 1.2f);
+        var dr = disc.GetComponent<MeshRenderer>();
+        dr.sharedMaterial = FrontRoomsPoolMaterials.Glow("oculus diffuser (B)", OculusDiffuser);
+        dr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        domeShowB.Add(dr);
+
+        // The wall spots' arms, wall to housing (render only).
+        var arms = kit.BeginPart("SP6 dome hall light B · lamp arms");
+        kit.Mesh.CastShadows = false;
+        foreach (var a in domeArms) kit.Box(a.min, a.max, FrontRoomsPoolMaterials.Steel, false);
+        domePartsB.Add(arms.gameObject);
+
+        // The walls' top third, one liner per course; then the gallery's soffits (its two slabs and the B4-M's top landing,
+        // undersides at +1.00). Each part becomes its renderer when the next begins.
+        var courses = new List<KeyValuePair<Transform, float>>();
+        for (var i = 0; i < ShadeCourses; i++)
+        {
+            var part = kit.BeginPart("SP6 dome hall light B · wall course " + (i + 1));
+            kit.Shell(DomeLid, DomeDeck);
+            kit.Mesh.CastShadows = false;
+            var y0 = ShadeFrom + i * FrontRoomsStructuresKit.Course;
+            CourseLiner(y0, i == ShadeCourses - 1 ? DomeLid + .01f : y0 + FrontRoomsStructuresKit.Course);
+            courses.Add(new KeyValuePair<Transform, float>(part, Mathf.Exp(Mathf.Log(WallShadeTop) * Mathf.Pow((i + .5f) / ShadeCourses, WallShadeCurve))));
+        }
+        var soffit = kit.BeginPart("SP6 dome hall light B · gallery soffit");
+        kit.Shell(DomeLid, DomeDeck);
+        kit.Mesh.CastShadows = false;
+        var ys = Terrace - .2f - Liner;
+        SoffitLiner(3f, 42f, 8.85f, 45f, ys);
+        SoffitLiner(-2.85f, 45f, 8.85f, 47.85f, ys);
+        SoffitLiner(6.8f, 39f, 8.1f, 42f, ys);
+        kit.EndPart();
+        foreach (var c in courses) LinerShade(c.Key, c.Value);
+        LinerShade(soffit, SoffitShade);
+        Debug.Log(FrontRoomsStructures.Log + "SP6 dome hall light B ready (L): " + domeA.Count + " A lamps to put out, " + domeLampsB.Count + " B lamps, "
+            + domeShades.Count + " shaded renderers, probe " + (domeProbe != null ? "found" : "missing") + ".");
+    }
+
+    static bool InDomeHall(Vector3 p) => p.x >= -3f && p.x <= 9f && p.z >= 36f && p.z <= 48f;
+
+    // A compact metal-halide wall spot of B: a small housing on a short steel arm off the wall, aimed at a point, its lens
+    // round and driven bright. into is the wall's normal into the room (the faces: x -2.85, z 47.85, x 8.85, z 36.15).
+    Light WallSpotB(Vector3 lens, Vector3 target, Vector3 into, float spot, float inner, float intensity, float range)
+    {
+        var fixture = new Vector3(.11f, .11f, .16f);
+        var l = kit.Lamp("compact metal-halide wall spot (B)", LightType.Spot, lens, target - lens, spot, inner, intensity, range, MetalHalide, false,
+            fixture, FrontRoomsPoolMaterials.Steel, SpotLens);
+        AddLampB(l, .09f);
+        var back = lens - (target - lens).normalized * fixture.z;
+        const float t = .0175f;
+        if (Mathf.Abs(into.z) > .5f)
+        {
+            var face = into.z > 0f ? 36.15f - .01f : 47.85f + .01f;
+            domeArms.Add(Span(new Vector3(back.x - t, back.y - t, Mathf.Min(face, back.z)), new Vector3(back.x + t, back.y + t, Mathf.Max(face, back.z))));
+        }
+        else
+        {
+            var face = into.x > 0f ? -2.85f - .01f : 8.85f + .01f;
+            domeArms.Add(Span(new Vector3(Mathf.Min(face, back.x), back.y - t, back.z - t), new Vector3(Mathf.Max(face, back.x), back.y + t, back.z + t)));
+        }
+        return l;
+    }
+
+    static Bounds Span(Vector3 min, Vector3 max) => new Bounds((min + max) * .5f, max - min);
+
+    // A compact downlight of B under a soffit or recessed in the flat lid, aimed straight down.
+    void DownB(string name, Vector3 lens, float spot, float inner, float intensity, float range, Vector3 fixture, Color drive, float lensDiameter) =>
+        AddLampB(kit.Lamp(name, LightType.Spot, lens, Vector3.down, spot, inner, intensity, range, MetalHalide, false, fixture, FrontRoomsPoolMaterials.Steel, drive), lensDiameter);
+
+    // One of B's nine lamps: off and hidden until L; its square lens becomes a round one (as the kit's underwater lamps) so
+    // each lamp reads as a point.
+    void AddLampB(Light l, float lensDiameter)
+    {
+        if (l == null) return;
+        domeLampsB.Add(l);
+        var lamp = l.transform.parent;
+        var fixture = lamp.Find("Fixture");
+        if (fixture != null) domeShowB.Add(fixture.GetComponent<Renderer>());
+        var quad = lamp.Find("Lens");
+        var square = quad != null ? quad.GetComponent<MeshRenderer>() : null;
+        if (square == null) return;
+        if (lensDiameter <= 0f) { domeShowB.Add(square); return; }
+        var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        disc.name = "Lens (round)";
+        UnityEngine.Object.Destroy(disc.GetComponent<Collider>());
+        disc.transform.SetParent(lamp, false);
+        disc.transform.localPosition = new Vector3(0f, 0f, .004f);
+        disc.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        disc.transform.localScale = new Vector3(lensDiameter, .003f, lensDiameter);
+        var dr = disc.GetComponent<MeshRenderer>();
+        dr.sharedMaterial = square.sharedMaterial;
+        dr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        domeShowB.Add(dr);
+        UnityEngine.Object.Destroy(quad.gameObject);
+    }
+
+    // One course of the walls' liner: the west, east and north faces whole, the south face round the sight arch (x 0.3..2.7,
+    // sill +1.07, springing +2.10, crown +3.30): rows of 15 mm through its head, each stopped at the opening's widest point in
+    // the row, so no liner hangs into the opening (a few millimetres of A's wall show at its edge, by the lit intrados).
+    void CourseLiner(float y0, float y1)
+    {
+        float w = -2.85f + Liner, e = 8.85f - Liner, s = 36.15f + Liner, n = 47.85f - Liner;
+        LinerQuad(new Vector3(w, 0f, 36.15f), new Vector3(w, 0f, 47.85f), y0, y1, Vector3.right, false);
+        LinerQuad(new Vector3(e, 0f, 36.15f), new Vector3(e, 0f, 47.85f), y0, y1, Vector3.left, false);
+        LinerQuad(new Vector3(-2.85f, 0f, n), new Vector3(8.85f, 0f, n), y0, y1, Vector3.back, true);
+        const float c = 1.5f, r = 1.2f, sill = 1.07f, spring = 2.1f, crown = 3.3f;
+        var y = y0;
+        while (y < y1 - 1e-4f)
+        {
+            float yb, half;
+            if (y < sill - 1e-4f) { yb = Mathf.Min(y1, sill); half = 0f; }
+            else if (y < spring - 1e-4f) { yb = Mathf.Min(y1, spring); half = r; }
+            else if (y < crown - 1e-4f)
+            {
+                yb = Mathf.Min(Mathf.Min(y1, crown), y + .015f);
+                half = Mathf.Sqrt(Mathf.Max(0f, r * r - (y - spring) * (y - spring)));
+            }
+            else { yb = y1; half = 0f; }
+            if (half < 1e-3f) LinerQuad(new Vector3(-2.85f, 0f, s), new Vector3(8.85f, 0f, s), y, yb, Vector3.forward, true);
+            else
+            {
+                LinerQuad(new Vector3(-2.85f, 0f, s), new Vector3(c - half, 0f, s), y, yb, Vector3.forward, true);
+                LinerQuad(new Vector3(c + half, 0f, s), new Vector3(8.85f, 0f, s), y, yb, Vector3.forward, true);
+            }
+            y = yb;
+        }
+    }
+
+    // A wall liner quad on a face's plane from plan point a to b, y0..y1, with the wall's own UVs (u the world coordinate along
+    // the run, v = y, as Prism), so its joints are the wall's.
+    void LinerQuad(Vector3 a, Vector3 b, float y0, float y1, Vector3 front, bool alongX)
+    {
+        if (y1 - y0 < 1e-4f || (b - a).sqrMagnitude < 1e-6f) return;
+        float ua = alongX ? Site.x + a.x : Site.z + a.z, ub = alongX ? Site.x + b.x : Site.z + b.z;
+        kit.Quad(new Vector3(a.x, y0, a.z), new Vector3(b.x, y0, b.z), new Vector3(b.x, y1, b.z), new Vector3(a.x, y1, a.z), front,
+            new Vector2(ua, y0), new Vector2(ub, y0), new Vector2(ub, y1), new Vector2(ua, y1), tile);
+    }
+
+    // A soffit liner under a slab, facing down, with the slab's own planar UVs.
+    void SoffitLiner(float x0, float z0, float x1, float z1, float y) =>
+        kit.QuadPlanar(new Vector3(x0, y, z0), new Vector3(x1, y, z0), new Vector3(x1, y, z1), new Vector3(x0, y, z1), Vector3.down, tile);
+
+    void LinerShade(Transform part, float k)
+    {
+        if (part == null) return;
+        foreach (var r in part.GetComponentsInChildren<MeshRenderer>(true)) AddShade(r, k, false);
+        domePartsB.Add(part.gameObject);
+    }
+
+    void AddShade(Renderer r, float k, bool shared)
+    {
+        var s = new DomeShade { renderer = r, k = k, shared = shared, usage = r.lightProbeUsage };
+        if (shared && r.HasPropertyBlock())
+        {
+            s.block = new MaterialPropertyBlock();
+            r.GetPropertyBlock(s.block);
+        }
+        domeShades.Add(s);
+    }
+
+    // A or B. The first call (the build) only makes sure B is off and hidden: A's lamps, renderers and the vault stay as built.
+    void SetDomeB(bool on, bool initial = false)
+    {
+        domeB = on;
+        var look = kit != null && kit.Host != null ? kit.Host.Look : null;
+        if (!initial)
+        {
+            foreach (var l in domeA) if (l != null && look != null) look.Scale(l, on ? 0f : 1f);
+            foreach (var r in domeHideB) if (r != null) r.enabled = !on;
+        }
+        foreach (var l in domeLampsB)
+        {
+            if (l == null) continue;
+            if (look != null) look.Scale(l, on ? 1f : 0f);
+            if (!on) l.enabled = false;
+        }
+        foreach (var r in domeShowB) if (r != null) r.enabled = on;
+        foreach (var g in domePartsB) if (g != null) g.SetActive(on);
+        ApplyDomeShade(on, true);
+        domeProbeFrames = initial ? 0 : 3;
+    }
+
+    // B's shade on its renderers: the room's probe now times each one's k (again whenever that probe changes: Q, or the zone
+    // look's blend at a room's edge). A gives the vault back its probe use and property block as built.
+    void ApplyDomeShade(bool on, bool force)
+    {
+        if (!on)
+        {
+            if (!domeShaded) return;
+            foreach (var s in domeShades)
+            {
+                if (s.renderer == null || !s.shared) continue;
+                s.renderer.SetPropertyBlock(s.block);
+                s.renderer.lightProbeUsage = s.usage;
+            }
+            domeShaded = false;
+            return;
+        }
+        var sh = DomeAmbient();
+        if (!force && domeShaded && sh == domeBase) return;
+        domeBase = sh;
+        domeShaded = true;
+        if (domeBlock == null) domeBlock = new MaterialPropertyBlock();
+        foreach (var s in domeShades)
+        {
+            if (s.renderer == null) continue;
+            domeSH[0] = sh * s.k;
+            s.renderer.GetPropertyBlock(domeBlock);
+            domeBlock.CopySHCoefficientArraysFrom(domeSH);
+            s.renderer.SetPropertyBlock(domeBlock);
+            s.renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.CustomProvided;
+        }
+    }
+
+    // The probe the dome hall has now, as URP gets it: the scene's trilight through Unity's own projection
+    // (FrontRoomsZoneLook.TrilightProbe), and wherever 游戏视觉's zone look weighs in (Q; outside rendering RenderSettings
+    // hold the scene's own values) that look's own blend at the camera (FrontRoomsZoneLook.Evaluate), so B's shade starts
+    // from what the room around it shows.
+    UnityEngine.Rendering.SphericalHarmonicsL2 DomeAmbient()
+    {
+        var sh = RenderSettings.ambientMode == UnityEngine.Rendering.AmbientMode.Trilight
+            ? FrontRoomsZoneLook.TrilightProbe(RenderSettings.ambientSkyColor, RenderSettings.ambientEquatorColor, RenderSettings.ambientGroundColor)
+            : RenderSettings.ambientProbe;
+        var host = kit != null ? kit.Host : null;
+        var walker = host != null ? host.Walker : null;
+        if (FrontRoomsZoneLook.Active && walker != null)
+        {
+            var at = walker.View != null ? walker.View.transform.position : walker.EyePosition;
+            FrontRoomsZoneLook.Blend blend;
+            if (FrontRoomsZoneLook.Evaluate(at, sh, false, FogMode.ExponentialSquared, Color.black, 0f, Vector4.zero, Vector4.zero, out blend)) sh = blend.probe;
+        }
+        return sh;
     }
 
     // ---------------------------------------------------------------- T_PL_Grotto (x -3..3, z 48..60; Low)
@@ -749,11 +1135,21 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
 
     void BuildSigns()
     {
-        // Flat on the corridor's east wall facing west, out of the main view (70 section 8).
-        kit.Sign(new Vector3(5.85f, 1.5f, 3.5f), new Vector3(4.5f, 1.5f, 3.5f), "SP6 · 泳池层：深处的地形和大螺旋楼梯",
+        // Flat on the corridor's east wall facing west, out of the main view (70 section 8), its face's centre 2.50 m from the
+        // arrival eye (20_placard_type.md v2.4, E's FAR; was z 3.5, 2.42 m).
+        kit.Sign(new Vector3(5.85f, 1.5f, 3.593f), new Vector3(4.5f, 1.5f, 3.593f), "SP6 · 泳池层：深处的地形和大螺旋楼梯",
             "泳池层更深处的一段路，一路往下走。瓷砖走廊尽头是一道窄高的拱门；门后大厅的地面先是一层没过脚踝的水，再以 1:12 的坡度斜进没过腰的水里，尽头是半圆形的端墙。左边台阶上到带拱廊的台地，过一座有栏板的桥到白色的岛上。岛脚下是三道宽溢水堰，每道落差 0.6 米，旁边有台阶一级级往下。堰底的拱门通向比入口低 1.8 米的穹顶大厅：白色大螺旋楼梯绕着亮灯的井口升高 3 米到回廊，穹顶偏心开一个圆洞，光落在水面上成一个圆斑。回廊另一头有直跑楼梯，Relay 走这一条。楼梯脚下另有一段台阶走进水里，正对一条低矮的拱顶水洞，往里蹚 12 米，尽头是一个亮着灯的瓷砖壁龛。旁边还有高低错落、最低一层泡在水里的瓷砖块群，一间冷水池小间，和一个铺了检修地板、缺了几块板的水池。水都是关卡里那种不对劲的青绿色，最深 1.2 米，都能蹚过去；这里没有任何灯会闪。\n"
             + "灰盒占位：全部地形块、拱、穹顶和圆洞上方的灯井、楼梯和栏板细部、检修地板、水（没有焦散）；瓷砖用的是 150 毫米瓷白砖贴图（只在这个场景里）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
             + "要你决定：1 浅滩大厅、岛和水渠、溢水台地、穹顶回廊、水洞、瓷砖块群，各自放进泳池层吗？ 2 大螺旋楼梯的栏板用实心瓷砖（现在这样）还是玻璃（60 Q4）？ 3 冷水池小间和铺了检修地板的水池，各自放进泳池层吗？", 0f);
+        // Its blade (20_placard_type.md v2.5, E-blade): the arrival reads the flat sign 56 degrees off its face, so its code and
+        // title also hang on a blade square to the east wall (face x 5.92), inner edge 50 mm off it, bottom 2.10, its title on two
+        // lines at the colon (the blade's 12-em measure), top 2.36 (0.54 under the lid; the lenses at z 1.5 and 4.5 stay clear).
+        // Front face z 3.242, 2.00 m from the arrival eye (read 24 degrees to the side and 18 up), not 2.5: placement first (70
+        // section 1). At 2.5 m (z 3.82) its inner end covered the top right of the tall arch that frames the main view (70
+        // section 8; review11 pass 1); with the walker's eye as rendered (1.64) its silhouette clears the arch's edge by 1.4 px
+        // at z 3.35, 8 px at 3.28 and 12-13 px (about 1 degree) here, so the arch and the blade read apart in the arrival frame.
+        FrontRoomsStructuresSigns.Blade(Root, Root.TransformPoint(new Vector3(5.92f, 0f, 3.257f)), Root.TransformDirection(Vector3.left),
+            Root.TransformPoint(Arrival + Vector3.up * FrontRoomsStructuresWalker.Eye), "SP6 · 泳池层：深处的地形和大螺旋楼梯", Root.position.y);
         kit.Mark(new Vector3(4.5f, 3.2f, 6.0f), Vector3.back, "拱 1.5 · 起拱 2.10 · 拱顶 2.85");
         kit.Mark(new Vector3(10f, .9f, 20.7f), Vector3.back, "坡 1:12 · 水深 0 → 1.12");
         kit.Mark(new Vector3(10.5f, 1.4f, 26.9f), Vector3.back, "堰 0.60 × 3 · 9 米宽");
@@ -776,17 +1172,59 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         if (kit != null) kit.ShowMarks(on);
     }
 
+    // The dome hall's light B: its shade follows the room's probe (Q, a zone's edge) and its probe is rendered again after a switch.
+    public override void Tick(FrontRoomsStructures host, float dt, bool isCurrent)
+    {
+        if (!isCurrent || !domeReady) return;
+        if (domeB) ApplyDomeShade(true, false);
+        if (domeProbeFrames > 0 && --domeProbeFrames == 0 && domeProbe != null && domeProbe.isActiveAndEnabled)
+        {
+            try { domeProbe.RenderProbe(); }
+            catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP6 dome probe", "SP6: the dome hall's probe did not render again: " + e.Message); }
+        }
+    }
+
+    // L: the dome hall's light, A (today's) or B (S1 C).
+    public override bool KeyPressed(FrontRoomsStructures host, UnityEngine.InputSystem.Key key, out string message)
+    {
+        message = null;
+        if (key != UnityEngine.InputSystem.Key.L) return false;
+        if (!domeReady)
+        {
+            message = "穹顶厅灯光：B 没有搭好（原因在日志里），现在只有 A。";
+            return true;
+        }
+        try { SetDomeB(!domeB); }
+        catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP6 dome switch", "SP6: the dome hall's light switch failed: " + e.Message); }
+        message = domeB
+            ? "穹顶厅灯光 · B 天花压暗、灯更小更亮：穹顶、回廊底下和墙最上面一段落进阴影，往上打的大壁灯换成往下打的小亮灯，圆洞是暗穹顶里的亮圆（只改穹顶大厅）"
+            : "穹顶厅灯光 · A 今天的：整间瓷白，两盏大壁灯往上打，穹顶最亮";
+        return true;
+    }
+
+    public override string Status(FrontRoomsStructures host) =>
+        !domeReady ? "" : domeB ? "穹顶厅灯光：B 天花压暗、灯更小更亮（L 换）" : "穹顶厅灯光：A 今天的（L 换）";
+
     public override void Guide(FrontRoomsStructures host, StringBuilder sb)
     {
         sb.AppendLine(Title);
         sb.AppendLine("一路往下走的泳池层深处：浅滩大厅 → 台地和桥 → 岛 → 溢水台地 → 穹顶大厅（大螺旋楼梯 B4-M、回廊、圆洞）→ 水洞；旁边是瓷砖块群、冷水池小间和检修地板水池。");
         sb.AppendLine();
-        sb.AppendLine("按键：[ ] 换站点（走廊、台地、岛、溢水台地顶、穹顶回廊、穹顶甲板、水洞尽头、块群顶、检修地板水池）；R 回到当前站点；C Relay 体型（大螺旋楼梯对它关闭）；M 尺寸。");
+        sb.AppendLine("按键：[ ] 换站点（走廊、台地、岛、溢水台地顶、穹顶回廊、穹顶甲板、水洞尽头、块群顶、检修地板水池）；R 回到当前站点；C Relay 体型（大螺旋楼梯对它关闭）；M 尺寸；L 穹顶厅灯光 A / B。");
+        sb.AppendLine();
+        if (!domeReady) sb.AppendLine("穹顶厅灯光（L）：B 没有搭好（原因在日志里），现在只有 A。");
+        else
+            sb.AppendLine("穹顶厅灯光（L）：现在是 " + (domeB ? "B" : "A") + "。A 是今天的：整间瓷白，两盏大壁灯往上打，穹顶是最亮的面。"
+                + "B 是天花压暗、灯更小更亮：地面、甲板和墙的下面三分之二照旧瓷白、照亮；穹顶、回廊底下的天花和墙最上面 1.8 米落进阴影（瓷砖还是同一种瓷白，只是没有灯往上照）；"
+                + "往上打的两盏大壁灯换成往下打的小亮灯：大壁灯原来的位置各一盏，回廊底下四盏，回廊两个远角的天花上各一盏，圆洞里一盏照亮井壁，圆洞成了暗穹顶里的一个亮圆。"
+                + "离岸两米以外的水倒映的是上面的暗处和这些小灯，所以 B 的水应该显得更深、闪光更明显。只改穹顶大厅，SP6 其他地方不变。"
+                + "B 的小灯、灯臂和圆洞的灯罩是灰盒占位。");
         sb.AppendLine();
         sb.AppendLine("要你决定（在对话里按编号告诉总控）：");
         sb.AppendLine("SP6-1 浅滩大厅、岛和水渠、溢水台地、穹顶回廊、水洞、瓷砖块群，各自放进泳池层吗？");
         sb.AppendLine("SP6-2 大螺旋楼梯的栏板用实心瓷砖（现在这样）还是玻璃（60 Q4）？");
         sb.AppendLine("SP6-3 冷水池小间和铺了检修地板的水池，各自放进泳池层吗？");
+        sb.AppendLine("SP6-4 穹顶大厅的灯光用 A（今天的）还是 B（天花压暗、灯更小更亮）？按 L 对比；选 B 的话，再定别的泳池房间要不要也这样。");
         sb.AppendLine();
         sb.AppendLine("灰盒占位：全部地形块、拱、穹顶和圆洞上方的灯井、楼梯和栏板细部、检修地板、水（没有焦散）；瓷砖用的是 150 毫米瓷白砖贴图（只在这个场景里）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。");
     }

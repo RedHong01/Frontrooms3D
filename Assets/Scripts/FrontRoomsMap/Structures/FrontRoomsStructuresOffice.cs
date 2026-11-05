@@ -8,7 +8,7 @@ using UnityEngine;
 /// 4, 6.2, 11.4; 60 section 3): the Office's stack and pit. A plate of 10 x 8 cells (x 0..30, z 0..24), storeys 3.9 (F0 +-0,
 /// F1 +3.9, F2 +7.8), Standard 2.9 lids, the game's Office_Wall, Office_Carpet, Office_Ceiling and office troffers; guards
 /// the Office stair's glass on a putty steel band. The atrium's floor is the sunken bullpen (V2, an A3 court at -1.20, two
-/// step runs at opposite corners, four pinwheel bays of 1.35, 1.52, 1.65 and 2.16 m panels, a Relay stand-in at their shared
+/// step runs at opposite corners, four T-capped station clusters of 1.35, 1.52, 1.65 and 2.16 m panels, a Relay stand-in at their shared
 /// crossing); over it the stack (V3) rises 11.9 m to a laylight, each floor opening a different set of faces: F0 three
 /// walkways and the raised floor's ledge; F1 the west gallery, the north band and the boardroom's glass; F2 the north band
 /// and the blade field. Round it: the raised computer floor (a step, a 1:12 ramp and the B9 creeping slope), the tiered
@@ -216,17 +216,21 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         kit.Shell(L2, Pit);
         SlopedGlass(new Vector3(5.4f, Pit, 12.55f), new Vector3(3.0f, 0f, 12.55f));
         SlopedGlass(new Vector3(15.55f, Pit, 5.4f), new Vector3(15.55f, 0f, 3.0f));
-        // Four pinwheel bays, 3.05 m square, 1.6 m aisles: SW 1.35 and NW 2.16 greybox, SE 1.52 and NE 1.65 the game's kit.
-        Bay(new Vector2(6.2f, 4.3f), 1.35f, null, null);
-        Bay(new Vector2(10.85f, 4.3f), 1.52f, "Kit_CubiclePanel", "Kit_PanelPost");
-        Bay(new Vector2(10.85f, 8.95f), 1.65f, "Kit_CubiclePanelTall", "Kit_PanelPostTall");
-        Bay(new Vector2(6.2f, 8.95f), 2.16f, null, null);
+        // Four station clusters, 3.05 m square, 1.6 m aisles: SW 1.35 and NW 2.16 greybox, SE 1.52 and NE 1.65 the game's kit.
+        Bay(new Vector2(6.2f, 4.3f), 1.35f, null, null, null);
+        Bay(new Vector2(10.85f, 4.3f), 1.52f, "Kit_CubiclePanel", "Kit_PanelPost", "Kit_CubiclePanelShort");
+        Bay(new Vector2(10.85f, 8.95f), 1.65f, "Kit_CubiclePanelTall", "Kit_PanelPostTall", null);
+        Bay(new Vector2(6.2f, 8.95f), 2.16f, null, null, null);
         // The Relay stand-in at the crossing the four bays share, off the pit's centre lines.
         kit.Relay(new Vector3(10.05f, Pit, 8.15f), Arrival);
     }
 
-    // A pinwheel cluster (round 1's Cluster): a cross of four 1.524 panels round a centre post, one outer panel per station.
-    void Bay(Vector2 min, float height, string asset, string postAsset)
+    // A four-station cluster (round 1's Cluster): a cross of four 1.524 panels round a centre post, each arm closed by a T-cap
+    // at its end, two 0.762 panels on a three-way post, one into each neighbouring station. Red 11-04 (S2 B, "每个都按推荐来做"):
+    // the old outer panel turned the same way at every arm, so from above the bay read as a rotating hooked cross. The 1.52 bay
+    // takes the kit's 30 in panel (capAsset); the kit has no 30 in tall panel, so the 1.65 bay's cap is one tall 1.524 panel
+    // centred on the arm's post; the greybox bays take greybox halves.
+    void Bay(Vector2 min, float height, string asset, string postAsset, string capAsset)
     {
         var c = new Vector3(min.x + 1.525f, Pit, min.y + 1.525f);
         Vector3[] arms = { Vector3.right, Vector3.forward, Vector3.left, Vector3.back };
@@ -235,10 +239,16 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         {
             var end = c + arms[k] * 1.525f;
             Panel(c, end, height, asset);
-            var turn = arms[(k + 1) % 4];
-            Panel(end, end + turn * 1.524f, height, asset);
+            var side = arms[(k + 1) % 4] * .762f;
+            if (capAsset == null && asset != null) Panel(end - side, end + side, height, asset);
+            else
+            {
+                Panel(end, end + side, height, capAsset);
+                Panel(end, end - side, height, capAsset);
+            }
             Post(end, height, postAsset);
-            Post(end + turn * 1.524f, height, postAsset);
+            Post(end + side, height, postAsset);
+            Post(end - side, height, postAsset);
         }
     }
 
@@ -250,7 +260,8 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         {
             // The kit's panel: pivot at its foot's centre, its length on local x, front +Z.
             var yaw = Mathf.Abs(d.x) > Mathf.Abs(d.z) ? 0f : 90f;
-            kit.Kit(asset, mid, yaw, Mathf.Abs(d.x) > Mathf.Abs(d.z) ? new Vector3(1.524f, height, .06f) : new Vector3(.06f, height, 1.524f), fabric);
+            var len = d.magnitude;
+            kit.Kit(asset, mid, yaw, Mathf.Abs(d.x) > Mathf.Abs(d.z) ? new Vector3(len, height, .06f) : new Vector3(.06f, height, len), fabric);
             return;
         }
         kit.Prism(a, b, mid.y, mid.y + height, .06f, fabric, true);
@@ -474,7 +485,9 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
 
     void BuildSigns()
     {
-        kit.Sign(new Vector3(7.2f, 1.5f, 2.0f), Arrival + Vector3.up * 1.5f, "SP4 · 办公层：三层中庭，底下是下沉工位区",
+        // On the south walkway right of the arrival, its face's centre 2.50 m from the arrival eye (20_placard_type.md v2.4,
+        // E's FAR; was x 7.2, 2.72 m). The title breaks after its colon (v2.4: at a phrase).
+        kit.Sign(new Vector3(6.984f, 1.5f, 2.0f), Arrival + Vector3.up * 1.5f, "SP4 · 办公层：三层中庭，底下是下沉工位区",
             "办公层，每层 3.9 米。中庭穿过三层，玻璃栏板，顶上一整块发光的采光天花；中庭的地面就是下沉 1.2 米的工位区，过道交叉口站着一个 Relay 替身（2.05 米，不会动）。每层朝中庭的开口都不一样：一楼三边是走道，东边是抬高 0.30 米的机房地板；二楼西、北两边是走廊，东边是玻璃会议室；三楼只有北、东两边开着，东边是一片独立隔板。北边一条 6 米宽的窄长楼梯厅，两段直跑楼梯来回交叉，连通三层；楼梯厅东头还有一部普通楼梯。全区没有螺旋楼梯，每条路 Relay 都能走。游戏里一次只加载一层，这里三层都是真的。\n"
             + "灰盒占位：只有隔板，没有桌椅；1.35 和 2.16 米的隔板和三楼的独立隔板是同色的灰盒板；玻璃、采光天花、楼梯都是灰盒。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
             + "要你决定：1 中庭放进办公层吗？ 2 中庭底下直接做下沉工位区，这样组合可以吗？还是另做一个顶棚不动的下沉区？ 3 窄长楼梯厅放进办公层吗？", 0f);

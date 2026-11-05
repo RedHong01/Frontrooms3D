@@ -39,6 +39,16 @@ using UnityEngine;
 /// its leaf (SetEntranceOpen), and the corridor's light shows under it on the approach side (FrontRoomsRunDoorGap); its lite shows
 /// the lit corridor through the map's own wired glass. Today the map builds arches only: no door is found, and every room is
 /// built exactly as before (contract: W/apply/run_rethink_contract/README.md, card 4).
+/// The receding room (71 s.4-s.5, decision 4; the level-design line's card 4, the map side landed 11-04 12:46): when the map's
+/// record says the room recedes (room.Receding: its Variant Recede and SeatCells, dealt only with the rules' recede switch, which
+/// no level profile serializes until Red has walked SP7, RULES 5b), the layout is RunRigLayout.Receding(SeatCells[0], Cells.Length),
+/// the end is built after the dress and before the rig (FrontRoomsRunRecede.Build, then Bind) and ticked after the rig, and the
+/// map's trip (at FD1 for this variant) trips it too (Order T: the alarm and the end's flight are one event). On each SeatReached
+/// the map seats the room (RunSeated(room, line / 3 m): its cells open, its goal point moves); at the final seat B's pulses may
+/// begin (FrontRoomsRunRig.ReleasePulses; held from the build, 71 s.5.7). The recede's 8-byte record lives with the map's room
+/// (RecedeRecord, PackRecord), written at each seat and when the room is dropped; a room rebuilt after its recede began comes back
+/// seated at its deepest line with no event (Restore), and the map is seated too (RunSeated(room, LengthCells)). The goal end's
+/// tell stands at the deepest line, the release side's frame. Every other room is built and ticked exactly as before.
 /// ASCII, no tuples, no per-frame allocation once built.
 /// </summary>
 [DisallowMultipleComponent]
@@ -62,6 +72,12 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     public static event Action<FrontRoomsRunRoom, FrontRoomsRunRig> RigBuilt;
     /// <summary>A room's rig is about to be destroyed.</summary>
     public static event Action<FrontRoomsRunRoom, FrontRoomsRunRig> RigDropped;
+    /// <summary>A receding room's recede is built and bound, raised after RigBuilt (the sound line subscribes to its Cue here, as to
+    /// the rig's events on RigBuilt). A room rebuilt after its recede began is already seated when this is raised: Restore raises
+    /// nothing.</summary>
+    public static event Action<FrontRoomsRunRoom, FrontRoomsRunRecede> RecedeBuilt;
+    /// <summary>A receding room's recede is about to be destroyed (before RigDropped).</summary>
+    public static event Action<FrontRoomsRunRoom, FrontRoomsRunRecede> RecedeDropped;
 
     sealed class Entry
     {
@@ -75,6 +91,9 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         /// <summary>Card 4: the map's door on the entrance edge (a Run door entrance), or null for the arch (every room today).</summary>
         public FrontRoomsMapWorld.Door entranceDoor;
         public FrontRoomsRunDoorGap gap;
+        /// <summary>The level-design line's card 4: the receding end (null for every other room) and its seat hook (kept to unsubscribe).</summary>
+        public FrontRoomsRunRecede recede;
+        public Action<int, float, bool> onSeat;
     }
 
     FrontRoomsMapWorld map;
@@ -118,8 +137,8 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     /// <summary>
     /// The room's length in cells (71 s.9, card 1), from its record: CR-1's cells from the entrance (Cells[0]) to the goal (the
     /// last), so Cells.Length; 9 (RunRigLayout.TodayCells) when the record has none. The map builds 9 today. A length outside
-    /// 7 .. 14 is refused by RunRigLayout.Corridor (a warning, built at 9). The receding variant's seats (card 2) will come from
-    /// the record as well (contract, later).
+    /// 7 .. 14 is refused by RunRigLayout.Corridor (a warning, built at 9). A receding room's record holds its reserved L_max
+    /// cells (12 or 14) and its seats from the end's first line (SeatCells, 9 first): RunRigLayout.Receding(SeatCells[0], CellsOf).
     /// </summary>
     public static int CellsOf(FrontRoomsRunRoom room) => room != null && room.Cells != null && room.Cells.Length > 0 ? room.Cells.Length : RunRigLayout.TodayCells;
 
@@ -129,13 +148,43 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     /// <summary>Tools: the rig of a built room, or null.</summary>
     public FrontRoomsRunRig RigOf(FrontRoomsRunRoom room) => room != null && rooms.TryGetValue(room.Id, out var e) ? e.rig : null;
 
+    /// <summary>Tools: the recede of a built receding room, or null (every other room, or not built).</summary>
+    public FrontRoomsRunRecede RecedeOf(FrontRoomsRunRoom room) => room != null && rooms.TryGetValue(room.Id, out var e) ? e.recede : null;
+
+    /// <summary>
+    /// The level-design line's card 4: the recede's 8-byte record (RunRecedeRecord) as the map's room keeps it
+    /// (FrontRoomsRunRoom.RecedeRecord, which the map never reads): version, flags, steps and glideFrom in the low four bytes, then
+    /// gateTime and glideTime (halves). 0 is no record (version 0: nothing to restore).
+    /// </summary>
+    public static ulong PackRecord(RunRecedeRecord r)
+    {
+        return r.version | (ulong)r.flags << 8 | (ulong)r.steps << 16 | (ulong)r.glideFrom << 24 | (ulong)r.gateTime << 32 | (ulong)r.glideTime << 48;
+    }
+
+    /// <summary>The record PackRecord wrote.</summary>
+    public static RunRecedeRecord UnpackRecord(ulong bits)
+    {
+        return new RunRecedeRecord
+        {
+            version = (byte)bits, flags = (byte)(bits >> 8), steps = (byte)(bits >> 16), glideFrom = (byte)(bits >> 24),
+            gateTime = (ushort)(bits >> 32), glideTime = (ushort)(bits >> 48),
+        };
+    }
+
+    /// <summary>A seat line in rig z (m) as the map's whole cells from the entrance (71 s.3.6: 27, 33, 36, 39, 42 m are 9, 11, 12, 13, 14).</summary>
+    public static int LineCells(float line) => Mathf.RoundToInt(line / RunRigLayout.CellLength);
+
     /// <summary>Tools: how many rooms are built.</summary>
     public int Count => rooms.Count;
 
     void Attach(FrontRoomsMapWorld m, Transform v)
     {
         viewer = v;
-        foreach (var e in rooms.Values) if (e.rig != null) e.rig.SetViewer(Viewer);
+        foreach (var e in rooms.Values)
+        {
+            if (e.rig != null) e.rig.SetViewer(Viewer);
+            if (e.recede != null) e.recede.SetViewer(GazeOf(Viewer));
+        }
         if (map == m && subscribed) return;
         Detach();
         map = m;
@@ -178,6 +227,15 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         }
     }
 
+    /// <summary>The gaze the recede's gate reads (71 s.4.3: the camera faces down the corridor; contract: SetViewer(the player's
+    /// camera)): the camera riding the viewer (the game's camera rides the player's eye, FrontRoomsCameraRig), else the viewer.</summary>
+    static Transform GazeOf(Transform v)
+    {
+        if (v == null) return null;
+        var cam = v.GetComponentInChildren<Camera>(true);
+        return cam != null ? cam.transform : v;
+    }
+
     // ------------------------------------------------------------------ the map's events
     void OnBuilt(FrontRoomsRunRoom room)
     {
@@ -192,6 +250,9 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         var layout = Layout(room, e.root.transform, e.entranceDoor);
         var dress = FrontRoomsRunDress.Build(e.root.transform, layout);
         DressTell(e, layout, dress);
+        // The receding room: the end after the dress and the tell (the goal end's detector waits in its hidden cell), before the
+        // rig, so the rig takes the end's parts into its ambient and light gate.
+        if (layout.recedeLine >= 0f) e.recede = FrontRoomsRunRecede.Build(dress, layout);
         e.rig = FrontRoomsRunRig.Create(e.root.transform, layout, RunRigHost.OwnLamps, null, dress);
         e.rig.SetViewer(Viewer);
         e.goalDoor = map.DoorBetween(GoalCell(room), room.Beyond);
@@ -204,14 +265,54 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         FarLamps(e);
         var entry = e;
         e.rig.FarRoomLamp = () => FarLamp(entry);
+        var restored = e.recede != null && BindRecede(e);
         if (room.State == RunRoomState.Tripped)
         {
             e.rig.TripImmediate();
+            // A receding room tripped before its end moved: the end waits for the gaze gate again (Trip raises nothing).
+            if (e.recede != null && !restored) e.recede.Trip();
             Latch(e, true);
         }
         rooms[room.Id] = e;
         ticking.Add(e);
+        // The map never reads the record: a room rebuilt seated is seated on the map too (false, nothing raised, if it already is).
+        if (restored) map.RunSeated(room, room.LengthCells);
         RigBuilt?.Invoke(room, e.rig);
+        if (e.recede != null) RecedeBuilt?.Invoke(room, e.recede);
+    }
+
+    /// <summary>
+    /// The receding room's end, after the rig: bound to it (the goal mount rides the end, the light gate stands on its line), the
+    /// player's gaze, the seat hook, then the map's record. A record whose recede had begun (RunRecedeRecord.Started) is restored:
+    /// the end seated at the deepest line, its cells and strips on, no event; true. Otherwise the recede is still to come, so B's
+    /// pulses wait for its final seat (71 s.5.7); false.
+    /// </summary>
+    bool BindRecede(Entry e)
+    {
+        var recede = e.recede;
+        recede.Bind(e.rig);
+        recede.SetViewer(GazeOf(Viewer));
+        var entry = e;
+        e.onSeat = (step, line, final) => OnSeat(entry, line, final);
+        recede.SeatReached += e.onSeat;
+        var record = UnpackRecord(e.room.RecedeRecord);
+        if (record.version == RunRecedeRecord.Version1 && record.Started)
+        {
+            recede.Restore(record);
+            return true;
+        }
+        e.rig.PulseHeld = true;
+        return false;
+    }
+
+    /// <summary>A seat of the receding end: the record to the map's room, B's pulses free at the final seat, and the map seated on
+    /// the seat's line in whole cells (its cells up to it open, its goal point moves; the last seat makes the goal door real).</summary>
+    void OnSeat(Entry e, float line, bool final)
+    {
+        if (e == null || e.recede == null) return;
+        e.room.RecedeRecord = PackRecord(e.recede.Record);
+        if (final && e.rig != null) e.rig.ReleasePulses(1f);
+        if (map != null) map.RunSeated(e.room, LineCells(line));
     }
 
     void OnDropped(FrontRoomsRunRoom room)
@@ -223,6 +324,9 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     {
         if (kind != ModuleTrigger.Alarm || room == null || !rooms.TryGetValue(room.Id, out var e) || e.rig == null) return;
         e.rig.Trip();
+        // A receding room trips at FD1 (the map's EntranceTrip until its last seat): the end's clock starts with the alarm; the gaze
+        // gate decides its first step (once: a seated or already tripped end ignores it).
+        if (e.recede != null) e.recede.Trip();
         Latch(e, true);
     }
 
@@ -246,6 +350,13 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     void Drop(Entry e)
     {
         if (e == null) return;
+        if (e.recede != null)
+        {
+            // 71 s.4.6, the record stays: the map's room keeps it, and the rebuild comes back from it.
+            e.room.RecedeRecord = PackRecord(e.recede.Record);
+            if (e.onSeat != null) e.recede.SeatReached -= e.onSeat;
+            RecedeDropped?.Invoke(e.room, e.recede);
+        }
         if (e.rig != null) RigDropped?.Invoke(e.room, e.rig);
         rooms.Remove(e.room.Id);
         ticking.Remove(e);
@@ -255,11 +366,17 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         }
         e.root = null;
         e.rig = null;
+        e.recede = null;
+        e.onSeat = null;
     }
 
-    void LateUpdate()
+    void LateUpdate() => Tick(Time.deltaTime);
+
+    /// <summary>Tools and tests in edit mode, where LateUpdate does not run: one tick of every built room, as LateUpdate does.</summary>
+    public void TickForTools(float dt) => Tick(dt);
+
+    void Tick(float dt)
     {
-        var dt = Time.deltaTime;
         for (var i = ticking.Count - 1; i >= 0; i--)
         {
             var e = ticking[i];
@@ -267,6 +384,8 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
             e.rig.SetGoalOpen(GoalOpen(e.goalDoor));
             if (e.entranceDoor != null) e.rig.SetEntranceOpen(GoalOpen(e.entranceDoor));
             e.rig.Tick(dt);
+            // The receding end after the rig (as R20 and the recede's harnesses tick it): its seats call the map (OnSeat).
+            if (e.recede != null) e.recede.Tick(dt);
             // Card 4: the light under the shut Run door, from the rig's Lights as this Tick left them.
             if (e.gap != null) e.gap.Tick(ShutWeight(e.entranceDoor));
         }
@@ -288,12 +407,15 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     static bool GoalOpen(FrontRoomsMapWorld.Door door) => door == null || door.broken || door.angle > GoalOpenDegrees;
 
     // ------------------------------------------------------------------ the room's layout
-    /// <summary>The map module's layout (Corridor(cells) with the map's arch and door; the cells from the room's record, CellsOf),
-    /// the goal from the map's door, the far zone's lamp for the goal window light (C42).</summary>
+    /// <summary>The map module's layout (Corridor(cells) with the map's arch and door; the cells from the room's record, CellsOf;
+    /// a receding room's Receding(its first seat, cells), anything decision 4 does not build refused there with a warning as a
+    /// plain 9), the goal from the map's door, the far zone's lamp for the goal window light (C42).</summary>
     RunRigLayout Layout(FrontRoomsRunRoom room, Transform root, FrontRoomsMapWorld.Door entranceDoor)
     {
         var cells = CellsOf(room);
-        var l = RunRigLayout.Corridor(cells, FrontRoomsRunRooms.ArchWidth, ModuleUnits.DoorWidth);
+        var l = room.Receding ? RunRigLayout.Receding(room.SeatCells[0], cells, FrontRoomsRunRooms.ArchWidth, ModuleUnits.DoorWidth)
+            : RunRigLayout.Corridor(cells, FrontRoomsRunRooms.ArchWidth, ModuleUnits.DoorWidth);
+        var receding = l.recedeLine >= 0f;
         // Probes by segment (71 s.5.8): the room keeps the bake it reuses under its own name (no cube is shipped today).
         if (string.IsNullOrEmpty(l.probeBake)) l.probeBake = l.name;
         l.name = "Run! room " + room.Id;
@@ -305,10 +427,13 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         // The goal door's opening centre (the map's RunEntrance, goal side): the goal head aims at it.
         map.RunEntrance(room, true, out var goalWorld, out var outward);
         var g = root.InverseTransformPoint(goalWorld);
-        // The map's goal door and the record's cells must agree (contract); if not, the rig still aims at the map's door.
-        if (Mathf.Abs(g.z - l.length) > .05f)
-            Debug.LogWarning("[RunRig] Run! room " + room.Id + ": its record holds " + cells + " cells, the rig " + l.Cells + " (" + l.length.ToString("0.0") + " m), but the map's goal door stands at z " + g.z.ToString("0.00") + " (contract: W/apply/run_rethink_contract/README.md)");
-        l.goalPoint = new Vector3(g.x, l.goalPoint.y, g.z);
+        // The map's goal door and the record's cells must agree (contract); if not, the rig still aims at the map's door. A receding
+        // room's goal door is on its L_max edge (the release side) while its goal point is the end's line, so the rig keeps the end's
+        // first line: the end carries the goal mount seat by seat (and Restore seats a rebuilt room).
+        var mapGoalZ = room.Receding ? room.LengthMetres : g.z;
+        if (Mathf.Abs(mapGoalZ - l.length) > .05f)
+            Debug.LogWarning("[RunRig] Run! room " + room.Id + ": its record holds " + cells + " cells, the rig " + l.Cells + " (" + l.length.ToString("0.0") + " m), but the map's goal door stands at z " + mapGoalZ.ToString("0.00") + " (contract: W/apply/run_rethink_contract/README.md)");
+        l.goalPoint = new Vector3(g.x, l.goalPoint.y, receding ? l.goalPoint.z : g.z);
         var back = root.InverseTransformDirection(-outward);
         if (back.sqrMagnitude > .5f) l.goalNormal = new Vector3(back.x, 0f, back.z).normalized;
         // Step 10: the shut goal door's portal is its F5 lite, measured from the map's hinge (the leaf kit's lite_centre
@@ -352,7 +477,9 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
     /// outside face beside each opening (the arch: on the approacher's left, B's NOTICE plate is on the right; the goal door:
     /// on its latch side, clear of the leaf's swing), and the red-banded detector on the ceiling centreline inside, at the
     /// sight rule's depth pushed clear of the wraparounds. The detectors hang under the dress (the rig's corridor ambient);
-    /// the cards under the root (the host's light).
+    /// the cards under the root (the host's light). A receding room's goal tell stands at its deepest line, where the map's goal
+    /// door is (the release side's frame): the card outside it, the detector inside, in the last hidden cell (FrontRoomsRunRecede
+    /// keeps it off with that cell until the end uncovers it); the end's own line moves.
     /// </summary>
     void DressTell(Entry e, RunRigLayout l, Transform dress)
     {
@@ -361,9 +488,9 @@ public sealed class FrontRoomsRunRigBinder : MonoBehaviour
         var depth = l.length - t;
         // The entrance (south): the arch, or card 4's Run door.
         e.archDetector = DressEntranceTell(root, dress, l);
-        // The goal door (north): its entrance frame is turned half round at the goal point.
+        // The goal door (north): its entrance frame is turned half round at the goal point (a receding room: on the deepest line).
         var gx = l.goalPoint.x;
-        var gz = l.goalPoint.z;
+        var gz = l.recedeLine >= 0f ? l.length : l.goalPoint.z;
         var goalDepth = FrontRoomsAlarmTell.DetectorDepth(t, l.height, ModuleUnits.DoorHeight, depth);
         var goalZ = ClearOfWraps(l, gz - goalDepth, -1f);
         var latch = GoalLatchSide(e.room, root, gx);

@@ -21,6 +21,8 @@
 //          leaks in; the probe tiers show it straight through.
 // Fog: the planar image carries its own (its camera stands at the mirrored eye, so its distances are the whole reflected
 // path); the probe and lamp terms get the zone fog and height fog of their path here.
+// _FR_RINGS_SHAPED (global, FrontRoomsWaterRings: on only while SourceShape or Currents is above 0, 70 section 11): the
+// rings' shaped loop; off, the fragment program is today's.
 Shader "FrontRooms/Water"
 {
     Properties
@@ -55,6 +57,7 @@ Shader "FrontRooms/Water"
             #pragma fragment Frag
             #pragma multi_compile _ _ADDITIONAL_LIGHTS
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fragment _ _FR_RINGS_SHAPED
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"

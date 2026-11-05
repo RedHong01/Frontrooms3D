@@ -73,6 +73,21 @@ using UnityEngine.Rendering.Universal;
 ///       card on the latch side clear of the frame, the detector at the door head's sight-rule depth, past the 2.5 m trip, clear of
 ///       the strips (the arch's as landed); the light under the door: one draw, zero lights, on the approach side only, cool white
 ///       armed, black in the trip's gap, back with the reset, off as the leaf opens, no allocation per Tick.
+///   R23 card 3 (71 s.6.3-6.7, decision 6: the red looks): the default look is B (it passed the project's own WCAG 2.3.1 check,
+///       Tools/lookdev/flash_check.py, Red 11-04 in 60_production_66.md C3.10; A is the fallback); armed is the same in Today, A and B; A's front (each strip's white out as the front passes at 20 m/s, its red struck
+///       0.35 s later at 0.35 rising to 1 over 0.4 s, the pool heads in its wake, the goal head as built; all red at about 2 s; the strip
+///       Light at 3.5 in the typed red, the red tube at redTubeLinear, the halo in its red, 18 lights on and 17 shadowed); B's pulses
+///       (every 2.5 s from 3 s, a dip to 0.35, 12 events, held until ReleasePulses); Reduce Flashing (a 0.5 s cross-fade, no band, no
+///       pulse); photosafety per lamp; the reset white again; TripImmediate quiet; the handheld tier's scale; the body's lamp registry
+///       gets each strip's Light; no allocation per Tick. The tests above run with DefaultRedLook = Today (the trip as landed).
+///   R24 RB (the level-design line's card 4 in the binder, 71 s.4-s.5): on a real map (the Level Designer's preview, the game's
+///       builder): with runRooms off nothing binds; a plain room builds no end, holds no pulse and keeps no record; a 9 -> 12 room
+///       is built receding (the end before the rig, B's pulses held, the goal tell on the deepest line, its detector off in the last
+///       hidden cell); the map's trip trips the end; each SeatReached seats the map on its line in cells (the map's RunRoomSeated,
+///       its open cells, its goal point); the final seat frees B's pulses (none before it, the first a second after it); the record
+///       lives in the map's room; a room dropped before its end moved comes back unmoved and waiting, one dropped mid-recede or after
+///       it comes back seated with no event (the map seated once by the binder, or not at all when it already was); a 9 -> 14
+///       glide seats the map once, on its last line.
 /// The rig needs the B kits (Kit_EmergencyTwinHead*, Kit_WrapFixture_4ft, the RN-K DA door kits); without them it builds
 /// named stand-ins and the light counts still hold.
 /// </summary>
@@ -95,8 +110,12 @@ public static class FrontRoomsRunRigTests
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         FrontRoomsKitLibrary.ClearCache();
         var reducedBefore = FrontRoomsSettings.ReduceFlashing;
+        // Card 3: R1-R22 check the trip as landed (Today); R23 checks the red looks and the shipped default.
+        var lookBefore = FrontRoomsRunRig.DefaultRedLook;
+        shippedLook = lookBefore;
         try
         {
+            FrontRoomsRunRig.DefaultRedLook = RunRedLook.Today;
             SetReduced(false);
             Run("R1 Evaluate(t) is deterministic", R1Deterministic);
             Run("R2 photosafety per lamp: trip, reset, stutter, warning", R2Photosafety);
@@ -122,10 +141,14 @@ public static class FrontRoomsRunRigTests
             Run("W1 WebGL tier off in the editor", W1Gate);
             Run("W2 step 9: the handheld tier, desktop unchanged", W2Handheld);
             Run("R22 card 4: the Run door entrance (opening, skin, gate, tell, the light under the door), today's arch kept", R22DoorTell);
+            Run("R23 card 3: the red looks (B default, A the fallback; front, pulse, Reduce Flashing, photosafe, registry)", R23RedLooks);
+            Run("R24 RB: the receding room on the map (build, trip, seats -> RunSeated, pulses, record, drop and rebuild), plain and off untouched", R24RecedeBinder);
         }
         finally
         {
             SetReduced(reducedBefore);
+            FrontRoomsRunRig.DefaultRedLook = lookBefore;
+            FrontRoomsRunRig.ForceHandheldForTools = false;
         }
         var passed = 0;
         foreach (var r in Results) if (r.pass) passed++;
@@ -2088,5 +2111,647 @@ public static class FrontRoomsRunRigTests
     {
         Require(!FrontRoomsRunRig.WebGLTier, "WebGLTier is on in the editor");
         return "WebGLTier false (desktop path); the preview-define compile is roslyn_check with FRONTROOMS_WEBGL_PREVIEW";
+    }
+
+    // ------------------------------------------------------------------ card 3 (71 s.6.3-6.7, decision 6): the red looks
+    /// <summary>DefaultRedLook as RunBatch found it: the look the build ships.</summary>
+    static RunRedLook shippedLook;
+
+    static Corridor LookCorridor(RunRedLook look)
+    {
+        var c = new Corridor();
+        c.rig.RedLook = look;
+        return c;
+    }
+
+    static float TickTo(FrontRoomsRunRig rig, float t, float until)
+    {
+        while (t < until - 1e-4f) { rig.Tick(Dt); t += Dt; }
+        return t;
+    }
+
+    static bool Near(float a, float b, float tol) { return Mathf.Abs(a - b) <= tol; }
+
+    static bool NearColor(Color a, Color b, float tol) { return Near(a.r, b.r, tol) && Near(a.g, b.g, tol) && Near(a.b, b.b, tol); }
+
+    static Renderer Named(Transform root, string name)
+    {
+        foreach (var r in root.GetComponentsInChildren<Renderer>(true)) if (r.name == name) return r;
+        return null;
+    }
+
+    static string R23RedLooks()
+    {
+        var sb = new StringBuilder();
+        Require(shippedLook == RunRedLook.AlarmPulse, "the build ships " + shippedLook + ", not B (B passed the WCAG 2.3.1 check, flash_check.py)");
+        sb.Append("ships B (A the fallback)");
+
+        // 1. Armed is the same in all three looks.
+        using (var today = LookCorridor(RunRedLook.Today))
+        using (var a = LookCorridor(RunRedLook.AlarmCircuit))
+        using (var b = LookCorridor(RunRedLook.AlarmPulse))
+        {
+            today.rig.Evaluate(-1f); a.rig.Evaluate(-1f); b.rig.Evaluate(-1f);
+            Require(Fingerprint(today.rig) == Fingerprint(a.rig) && Fingerprint(a.rig) == Fingerprint(b.rig), "armed differs between the looks");
+            for (var k = 0; k < a.rig.OwnLampCount; k++)
+                Require(a.rig.WrapLight(k).color == today.rig.WrapLight(k).color, "armed strip " + k + " colour differs");
+        }
+        sb.Append("; armed identical in Today / A / B");
+
+        // 2. A's front, read through Evaluate(t) (deterministic; an armed rig previews its RedLook's trip).
+        using (var c = LookCorridor(RunRedLook.AlarmCircuit))
+        {
+            var rig = c.rig;
+            var l = rig.Layout;
+            var n = rig.OwnLampCount;
+            for (var k = 0; k < n; k++)
+            {
+                var f = rig.StripFrontOf(k);
+                Require(Near(f, (l.ownLamps[k].z - l.ownLamps[0].z) / l.frontSpeed, 1e-4f), "strip " + k + " front " + F(f));
+                if (k > 0) Require(Near(rig.StripWhiteOf(k, f - .005f), 1f, 1e-4f), "strip " + k + " not white before the front");
+                Require(rig.StripWhiteOf(k, f + .07f) <= 0f && rig.StripRedOf(k, f + .07f) <= 0f, "strip " + k + " not dark in the band");
+                var struck = rig.StripRedOf(k, f + .36f);
+                Require(struck >= l.redStrikeLevel - .001f && struck <= .42f, "strip " + k + " red at its strike " + F(struck));
+                Require(Near(rig.StripRedOf(k, f + l.headDelay + l.redRise + .01f), 1f, 1e-4f), "strip " + k + " red not full");
+            }
+            rig.Evaluate(2.0f);
+            for (var k = 0; k < n; k++)
+            {
+                var lt = rig.WrapLight(k);
+                Require(lt.enabled && Near(lt.intensity, l.redLightIntensity, .01f) && NearColor(lt.color, l.redLightColor, .01f),
+                    "strip " + k + " at 2.0 s: " + F(lt.intensity) + " " + lt.color);
+            }
+            // The pool heads rise in the band's wake; the goal head (the door's light) at once, as built.
+            for (var i = 0; i < rig.HeadCount; i++)
+            {
+                var z = l.units[i / 2].z;
+                var start = rig.HeadIsGoal(i) ? l.headDelay + l.headStagger * z : l.headDelay + Mathf.Max(0f, z - l.ownLamps[0].z) / l.frontSpeed;
+                Require(rig.HeadLevelOf(i, start - .01f) <= 0f && Near(rig.HeadLevelOf(i, start + l.headRise + .01f), 1f, 1e-4f),
+                    "head " + i + (rig.HeadIsGoal(i) ? " (goal)" : "") + " does not start at " + F(start));
+            }
+            int total, on, sh;
+            rig.Evaluate(3f); rig.CountLights(out total, out on, out sh);
+            Require(on == 18 && sh == 17, "A tripped " + on + " on, " + sh + " shadowed");
+            sb.Append("; A: strips out at 0.15 s a cell, red struck 0.35 s later, all red by ").Append(F(l.headDelay + rig.StripFrontOf(n - 1) + l.redRise))
+              .Append(" s, Light ").Append(F(l.redLightIntensity)).Append(" typed (1, .06, .07), tripped ").Append(on).Append(" on / ").Append(sh).Append(" shadowed");
+        }
+
+        // 3. A ticked: the halo and the red tube in their red, one RedStrike per strip in front order, photosafe; the reset white again.
+        using (var c = LookCorridor(RunRedLook.AlarmCircuit))
+        {
+            var rig = c.rig;
+            var l = rig.Layout;
+            var strikes = new List<int>();
+            var strikeTimes = new List<float>();
+            var t = 0f;
+            rig.RedStrike += (k, p) => { strikes.Add(k); strikeTimes.Add(rig.Clock); };
+            var trace = new LampTrace(Lights(rig));
+            rig.Trip();
+            while (t < 4f) { rig.Tick(Dt); t += Dt; trace.Sample(t); }
+            Require(strikes.Count == rig.OwnLampCount, strikes.Count + " RedStrike events");
+            for (var k = 0; k < strikes.Count; k++)
+                Require(strikes[k] == k && Near(strikeTimes[k], rig.StripFrontOf(k) + l.headDelay, Dt + .001f), "RedStrike " + k + " at " + F(strikeTimes[k]));
+            string worst; var flashes = trace.WorstFlashes(out worst);
+            Require(flashes <= 3f, "A trip " + F(flashes) + " flashes/s (" + worst + ")");
+            var block = new MaterialPropertyBlock();
+            var halo = Named(rig.transform, "run b soffit halo");
+            if (halo != null)
+            {
+                halo.GetPropertyBlock(block);
+                var hc = (Vector4)block.GetVector("_Color");
+                var want = l.redHaloColor;
+                Require(halo.enabled && Near(hc.x, want.r, 1e-3f) && Near(hc.y, want.g, 1e-3f) && Near(hc.z, want.b, 1e-3f), "red halo " + hc);
+            }
+            var tube = Named(rig.transform, "run b strip tubes red");
+            if (tube != null)
+            {
+                tube.GetPropertyBlock(block, 0);
+                var got = block.GetColor("_EmissionColor");
+                var probe = new MaterialPropertyBlock();
+                probe.SetColor("_EmissionColor", l.redTubeLinear.gamma);
+                Require(NearColor(got, probe.GetColor("_EmissionColor"), 1e-3f), "red tube " + got);
+            }
+            rig.StartReset();
+            var r = 0f;
+            var resetTrace = new LampTrace(Lights(rig));
+            while (rig.State != RunRigState.Armed && r < 10f) { rig.Tick(Dt); r += Dt; resetTrace.Sample(r); }
+            Require(rig.State == RunRigState.Armed, "the reset did not end");
+            flashes = resetTrace.WorstFlashes(out worst);
+            Require(flashes <= 3f, "red reset " + F(flashes) + " flashes/s (" + worst + ")");
+            for (var k = 0; k < rig.OwnLampCount; k++)
+            {
+                var lt = rig.WrapLight(k);
+                Require(lt.color == l.wrapColor && lt.shadows != LightShadows.None, "strip " + k + " not white again: " + lt.color + " " + lt.shadows);
+            }
+            if (halo != null)
+            {
+                halo.GetPropertyBlock(block);
+                Require(((Vector4)block.GetVector("_Color")).sqrMagnitude < 1e-8f, "the halo kept its red after the reset");
+            }
+            sb.Append("; A ticked: ").Append(strikes.Count).Append(" RedStrike in front order, trip ").Append(F(trace.WorstFlashes(out worst)))
+              .Append(" flashes/s, halo and tube red, reset white again (").Append(F(flashes)).Append(" flashes/s)");
+        }
+
+        // 4. B: 12 pulses from 3 s every 2.5 s, a dip to 0.35, photosafe per lamp, steady red after; held until ReleasePulses.
+        using (var c = LookCorridor(RunRedLook.AlarmPulse))
+        {
+            var rig = c.rig;
+            var l = rig.Layout;
+            var pulses = new List<float>();
+            var t = 0f;
+            rig.PulseStarted += (p, at) => pulses.Add(rig.Clock);
+            var trace = new LampTrace(Lights(rig));
+            rig.Trip();
+            var mid = 4;
+            var dipAt = l.pulseFirst + rig.StripFrontOf(mid) + l.pulseFall + l.pulseHold * .5f;
+            var dip = -1f;
+            while (t < 36f)
+            {
+                rig.Tick(Dt); t += Dt; trace.Sample(t);
+                if (dip < 0f && t >= dipAt) dip = rig.WrapLight(mid).intensity;
+            }
+            Require(pulses.Count == l.pulseCount, pulses.Count + " pulses");
+            for (var p = 0; p < pulses.Count; p++)
+                Require(Near(pulses[p], l.pulseFirst + p * l.pulsePeriod, Dt + .001f), "pulse " + p + " at " + F(pulses[p]));
+            Require(Near(dip, l.redLightIntensity * l.pulseDepth, .08f), "strip " + mid + " mid-dip " + F(dip));
+            for (var k = 0; k < rig.OwnLampCount; k++)
+                Require(Near(rig.WrapLight(k).intensity, l.redLightIntensity, .01f), "strip " + k + " after the train " + F(rig.WrapLight(k).intensity));
+            string worst; var flashes = trace.WorstFlashes(out worst);
+            Require(flashes <= 3f, "B " + F(flashes) + " flashes/s (" + worst + ")");
+            sb.Append("; B: ").Append(pulses.Count).Append(" pulses from ").Append(F(pulses[0])).Append(" s every ").Append(F(l.pulsePeriod))
+              .Append(" s, dip ").Append(F(dip)).Append(", per lamp ").Append(F(flashes)).Append(" flashes/s");
+        }
+        using (var c = LookCorridor(RunRedLook.AlarmPulse))
+        {
+            var rig = c.rig;
+            var pulses = new List<float>();
+            var t = 0f;
+            rig.PulseStarted += (p, at) => pulses.Add(rig.Clock);
+            rig.PulseHeld = true;
+            rig.Trip();
+            t = TickTo(rig, t, 5f);
+            Require(pulses.Count == 0, "a held train pulsed");
+            rig.ReleasePulses(1f);
+            t = TickTo(rig, t, 6.6f);
+            Require(pulses.Count == 1 && Near(pulses[0], 6f, Dt + .001f), "released train: " + pulses.Count + " pulses, first " + (pulses.Count > 0 ? F(pulses[0]) : "-"));
+            sb.Append("; held to 5 s, released: first pulse at ").Append(F(pulses[0])).Append(" s");
+        }
+
+        // 5. Reduce Flashing: a 0.5 s cross-fade on every strip, no band, no pulse, each Light monotone after the trip.
+        SetReduced(true);
+        try
+        {
+            using (var c = LookCorridor(RunRedLook.AlarmPulse))
+            {
+                var rig = c.rig;
+                var pulses = 0;
+                rig.PulseStarted += (p, at) => pulses++;
+                rig.Trip();
+                var t = TickTo(rig, 0f, .25f);
+                for (var k = 0; k < rig.OwnLampCount; k++)
+                    Require(Near(rig.StripWhiteOf(k, t), .5f, .04f) && Near(rig.StripRedOf(k, t), .5f, .04f), "reduced strip " + k + " at 0.25 s");
+                // Each strip Light only falls from its white to its red (one change, never a dip below it).
+                var last = new float[rig.OwnLampCount];
+                for (var k = 0; k < last.Length; k++) last[k] = rig.WrapLight(k).intensity;
+                while (t < 8f)
+                {
+                    rig.Tick(Dt); t += Dt;
+                    for (var k = 0; k < last.Length; k++)
+                    {
+                        var v = rig.WrapLight(k).enabled ? rig.WrapLight(k).intensity : 0f;
+                        Require(v <= last[k] + 1e-4f && v >= rig.Layout.redLightIntensity - .01f, "reduced strip " + k + " at " + F(t) + ": " + F(v) + " after " + F(last[k]));
+                        last[k] = v;
+                    }
+                }
+                Require(pulses == 0, "a pulse under Reduce Flashing");
+            }
+        }
+        finally { SetReduced(false); }
+        sb.Append("; Reduce Flashing: 0.5 s cross-fade, no pulse, monotone");
+
+        // 6. TripImmediate: quiet (no strike, no pulse), steady red.
+        using (var c = LookCorridor(RunRedLook.AlarmPulse))
+        {
+            var rig = c.rig;
+            var events = 0;
+            rig.RedStrike += (k, p) => events++;
+            rig.PulseStarted += (k, p) => events++;
+            rig.TripImmediate();
+            TickTo(rig, 0f, 12f);
+            Require(events == 0, events + " events after TripImmediate");
+            Require(Near(rig.WrapLight(0).intensity, rig.Layout.redLightIntensity, .01f), "TripImmediate not red");
+        }
+        sb.Append("; TripImmediate quiet and red");
+
+        // 7. No allocation per Tick through A's front and B's pulses.
+        using (var c = LookCorridor(RunRedLook.AlarmPulse))
+        {
+            var rig = c.rig;
+            rig.Trip();
+            rig.Tick(Dt);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var k = 0; k < 600; k++) rig.Tick(Dt);
+            var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
+            Require(alloc == 0, "B ticks allocated " + alloc + " B");
+        }
+        sb.Append("; Tick 0 B");
+
+        // 8. The body's lamp registry gets each strip's Light (the contact under a strip: white armed, red under A and B).
+        using (var c = LookCorridor(RunRedLook.AlarmCircuit))
+        {
+            var rig = c.rig;
+            var lamps = new FrontRoomsTrofferKit.LiveLamp[8];
+            var given = 0;
+            var strips = FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.Strip) && rig.Layout.bareStrips;
+            for (var k = 0; k < rig.OwnLampCount && strips; k++)
+            {
+                var at = rig.WrapLight(k).transform.position;
+                var found = FrontRoomsTrofferKit.LampsNear(at, .3f, lamps);
+                for (var i = 0; i < found; i++) if (lamps[i].light == rig.WrapLight(k)) { given++; break; }
+            }
+            Require(!strips || given == rig.OwnLampCount, given + " of " + rig.OwnLampCount + " strips hand their Light to the registry");
+            sb.Append("; registry: ").Append(strips ? given + " strip Lights handed over" : "no strip kit (skipped)");
+        }
+
+        // 9. The handheld tier: the kept strips' red at 3.5 x the tier's scale, hard shadows.
+        FrontRoomsRunRig.ForceHandheldForTools = true;
+        try
+        {
+            using (var c = LookCorridor(RunRedLook.AlarmCircuit))
+            {
+                var rig = c.rig;
+                rig.Evaluate(3f);
+                var kept = 0;
+                for (var k = 0; k < rig.OwnLampCount; k++) if (rig.WrapLight(k) != null) kept++;
+                var scale = rig.OwnLampCount / (float)Mathf.Max(1, kept);
+                for (var k = 0; k < rig.OwnLampCount; k++)
+                {
+                    var lt = rig.WrapLight(k);
+                    if (lt == null) continue;
+                    Require(Near(lt.intensity, rig.Layout.redLightIntensity * scale, .02f) && lt.shadows == LightShadows.Hard, "handheld strip " + k + ": " + F(lt.intensity) + " " + lt.shadows);
+                }
+                sb.Append("; handheld ").Append(kept).Append(" red Lights at ").Append(F(rig.Layout.redLightIntensity * scale)).Append(", hard");
+            }
+        }
+        finally { FrontRoomsRunRig.ForceHandheldForTools = false; }
+        return sb.ToString();
+    }
+
+    // ------------------------------------------------------------------ RB: the receding room in the binder (the level-design line's card 4)
+    /// <summary>
+    /// A map holding built Run! rooms of one card, made by the Level Designer's preview (the game's own builder, placement forced, as the
+    /// door harness builds it; no kit dressing of the map's doors), bound by the binder as the game binds it (the map's player its viewer
+    /// and the end's gaze). room is null when the card was not placed. Counts the map's RunRoomSeated for the room (its open cells).
+    /// </summary>
+    sealed class RbMap : IDisposable
+    {
+        /// <summary>The room the last RbMap watches (set before the binder binds, so the build's own RecedeBuilt is counted).</summary>
+        public static FrontRooms.Map.FrontRoomsRunRoom Watch;
+        public readonly FrontRoomsModulePreview preview;
+        public readonly FrontRoomsMapWorld world;
+        public readonly FrontRooms.Map.FrontRoomsRunRoom room;
+        public readonly FrontRoomsRunRigBinder binder;
+        public readonly string status;
+        public readonly List<int> mapSeats = new List<int>();
+        readonly Action<FrontRooms.Map.FrontRoomsRunRoom> onSeated;
+
+        public RbMap(FrontRoomsModulePreview.RunCardView card, int seed)
+        {
+            Watch = null;
+            var go = new GameObject("TEST RB preview " + card);
+            preview = go.AddComponent<FrontRoomsModulePreview>();
+            preview.view = FrontRoomsModulePreview.RoomView.RunRoom;
+            preview.runCard = card;
+            preview.seed = seed;
+            preview.gameDressing = false;
+            preview.runInOffice = false;
+            preview.mixedSurroundings = false;
+            preview.Rebuild();
+            world = preview.World;
+            status = preview.Status;
+            if (world == null || world.RunRooms == null || world.Player == null) return;
+            // The preview's own room: built, and the one whose entrance the preview stood the player in (its chunks streamed round it).
+            var rooms = world.RunRooms.Rooms;
+            var best = float.MaxValue;
+            for (var i = 0; i < rooms.Count; i++)
+            {
+                if (!world.IsRunRoomBuilt(rooms[i])) continue;
+                var d = (world.RunRoomPoint(rooms[i], new Vector3(0f, 0f, 1.2f)) - world.Player.position).sqrMagnitude;
+                if (d < best) { best = d; room = rooms[i]; }
+            }
+            if (room == null) return;
+            Watch = room;
+            var mine = room;
+            onSeated = r => { if (r == mine) mapSeats.Add(r.OpenCells); };
+            world.RunRoomSeated += onSeated;
+            binder = FrontRoomsRunRigBinder.Bind(world, world.Player);
+        }
+
+        public FrontRoomsRunRig Rig { get { return binder != null ? binder.RigOf(room) : null; } }
+        public FrontRoomsRunRecede Recede { get { return binder != null ? binder.RecedeOf(room) : null; } }
+
+        /// <summary>The map's player (the binder's viewer, the end's gaze) on the axis at rig z: yaw 0 faces the goal, 180 the entrance.</summary>
+        public void Stand(float z, float yaw)
+        {
+            world.Player.SetPositionAndRotation(world.RunRoomPoint(room, new Vector3(0f, 0f, z)), world.RunRoomRotation(room) * Quaternion.Euler(0f, yaw, 0f));
+        }
+
+        /// <summary>The binder's ticks (LateUpdate's) while the player walks from <paramref name="z0"/> at <paramref name="speed"/> facing
+        /// the goal, until <paramref name="until"/> holds or <paramref name="seconds"/> pass; returns the time taken.</summary>
+        public float Walk(float z0, float speed, float seconds, Func<bool> until)
+        {
+            var t = 0f;
+            while (t < seconds - 1e-4f && (until == null || !until()))
+            {
+                Stand(z0 + speed * t, 0f);
+                binder.TickForTools(Dt);
+                t += Dt;
+            }
+            return t;
+        }
+
+        /// <summary>The room's entrance chunk dropped as streaming drops it (the binder lets the room go).</summary>
+        public void Drop()
+        {
+            world.DropChunkForTools(room.ChunkA);
+            Require(binder.RigOf(room) == null, "the binder kept the rig of a dropped room");
+        }
+
+        /// <summary>The chunk streamed back round the room (a revisit, no shift): the binder builds the room again.</summary>
+        public void Rebuild()
+        {
+            world.StreamForTools(world.RunRoomPoint(room, new Vector3(0f, 0f, room.LengthMetres * .5f)), 0f);
+            Require(binder.RigOf(room) != null, "the room did not come back");
+        }
+
+        public void Dispose()
+        {
+            if (world != null && onSeated != null) world.RunRoomSeated -= onSeated;
+            if (world != null) world.Release();
+            if (preview != null) UnityEngine.Object.DestroyImmediate(preview.gameObject);
+        }
+    }
+
+    /// <summary>The goal end's ALARM ZONE detector and card under a room's root (those past rig z <paramref name="split"/>).</summary>
+    static void RbGoalTell(FrontRoomsRunRig rig, float split, out Transform detector, out Transform card)
+    {
+        detector = null;
+        card = null;
+        var root = rig.transform.parent;
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+        {
+            var isDetector = t.name.StartsWith(FrontRoomsAlarmTell.DetectorName, StringComparison.Ordinal);
+            var isCard = t.name.StartsWith(FrontRoomsAlarmTell.CardName, StringComparison.Ordinal);
+            if (!isDetector && !isCard) continue;
+            if (root.InverseTransformPoint(t.position).z < split) continue;
+            if (isDetector) detector = t; else card = t;
+        }
+    }
+
+    static float RbZ(FrontRoomsRunRig rig, Transform t) { return rig.transform.parent.InverseTransformPoint(t.position).z; }
+
+    static string RbJoin(List<int> list)
+    {
+        var s = new StringBuilder();
+        for (var i = 0; i < list.Count; i++) s.Append(i > 0 ? "," : "").Append(list[i]);
+        return s.ToString();
+    }
+
+    static string RbRecord(ulong bits)
+    {
+        var r = FrontRoomsRunRigBinder.UnpackRecord(bits);
+        return "v" + r.version + " flags " + r.flags + " steps " + r.steps;
+    }
+
+    /// <summary>
+    /// R24 (RB, the level-design line's card 4 in the binder; 71 s.4-s.5; contract W/apply/run_rethink_contract/README.md "Final"):
+    /// the record and the seat lines; runRooms off binds nothing; today's plain room builds no end, holds no pulse and keeps no
+    /// record; a 9 -> 12 room on the map is built receding, tripped by the map, seated on the map seat by seat (RunSeated on each
+    /// SeatReached, its RunRoomSeated, open cells, hidden cells and goal point following), B's pulses held until the final seat; the
+    /// record in the map's room; drops and rebuilds before, during and after the recede; a 9 -> 14 glide seats the map once.
+    /// </summary>
+    static string R24RecedeBinder()
+    {
+        var sb = new StringBuilder();
+        // 1. The record (8 bytes in the map's room) and the seat lines in cells.
+        var full = new RunRecedeRecord
+        {
+            version = RunRecedeRecord.Version1, flags = (byte)(RunRecedeRecord.Tripped | RunRecedeRecord.GateOpen | RunRecedeRecord.Seated),
+            steps = 4, glideFrom = 255, gateTime = Mathf.FloatToHalf(1.25f), glideTime = Mathf.FloatToHalf(0f),
+        };
+        var back = FrontRoomsRunRigBinder.UnpackRecord(FrontRoomsRunRigBinder.PackRecord(full));
+        Require(back.version == full.version && back.flags == full.flags && back.steps == full.steps && back.glideFrom == full.glideFrom
+            && back.gateTime == full.gateTime && back.glideTime == full.glideTime && back.Started && back.Done, "the record does not round-trip");
+        var none = FrontRoomsRunRigBinder.UnpackRecord(0UL);
+        Require(FrontRoomsRunRigBinder.PackRecord(full) != 0UL && none.version == 0 && !none.Started, "0 reads as a record");
+        var lines = new[] { 27f, 33f, 36f, 39f, 42f };
+        var cellsAt = new[] { 9, 11, 12, 13, 14 };
+        for (var i = 0; i < lines.Length; i++)
+            Require(FrontRoomsRunRigBinder.LineCells(lines[i]) == cellsAt[i] && FrontRoomsRunRigBinder.LineCells(lines[i] + .004f) == cellsAt[i], "LineCells(" + F(lines[i]) + ")");
+        sb.Append("record 8 B round trip (0 = none); seat lines 27..42 m = cells 9, 11..14");
+
+        var lookBefore = FrontRoomsRunRig.DefaultRedLook;
+        // RecedeBuilt / RecedeDropped for the watched room (the map may hold more rooms of the card; each is bound too).
+        var built = 0;
+        var dropped = 0;
+        var builtAny = 0;
+        RbMap.Watch = null;
+        Action<FrontRooms.Map.FrontRoomsRunRoom, FrontRoomsRunRecede> onBuilt = (r, x) => { builtAny++; if (r != null && r == RbMap.Watch) built++; };
+        Action<FrontRooms.Map.FrontRoomsRunRoom, FrontRoomsRunRecede> onDropped = (r, x) => { if (r != null && r == RbMap.Watch) dropped++; };
+        FrontRoomsRunRigBinder.RecedeBuilt += onBuilt;
+        FrontRoomsRunRigBinder.RecedeDropped += onDropped;
+        SetReduced(false);
+        try
+        {
+            // 2. runRooms off (the shipped profile, the map made as the preview makes one): no planner, and the game's hook binds nothing.
+            var offGo = new GameObject("TEST RB map, runRooms off");
+            offGo.SetActive(false);
+            var prof = UnityEngine.Object.Instantiate(FrontRoomsLevelProfile.Default);
+            prof.hideFlags = HideFlags.DontSave;
+            prof.buildRadius = 1;
+            var off = offGo.AddComponent<FrontRoomsMapWorld>();
+            try
+            {
+                off.Profile = prof;
+                offGo.SetActive(true);
+                off.BuildForCapture();
+                var bindIfOn = typeof(FrontRoomsRunRigBinder).GetMethod("BindIfOn", BindingFlags.NonPublic | BindingFlags.Static);
+                Require(bindIfOn != null, "FrontRoomsRunRigBinder.BindIfOn not found");
+                bindIfOn.Invoke(null, new object[] { off });
+                Require(!prof.runRooms && !off.RunRoomsOn && off.RunRooms == null && off.GetComponent<FrontRoomsRunRigBinder>() == null && builtAny == 0,
+                    "runRooms off: planner " + (off.RunRooms != null) + ", binder " + (off.GetComponent<FrontRoomsRunRigBinder>() != null));
+            }
+            finally
+            {
+                off.Release();
+                UnityEngine.Object.DestroyImmediate(offGo);
+                UnityEngine.Object.DestroyImmediate(prof);
+            }
+            sb.Append("; runRooms off: no planner, nothing bound");
+
+            // 3. Today's plain room (the preview's Tools card: a plain 9): no end, no hold, no record, the goal tell as landed.
+            FrontRoomsRunRig.DefaultRedLook = RunRedLook.Today;
+            using (var m = new RbMap(FrontRoomsModulePreview.RunCardView.Tools, 1))
+            {
+                Require(m.room != null, "plain: no room (" + m.status + ")");
+                var rig = m.Rig;
+                Require(!m.room.Receding && m.Recede == null && rig != null && rig.Layout.recedeLine < 0f && !rig.PulseHeld && rig.GoalMount == null && builtAny == 0,
+                    "plain: an end " + (m.Recede != null) + ", held " + rig.PulseHeld);
+                Transform det, card;
+                RbGoalTell(rig, rig.Layout.length * .5f, out det, out card);
+                Require(det != null && card != null && det.gameObject.activeInHierarchy && RbZ(rig, det) < rig.Layout.length && RbZ(rig, card) > rig.Layout.length,
+                    "plain: the goal tell moved");
+                var plainTellZ = RbZ(rig, det);
+                m.Stand(1.6f, 0f);
+                m.world.TripRunRoom(m.room);
+                m.Walk(1.6f, 3.2f, 2f, null);
+                Require(rig.State != RunRigState.Armed && m.room.RecedeRecord == 0UL && m.mapSeats.Count == 0, "plain tripped: " + rig.State + ", record " + m.room.RecedeRecord);
+                m.Drop();
+                m.Rebuild();
+                Require(m.Recede == null && m.room.RecedeRecord == 0UL && builtAny == 0 && dropped == 0 && m.Rig.State == RunRigState.Tripped, "plain rebuilt: " + m.Rig.State);
+                sb.Append("; plain 9 (").Append(m.room.VariantText).Append("): no end, no hold, no record, its goal tell at z ").Append(F(plainTellZ)).Append(" as landed, rebuilt tripped");
+            }
+
+            // 4. A 9 -> 12 room in B (the pulse): built receding, tripped by the map, seated on the map seat by seat, pulses after the final seat.
+            FrontRoomsRunRig.DefaultRedLook = RunRedLook.AlarmPulse;
+            using (var m = new RbMap(FrontRoomsModulePreview.RunCardView.Recede9To12, 1))
+            {
+                var room = m.room;
+                Require(room != null && room.Receding, "9 -> 12: no receding room (" + m.status + ")");
+                var rig = m.Rig;
+                var rec = m.Recede;
+                Require(rec != null && built == 1, "9 -> 12: no end built (" + built + " RecedeBuilt)");
+                Require(room.LengthCells == 12 && room.SeatCells.Length == 3 && room.SeatCells[0] == 9 && room.SeatCells[1] == 11 && room.SeatCells[2] == 12
+                    && room.SeatIndex == 0 && room.OpenCells == 9 && room.RecedeRecord == 0UL, "the map's record: " + room.VariantText);
+                Require(Near(rig.Layout.recedeLine, 27f) && Near(rig.Layout.length, 36f) && rig.PulseHeld && rig.GoalBeyondHidden && Near(rig.GoalLine, 27f)
+                    && rig.HiddenWraps == 3 && rig.GoalMount != null && rec.Rig == rig && Near(rec.Line, 27f) && rec.Phase == RunRecedePhase.Armed
+                    && rec.transform.IsChildOf(rig.transform.parent), "the receding build: line " + F(rig.Layout.recedeLine) + ", length " + F(rig.Layout.length)
+                    + ", held " + rig.PulseHeld + ", hidden " + rig.HiddenWraps);
+                Transform det, card;
+                RbGoalTell(rig, rig.Layout.recedeLine + .5f, out det, out card);
+                Require(det != null && card != null, "no goal tell past the end's first line");
+                // The detector stands at the sight rule's depth from the deepest line, pushed clear of the strips (about 31 m for 9 -> 12):
+                // in the hidden length, off with its cell until the end uncovers it; the card outside the L_max frame.
+                var dz = RbZ(rig, det);
+                var cz = RbZ(rig, card);
+                Require(dz > rig.Layout.recedeLine + .5f && dz < rig.Layout.length && !det.gameObject.activeInHierarchy && cz > rig.Layout.length && card.gameObject.activeInHierarchy,
+                    "the goal tell: detector z " + F(dz) + (det.gameObject.activeInHierarchy ? " on" : " off") + ", card z " + F(cz));
+                // The map arms this room at FD1 (Order T); the map's trip trips the end with the alarm.
+                float mx, mz;
+                room.ToMap(0f, 8.5f, out mx, out mz);
+                var short9 = room.InArmedZone(mx, mz);
+                room.ToMap(0f, 9.5f, out mx, out mz);
+                Require(!short9 && room.InArmedZone(mx, mz), "the map does not arm the receding room at FD1");
+                m.Stand(9.5f, 0f);
+                m.world.TripRunRoom(room);
+                Require(rig.State == RunRigState.Tripping && rec.Phase == RunRecedePhase.Waiting && rig.PulseHeld, "the map's trip: rig " + rig.State + ", end " + rec.Phase);
+                var seatLog = new List<string>();
+                rec.SeatReached += (i, z, fin) => seatLog.Add(FrontRoomsRunRigBinder.LineCells(z) + "/" + room.OpenCells + (fin ? "F" : ""));
+                var finalAt = m.Walk(9.5f, 3.2f, 6f, () => room.Seated);
+                var pulsesAtFinal = rig.PulsesStarted;
+                m.Walk(9.5f + 3.2f * finalAt, 3.2f, 6f - finalAt, null);
+                Require(seatLog.Count == 2 && seatLog[0] == "11/11" && seatLog[1] == "12/12F", "SeatReached -> the map: " + string.Join(",", seatLog.ToArray()));
+                Require(m.mapSeats.Count == 2 && m.mapSeats[0] == 11 && m.mapSeats[1] == 12 && room.Seated && room.SeatIndex == 2 && room.OpenCells == 12,
+                    "the map's seats: " + RbJoin(m.mapSeats) + ", index " + room.SeatIndex);
+                Require(!m.world.RunRooms.IsHiddenCell(room.Cells[11]) && !m.world.RunRooms.HeldShut(room.Cells[10], room.Cells[11]), "the map still hides the last cell");
+                Vector3 gp, gn;
+                m.world.RunEntrance(room, true, out gp, out gn);
+                var gz = rig.transform.parent.InverseTransformPoint(gp).z;
+                Require(Near(gz, 36f, .01f), "the map's goal point at z " + F(gz));
+                Require(pulsesAtFinal == 0 && rig.PulsesStarted >= 1 && !rig.PulseHeld, "B's pulses: " + pulsesAtFinal + " at the final seat (" + F(finalAt) + " s), " + rig.PulsesStarted + " by 6 s");
+                Require(det.gameObject.activeInHierarchy && !rig.GoalBeyondHidden && Near(rig.GoalLine, 36f) && rig.HiddenWraps == 0, "after the final seat: detector "
+                    + det.gameObject.activeInHierarchy + ", hidden " + rig.HiddenWraps);
+                var rcd = FrontRoomsRunRigBinder.UnpackRecord(room.RecedeRecord);
+                Require(rcd.version == RunRecedeRecord.Version1 && rcd.Started && rcd.steps == 2, "the map's record at the final seat: " + RbRecord(room.RecedeRecord));
+                sb.Append("; 9 -> 12 (").Append(room.VariantText).Append("): built receding (line 27, 36 m, 3 strips hidden, held), goal tell at z ").Append(F(dz)).Append(" / ").Append(F(cz))
+                    .Append(" (detector off in its cell), armed at FD1, seats ").Append(string.Join(",", seatLog.ToArray())).Append(" = map ").Append(RbJoin(m.mapSeats))
+                    .Append(", final at ").Append(F(finalAt)).Append(" s, pulses 0 then ").Append(rig.PulsesStarted).Append(" by 6 s");
+                // Dropped after the recede: the record stays with the room; rebuilt seated, quiet; the map already seated (no RunRoomSeated).
+                var droppedBefore = dropped;
+                var builtBefore = built;
+                m.Drop();
+                rcd = FrontRoomsRunRigBinder.UnpackRecord(room.RecedeRecord);
+                Require(dropped == droppedBefore + 1 && rcd.Started && rcd.Done && rcd.steps == 2, "dropped: " + RbRecord(room.RecedeRecord) + ", RecedeDropped " + (dropped - droppedBefore));
+                m.Rebuild();
+                var rig2 = m.Rig;
+                var rec2 = m.Recede;
+                Require(built == builtBefore + 1 && rec2 != null && rec2.Seated && Near(rec2.Line, 36f) && rig2.HiddenWraps == 0 && !rig2.GoalBeyondHidden && !rig2.PulseHeld
+                    && rig2.State == RunRigState.Tripped && m.mapSeats.Count == 2 && room.Seated, "rebuilt after the recede: seated " + (rec2 != null && rec2.Seated) + ", rig " + rig2.State
+                    + ", map seats " + RbJoin(m.mapSeats));
+                var cues = 0;
+                rec2.Cue += (c, i, p) => cues++;
+                m.Walk(20f, 0f, 2f, null);
+                Require(cues == 0 && rig2.PulsesStarted == 0 && m.mapSeats.Count == 2 && Near(rec2.Line, 36f), "the rebuilt room moved or spoke: " + cues + " cues, " + rig2.PulsesStarted + " pulses");
+                sb.Append("; dropped after it (").Append(RbRecord(room.RecedeRecord)).Append("), rebuilt seated at 36, no cue, no pulse, the map not seated again");
+            }
+
+            // 5. Drops before and during the recede (Today's look): waiting comes back waiting; mid-recede comes back seated, the map seated once by the binder.
+            FrontRoomsRunRig.DefaultRedLook = RunRedLook.Today;
+            using (var m = new RbMap(FrontRoomsModulePreview.RunCardView.Recede9To12, 1))
+            {
+                var room = m.room;
+                Require(room != null && room.Receding, "9 -> 12 (2): no receding room (" + m.status + ")");
+                var rec = m.Recede;
+                m.Stand(9.5f, 180f);
+                m.world.TripRunRoom(room);
+                for (var k = 0; k < 60; k++) m.binder.TickForTools(Dt);
+                Require(rec.Phase == RunRecedePhase.Waiting && Near(rec.Line, 27f) && room.SeatIndex == 0, "facing the entrance: " + rec.Phase + " at " + F(rec.Line));
+                var builtBefore = built;
+                m.Drop();
+                var rcd = FrontRoomsRunRigBinder.UnpackRecord(room.RecedeRecord);
+                Require(rcd.version == RunRecedeRecord.Version1 && (rcd.flags & RunRecedeRecord.Tripped) != 0 && !rcd.Started, "dropped waiting: " + RbRecord(room.RecedeRecord));
+                m.Rebuild();
+                rec = m.Recede;
+                var rig = m.Rig;
+                Require(built == builtBefore + 1 && rec.Phase == RunRecedePhase.Waiting && Near(rec.Line, 27f) && rig.PulseHeld && rig.State == RunRigState.Tripped
+                    && rig.HiddenWraps == 3 && room.SeatIndex == 0 && m.mapSeats.Count == 0, "rebuilt waiting: " + rec.Phase + ", held " + rig.PulseHeld + ", rig " + rig.State);
+                var firstAt = m.Walk(9.5f, 3.2f, 3f, () => room.SeatIndex >= 1);
+                Require(room.SeatIndex == 1 && room.OpenCells == 11 && m.mapSeats.Count == 1 && m.mapSeats[0] == 11 && !rec.Seated, "the first seat after the rebuild: index "
+                    + room.SeatIndex + ", map seats " + RbJoin(m.mapSeats));
+                m.Drop();
+                rcd = FrontRoomsRunRigBinder.UnpackRecord(room.RecedeRecord);
+                Require(rcd.Started && !rcd.Done && rcd.steps == 1, "dropped mid-recede: " + RbRecord(room.RecedeRecord));
+                m.Rebuild();
+                rec = m.Recede;
+                rig = m.Rig;
+                Require(rec.Seated && Near(rec.Line, 36f) && rig.HiddenWraps == 0 && !rig.PulseHeld && room.Seated && room.SeatIndex == 2 && m.mapSeats.Count == 2 && m.mapSeats[1] == 12,
+                    "rebuilt mid-recede: seated " + rec.Seated + ", map seats " + RbJoin(m.mapSeats) + ", index " + room.SeatIndex);
+                sb.Append("; dropped waiting, rebuilt waiting (re-tripped, held), first seat ").Append(F(firstAt)).Append(" s later on the map at 11; dropped mid-recede (")
+                    .Append(RbRecord(room.RecedeRecord)).Append("), rebuilt seated at 36 and the map seated once on 12");
+            }
+
+            // 6. A 9 -> 14 room: a walker 5 m from the end at the gate glides it, one seat on the map, on its last line. A 14-cell straight
+            //    has one place per chunk pair, so the preview's eight seeds may not hold one: seeds 1, 9, 17 in turn.
+            var m14 = new RbMap(FrontRoomsModulePreview.RunCardView.Recede9To14, 1);
+            for (var s = 9; s <= 17 && m14.room == null; s += 8)
+            {
+                m14.Dispose();
+                m14 = new RbMap(FrontRoomsModulePreview.RunCardView.Recede9To14, s);
+            }
+            using (var m = m14)
+            {
+                var room = m.room;
+                Require(room != null && room.Receding, "9 -> 14: no receding room in seeds 1-24 (" + m.status + ")");
+                var rig = m.Rig;
+                var rec = m.Recede;
+                Require(room.LengthCells == 14 && room.SeatCells.Length == 5 && Near(rig.Layout.length, 42f) && rig.HiddenWraps == 5, "9 -> 14 built: " + room.VariantText + ", hidden " + rig.HiddenWraps);
+                var seatLog = new List<string>();
+                rec.SeatReached += (i, z, fin) => seatLog.Add(FrontRoomsRunRigBinder.LineCells(z) + "/" + room.OpenCells + (fin ? "F" : ""));
+                m.Stand(22f, 0f);
+                m.world.TripRunRoom(room);
+                var seatedAt = m.Walk(22f, 0f, 6f, () => rec.Seated);
+                Require(rec.Gliding && rec.Seated && Near(rec.Line, 42f), "the glide: gliding " + rec.Gliding + ", seated " + rec.Seated + " at " + F(rec.Line));
+                Require(seatLog.Count == 1 && seatLog[0] == "14/14F" && m.mapSeats.Count == 1 && m.mapSeats[0] == 14 && room.SeatIndex == 4 && room.Seated,
+                    "the glide on the map: " + string.Join(",", seatLog.ToArray()) + ", map " + RbJoin(m.mapSeats) + ", index " + room.SeatIndex);
+                sb.Append("; 9 -> 14 (").Append(room.VariantText).Append("): glided from 5 m, seated at ").Append(F(seatedAt)).Append(" s, one seat on the map (index 0 -> 4)");
+            }
+        }
+        finally
+        {
+            FrontRoomsRunRig.DefaultRedLook = lookBefore;
+            FrontRoomsRunRigBinder.RecedeBuilt -= onBuilt;
+            FrontRoomsRunRigBinder.RecedeDropped -= onDropped;
+        }
+        return sb.ToString();
     }
 }

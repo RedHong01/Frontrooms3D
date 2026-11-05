@@ -672,6 +672,8 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
             go.hideFlags = gameObject.hideFlags;
             go.transform.SetParent(transform, false);
             contactLight = go.AddComponent<Light>();
+            // 技术美术调研 row 16, option D (Red 2026-11-04 14:14, "按推荐"): soft-shadow filter Low set explicitly.
+            UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(contactLight).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;
             contactLight.type = LightType.Spot;
             contactLight.spotAngle = 120f;
             contactLight.innerSpotAngle = 60f;
@@ -1014,6 +1016,7 @@ public sealed class FrontRoomsRelayBody : MonoBehaviour
             lightGo.hideFlags = gameObject.hideFlags;
             lightGo.transform.SetParent(transform, false);
             lensLight = lightGo.AddComponent<Light>();
+            UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(lensLight).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;   // row 16 option D
             lensLight.type = LightType.Spot;
             lensLight.spotAngle = 140f;
             lensLight.innerSpotAngle = 70f;

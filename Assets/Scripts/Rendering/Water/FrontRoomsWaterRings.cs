@@ -29,6 +29,13 @@ using UnityEngine;
 /// 0.4-0.8 s (at most 2.5 Hz); everything faster is small-scale. Reduce Motion (FrontRoomsWaterRipples.ReduceMotion)
 /// freezes them: no new rings, the live ones stop where they are and fade out in a second.
 /// Nothing runs until FrontRoomsWaterRipples.Tick is called; no other system reads these rings (visual only).
+///
+/// Less regular rings (70_look_build.md section 11, after Red's walk of scene 4 on 2026-11-04: the rings read too
+/// regular): RimSoftness, SourceShape, Currents, EchoGain, LifeScale and Gait. Each defaults to today's behaviour
+/// exactly and costs nothing there (SourceShape and Currents live in the shader keyword _FR_RINGS_SHAPED, off by default);
+/// NaturalLook() sets the recommended combination, TodayLook() puts today back. A foot
+/// is not a drop: today a footstep is a point released at once, whose coherent splash piles the 4.4 cm waves into one
+/// steep rim at the minimum group speed (84-97 % of the ring's slope), which reads as a drawn circle.
 /// </summary>
 public static class FrontRoomsWaterRings
 {
@@ -64,25 +71,113 @@ public static class FrontRoomsWaterRings
         public float x, z, born, volume, a, aS, eps, life, agitation;
         public int water;
         public Kind kind;
+        public float hx, hz, seed;          // heading (unit, 0 when unknown) and a per-ring random: SourceShape only
     }
 
     struct Water { public int id; public Rect rect; public float y; }
 
-    struct Mover { public bool seen, inWater; public Vector3 last; public float sinceEmit, lastTime, idle; public int side; }
+    struct Mover
+    {
+        public bool seen, inWater;
+        public Vector3 last;
+        public float sinceEmit, lastTime, idle;
+        public int side;
+        public Vector2 heading;             // the last direction of travel (SourceShape: footsteps posted from outside)
+        public float speed, stride;         // the last speed; Gait's next stride (0 = not chosen yet)
+    }
 
-    struct Slot { public Vector4 a, b; public float score; }
+    struct Slot { public Vector4 a, b, c; public float score; }
 
     static readonly List<Ring> live = new List<Ring>(64);
     static readonly List<Water> waters = new List<Water>();
     static readonly Mover[] movers = new Mover[3];
     static readonly List<Slot> slots = new List<Slot>(96);
-    static readonly Vector4[] up0 = new Vector4[MaxSlots], up1 = new Vector4[MaxSlots];
+    static readonly Vector4[] up0 = new Vector4[MaxSlots], up1 = new Vector4[MaxSlots], up2 = new Vector4[MaxSlots];
     static Texture2D lut;
     static float kgm, cgmin, omgm, om3gm;
     static float now, fadeAll = 1f;
     static bool frozen;
     static int budget = -1;
     static uint rng = 2463534242u;
+    static uint rngShape = 2654435769u;     // the variants' own random numbers: today's sequence above never moves
+    static bool shapeUploaded;
+    static bool keywordOn, keywordKnown;    // _FR_RINGS_SHAPED as this domain last set it (unknown until the first Tick)
+    static float lifeUploaded = 1f;
+    const string ShapedKeyword = "_FR_RINGS_SHAPED";
+
+    // ------------------------------------------------------------------------------------------------ less regular rings
+    // 70_look_build.md section 11. Defaults are today's, byte for byte; the scene-4 preview (FrontRoomsStructuresWater,
+    // key U) and later the game set them. Each says what the player sees and what it costs per tier.
+
+    /// <summary>0 = today. The splash of a footstep or a wading step is no longer one coherent drop: at 1 its coherent
+    /// share falls to a fifth and spreads 2.5 times wider (a foot's splash lands over 10-30 cm and 0.1-0.3 s, so its
+    /// 4.4 cm waves cancel instead of piling up into one steep rim), the stirred patch at the foot gets 1.8 times the
+    /// agitation, and a footstep becomes foot-sized (its hump 6 cm instead of 4) with 3.09 times the volume, so its
+    /// calibrated 5 mm crest at 0.3 m now rides on the long waves. The player sees soft, broad crests of 8-15 cm and a
+    /// churned patch instead of a crisp drawn circle. Drips keep their rim (a drop is a point). CPU only: no cost on any
+    /// tier.</summary>
+    public static float RimSoftness;
+    /// <summary>0 = today (a point source, round). 1 = a foot: the source is 1.15 times longer than wide along the
+    /// walking direction, pushes forward (amplitude 1 + .7 cos of the angle to the heading) and makes a second, weaker
+    /// and opposite impulse 13 cm ahead 0.16 s later (the forefoot and the lift; each step varies both by +-30 %), so
+    /// two ring systems interfere: every ring is strong ahead and to the sides, faint behind, broken into lobes, and
+    /// differs from the last. Footsteps posted from outside (Footstep(p)) take the heading of the nearest walking body
+    /// (within 0.6 m). Shader, while on: FrontRooms/Water's _FR_RINGS_SHAPED variant (the shaped loop), about +40 % of
+    /// the rings' cost on desktop (measured, 70 section 11.8); left out on the phone tier unless ShapeOnPhoneTier.</summary>
+    public static float SourceShape;
+    /// <summary>0 = today (still water). Above 0: the rms speed of a slow, swirling drift of the water (a used pool's
+    /// circulation and the walkers' wakes), as a share of the crests' speed; a crest arrives early where the drift runs
+    /// outward and late where it runs inward, so big rings bend and small ones stay round. 0.05 is about 1.2 cm/s.
+    /// The drift's pattern (0.9-2.2 m, periods 8-16 s) repeats every 192 m and 6144 s and freezes under Reduce Motion.
+    /// Shader, while on: the same _FR_RINGS_SHAPED variant (about +44 % of the rings' cost on desktop, measured); left out
+    /// on the phone tier unless ShapeOnPhoneTier.</summary>
+    public static float Currents;
+    /// <summary>1 = today (walls reflect 0.85, corners 0.72). Below 1 the walls return less (deck-level gutters and
+    /// the meniscus take most of a short wave; a beach or an open side of a water rectangle returns nothing), and each
+    /// echo comes back up to 0.25 s x (1 - EchoGain) late, so it is no longer a perfect mirror twin. 0 = no echoes (their
+    /// slots go to real rings). CPU only.</summary>
+    public static float EchoGain = 1f;
+    /// <summary>1 = today. Scales every new ring's life and fade time and divides the film damping by it: 0.8 = a more
+    /// used pool, rings gone a fifth sooner, fewer old circles stacked behind a walker. CPU only.</summary>
+    public static float LifeScale = 1f;
+    /// <summary>0 = today (ReportBody drops a footstep every 0.7 m at any speed). 1 = a gait: the stride follows the
+    /// speed (cadence 1.6 + 0.35 v steps a second: 0.69 m at 1.44 m/s, 1.18 m at 3.2 m/s), each step varies its length
+    /// by +-8 %, its place by +-3 cm and its strength by +-25 %. AutoSteps only; CPU only.</summary>
+    public static float Gait;
+
+    /// <summary>false (default): on the phone tier (handheld, WebGL) SourceShape and Currents are left out and the water
+    /// runs today's program, so phones never pay the shaped loop (measured +45-60 % of the rings' cost, 70 section 11.8);
+    /// RimSoftness, EchoGain, LifeScale and Gait still apply there. true: phones get them too, without the second impulse.</summary>
+    public static bool ShapeOnPhoneTier;
+
+    const float ShapeElongation = .15f, ShapePush = .7f, LiftDistance = .13f, LiftDelay = .16f, LiftGain = -.55f;
+
+    /// <summary>The recommended combination (70 section 11): soft rims, a foot's shape, a slow drift, half echoes,
+    /// a shorter life and a real gait.</summary>
+    public static void NaturalLook()
+    {
+        RimSoftness = 1f;
+        SourceShape = 1f;
+        Currents = .05f;
+        EchoGain = .5f;
+        LifeScale = .8f;
+        Gait = 1f;
+    }
+
+    /// <summary>Today's rings: every static of section 11 at its default.</summary>
+    public static void TodayLook()
+    {
+        RimSoftness = 0f;
+        SourceShape = 0f;
+        Currents = 0f;
+        EchoGain = 1f;
+        LifeScale = 1f;
+        Gait = 0f;
+    }
+
+    static readonly int Ring2Id = Shader.PropertyToID("_FR_Ring2");
+    static readonly int RingShape0Id = Shader.PropertyToID("_FR_RingShape0");
+    static readonly int RingShape1Id = Shader.PropertyToID("_FR_RingShape1");
 
     static readonly int Ring0Id = Shader.PropertyToID("_FR_Ring0");
     static readonly int Ring1Id = Shader.PropertyToID("_FR_Ring1");
@@ -131,6 +226,12 @@ public static class FrontRoomsWaterRings
         budget = -1;
         AutoSteps = true;
         SlotCount = 0;
+        TodayLook();
+        ShapeOnPhoneTier = false;
+        rngShape = 2654435769u;
+        shapeUploaded = true;               // the next Tick clears what a previous session may have left on the GPU
+        keywordKnown = false;               // and puts _FR_RINGS_SHAPED off
+        lifeUploaded = -1f;
     }
 
     // ------------------------------------------------------------------------------------------------ water rectangles
@@ -162,10 +263,15 @@ public static class FrontRoomsWaterRings
     public static void Footstep(Vector3 p, float strength = 1f) { Spawn(Kind.Footstep, p, strength, 1f); }
     public static void Wade(Vector3 p, float strength = 1f) { Spawn(Kind.Wade, p, strength, 1f); }
 
+    /// <summary>A footstep whose walking direction the caller knows (world xz; SourceShape uses it, nothing else does).</summary>
+    public static void Footstep(Vector3 p, float strength, Vector2 heading) { Spawn(Kind.Footstep, p, strength, 1f, heading); }
+
     /// <summary>A body or object falling in: size 1 is a person (about 90 litres moved, 30 mm waves 1 m out).</summary>
     public static void Plunge(Vector3 p, float size = 1f) { Spawn(Kind.Plunge, p, 1f, Mathf.Clamp(size, .2f, 3f)); }
 
-    static void Spawn(Kind kind, Vector3 p, float strength, float size)
+    static void Spawn(Kind kind, Vector3 p, float strength, float size) { Spawn(kind, p, strength, size, Vector2.zero); }
+
+    static void Spawn(Kind kind, Vector3 p, float strength, float size, Vector2 heading)
     {
         if (FrontRoomsWaterRipples.ReduceMotion || strength <= 0f) return;
         var h = hooks[(int)kind];
@@ -178,6 +284,36 @@ public static class FrontRoomsWaterRings
             volume = h.volume * strength * size * size * size,
             life = h.life, agitation = h.agitation * Mathf.Min(strength, 2f)
         };
+        if (kind == Kind.Footstep || kind == Kind.Wade)
+        {
+            if (RimSoftness > 0f)
+            {
+                // a foot's splash lands over 10-30 cm and 0.1-0.3 s: its short waves cancel instead of piling into a rim
+                var s = Mathf.Clamp01(RimSoftness);
+                r.eps *= 1f - .8f * s;
+                r.aS *= 1f + 1.5f * s;
+                r.agitation *= 1f + .8f * s;
+                if (kind == Kind.Footstep)
+                {
+                    // a foot is foot-sized (the hump 4 -> 6 cm), and the calibrated crest (5 mm at 0.3 m, 17 s3.1), which
+                    // the rim carried, goes to the long waves (ring_model.py --rings11: volume x 3.09 keeps 5.2 mm at 0.3 m)
+                    r.a *= 1f + .5f * s;
+                    r.volume *= 1f + 2.09f * s;
+                }
+            }
+            if (SourceShape > 0f)
+            {
+                if (heading.sqrMagnitude < 1e-8f) heading = HeadingNear(p);
+                if (heading.sqrMagnitude > 1e-8f)
+                {
+                    heading.Normalize();
+                    r.hx = heading.x;
+                    r.hz = heading.y;
+                    r.seed = RandShape();
+                }
+            }
+        }
+        if (LifeScale != 1f) r.life *= Mathf.Clamp(LifeScale, .25f, 2f);
         if (live.Count >= 48)
         {
             // drop the weakest, oldest
@@ -224,12 +360,14 @@ public static class FrontRoomsWaterRings
         var speed = dist / dt;
         if (dist > 2f) { m.last = feet; m.lastTime = t; movers[i] = m; return; }     // teleport: no ring
         var dir = dist > 1e-5f ? d / dist : Vector2.zero;
+        if (dist > 1e-5f) m.heading = dir;
+        m.speed = speed;
         m.sinceEmit += dist;
         var scale = Mathf.Clamp(radius / .25f, .5f, 2f);
         if (!m.inWater && depth > .02f)
         {
             // stepping in
-            Spawn(depth < DeepWade ? Kind.Footstep : Kind.Wade, feet, 1.2f * scale, 1f);
+            Spawn(depth < DeepWade ? Kind.Footstep : Kind.Wade, feet, 1.2f * scale, 1f, dir);
             m.sinceEmit = 0f;
         }
         else if (speed > .15f)
@@ -238,18 +376,28 @@ public static class FrontRoomsWaterRings
             var sp = Mathf.Clamp(speed / 1.4f, .4f, 1.8f);
             if (depth < DeepWade)
             {
-                if (AutoSteps && m.sinceEmit >= .7f)
+                var stride = Gait > 0f && m.stride > 0f ? m.stride : .7f;
+                if (AutoSteps && m.sinceEmit >= stride)
                 {
                     m.side = m.side == 0 ? 1 : 0;
                     var lat = new Vector3(-dir.y, 0f, dir.x) * (m.side == 0 ? -.1f : .1f);
-                    Spawn(Kind.Footstep, feet + lat, sp * scale * Mathf.Clamp01(depth / .06f + .3f), 1f);
+                    var strength = sp * scale * Mathf.Clamp01(depth / .06f + .3f);
+                    if (Gait > 0f)
+                    {
+                        // a gait: cadence 1.6 + 0.35 v steps a second; each step its own length, place and strength
+                        var g = Mathf.Clamp01(Gait);
+                        m.stride = Mathf.Clamp(speed / (1.6f + .35f * speed), .45f, 1.3f) * (1f + g * .16f * (RandShape() - .5f));
+                        lat += new Vector3(RandShape() - .5f, 0f, RandShape() - .5f) * (.06f * g);
+                        strength *= 1f + g * .5f * (RandShape() - .5f);
+                    }
+                    Spawn(Kind.Footstep, feet + lat, strength, 1f, dir);
                     m.sinceEmit = 0f;
                 }
             }
             else if (m.sinceEmit >= .3f)
             {
                 var ahead = new Vector3(dir.x, 0f, dir.y) * (radius * .6f);
-                Spawn(Kind.Wade, feet + ahead, sp * scale, 1f);
+                Spawn(Kind.Wade, feet + ahead, sp * scale, 1f, dir);
                 m.sinceEmit = 0f;
             }
         }
@@ -284,6 +432,31 @@ public static class FrontRoomsWaterRings
         return (rng & 0xFFFFFF) / 16777216f;
     }
 
+    static float RandShape()
+    {
+        rngShape ^= rngShape << 13;
+        rngShape ^= rngShape >> 17;
+        rngShape ^= rngShape << 5;
+        return (rngShape & 0xFFFFFF) / 16777216f;
+    }
+
+    /// <summary>SourceShape: the heading of the walking body nearest to p (within 0.6 m, moving), else zero.</summary>
+    static Vector2 HeadingNear(Vector3 p)
+    {
+        var best = Vector2.zero;
+        var bd = .36f;
+        for (var i = 0; i < movers.Length; i++)
+        {
+            var m = movers[i];
+            if (!m.seen || !m.inWater || m.speed < .15f || m.heading.sqrMagnitude < .5f) continue;
+            var dx = p.x - m.last.x;
+            var dz = p.z - m.last.z;
+            var d2 = dx * dx + dz * dz;
+            if (d2 < bd) { bd = d2; best = m.heading; }
+        }
+        return best;
+    }
+
     // ------------------------------------------------------------------------------------------------ tick and upload
     /// <summary>Advance to the ripple clock (seconds; frozen under Reduce Motion), choose the slots, upload them.
     /// Called by FrontRoomsWaterRipples.Tick; realDt is unscaled time, for the Reduce Motion fade.</summary>
@@ -309,6 +482,9 @@ public static class FrontRoomsWaterRings
         }
         slots.Clear();
         var vmaxReach = VMax;
+        var shaped = (SourceShape > 0f || Currents > 0f) && (ShapeOnPhoneTier || !FrontRoomsWaterRipples.PhoneTier);
+        var shape = Mathf.Clamp01(SourceShape);
+        var wallR = EchoGain == 1f ? WallReflection : WallReflection * Mathf.Clamp(EchoGain, 0f, 1.15f);
         for (var i = 0; i < live.Count; i++)
         {
             var r = live[i];
@@ -322,9 +498,10 @@ public static class FrontRoomsWaterRings
             {
                 a = new Vector4(r.x, r.z, age, vol),
                 b = new Vector4(r.a, r.aS, r.eps, r.agitation * fade),
+                c = shaped ? new Vector4(r.hx * shape, r.hz * shape, r.seed, 0f) : Vector4.zero,
                 score = score
             });
-            if (r.water < 0 || r.water >= waters.Count) continue;
+            if (r.water < 0 || r.water >= waters.Count || wallR <= 0f) continue;
             // images across the walls and corners of its water rectangle
             var rc = waters[r.water].rect;
             var reach = vmaxReach * age;
@@ -340,11 +517,19 @@ public static class FrontRoomsWaterRings
                     var ez = Mathf.Max(rc.yMin - pz, 0f, pz - rc.yMax);
                     var enter = Mathf.Sqrt(ex * ex + ez * ez);
                     if (enter > reach) continue;
-                    var g = (ix != 0 && iz != 0) ? WallReflection * WallReflection : WallReflection;
+                    var g = (ix != 0 && iz != 0) ? wallR * wallR : wallR;
+                    var imageAge = age;
+                    if (EchoGain < 1f)
+                    {
+                        // a gutter or a rounded wall returns the wave late and spread: each echo its own lag, up to 0.25 s
+                        var u = Mathf.Repeat(r.born * .618034f + r.seed + ix * .37f + iz * .61f, 1f);
+                        imageAge = Mathf.Max(age - .25f * (1f - Mathf.Max(EchoGain, 0f)) * u, 1e-3f);
+                    }
                     slots.Add(new Slot
                     {
-                        a = new Vector4(px, pz, age, vol * g),
+                        a = new Vector4(px, pz, imageAge, vol * g),
                         b = new Vector4(r.a, r.aS, r.eps, 0f),
+                        c = shaped ? new Vector4((ix != 0 ? -r.hx : r.hx) * shape, (iz != 0 ? -r.hz : r.hz) * shape, r.seed, 0f) : Vector4.zero,
                         score = score * g * .8f
                     });
                 }
@@ -361,6 +546,42 @@ public static class FrontRoomsWaterRings
         Shader.SetGlobalVectorArray(Ring0Id, up0);
         Shader.SetGlobalVectorArray(Ring1Id, up1);
         Shader.SetGlobalFloat(RingCountId, n);
+        UploadShape(shaped, shape, n);
+        if (LifeScale != lifeUploaded) UploadLife();
+    }
+
+    /// <summary>SourceShape and Currents (FrontRoomsWaterRipples.hlsl FRRingsAddShaped, compiled only under the global
+    /// keyword _FR_RINGS_SHAPED that FrontRooms/Water declares): while both are 0 the keyword stays off, nothing is sent
+    /// and the water runs today's program; the first call of a session puts the keyword off once, switching the
+    /// statics off puts it off and sends zeros once.</summary>
+    static void UploadShape(bool shaped, float shape, int n)
+    {
+        if (!shaped && !shapeUploaded && keywordKnown) return;
+        if (shaped)
+        {
+            for (var i = 0; i < MaxSlots; i++) up2[i] = i < n ? slots[i].c : Vector4.zero;
+            Shader.SetGlobalVectorArray(Ring2Id, up2);
+        }
+        // the second impulse costs three more sincos per slot: the phone tier (handheld, WebGL) goes without it
+        var lift = FrontRoomsWaterRipples.PhoneTier ? 0f : LiftGain;
+        Shader.SetGlobalVector(RingShape0Id, shaped ? new Vector4(1f, ShapeElongation, ShapePush, Mathf.Clamp(Currents, 0f, .3f)) : Vector4.zero);
+        Shader.SetGlobalVector(RingShape1Id, shaped ? new Vector4(LiftDistance, LiftDelay, lift, shape) : Vector4.zero);
+        if (!keywordKnown || shaped != keywordOn)
+        {
+            if (shaped) Shader.EnableKeyword(ShapedKeyword);
+            else Shader.DisableKeyword(ShapedKeyword);
+            keywordOn = shaped;
+            keywordKnown = true;
+        }
+        shapeUploaded = shaped;
+    }
+
+    /// <summary>LifeScale: the film damping and the fade the shader applies (the rings' own lives scale at spawn).</summary>
+    static void UploadLife()
+    {
+        var l = Mathf.Clamp(LifeScale, .25f, 2f);
+        Shader.SetGlobalVector(RingConst1Id, new Vector4(Gravity, SigmaOverRho, NuEff / l, 1f / (FadeSeconds * l)));
+        lifeUploaded = LifeScale;
     }
 
     // ------------------------------------------------------------------------------------------------ dispersion table
@@ -438,6 +659,16 @@ public static class FrontRoomsWaterRings
         EnsureLut();
         return "c_gmin " + cgmin.ToString("0.0000") + " m/s at k " + kgm.ToString("0.0") + " (lambda "
             + (200f * Mathf.PI / kgm).ToString("0.00") + " cm), omega " + omgm.ToString("0.00") + ", omega''' "
-            + om3gm.ToString("0.000e0") + ", table " + lut.format + " " + LutSize + ", budget " + Budget;
+            + om3gm.ToString("0.000e0") + ", table " + lut.format + " " + LutSize + ", budget " + Budget
+            + ", " + DescribeLook();
+    }
+
+    /// <summary>The section 11 statics as text ("today" when every one is at its default).</summary>
+    public static string DescribeLook()
+    {
+        if (RimSoftness == 0f && SourceShape == 0f && Currents == 0f && EchoGain == 1f && LifeScale == 1f && Gait == 0f) return "rings today";
+        return "rings: rim softness " + RimSoftness.ToString("0.##") + ", source shape " + SourceShape.ToString("0.##")
+            + ", currents " + Currents.ToString("0.###") + ", echo gain " + EchoGain.ToString("0.##") + ", life scale "
+            + LifeScale.ToString("0.##") + ", gait " + Gait.ToString("0.##");
     }
 }

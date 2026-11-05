@@ -59,13 +59,15 @@ public sealed class FrontRoomsStructuresHub : FrontRoomsStructuresDistrict
             FrontRoomsStructuresSigns.Placard(root, root.TransformPoint(padLocal + dir * .9f + Vector3.up * 1.5f), root.TransformPoint(Spawn), d.Key + " · " + d.Code, d.Title + "\n" + body, Site.y);
         }
 
-        FrontRoomsStructuresSigns.Placard(root, root.TransformPoint(new Vector3(3.6f, 1.5f, 1.6f)), root.TransformPoint(Spawn), "按键",
+        // Beside the spawn, one each side, outside its view (74-101 degrees off it), each face's centre 2.50 m from the spawn's
+        // eye (20_placard_type.md v2.4, E's FAR; was x 3.6, 3.61 m). The pads' placards are read standing on their pads (0.9 m).
+        FrontRoomsStructuresSigns.Placard(root, root.TransformPoint(new Vector3(2.493f, 1.5f, 1.6f)), root.TransformPoint(Spawn), "按键",
             "数字键 1-6：六个区域（SP1-SP6）。7：泳池路线（游戏自己的地图代码）。8：模组件。9：SP7 会往后退的门（Run!）。0：回到大厅。\n"
             + "R：回到这一区的当前站点。[ 和 ]：上一个、下一个站点。L：这一区的灯光（夜景、停电）。V：变体。F：滑道里的水。\n"
             + "SP7 里另有 B、H、O、Y 四个键，见那里的牌子。C：换成 Relay 的体型（2.05 米），检查 Relay 能走的路。M：尺寸标记。G：说明面板。\n"
             + "走路、跑、慢走、E 都和游戏一样：WASD，左 Ctrl 跑，Shift 慢走。点击屏幕控制视角，Esc 放开鼠标。\n"
             + "要你决定的问题都有编号（比如 SP1-2），在对话里按编号告诉总控就行。", Site.y);
-        FrontRoomsStructuresSigns.Placard(root, root.TransformPoint(new Vector3(-3.6f, 1.5f, 1.6f)), root.TransformPoint(Spawn), "这里没有的东西",
+        FrontRoomsStructuresSigns.Placard(root, root.TransformPoint(new Vector3(-2.493f, 1.5f, 1.6f)), root.TransformPoint(Spawn), "这里没有的东西",
             "V7（需要地图的回访变化，只在深层）；Run! 的猫道 G1、G2（你已否决）；r4t 和 LS12（10-31 已撤回）；滑梯的 B、C 两种支撑（你选了 A）；"
             + "61 §5 的其他滑梯样式（只有文字）；62、63 的家具方案（不是结构）；泳池的玩家水中动作（P2）和 Relay 进泳池（P3）还没做，"
             + "所以泳池路线里没有 Relay。", Site.y);
@@ -113,6 +115,7 @@ public sealed class FrontRoomsStructuresHub : FrontRoomsStructuresDistrict
         lightGo.transform.localPosition = new Vector3(0f, -ModuleUnits.LampDrop, 0f);
         lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         var light = lightGo.AddComponent<Light>();
+        FrontRoomsMapWorld.ShippedShadowFilter(light);
         light.type = LightType.Spot;
         light.spotAngle = 162f;
         light.innerSpotAngle = 96f;

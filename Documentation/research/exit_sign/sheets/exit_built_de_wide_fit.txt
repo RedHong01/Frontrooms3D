@@ -1,0 +1,30 @@
+# exit_built_de_wide_fit.txt
+sheet sheets/exit_built_de_wide.jpg  3838x10350
+cell 1274x717
+english frames, this run against the 09:08 run (mean |diff| / 255): {"desktop/dark3_battery": 0.0, "desktop/dark8_lit": 0.0, "desktop/eye3_lit": 0.0, "desktop/eye8_lit": 0.0, "hero4k/hero_battery": 0.269, "hero4k/hero_lit": 0.306, "phone/eye3_lit": 0.498, "phone/eye8_lit": 0.521}
+DE TODAY from the 09:08 frames: True
+
+measures en {"baseline": 16.8, "bottom": 16.8, "box": [13.875, 16.8, 306.125, 169.2], "inkH": 152.4, "inkW": 292.25, "left": 13.875, "letterH": 152.4, "opening": [320.0, 186.0], "right": 13.875, "stroke": 19.05, "top": 16.8}
+tris en {"Kit_ExitSign": [3136, 984], "Kit_ExitSign_End": [5758, 1822], "Kit_ExitSign_Hanging": [6502, 1999], "Kit_ExitSign_HangingFlush": [6254, 1940]}
+field en {"E": 0.514, "X": 0.591, "I": 1.0, "T": 0.581}
+measures dek {"baseline": 48.186, "bottom": 48.186, "box": [21.0, 48.186, 299.0, 137.814], "holeVerts": 286, "inkH": 89.628, "inkW": 278.0, "left": 21.0, "letterH": 89.628, "lod1Verts": 168, "opening": [320.0, 186.0], "right": 21.0, "shares": {"A": 0.4991, "B": 0.5009, "DC": 0.857}, "stroke": 11.204, "tieW": 3.361, "ties": 2, "top": 48.186, "width": 0.85}
+tris dek {"Kit_ExitSign": [4752, 1102], "Kit_ExitSign_End": [8990, 2058], "Kit_ExitSign_Hanging": [9734, 2235], "Kit_ExitSign_HangingFlush": [9486, 2176]}
+field dek {"1 A": 0.231, "2 U": 0.803, "3 S": 0.923, "4 G": 0.481, "5 A": 1.0, "6 N": 0.553, "7 G": 0.21}
+measures dew {"baseline": 16.8, "bottom": 16.8, "box": [21.375, 16.8, 542.625, 169.2], "holeVerts": 290, "inkH": 152.4, "inkW": 521.25, "left": 21.375, "letterH": 152.4, "lod1Verts": 170, "opening": [564.0, 186.0], "right": 21.375, "shares": {"A": 0.4861, "B": 0.5139, "DC": 0.4845}, "stroke": 19.05, "tieW": 5.715, "ties": 2, "top": 16.8, "width": 1.0}
+tris dew {"Kit_ExitSign": [4780, 1108], "Kit_ExitSign_End": [9046, 2070], "Kit_ExitSign_Hanging": [9790, 2247], "Kit_ExitSign_HangingFlush": [9542, 2188]}
+field dew {"1 A": 0.537, "2 U": 0.96, "3 S": 1.0, "4 G": 0.849, "5 A": 0.979, "6 N": 0.932, "7 G": 0.518}
+
+box     -        -              INK BOX           en {"box": [13.875, 16.8, 306.125, 169.2], "opening": [320.0, 186.0], "pxPerMm": 1.942}  dek {"box": [21.0, 48.186, 299.0, 137.814], "opening": [320.0, 186.0], "pxPerMm": 1.942}  dew {"box": [21.375, 16.8, 542.625, 169.2], "opening": [564.0, 186.0], "pxPerMm": 1.942}
+hero    hero4k   hero_lit       HERO 0.35 M LIT   en {"file": "hero4k/hero_lit_en.png", "level": 1.0, "lod": 0, "pxPerMm": 3.95}  dek {"file": "hero4k/hero_lit_de.png", "level": 1.0, "lod": 0, "pxPerMm": 3.95}  dew {"file": "hero4k/hero_lit_de.png", "level": 1.0, "lod": 0, "pxPerMm": 3.95}
+detail  hero4k   hero_lit       DETAIL 1:1        en {"file": "hero4k/hero_lit_en.png", "lod": 0, "pxPerMm": 3.95}  dek {"file": "hero4k/hero_lit_de.png", "lod": 0, "pxPerMm": 3.95}  dew {"file": "hero4k/hero_lit_de.png", "lod": 0, "pxPerMm": 3.95}
+hero    hero4k   hero_battery   HERO BATTERY      en {"file": "hero4k/hero_battery_en.png", "level": 0.1655, "lod": 0, "pxPerMm": 3.95}  dek {"file": "hero4k/hero_battery_de.png", "level": 0.2143, "lod": 0, "pxPerMm": 3.95}  dew {"file": "hero4k/hero_battery_de.png", "level": 0.1211, "lod": 0, "pxPerMm": 3.95}
+hero    hero4k   hero_lod1      HERO LOD1         en {"file": "hero4k/hero_lod1_en.png", "level": 1.0, "lod": 1, "pxPerMm": 3.95}  dek {"file": null}  dew {"file": "hero4k/hero_lod1_de.png", "level": 1.0, "lod": 1, "pxPerMm": 3.95}
+eye     desktop  eye3_lit       EYE 3 M           en {"file": "desktop/eye3_lit_en.png", "level": 1.0, "lod": 0, "signPx": 78.4}  dek {"file": "desktop/eye3_lit_de.png", "level": 1.0, "lod": 0, "signPx": 78.4}  dew {"file": "desktop/eye3_lit_de.png", "level": 1.0, "lod": 0, "signPx": 133.7}
+eye     desktop  eye8_lit       EYE 8 M           en {"file": "desktop/eye8_lit_en.png", "level": 1.0, "lod": 0, "signPx": 29.8}  dek {"file": "desktop/eye8_lit_de.png", "level": 1.0, "lod": 0, "signPx": 29.8}  dew {"file": "desktop/eye8_lit_de.png", "level": 1.0, "lod": 0, "signPx": 50.9}
+eye     desktop  dark8_lit      DARK 8 M LIT      en {"file": "desktop/dark8_lit_en.png", "level": 1.0, "lod": 0, "signPx": 29.8}  dek {"file": "desktop/dark8_lit_de.png", "level": 1.0, "lod": 0, "signPx": 29.8}  dew {"file": "desktop/dark8_lit_de.png", "level": 1.0, "lod": 0, "signPx": 50.9}
+eye     desktop  dark3_battery  DARK 3 M BATTERY  en {"file": "desktop/dark3_battery_en.png", "level": 0.1655, "lod": 0, "signPx": 78.4}  dek {"file": "desktop/dark3_battery_de.png", "level": 0.2143, "lod": 0, "signPx": 78.4}  dew {"file": "desktop/dark3_battery_de.png", "level": 0.1211, "lod": 0, "signPx": 133.7}
+eye     phone    eye3_lit       PHONE 3 M         en {"file": "phone/eye3_lit_en.png", "level": 1.0, "lod": 0, "signPx": 87.6}  dek {"file": "phone/eye3_lit_de.png", "level": 1.0, "lod": 0, "signPx": 87.6}  dew {"file": "phone/eye3_lit_de.png", "level": 1.0, "lod": 0, "signPx": 149.3}
+eye     phone    eye8_lit       PHONE 8 M         en {"file": "phone/eye8_lit_en.png", "level": 1.0, "lod": 1, "signPx": 33.3}  dek {"file": "phone/eye8_lit_de.png", "level": 1.0, "lod": 1, "signPx": 33.3}  dew {"file": "phone/eye8_lit_de.png", "level": 1.0, "lod": 1, "signPx": 56.8}
+
+LABELS: header, 3 column heads, 33 image tiles, 12 margin figures, 3 cost tiles checked at full size; cut: none
+ALL LABELS FIT

@@ -3,9 +3,9 @@ using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 /// <summary>
-/// Scene 3's placards in the world (交互设计, 2026-11-04), built to 平面视觉's type spec v2
-/// (Documentation/research/showcase_scenes/20_placard_type.md §1-§2, VL504, its mocks and placards_v2.py) at true size: the
-/// spec's millimetres in metres. Placement and content follow 10_research.md §3.4. Each Build* takes its row of
+/// Scene 3's placards in the world (交互设计, 2026-11-04), built to 平面视觉's type spec v2.3
+/// (Documentation/research/showcase_scenes/20_placard_type.md §1-§2, VL504, VL507, VL508, its mocks and placards_v2.py) at true
+/// size: the spec's millimetres in metres. Placement and content follow 10_research.md §3.4. Each Build* takes its row of
 /// FrontRoomsShowcaseTable, a parent (unit scale) and a WORLD pose, and returns the root; nothing places itself (the museum,
 /// .Museum.cs, calls these with the public mounting and reading constants below).
 /// - C station placard (BuildStationPlacard): 800 x 480 mm on its own post (withStand false: slab and bracket only, for a rail
@@ -25,12 +25,15 @@ using UnityEngine.UI;
 /// text is UNLIT world-space UGUI: one Canvas per placard (no CanvasScaler: scale factor 1, reference pixels per unit 1),
 /// 1 canvas unit = 1 mm (scale .001), 1 mm in front of the face, no raycaster and raycastTarget off, in the game's UI faces
 /// (Resources/Fonts). Every line is its own legacy Text set on its baseline by FrontRoomsUITextLayout, at the em the spec's
-/// cap, x-height or em asks for with each face's measured metrics: its glyphs are rastered at its kind's density (the font
-/// atlas has no mipmaps) and the Text's own scale makes the em exact. The lines come pre-broken from FrontRoomsShowcaseTable
+/// cap, x-height or em asks for with each face's measured metrics: its glyphs are rastered at the density of its job, for
+/// the distance that line has to read at (the font atlas has no mipmaps), and the Text's own scale makes the em exact; a
+/// Bayon line's " · " is Bayon's own period, raised (BayonLine). The lines come pre-broken from FrontRoomsShowcaseTable
 /// (tools/gen_table.py breaks them offline with the same metrics and these constants); nothing here breaks or measures a
-/// Chinese line. Code chips are a 1.4 mm paper keyline, radius 3 mm, padding 6 mm (a 9-sliced sprite made once at runtime,
-/// mipmapped). Colours exactly #161513, #F4F1E8, #96938B, #F4DF3B. No colliders. Runtime only: no asset or file is written, no
-/// editor API.
+/// Chinese line. Every Chinese line is set flush left, so the full-width marks that end one simply hang into the right
+/// margin (20 §1 Setting, 标点悬挂: the generator measures a line without its trailing stop marks, never brackets or quotes;
+/// 2.7's 。 and 4.1's ；).
+/// Code chips are a 1.4 mm paper keyline, radius 3 mm, padding 6 mm (a 9-sliced sprite made once at runtime, mipmapped).
+/// Colours exactly #161513, #F4F1E8, #96938B, #F4DF3B. No colliders. Runtime only: no asset or file is written, no editor API.
 /// </summary>
 public static class FrontRoomsShowcasePlacards
 {
@@ -48,6 +51,9 @@ public static class FrontRoomsShowcasePlacards
     public const float StationNear = .99f;
     /// <summary>C: the reader's eye this far (horizontal) from the vertical through the face's centre.</summary>
     public const float StationStandOff = .75f;
+    /// <summary>C: the bracket's centre this far behind the face, along the face's normal; the post and its floor plate stand
+    /// under it, StationBracketBack x cos(StationTilt) behind the face's centre in plan.</summary>
+    public const float StationBracketBack = (StationThick + StationBracketDepth * .5f) * Mm;
     /// <summary>D: the card's centre above the floor.</summary>
     public const float GroupCentre = 1.37f;
     /// <summary>D: the card's width and height.</summary>
@@ -83,24 +89,33 @@ public static class FrontRoomsShowcasePlacards
     // 1425 / 2048; IBM Plex Mono Regular and Medium cap 698 / 1000, x-height 516 / 1000, every advance 600 / 1000. A Chinese
     // line's baseline sits .88 em under the line above's (placards_v2.py's rhythm).
     const float BayonCap = .6958008f, PlexCap = .698f, PlexX = .516f, PlexAdvance = .6f, ZhAscent = .88f;
+    // Bayon has no U+00B7 (20 §1 Setting, v2.1; 平面视觉's interpunct.py, VL507): in a Bayon line " · " is Bayon's own period,
+    // its ink 0 to 248 / 2048 em ('.' yMax), its baseline raised BayonDotLift x cap (.413) so that ink sits on the cap middle,
+    // a Bayon word space each side (BayonLine). Not the import fallback's Plex Mono dot, low and round in a 48 mm gap at C's
+    // cap 30.
+    const float BayonPeriodInk = .1210938f, BayonDotLift = .5f - .5f * BayonPeriodInk / BayonCap;
+    const string Interpunct = " · ";
     /// <summary>The text canvas floats this far in front of the face (mm).</summary>
     const float TextLift = 1f;
     /// <summary>Code chips (§1): keyline, corner radius, padding (mm).</summary>
     const float ChipLine = 1.4f, ChipRadius = 3f, ChipPad = 6f;
 
-    // C · station placard (placards_v2.py station()). Row 1: the code chip (its code centred on the kind's cap) and the kind
-    // 14 mm on. Try: KEYS / TOUCH in the margin, the steps from x 140 (measure 620), every row 27 mm. What it is, then
-    // 要你决定 with the question hanging 114 mm in (the label's 4 em + 18), the 5 mm accent bar 16 mm left of the margin from
-    // 8 mm under the block's top to 7 mm under its last baseline. The foot pinned to the bottom: its last baseline 4 mm under
-    // the bottom margin, the live state right-aligned on it, the lines above at StationMetaPitch: 19 mm, not the spec's 17,
-    // because at 17 the real two-line feet touch (2.2's 'g' over '(' overlaps by 0.9 mm; Plex's descender .212 em and its
-    // brackets' .76 em make 17.9 mm at x-height 9.5), and 19 keeps every glyph pair of the face 1 mm apart.
+    // C · station placard (placards_v2.py station(); the sizes of 20 v2.3). Row 1: the code chip (its code centred on the
+    // kind's cap) and the kind 14 mm on. Try: KEYS / TOUCH in the margin, the steps from x 140 (measure 620), every row 28 mm.
+    // What it is, then 要你决定 with the question hanging 116 mm in (the label's 4 em, 98 mm at em 24.5, + 18), the 5 mm
+    // accent bar 16 mm left of the margin from 8 mm under the block's top to 7 mm under its last baseline. The foot pinned to
+    // the bottom: its last baseline 4 mm under the bottom margin, the live state right-aligned on it, the lines above at
+    // StationMetaPitch, 21 mm = 1.03 em at x-height 10.5 (the spec's: v2's 17 sat under the em and 2.2's 'g' met the '('
+    // below; Plex's descender .212 em and its brackets' .76 em take 19.8 mm), so every glyph pair of the face stays 1 mm apart.
     const float StationW = 800f, StationH = 480f, StationM = 40f, StationThick = 12f;
     const float StationCodeCap = 20f, StationKindCap = 30f, StationKindGap = 14f, StationHeadAfter = 16f;
-    const float StationLabelCap = 16f, StationStepX = 12f, StationStepsLeft = 140f, StationTryPitch = 27f, StationTryAfter = 12f;
-    const float StationZhEm = 24f, StationZhPitch = 32f, StationWhatAfter = 10f, StationDecideIndent = 114f;
+    const float StationLabelCap = 17f, StationStepX = 12.5f, StationStepsLeft = 140f, StationTryPitch = 28f, StationTryAfter = 12f;
+    const float StationZhEm = 24.5f, StationZhPitch = 33f, StationWhatAfter = 10f, StationDecideIndent = 116f;
     const float StationBarLeft = 16f, StationBarW = 5f, StationBarTop = 8f, StationBarBottom = 7f;
-    const float StationMetaX = 9.5f, StationMetaPitch = 19f, StationMetaDrop = 4f, StationLiveReserve = 8f, StationLiveGap = 20f;
+    // The foot's lines leave StationLiveReserve characters of the live state (Plex Mono Medium at the foot's x-height) and
+    // StationLiveGap free at their right end (gen_table.py breaks them to that measure): the museum's longest word is 10
+    // ("GAME LIGHT", "PLAIN DOOR").
+    const float StationMetaX = 10.5f, StationMetaPitch = 21f, StationMetaDrop = 4f, StationLiveReserve = 10f, StationLiveGap = 20f;
     // The stand (F8: its own post): a bracket behind the face's centre, a 50 mm post, a 360 mm floor plate.
     const float StationBracket = 160f, StationBracketDepth = 40f, StationPost = 50f, StationFoot = 360f, StationFootThick = 10f;
     /// <summary>C's foot is read from 0.8 m (m; 20 §2).</summary>
@@ -109,54 +124,62 @@ public static class FrontRoomsShowcasePlacards
     // D · group card (placards_v2.py group()): the property, its Chinese 18 mm + .88 em under it, then each chip row 26 mm +
     // the chip's cap + 12 mm under the line above; a row is a run: chip, 9 mm, name, 28 mm, the next chip.
     const float GroupW = 640f, GroupH = 290f, GroupM = 34f, GroupThick = 6f;
-    const float GroupTitleCap = 36f, GroupZhEm = 28f, GroupZhGap = 18f, GroupZhPitch = 36f;
-    const float GroupChipX = 14f, GroupChipGap = 9f, GroupChipSpacing = 28f, GroupRowGap = 26f, GroupRowAfter = 12f;
+    const float GroupTitleCap = 36f, GroupZhEm = 28.5f, GroupZhGap = 18f, GroupZhPitch = 36f;
+    const float GroupChipX = 15f, GroupChipGap = 9f, GroupChipSpacing = 28f, GroupRowGap = 26f, GroupRowAfter = 12f;
 
     // Floor tag (placards_v2.py floortag()): the letter on a baseline 8 mm over the bottom margin, the name 18 mm right of it,
     // its lines bottom-aligned to the letter, cap + 12 mm apart.
     const float TagW = 380f, TagH = 150f, TagM = 22f, TagThick = 3f;
-    const float TagLetterCap = 62f, TagNameX = 23f, TagNameGap = 18f, TagBaseRaise = 8f, TagNameLead = 12f;
+    const float TagLetterCap = 62f, TagNameX = 23.5f, TagNameGap = 18f, TagBaseRaise = 8f, TagNameLead = 12f;
 
     // B · room sign (placards_v2.py roomsign()): the number top left; the name 30 mm right of it, cap + 14 mm a line; its
-    // Chinese 18 mm + .88 em under the name; the kinds from the margin, 22 mm then 30 mm a line; foot and arrow on the bottom
+    // Chinese 18 mm + .88 em under the name; the kinds from the margin, 22 mm then 32 mm a line; foot and arrow on the bottom
     // margin.
     const float SignW = 720f, SignH = 470f, SignM = 40f, SignThick = 6f;
-    const float SignNumberCap = 120f, SignNameCap = 50f, SignNameGap = 30f, SignNameLead = 14f, SignZhEm = 70f, SignZhGap = 18f;
-    const float SignKindsX = 14.5f, SignKindsGap = 22f, SignKindsPitch = 30f, SignFootX = 14.5f, SignArrowX = 20f;
+    const float SignNumberCap = 120f, SignNameCap = 50f, SignNameGap = 30f, SignNameLead = 14f, SignZhEm = 72f, SignZhGap = 18f;
+    const float SignKindsX = 15.5f, SignKindsGap = 22f, SignKindsPitch = 32f, SignFootX = 16f, SignArrowX = 20f;
 
-    // A · hub board (placards_v2.py board()): title, its Chinese 22 mm + .88 em under it; the plan 34 mm under that, 2 mm paper
+    // A · hub board (placards_v2.py board()): title, its Chinese 22 mm + .88 em under it; the plan 31 mm under that, 2 mm paper
     // lines on 35 mm cells (16 x 8, the museum), each room's number only, centred; the legend 50 mm right of the plan, a row
     // every 56 mm from 8 mm under the plan's top: number, the name 40 mm on, its Chinese 22 mm after the name, 2 mm lower;
-    // the controls on the bottom margin, 48 mm a line.
+    // the controls on the bottom margin, 50 mm a line.
     const float BoardW = 1400f, BoardH = 700f, BoardM = 50f, BoardThick = 20f;
-    const float BoardTitleCap = 80f, BoardZhEm = 72f, BoardZhGap = 22f, BoardPlanGap = 34f;
+    const float BoardTitleCap = 80f, BoardZhEm = 72.5f, BoardZhGap = 22f, BoardPlanGap = 31f;
     const float BoardPlanCell = 35f, BoardPlanLine = 2f, BoardRoomCap = 60f, BoardAlcoveInset = 4f;
     const int BoardPlanCols = 16, BoardPlanRows = 8;
     const float BoardLegendGap = 50f, BoardLegendTop = 8f, BoardLegendPitch = 56f, BoardLegendLinePitch = 40f;
-    const float BoardLegendCap = 30f, BoardLegendNameX = 40f, BoardLegendZhEm = 37f, BoardLegendZhGap = 22f, BoardLegendZhDrop = 2f;
-    const float BoardKeysX = 20f, BoardKeysPitch = 48f;
+    const float BoardLegendCap = 30f, BoardLegendNameX = 40f, BoardLegendZhEm = 42f, BoardLegendZhGap = 22f, BoardLegendZhDrop = 2f;
+    const float BoardKeysX = 22.5f, BoardKeysPitch = 50f;
     const float BoardLegX = 500f, BoardLeg = 50f, BoardFootW = 80f, BoardFootD = 420f, BoardFootThick = 12f;
 
-    // The room number over an entry (unchanged; F9: unlit is fine for now).
+    // The room number over an entry (F9: unlit is fine for now).
     const float NumberCap = 300f;
-    /// <summary>The number over an entry is read across the hub, 2 to 12 m (m).</summary>
-    const float NumberRead = 12f;
+    /// <summary>The number over an entry is read across the hub, 2 to 12 m; its raster is set for the hub's middle (m).</summary>
+    const float NumberRead = 12f, NumberMid = 6f;
 
     /// <summary>The game camera's focal length at 1080p (px): vertical fov 76 (FrontRooms3DGame.CreateCamera), 540 / tan 38.
     /// A face d metres away is drawn at Focal1080 / (1000 d) screen px per mm.</summary>
     const float Focal1080 = 691.2f;
 
-    // Raster density per kind (px per mm of the face; F2's machinery: canvas scale factor 1, the Text's own scale sets the em).
-    // The legacy font atlas has no mipmaps (bilinear only), so a line is rastered at about twice the 1080p screen's density
-    // where it is read, 2 x 691.2 / (1000 d): at most about 2x minified there (no texel skipped), 1:1 at half that distance.
-    // C, D and the floor tag are read at NEAR. B and A are read at two distances; at F2's 2x of the geometric mean of FAR and
-    // NEAR (0.73 / 0.63 px/mm) their FAR lines would be 3.2x / 2.8x minified across the lane and from the spawn, so both take
-    // the densest raster that keeps every FAR line within 2.25x at FAR after the raster rounding (B's number and A's plan
-    // numbers decide it at .509 / .494): .49. B's lines are then at most 1.19x magnified at the entry (its Chinese; the
-    // kinds and foot 1.08x), A's all minified up close. The number over an entry keeps .35 (1x at 2 m).
-    // tools/fit_render.py prints every line's ratio at both ends and renders it as seen at 1080p (fit/seen_*.png).
+    // Raster density per LINE (px per mm of the face; F2's machinery: canvas scale factor 1, the Text's own scale sets the em).
+    // 20_placard_type.md v2.2 §1 Production: "the legacy font atlas has no mipmaps (bilinear only), so each line is rastered at
+    // twice the 1080p screen's density where that line has to read, ρ = 2 f / (1000 d), f = 691.2 px: at most 2x minified
+    // there (no texel skipped), and 1:1 on a 2160p screen". Every Line call passes the constant of its job:
+    // - C, D and the floor tag are read at one distance each, d = StationNear, GroupNear, TagRead: 1.396, 1.172, .785 px/mm.
+    // - B and A are read at two, split by job. The lines that identify the sign from afar (B's number, name and Chinese; A's
+    //   title, Chinese and plan numbers) take d = FAR: RoomSignFarPpu .46080, BoardFarPpu .45474, 2x minified at FAR; at NEAR
+    //   B's are 1.25x magnified (soft but whole), A's 1.03x minified. The lines read stepping up (B's kinds, foot and arrow;
+    //   A's legend and controls) take the geometric mean, d = sqrt(FAR x NEAR): RoomSignNearPpu .72859 (1.897 m), BoardNearPpu
+    //   .63277 (2.185 m; written out, as a const takes no square root: change them with RoomSignFar/Near, BoardFar/Near),
+    //   1.26x / 1.44x minified at NEAR; at FAR they are under the size floors, texture only.
+    // - The number over an entry, read across the hub at 2-12 m, takes d = the hub's middle, NumberMid 6 m (20 v2.3 §2):
+    //   .2304, 4x minified at 12 m, 1.5x magnified at 2 m (the .35 before drew it 6.1x minified at 12 m).
+    // The spec's E (scene 4's district sign) is not built here.
+    // tools/fit_render.py checks every line at its own d and renders the placards as seen at 1080p (fit/seen_*.png).
     const float StationPpu = 2f * Focal1080 / (1000f * StationNear), GroupPpu = 2f * Focal1080 / (1000f * GroupNear);
-    const float TagPpu = 2f * Focal1080 / (1000f * TagRead), RoomSignPpu = .49f, BoardPpu = .49f, NumberPpu = .35f;
+    const float TagPpu = 2f * Focal1080 / (1000f * TagRead), NumberPpu = 2f * Focal1080 / (1000f * NumberMid);
+    const float RoomSignFarPpu = 2f * Focal1080 / (1000f * RoomSignFar), RoomSignNearPpu = .72859f;
+    const float BoardFarPpu = 2f * Focal1080 / (1000f * BoardFar), BoardNearPpu = .63277f;
 
     /// <summary>A line's glyph raster (px per em) stays within these; the Text's own scale makes up the em.</summary>
     const int MinRaster = 10, MaxFontSize = 300;
@@ -247,9 +270,8 @@ public static class FrontRoomsShowcasePlacards
         var centre = new Vector3(0f, StationTop - up.y * h * .5f, 0f);
         var faceRotation = Quaternion.LookRotation(-normal, up);
         Box(t, "Panel", centre - normal * (thick * .5f), faceRotation, new Vector3(StationW * Mm, h, thick));
-        var depth = StationBracketDepth * Mm;
-        var bracket = centre - normal * (thick + depth * .5f);
-        Box(t, "Bracket", bracket, faceRotation, new Vector3(StationBracket * Mm, StationBracket * Mm, depth));
+        var bracket = centre - normal * StationBracketBack;
+        Box(t, "Bracket", bracket, faceRotation, new Vector3(StationBracket * Mm, StationBracket * Mm, StationBracketDepth * Mm));
         if (withStand)
         {
             Box(t, "Post", new Vector3(0f, bracket.y * .5f, bracket.z), Quaternion.identity, new Vector3(StationPost * Mm, bracket.y, StationPost * Mm));
@@ -260,7 +282,7 @@ public static class FrontRoomsShowcasePlacards
         const float m = StationM, ppu = StationPpu;
         var y = m + StationKindCap;
         var chip = Chip(c, m, y - (StationKindCap - StationCodeCap) * .5f, st.code, PlexMedium, PlexEmOfCap(StationCodeCap), StationCodeCap, ppu);
-        Line(c, "Kind", st.kind, Bayon, StationKindCap / BayonCap, m + chip + StationKindGap, y, Paper, ppu);
+        BayonLine(c, "Kind", st.kind, StationKindCap, m + chip + StationKindGap, y, Paper, ppu);
         y += StationHeadAfter;
         y = TryRows(c, "KEYS", st.keysLines, y);
         y = TryRows(c, "TOUCH", st.touchLines, y);
@@ -296,9 +318,9 @@ public static class FrontRoomsShowcasePlacards
     }
 
     /// <summary>The live state at the foot of placard C, right-aligned, as the exhibit's own script reports it ("CLOSED",
-    /// "LOCKED"; up to 8 characters fit beside the foot); null or empty clears it. Nothing for a root that is not a station
-    /// placard, and nothing when the state is already shown (a caller polling it costs a lookup and a string compare, no
-    /// text rebuild).</summary>
+    /// "GAME LIGHT"; up to 10 characters fit beside the foot: StationLiveReserve); null or empty clears it. Nothing for a root
+    /// that is not a station placard, and nothing when the state is already shown (a caller polling it costs a lookup and a
+    /// string compare, no text rebuild).</summary>
     public static void SetLiveState(GameObject stationPlacard, string state)
     {
         if (stationPlacard == null) return;
@@ -312,8 +334,8 @@ public static class FrontRoomsShowcasePlacards
         live.anchoredPosition = new Vector2(StationW - StationM - w, live.anchoredPosition.y);
     }
 
-    // One Try block (KEYS or TOUCH): every row StationTryPitch under the one above, its label (Plex Mono Medium, cap 16, grey)
-    // in the margin on its first row, the steps (Plex Mono, x-height 12) from StationStepsLeft.
+    // One Try block (KEYS or TOUCH): every row StationTryPitch under the one above, its label (Plex Mono Medium, cap 17, grey)
+    // in the margin on its first row, the steps (Plex Mono, x-height 12.5) from StationStepsLeft.
     static float TryRows(RectTransform c, string label, string[] lines, float y)
     {
         for (var i = 0; lines != null && i < lines.Length; i++)
@@ -337,7 +359,7 @@ public static class FrontRoomsShowcasePlacards
         var c = WallPanel(root.transform, GroupW, GroupH, GroupThick);
         const float m = GroupM, ppu = GroupPpu;
         var y = m + GroupTitleCap;
-        Line(c, "Title", g.title, Bayon, GroupTitleCap / BayonCap, m, y, Paper, ppu);
+        BayonLine(c, "Title", g.title, GroupTitleCap, m, y, Paper, ppu);
         for (var i = 0; g.zh != null && i < g.zh.Length; i++)
         {
             y += i == 0 ? GroupZhGap + ZhAscent * GroupZhEm : GroupZhPitch;
@@ -421,22 +443,23 @@ public static class FrontRoomsShowcasePlacards
         if (room == null) return null;
         var root = NewRoot("Placard B room " + room.number, parent, pose);
         var c = WallPanel(root.transform, SignW, SignH, SignThick);
-        const float m = SignM, ppu = RoomSignPpu;
+        // Number, name and Chinese identify the sign across the lane (FAR's density); kinds, foot and arrow are read at the entry.
+        const float m = SignM, far = RoomSignFarPpu, near = RoomSignNearPpu;
         var number = room.number.ToString();
         var numberEm = PlexEmOfCap(SignNumberCap);
-        Line(c, "Number", number, PlexMedium, numberEm, m, m + SignNumberCap, Paper, ppu);
-        var x = m + Width(PlexMedium, number, numberEm, ppu) + SignNameGap;
+        Line(c, "Number", number, PlexMedium, numberEm, m, m + SignNumberCap, Paper, far);
+        var x = m + Width(PlexMedium, number, numberEm, far) + SignNameGap;
         var y = m + SignNameCap;
         var name = room.signNameLines;
         for (var i = 0; name != null && i < name.Length; i++)
         {
             if (i > 0) y += SignNameCap + SignNameLead;
-            Line(c, "Name", name[i], Bayon, SignNameCap / BayonCap, x, y, Paper, ppu);
+            BayonLine(c, "Name", name[i], SignNameCap, x, y, Paper, far);
         }
         if (!string.IsNullOrEmpty(room.nameZh))
         {
             y += SignZhGap + ZhAscent * SignZhEm;
-            Line(c, "Name zh", room.nameZh, ScBold, SignZhEm, x, y, Paper, ppu);
+            Line(c, "Name zh", room.nameZh, ScBold, SignZhEm, x, y, Paper, far);
         }
         y += SignKindsGap;
         var kinds = room.signKindsLines;
@@ -444,13 +467,13 @@ public static class FrontRoomsShowcasePlacards
         for (var i = 0; kinds != null && i < kinds.Length; i++)
         {
             y += SignKindsPitch;
-            Line(c, "Kinds", kinds[i], Plex, kindsEm, m, y, Paper, ppu);
+            Line(c, "Kinds", kinds[i], Plex, kindsEm, m, y, Paper, near);
         }
-        Line(c, "Foot", room.signFoot, PlexMedium, PlexEmOfX(SignFootX), m, SignH - m, Accent, ppu);
+        Line(c, "Foot", room.signFoot, PlexMedium, PlexEmOfX(SignFootX), m, SignH - m, Accent, near);
         if (!string.IsNullOrEmpty(room.signArrow))
         {
             var arrowEm = PlexEmOfX(SignArrowX);
-            Line(c, "Arrow", room.signArrow, PlexMedium, arrowEm, SignW - m - Width(PlexMedium, room.signArrow, arrowEm, ppu), SignH - m, Accent, ppu);
+            Line(c, "Arrow", room.signArrow, PlexMedium, arrowEm, SignW - m - Width(PlexMedium, room.signArrow, arrowEm, near), SignH - m, Accent, near);
         }
         root.SetActive(true);
         return root;
@@ -495,16 +518,17 @@ public static class FrontRoomsShowcasePlacards
             Box(t, "Foot", new Vector3(x, BoardFootThick * Mm * .5f, legZ), Quaternion.identity, new Vector3(BoardFootW * Mm, BoardFootThick * Mm, BoardFootD * Mm));
         }
         var c = NewCanvas(t, centre + new Vector3(0f, 0f, TextLift * Mm), Quaternion.Euler(0f, 180f, 0f), BoardW, BoardH);
-        const float m = BoardM, ppu = BoardPpu;
+        // Title, Chinese and the plan's numbers read from the spawn (FAR's density); the legend and the controls up close.
+        const float m = BoardM, far = BoardFarPpu, near = BoardNearPpu;
         var b = FrontRoomsShowcaseTable.BoardPlacard;
         var y = m + BoardTitleCap;
         if (b != null)
         {
-            Line(c, "Title", b.name, Bayon, BoardTitleCap / BayonCap, m, y, Paper, ppu);
+            BayonLine(c, "Title", b.name, BoardTitleCap, m, y, Paper, far);
             if (!string.IsNullOrEmpty(b.zh))
             {
                 y += BoardZhGap + ZhAscent * BoardZhEm;
-                Line(c, "Title zh", b.zh, ScBold, BoardZhEm, m, y, Paper, ppu);
+                Line(c, "Title zh", b.zh, ScBold, BoardZhEm, m, y, Paper, far);
             }
         }
         var planTop = y + BoardPlanGap;
@@ -513,25 +537,23 @@ public static class FrontRoomsShowcasePlacards
         // The legend right of the plan: the rooms of the plan (all of the table's without one), in number order.
         var lx = m + BoardPlanCols * BoardPlanCell + BoardLegendGap;
         var numberEm = PlexEmOfCap(BoardLegendCap);
-        var nameEm = BoardLegendCap / BayonCap;
         var ly = planTop + BoardLegendTop;
         for (var n = 0; n <= 9; n++)
         {
             if (plan != null ? PlanRoomOf(plan, n) == null : RoomRow(n) == null) continue;
             var row = RoomRow(n);
             ly += BoardLegendPitch;
-            Line(c, "Legend number", n.ToString(), PlexMedium, numberEm, lx, ly, Paper, ppu);
+            Line(c, "Legend number", n.ToString(), PlexMedium, numberEm, lx, ly, Paper, near);
             var names = row != null ? row.boardNameLines : null;
             var lines = names != null ? names.Length : 0;
             var end = lx + BoardLegendNameX;
             for (var i = 0; i < lines; i++)
             {
                 if (i > 0) ly += BoardLegendLinePitch;
-                Line(c, "Legend name", names[i], Bayon, nameEm, lx + BoardLegendNameX, ly, Paper, ppu);
-                end = lx + BoardLegendNameX + Width(Bayon, names[i], nameEm, ppu);
+                end = lx + BoardLegendNameX + BayonLine(c, "Legend name", names[i], BoardLegendCap, lx + BoardLegendNameX, ly, Paper, near);
             }
             if (row != null && !string.IsNullOrEmpty(row.nameZh))
-                Line(c, "Legend zh", row.nameZh, Sc, BoardLegendZhEm, end + BoardLegendZhGap, ly + BoardLegendZhDrop, Grey, ppu);
+                Line(c, "Legend zh", row.nameZh, Sc, BoardLegendZhEm, end + BoardLegendZhGap, ly + BoardLegendZhDrop, Grey, near);
         }
 
         // The controls on the bottom margin: desktop lines, then touch lines.
@@ -542,7 +564,7 @@ public static class FrontRoomsShowcasePlacards
         for (var i = 0; i < count; i++)
         {
             var line = i < keys.Length ? keys[i] : touch[i - keys.Length];
-            Line(c, i < keys.Length ? "Keys" : "Touch", line, Plex, keysEm, m, BoardH - m - (count - 1 - i) * BoardKeysPitch, Paper, ppu);
+            Line(c, i < keys.Length ? "Keys" : "Touch", line, Plex, keysEm, m, BoardH - m - (count - 1 - i) * BoardKeysPitch, Paper, near);
         }
         root.SetActive(true);
         return root;
@@ -572,10 +594,10 @@ public static class FrontRoomsShowcasePlacards
             if (room.alcove.width > 0 && room.alcove.height > 0 && room.alcovePicture != null) Alcove(c, room, ox, oy, cell);
             // The number, its cap box centred in the room.
             var label = room.number.ToString();
-            var w = Width(PlexMedium, label, numberEm, BoardPpu);
+            var w = Width(PlexMedium, label, numberEm, BoardFarPpu);
             var cx = ox + (r.xMin + r.xMax) * .5f * cell;
             var cy = oy - (r.yMin + r.yMax) * .5f * cell;
-            Line(c, "Plan number", label, PlexMedium, numberEm, cx - w * .5f, cy + BoardRoomCap * .5f, Paper, BoardPpu);
+            Line(c, "Plan number", label, PlexMedium, numberEm, cx - w * .5f, cy + BoardRoomCap * .5f, Paper, BoardFarPpu);
         }
     }
 
@@ -663,7 +685,7 @@ public static class FrontRoomsShowcasePlacards
     }
 
     /// <summary>One line: its left end at x, its baseline at y (mm from the canvas's top-left), at the given em, its glyphs
-    /// rastered at <paramref name="density"/> px per mm (its kind's).</summary>
+    /// rastered at <paramref name="density"/> px per mm (its job's: the *Ppu constants). Bayon lines go through BayonLine.</summary>
     static Text Line(RectTransform c, string name, string s, Font font, float em, float x, float baseline, Color32 colour, float density, bool keepEmpty = false)
     {
         if (font == null || (!keepEmpty && string.IsNullOrEmpty(s))) return null;
@@ -698,6 +720,38 @@ public static class FrontRoomsShowcasePlacards
         layout.centre = false;
         layout.tracking = 0f;
         return text;
+    }
+
+    /// <summary>
+    /// A Bayon line, its cap in mm, from x on its baseline at <paramref name="density"/>; returns its advance (mm). Every Bayon
+    /// line is set here. Bayon has no U+00B7: each " · " is Bayon's own period between two Bayon word spaces, its baseline
+    /// BayonDotLift x cap up so its ink sits on the cap middle (20 §1 Setting). The runs and each period are Texts of their own,
+    /// left-aligned from their pen origin (FrontRoomsUITextLayout, no tracking), so the line's advance is the sum of theirs.
+    /// </summary>
+    static float BayonLine(RectTransform c, string name, string s, float cap, float x, float baseline, Color32 colour, float density)
+    {
+        if (string.IsNullOrEmpty(s)) return 0f;
+        var font = Bayon;
+        var em = cap / BayonCap;
+        var start = x;
+        var from = 0;
+        var at = s.IndexOf(Interpunct, System.StringComparison.Ordinal);
+        if (at >= 0)
+        {
+            var space = Width(font, " ", em, density);
+            for (; at >= 0; at = s.IndexOf(Interpunct, from, System.StringComparison.Ordinal))
+            {
+                var run = s.Substring(from, at - from);
+                Line(c, name, run, font, em, x, baseline, colour, density);
+                x += Width(font, run, em, density) + space;
+                Line(c, name + " dot", ".", font, em, x, baseline - BayonDotLift * cap, colour, density);
+                x += Width(font, ".", em, density) + space;
+                from = at + Interpunct.Length;
+            }
+        }
+        var last = from > 0 ? s.Substring(from) : s;
+        Line(c, name, last, font, em, x, baseline, colour, density);
+        return x + Width(font, last, em, density) - start;
     }
 
     /// <summary>A code chip (§1): the keyline round the text, padding ChipPad; the text's baseline at `baseline`, the keyline

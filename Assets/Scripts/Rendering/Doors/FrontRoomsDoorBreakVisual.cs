@@ -479,7 +479,7 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         else lodGroup.RecalculateBounds();
         if (h1 <= cull) h1 = Mathf.Max(cull * 1.5f, h0 * .33f);
         lodGroup.SetLODs(new[] { new LOD(h0, l0.ToArray()), new LOD(h1, l1.ToArray()), new LOD(cull, l2.ToArray()) });
-        lodGroup.fadeMode = LODFadeMode.None;
+        FrontRoomsLodFade.Apply(lodGroup);   // the leak cards sit in two levels: Unity draws such a renderer whole through a fade
     }
 
     void ShowCassette(int cas)
@@ -1506,6 +1506,9 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         go.transform.localPosition = new Vector3(-BurstSign * 1.2f, 1.25f, .75f);
         go.transform.localRotation = Quaternion.LookRotation(new Vector3(BurstSign * 1.2f, -.15f, .17f).normalized, Vector3.up);
         breach = go.AddComponent<Light>();
+        // 技术美术调研 row 16, option D (Red 2026-11-04 14:14, "按推荐"): URP's per-light data, soft-shadow filter Low
+        // set explicitly (as FrontRoomsMapWorld.ShippedShadowFilter), so the Editor shows what ships.
+        UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(breach).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;
         breach.type = LightType.Spot;
         breach.spotAngle = 75f;
         breach.innerSpotAngle = 40f;

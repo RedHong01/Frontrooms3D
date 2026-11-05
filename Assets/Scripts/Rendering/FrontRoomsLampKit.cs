@@ -271,7 +271,8 @@ public static class FrontRoomsLampKit
             FrontRoomsTrofferKit.RegisterLamp(lens, parent.TransformPoint(position).y, FrontRoomsTrofferKit.LampShape.Pendant,
                 housing != null ? housing.GetComponentsInChildren<Renderer>(true) : null, parent);
         // so does the Run! strip, a surface lamp like the wrap: its guard hangs 117 mm under the soffit on the corridor's axis,
-        // where a trip calls the Relay (the red tube never registers; no "Light" beside it, so the body folds, no contact light)
+        // where a trip calls the Relay (the red tube never registers; no "Light" beside it, so the body folds; the Run! rig hands its
+        // strip Light over, FrontRoomsTrofferKit.SetLampLight, so the contact takes it: white armed, red under the alarm, card 3)
         else if (family == Family.Strip)
             FrontRoomsTrofferKit.RegisterLamp(lens, parent.TransformPoint(position).y, FrontRoomsTrofferKit.LampShape.Wrap,
                 housing != null ? housing.GetComponentsInChildren<Renderer>(true) : null, parent);

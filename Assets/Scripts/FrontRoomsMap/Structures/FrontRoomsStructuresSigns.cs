@@ -6,12 +6,16 @@ using UnityEngine.Rendering;
 /// <summary>
 /// The structures scene's placards, pads and stand-ins (scene 4, RULES 5b; research/level_space/70 section 1; PLAN 2.5).
 /// Placards are for Red, outside the fiction, set as the graphic line's district sign E (research/showcase_scenes/
-/// 20_placard_type.md, 2026-11-03): a 1200 mm panel, its top edge 2.05 m over the floor under it, as tall as its content
-/// plus 60 mm margins (at least 0.8 m), matte #161513; a code chip (IBM Plex Mono Medium, cap 40 mm, in a 1.2 mm paper
-/// keyline) and the title (Noto Sans SC Bold, em 56 mm); the body (Regular, em 32 mm, pitch 43 mm); the greybox label (Bold,
-/// grey #96938B) with its list in light grey in a hanging column; the Red-decides label (Bold, accent #F4DF3B, a 4 mm accent bar) with one
-/// numbered question a line (the number in accent, the question Bold in paper, hanging); text unlit #F4F1E8. The faces
-/// are the game's own (Resources/Fonts). World text is TextMesh here (a stand-in for the game's world-space UI Text).
+/// 20_placard_type.md v2.4, 2026-11-04): a 1200 mm panel, its top edge 2.05 m over the floor under it, as tall as its
+/// content plus 60 mm margins (at least 0.8 m), matte #161513; a code chip (IBM Plex Mono Medium, cap 40 mm, in a 1.2 mm
+/// paper keyline) and the title (Noto Sans SC Bold, em 58 mm, broken only at a phrase); the body (Regular, em 33 mm, pitch
+/// 44 mm); the greybox label (Bold, grey #96938B) with its list in light grey in a hanging column; the Red-decides label
+/// (Bold, accent #F4DF3B, a 6 mm accent bar) with one numbered question a line (the number in accent, the question Bold in
+/// paper, hanging); text unlit #F4F1E8. Two reading distances, eye to the face's centre: FAR 2.5 m, where each district's
+/// arrival stands, for the code and title; NEAR standing 0.9 m in front, for the rest. The faces are the game's own
+/// (Resources/Fonts). World text is TextMesh here (a stand-in for the game's world-space UI Text).
+/// A district sign the arrival reads more than 35 degrees off its face also gets a blade (20_placard_type.md v2.5, E-blade;
+/// Blade below): its code and title on a double-sided panel square to the wall, read face-on from the arrival.
 /// Pads are 0.9 m floor plates the walker uses with E. The Relay stand-in is static (capsule r 0.3, 1.75 m + head 0.30,
 /// top 2.05, (0.05, 0.05, 0.06)), with a collider, never animated. Every font or material lookup that misses logs once and
 /// carries on with a plain stand-in.
@@ -27,8 +31,10 @@ public static class FrontRoomsStructuresSigns
     // TextMesh: a line of fontSize F at characterSize C is about F x C / 10 m tall (the em). One TextMesh a line, so the
     // pitch is exact. TextMesh rasters each glyph at fontSize px per em and the font atlas has no mipmaps, so each line takes
     // its own raster: rho = 2 x 691.2 / (1000 d) px per mm at the distance d it must read at, fontSize = round(em x rho)
-    // (平面视觉, research/showcase_scenes/20_placard_type.md v2.2: chip and title at FAR 2.5 m, the rest at sqrt(2.5 x 1.41)).
-    const int FarPx = 32, NearPx = 24;
+    // (平面视觉, research/showcase_scenes/20_placard_type.md v2.4: chip and title at FAR 2.5 m, .55296 px/mm, 32 px a 58 mm
+    // em; the rest at sqrt(2.5 x 0.92) between FAR and NEAR (standing 0.9 m in front, 0.92 m to the centre), .9113 px/mm,
+    // 30 px a 33 mm em; v2.2 had NEAR 1.41 and 24 px).
+    const int FarPx = 32, NearPx = 30;
     const float PanelWidth = 1.2f, PanelMinHeight = .8f, Margin = .06f, TopEdge = 2.05f;
     const float TitleEm = .058f, TitlePitch = .0725f, BodyEm = .033f, Pitch = .044f, ChipCap = .040f, ChipEm = .0573f, BarWidth = .006f;
     const float ChipPad = .009f, Keyline = .0012f, TitleGap = .06f, SectionGap = .03f, LabelColumn = .16f, NumberColumn = .036f;
@@ -50,13 +56,18 @@ public static class FrontRoomsStructuresSigns
     }
 
     static readonly Dictionary<Font, Material> depthText = new Dictionary<Font, Material>();
-    static bool rebuildHooked;
+    static bool rebuildHooked, textShaderTried;
+    static Shader textShader;
 
     /// <summary>
     /// The font's material with the depth test on. A font's own material is GUI/Text Shader, whose ZTest comes from
     /// unity_GUIZTestMode, which no one sets in a 3D scene, so placard and mark text drew through walls and from behind its own
-    /// panel (scene 4 review SP3-F1, SP4-F4, SP1-F12). One runtime copy per font at LessEqual (the text stands 7 mm in front of
-    /// its panel); it follows the font's texture when a dynamic font rebuilds it.
+    /// panel (scene 4 review SP3-F1, SP4-F4, SP1-F12). A copy of the font's material with unity_GUIZTestMode set on it did not
+    /// change that (11-04 sign_blades: ghost glyphs through the spine's wall right of SP3's V1 sign in review10 and review11, and
+    /// a blade's far face mirrored through its panel), so each font gets one material on the structures-only text shader
+    /// (Assets/Structures/FrontRoomsStructuresPlacardText.shader: GUI/Text's pass with ZTest LEqual written out; the text
+    /// stands 7 mm in front of its panel); the old copy stays the fallback when that shader is missing. It follows the font's
+    /// texture when a dynamic font rebuilds it.
     /// </summary>
     public static Material DepthText(Font font)
     {
@@ -69,10 +80,25 @@ public static class FrontRoomsStructuresSigns
                 if (f != null && f.material != null && depthText.TryGetValue(f, out var copy) && copy != null) copy.mainTexture = f.material.mainTexture;
             };
         }
+        if (!textShaderTried)
+        {
+            textShaderTried = true;
+            textShader = Shader.Find("FrontRooms/Structures/Placard Text");
+            if (textShader == null) FrontRoomsPoolMaterials.LogOnce("placard text shader", "FrontRooms/Structures/Placard Text is missing: placard text keeps the font's material (it may draw through walls).");
+        }
         if (!depthText.TryGetValue(font, out var m) || m == null)
         {
-            m = new Material(font.material) { name = font.material.name + " (depth-tested, scene 4)" };
-            m.SetFloat("unity_GUIZTestMode", (float)CompareFunction.LessEqual);
+            if (textShader != null)
+            {
+                m = new Material(textShader) { name = font.material.name + " (depth-tested, scene 4)" };
+                m.SetColor("_Color", Color.white);
+                m.SetFloat("_Cull", (float)CullMode.Off);
+            }
+            else
+            {
+                m = new Material(font.material) { name = font.material.name + " (depth-tested, scene 4)" };
+                m.SetFloat("unity_GUIZTestMode", (float)CompareFunction.LessEqual);
+            }
             depthText[font] = m;
         }
         m.mainTexture = font.material.mainTexture;
@@ -174,6 +200,69 @@ public static class FrontRoomsStructuresSigns
         return string.IsNullOrEmpty(w) ? new string[0] : w.Split('\n');
     }
 
+    const string CloseBrackets = "）」』)";
+
+    /// <summary>
+    /// A title's lines (20_placard_type.md v2.4, E): a title that fits stays one line; a longer one breaks only at a phrase,
+    /// before an opening bracket or after the full-width colon, never inside a bracket, whole phrases filling each line
+    /// ("滑梯：瓷砖墙在下面托着" / "（你选的 A）"; Wrap had set "…（你选" / "的A）"). Every scene-4 title keeps the rule
+    /// as written; for one that could not, two guards: a phrase wider than the line wraps as the body does, and a last line of
+    /// one or two characters is logged once (change that title's words, in 70 and in its district).
+    /// </summary>
+    static string[] TitleLines(string name, float widthMetres, float em = TitleEm)
+    {
+        var chars = Mathf.Max(4, Mathf.FloorToInt(widthMetres / em));
+        var lines = new List<string>();
+        foreach (var raw in (name ?? "").Split('\n'))
+        {
+            var para = raw.Trim();
+            if (para.Length == 0) continue;
+            if (Ems(para) <= chars) { lines.Add(para); continue; }
+            var first = lines.Count;
+            var line = "";
+            foreach (var phrase in Phrases(para))
+            {
+                if (line.Trim().Length > 0 && Ems((line + phrase).Trim()) <= chars) { line += phrase; continue; }
+                if (line.Trim().Length > 0) lines.Add(line.Trim());
+                line = phrase;
+            }
+            if (line.Trim().Length > 0) lines.Add(line.Trim());
+            for (var i = lines.Count - 1; i >= first; i--)
+            {
+                if (Ems(lines[i]) <= chars) continue;
+                var wrapped = Wrap(lines[i], chars).Split('\n');
+                lines.RemoveAt(i);
+                lines.InsertRange(i, wrapped);
+            }
+            if (lines.Count - first >= 2 && lines[lines.Count - 1].Replace(" ", "").Length <= 2)
+                FrontRoomsPoolMaterials.LogOnce("title " + para, "placard title \"" + para + "\" ends on a line of one or two characters: change its words (20_placard_type.md v2.4).");
+        }
+        return lines.ToArray();
+    }
+
+    // A title paragraph's phrases: a break before an opening bracket and after the full-width colon, both outside brackets.
+    static List<string> Phrases(string para)
+    {
+        var list = new List<string>();
+        var sb = new StringBuilder();
+        var depth = 0;
+        foreach (var ch in para)
+        {
+            if (Openers.IndexOf(ch) >= 0)
+            {
+                if (depth == 0 && sb.ToString().Trim().Length > 0) { list.Add(sb.ToString()); sb.Length = 0; }
+                depth++;
+                sb.Append(ch);
+                continue;
+            }
+            sb.Append(ch);
+            if (CloseBrackets.IndexOf(ch) >= 0) depth = Mathf.Max(0, depth - 1);
+            else if (ch == '\uFF1A' && depth == 0) { list.Add(sb.ToString()); sb.Length = 0; }
+        }
+        if (sb.Length > 0) list.Add(sb.ToString());
+        return list;
+    }
+
     /// <summary>
     /// A placard standing at <paramref name="centre"/> (world: its x and z; the panel hangs from 2.05 m over the floor),
     /// facing <paramref name="viewer"/> (level). Returns the placard's root.
@@ -212,7 +301,7 @@ public static class FrontRoomsStructuresSigns
             x += chipW + .016f;
             rowHeight = Mathf.Max(rowHeight, chipH);
         }
-        var titleLines = Lines(name, right - x, TitleEm);
+        var titleLines = TitleLines(name, right - x);
         for (var i = 0; i < titleLines.Length; i++)
             Line(root, "Title", titleLines[i], bold, TitleEm, FarPx, TextColor, new Vector3(x, y - i * TitlePitch, -.002f));
         y -= Mathf.Max(rowHeight, titleLines.Length * TitlePitch) + TitleGap;
@@ -296,6 +385,113 @@ public static class FrontRoomsStructuresSigns
                 post.transform.localScale = new Vector3(.04f, foot, .04f);
                 post.GetComponent<MeshRenderer>().sharedMaterial = FrontRoomsPoolMaterials.Lit("placard post", new Color(.2f, .2f, .2f), .3f, .6f);
             }
+        }
+        return go;
+    }
+
+    // ---------------------------------------------------------------- the district blade (E-blade)
+
+    // 平面视觉's E-blade (research/showcase_scenes/20_placard_type.md v2.5, 2026-11-04 21:4x): a district sign that hangs flat on
+    // a corridor wall is read 55-57 degrees off its face from the arrival, its characters squeezed to cos 57 = .54 of their
+    // width, which no size cures; its code and title also go on a blade. A double-sided panel square to the wall, 1200 mm wide,
+    // as tall as its row plus 60 mm margins, its inner edge 50 mm off the wall and its bottom edge 2.10 m over the floor under it
+    // (heads clear it; the ceiling stays at least 0.1 m over its top); on each face the E sign's code chip (IBM Plex Mono Medium,
+    // cap 42.5 mm, E's keyline and padding) and the title (Noto Sans SC Bold, em 62 mm, broken only at a phrase, two lines if it
+    // needs them), both rastered at 34 px per em (2 f / (1000 x 2.5 m) = .553 px/mm: the arrival reads it from 2.5 m, eye to the
+    // face's centre, looking up 11-15 degrees: 16.5 / 11.3 px). Nothing else: the flat sign stays for the body, read standing
+    // 0.9 m in front. E's matte panel; two short standoffs reach the wall; no collider (it hangs over heads), no shadow.
+    // Rule (v2.5): a district sign the arrival reads more than 35 degrees off its face gets a blade.
+    const float BladeWidth = 1.2f, BladeBottom = 2.10f, BladeGap = .05f, BladeDepth = .03f;
+    const float BladeTitleEm = .062f, BladeTitlePitch = .0775f, BladeChipCap = .0425f, BladeChipEm = .0609f, BladeChipGap = .016f;
+    const int BladePx = 34;
+    // The title's measure, 12 ems: "two lines at a phrase if it needs them" (v2.5). The arrival stands 0.77 m to the side of the
+    // blade's centre, so a line runs away from the eye toward the wall; at 2.5 m one that ends more than 0.36 m past the panel's
+    // centre falls under E's 16 px floor at its far end (review11, 11-04: 15.7 px at 0.54 m, 16.0 at 0.35 m; 17.5 at its start).
+    const float BladeMeasure = .75f;
+    // A TextMesh line's baseline lies one face ascender under its top (the fonts import their ascent from the face's ascender),
+    // so a line's top stands this many ems over what the row centres: Plex Mono's cap (ascender 1.025 less half its cap .698)
+    // and Noto Sans SC's ideographic em box (ascender 1.160 less the box's centre .380; the box runs -.120 to +.880).
+    const float MonoCapTop = .676f, CjkBoxTop = .78f;
+    // The text and the chip's keyline stand 7 and 6 mm off the panel's face, as on E.
+    const float TextLift = .007f, KeylineLift = .006f;
+
+    /// <summary>
+    /// A district blade (E-blade) hung from a wall. <paramref name="wallFace"/>: a point on the wall's face (world; its x and z
+    /// place the blade along the wall); <paramref name="into"/>: the wall's normal into the room; <paramref name="viewer"/>: the
+    /// arrival's eye, which the front face looks back toward along the wall; <paramref name="floorY"/>: the floor under it
+    /// (world y). Both faces carry the code chip and the title, each the right way round from its own side. Returns the blade's
+    /// root, on the panel's top edge, centred (the front face is local -Z, the back +Z).
+    /// </summary>
+    public static GameObject Blade(Transform parent, Vector3 wallFace, Vector3 into, Vector3 viewer, string title, float floorY)
+    {
+        Fonts();
+        into.y = 0f;
+        into = into.sqrMagnitude > 1e-6f ? into.normalized : Vector3.right;
+        SplitTitle(title, out var code, out var name);
+        var left = -BladeWidth * .5f + Margin;
+        var right = BladeWidth * .5f - Margin;
+        var chipW = code.Length > 0 ? code.Length * .6f * BladeChipEm + 2f * (ChipPad + Keyline) : 0f;
+        var chipH = code.Length > 0 ? BladeChipCap + 2f * (ChipPad + Keyline) : 0f;
+        var titleX = code.Length > 0 ? left + chipW + BladeChipGap : left;
+        var lines = TitleLines(name, Mathf.Min(right - titleX, BladeMeasure), BladeTitleEm);
+        var block = lines.Length > 0 ? BladeTitleEm + (lines.Length - 1) * BladeTitlePitch : 0f;
+        var row = Mathf.Max(chipH, block);
+        var height = row + 2f * Margin;
+
+        var along = Vector3.Cross(Vector3.up, into);
+        var centre = wallFace + into * (BladeGap + BladeWidth * .5f);
+        centre.y = floorY + BladeBottom + height * .5f;
+        var toViewer = viewer - centre;
+        toViewer.y = 0f;
+        var front = Vector3.Dot(along, toViewer) >= 0f ? along : -along;
+        var go = new GameObject("Blade · " + Clip(title));
+        go.transform.SetParent(parent, true);
+        go.transform.SetPositionAndRotation(new Vector3(centre.x, floorY + BladeBottom + height, centre.z), Quaternion.LookRotation(-front, Vector3.up));
+        var root = go.transform;
+
+        var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        panel.name = "Panel";
+        Object.Destroy(panel.GetComponent<Collider>());
+        panel.transform.SetParent(root, false);
+        panel.transform.localPosition = new Vector3(0f, -height * .5f, 0f);
+        panel.transform.localScale = new Vector3(BladeWidth, height, BladeDepth);
+        var pr = panel.GetComponent<MeshRenderer>();
+        pr.sharedMaterial = FrontRoomsPoolMaterials.Lit("placard panel E", PanelColor, .1f);
+        pr.shadowCastingMode = ShadowCastingMode.Off;
+
+        // Two standoffs from the panel's inner edge to the wall (2 mm into each), a quarter and three quarters down its height.
+        var wallSide = Vector3.Dot(root.right, -into) > 0f ? 1f : -1f;
+        for (var k = 0; k < 2; k++)
+        {
+            var stay = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            stay.name = "Standoff";
+            Object.Destroy(stay.GetComponent<Collider>());
+            stay.transform.SetParent(root, false);
+            stay.transform.localPosition = new Vector3(wallSide * (BladeWidth + BladeGap) * .5f, -height * (k == 0 ? .25f : .75f), 0f);
+            stay.transform.localScale = new Vector3(BladeGap + .004f, .03f, .018f);
+            var sr = stay.GetComponent<MeshRenderer>();
+            sr.sharedMaterial = FrontRoomsPoolMaterials.Lit("placard post", new Color(.2f, .2f, .2f), .3f, .6f);
+            sr.shadowCastingMode = ShadowCastingMode.Off;
+        }
+
+        // Each face in its own frame, the front as built and the back turned half round, so both read left to right: the chip,
+        // then the title, the chip's cap and the title's em box centred on the first line's middle.
+        var top = -Margin;
+        var firstCentre = top - (row - block) * .5f - BladeTitleEm * .5f;
+        var chipCentre = lines.Length > 0 ? firstCentre : top - row * .5f;
+        for (var side = 0; side < 2; side++)
+        {
+            var face = new GameObject(side == 0 ? "Front" : "Back").transform;
+            face.SetParent(root, false);
+            face.localPosition = new Vector3(0f, 0f, (side == 0 ? -.5f : .5f) * BladeDepth);
+            face.localRotation = side == 0 ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
+            if (code.Length > 0)
+            {
+                Keyline4(face, new Vector3(left + chipW * .5f, chipCentre, -KeylineLift), chipW, chipH);
+                Line(face, "Code", code, mono, BladeChipEm, BladePx, TextColor, new Vector3(left + ChipPad + Keyline, chipCentre + MonoCapTop * BladeChipEm, -TextLift));
+            }
+            for (var i = 0; i < lines.Length; i++)
+                Line(face, "Title", lines[i], bold, BladeTitleEm, BladePx, TextColor, new Vector3(titleX, firstCentre - i * BladeTitlePitch + CjkBoxTop * BladeTitleEm, -TextLift));
         }
         return go;
     }

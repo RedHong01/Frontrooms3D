@@ -173,6 +173,9 @@ Shader "FrontRooms/Glass"
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
             #pragma multi_compile _ _LIGHT_LAYERS
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            // LOD cross-fade (tech_art row 7): the glass of a kit (door lites, cabinet and vending fronts, the cooler bottle)
+            // dissolves with its level, so a fade never draws the pane twice; off, the code as it was.
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
             #pragma multi_compile_instancing
@@ -271,6 +274,9 @@ Shader "FrontRooms/Glass"
             float _FR_GlassSceneColor;
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+        #if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+        #endif
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
@@ -924,6 +930,9 @@ Shader "FrontRooms/Glass"
                 // Premultiplied output: fog toward fogColour * alpha, not the full fog colour.
                 half3 litBeforeFog = color.rgb;
                 color.rgb = MixFogColor(color.rgb, (half3)(unity_FogColor.rgb * alpha), (half)inputData.fogCoord);
+            #if defined(LOD_FADE_CROSSFADE)
+                LODFadeCrossFade(input.positionCS);   // last, after every derivative of the pane above
+            #endif
                 outColor = half4(color.rgb, alpha);
                 [branch] if (_GrimeDebug > 0.5)
                 {
@@ -973,8 +982,12 @@ Shader "FrontRooms/Glass"
             #pragma fragment FragPrepass
             #pragma shader_feature_local_fragment _FR_GLASS_GRIME
             #pragma multi_compile_instancing
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        #if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+        #endif
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
@@ -1298,6 +1311,9 @@ Shader "FrontRooms/Glass"
                 smooth = lerp(smooth, 0.45h, dust * 0.6h);
                 smooth = lerp(smooth, 0.35h, saturate(crack * 0.7h + crush));
                 tilt *= 1.0h - edge;
+            #if defined(LOD_FADE_CROSSFADE)
+                LODFadeCrossFade(input.positionCS);   // the same share of the dither as the pane's colour
+            #endif
                 outDepth = eye;
                 outNormal = half4(normalize(nGeo + tilt.x * input.axisU + tilt.y * input.axisV), saturate(smooth));
             }

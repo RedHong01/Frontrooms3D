@@ -409,6 +409,7 @@ public sealed partial class FrontRoomsStairwell : MonoBehaviour
         lightGo.transform.SetParent(root, false);
         lightGo.transform.localPosition = new Vector3(0f, LampHeight, 0f);
         lamp = lightGo.AddComponent<Light>();
+        FrontRoomsMapWorld.ShippedShadowFilter(lamp);
         lamp.type = LightType.Point;
         lamp.range = LampRange;
         lamp.color = new Color(1f, .92f, .78f);

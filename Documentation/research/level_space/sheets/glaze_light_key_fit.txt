@@ -1,0 +1,8 @@
+OK  | TITLE POOL LIGHT KEY · K OPTIONS | 899 of 3080 px
+OK  | K1 REC AS BUILT | label 261 + data 238 of 1916 px | R1 SP1 arrival
+OK  | K2 DARK LID | label 198 + data 238 of 1916 px | R1 SP1 arrival
+OK  | K1 REC AS BUILT | label 261 + data 272 of 1916 px | R2 SP1 pool edge
+OK  | K2 DARK LID | label 198 + data 272 of 1916 px | R2 SP1 pool edge
+OK  | K1 REC AS BUILT | label 261 + data 255 of 1916 px | R3 SP6 corridor
+OK  | K2 DARK LID | label 198 + data 255 of 1916 px | R3 SP6 corridor
+ALL LABELS FIT

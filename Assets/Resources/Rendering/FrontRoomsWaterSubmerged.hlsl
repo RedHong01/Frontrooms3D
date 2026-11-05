@@ -44,6 +44,7 @@ float4 _FR_SubLampPos[FR_SUB_LAMPS]; // wet niches: position (world), w body ind
 float4 _FR_SubLampCol[FR_SUB_LAMPS]; // rgb the glow's intensity (linear, light units x m^2), w the lamp's live share (0 dead .. 1)
 float  _FR_SubLampCount;
 float4 _FR_SubThrown;                // x gain, y the glow source's radius (m), z -, w -
+float4 _FR_SubWaterline;             // FRWetBand on top of each material's own (zero = as the material): x band raised (m), y darkening added, z meniscus gain, w tide mark
 float4 _FR_CausticFineD;             // the fine loop's four lens distances (m)
 float4 _FR_CausticLongD;             // the long loop's four
 float4 _FR_CausticTex;               // texels per slice side: fine, long
@@ -74,7 +75,13 @@ FRSub FRSubFind(float3 P, float pxM)
     s.under = false;
     s.room = false;
     s.pxM = pxM;
+    // Which water a point belongs to never depends on the registry's order (several waters in one hall, scene 4's
+    // terraces over a catch pool, 2026-11-04): under a body's rectangle and below its surface, that body (the lowest
+    // surface above P: the water P is in); over a rectangle and above its surface, that body's room (the highest surface
+    // below P: the water under P); elsewhere the first room that holds P. Equal heights keep the first, as before.
     int n = (int)_FR_SubCount;
+    int under = -1, over = -1, room = -1;
+    float underY = 1e30, overY = -1e30;
     [loop] for (int i = 0; i < FR_SUB_MAX; i++)
     {
         if (i >= n) break;
@@ -83,14 +90,21 @@ FRSub FRSubFind(float3 P, float pxM)
         if (P.x < r.x || P.z < r.y || P.x > r.z || P.z > r.w || P.y > p.w) continue;
         float4 w = _FR_SubRect[i];
         bool inWater = P.x >= w.x - 0.02 && P.z >= w.y - 0.02 && P.x <= w.z + 0.02 && P.z <= w.w + 0.02;
-        s.body = i;
-        s.waterY = p.x;
-        s.albedo = p.z;
-        s.a = _FR_SubAbsorb.rgb * p.y;
-        s.under = inWater && P.y < p.x;
-        s.depth = s.under ? p.x - P.y : 0.0;
+        if (inWater && P.y < p.x) { if (p.x < underY) { under = i; underY = p.x; } }
+        else if (inWater) { if (p.x > overY) { over = i; overY = p.x; } }
+        if (room < 0) room = i;
+    }
+    int b = under >= 0 ? under : (over >= 0 ? over : room);
+    if (b >= 0)
+    {
+        float4 q = _FR_SubParam[b];
+        s.body = b;
+        s.waterY = q.x;
+        s.albedo = q.z;
+        s.a = _FR_SubAbsorb.rgb * q.y;
+        s.under = under >= 0;
+        s.depth = s.under ? q.x - P.y : 0.0;
         s.room = !s.under;
-        break;
     }
     return s;
 }
@@ -471,6 +485,194 @@ half3 FRSubThrown(float3 P, half3 N, FRSub sub)
     if (bestE > 0.0 && _FR_SubMode.x > 0.5)
         E *= (half)max(lerp(1.0, FRRingLens(bestS, bestPath * (FR_SUB_N - 1.0), max(bestPath * bestAlpha, sub.pxM)), _FR_SubMode.z), 0.0);
     return E * (half)_FR_SubThrown.x;
+}
+
+// ------------------------------------------------------------------------------------------------ the room lit by its water
+// research/bathroom_rooms/70_look_build.md section 12 (Red's two notes of 2026-11-04 on scene 4: the room takes neither
+// light nor colour from its water). Two terms on a pool room's surfaces above the water (sub.room), set by
+// FrontRoomsWaterSubmerged's statics and OFF by default (_FR_SubWL.w 0: FRSubWaterLight is never called):
+//   the mirror  each lamp of the room above the water, seen in the water: the receiver mirrored below the plane, so URP's
+//               own range and cone fall-off apply to the whole path; Fresnel R where the path meets the water (0.020
+//               straight down, 0.06 at 60 deg, 0.35 at 80 deg); no Snell, no absorption; only where the reflection point
+//               lies on the water. A facet tilted by s turns a reflected ray by 2 s (a ray leaving the water by (n - 1) s),
+//               so the long ripple's net lands at D = 2 x the path in the air (past its focus: the loop holds its last
+//               distance), blurred by the lamp's size (a body's compact lamps causticSourceA/B are crisp, any other lamp
+//               _FR_SubWL2.y) and by the fine ripple, whose slopes scatter the reflected light by 2 x path x their rms.
+//               The two strongest lamps carry the net, the rest stay flat. No shadow on the mirrored path (the room box
+//               keeps it to the room); footstep rings do not move it (past the focus a ring's lens is no single sheet).
+//   the bounce  the light that went into the water and came back out of it (down through the column, the basin's
+//               albedo, back up, the trapping: FrontRoomsWaterSubmerged.ReturnAlbedo) as a Lambertian rectangle of the
+//               water's colour, seen from the receiver by the exact form factor of the rectangle clipped to the
+//               receiver's horizon (Lambert's contour integral): a ceiling right over the water takes the most, the lower
+//               part of a wall more than its top, a face turned away nothing. It replaces the ambient's light from the
+//               water's directions (_FR_SubWL.z), so the zone's ambient stays where the water is not. The wet niches'
+//               glow may be spread over the whole water this way (FrontRoomsWaterSubmerged.NicheSpread: taken from
+//               FRSubThrown's compact glow through _FR_SubThrown.x, so the niche light stays the same in total).
+float4 _FR_SubWL;                      // x mirror gain, y bounce gain, z share of the ambient the bounce replaces, w 1 = on
+float  _FR_ZoneAmbientShare;          // FrontRoomsZoneLook's lamp share at this render (0 or 1 = as tuned): the bounce replaces only the tuned ambient
+float4 _FR_SubWL2;                     // x mirror on (1; 0 on phones and WebGL), y other lamps' radius (m), z 1 = bounce on, w -
+float4 _FR_SubBounceA[FR_SUB_MAX];     // rgb the water's return albedo x the bounce gain, w its reflectance for diffuse light x the gain
+float4 _FR_SubBounceB[FR_SUB_MAX];     // rgb the water's radiance from the lamps above (x the gain) and from the spread niches
+
+// The long ripple's net on light the water reflected toward P: k.xy the reflection point, k.z the path in the air (m), k.w
+// the lamp's blur on P (m). Lens D = 2 x path (x the calm's gain); the fine ripple scatters the reflected light by
+// 2 x path x its rms slope, so in calm water the net is soft and wakes with the gain.
+float FRCausticMirror(float4 k, float pxM)
+{
+    if (_FR_SubMode.x < 0.5) return 1.0;
+    float m = max(_FR_RippleEnc.z, 0.0);
+    float D = 2.0 * k.z * m;
+    float fineBlur = D * sqrt(max(_FR_RippleVar.x, 0.0));
+    float blurM = max(sqrt(k.w * k.w + fineBlur * fineBlur), pxM);
+    float lodL = log2(max(blurM * _FR_CausticTex.y * _FR_RippleGeo.w, 1.0));
+    float2 uvL = float2(0.8 * k.x - 0.6 * k.y, 0.6 * k.x + 0.8 * k.y) * _FR_RippleGeo.w + float2(0.19, 0.83);
+    float3 sl = _FR_SubMode.x < 2.5 ? _FR_RippleL.xyz : float3(0.0, 0.0, 0.0);
+    if (_FR_SubMode.x > 2.5) uvL += float2(0.011, 0.006) * _FR_SubMode.w;
+    float I = FRCausticLoop(TEXTURE2D_ARRAY_ARGS(_FR_CausticLong, sampler_TrilinearRepeat), uvL, sl, _FR_CausticLongD, D, lodL);
+    return max(lerp(1.0, I, _FR_SubMode.z), 0.0);
+}
+
+// The overhead lamps' light the water reflects onto P (irradiance, URP light units)
+float3 FRSubMirror(InputData inputData, FRSub sub)
+{
+    float3 P = inputData.positionWS;
+    float3 N = (float3)inputData.normalWS;
+    float hP = P.y - sub.waterY;
+    float3 E = 0.0;
+    if (hP <= 0.005 || _FR_SubWL.x <= 0.0 || _FR_SubWL2.x < 0.5) return E;
+    float4 rect = _FR_SubRect[sub.body];
+    float4 room = _FR_SubRoom[sub.body];
+    float top = _FR_SubParam[sub.body].w;
+    float4 s0 = _FR_SubSrc0[sub.body];
+    float4 s1 = _FR_SubSrc1[sub.body];
+    float3 Pm = float3(P.x, 2.0 * sub.waterY - P.y, P.z);
+    float best1 = 0.0, best2 = 0.0;
+    float4 k1 = 0.0, k2 = 0.0;
+    float3 e1 = 0.0, e2 = 0.0;
+#if defined(_ADDITIONAL_LIGHTS)
+#ifdef _LIGHT_LAYERS
+    uint meshRenderingLayers = GetMeshRenderingLayer();
+#endif
+    uint pixelLightCount = GetAdditionalLightsCount();
+    LIGHT_LOOP_BEGIN(pixelLightCount)
+        float4 lp = FRSubLightPosition(lightIndex);
+        float hL = lp.y - sub.waterY;
+        if (lp.w > 0.5 && hL > 0.01 && lp.y < top + 0.5 && lp.x > room.x - 0.5 && lp.z > room.y - 0.5 && lp.x < room.z + 0.5 && lp.z < room.w + 0.5)
+        {
+            float2 S = P.xz + (lp.xz - P.xz) * (hP / (hP + hL));          // where the mirrored path meets the water
+            if (S.x >= rect.x && S.y >= rect.y && S.x <= rect.z && S.y <= rect.w)
+            {
+                Light light = GetAdditionalLight(lightIndex, Pm);           // range and cone over the mirrored path
+#ifdef _LIGHT_LAYERS
+                if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+#endif
+                {
+                    float3 toLampMirrored = float3(light.direction.x, -light.direction.y, light.direction.z);
+                    float cosIn = saturate(dot(N, toLampMirrored));
+                    float R = FRSubFresnel(abs((float)light.direction.y), FR_SUB_N);
+                    float3 e = (float3)light.color * (light.distanceAttenuation * cosIn * R);
+                    float lum = dot(e, float3(0.2126, 0.7152, 0.0722));
+                    if (lum > 0.0)
+                    {
+                        E += e;
+                        float path = length(float3(P.x - S.x, hP, P.z - S.y));
+                        float toLamp = length(float3(lp.x - S.x, hL, lp.z - S.y));
+                        float3 d0 = s0.xyz - lp.xyz;
+                        float3 d1 = s1.xyz - lp.xyz;
+                        float rad = (s0.w > 0.0 && dot(d0, d0) < 1e-4) ? s0.w : ((s1.w > 0.0 && dot(d1, d1) < 1e-4) ? s1.w : _FR_SubWL2.y);
+                        float4 k = float4(S, path, path * rad / max(toLamp, 0.05));
+                        if (lum > best1) { best2 = best1; k2 = k1; e2 = e1; best1 = lum; k1 = k; e1 = e; }
+                        else if (lum > best2) { best2 = lum; k2 = k; e2 = e; }
+                    }
+                }
+            }
+        }
+    LIGHT_LOOP_END
+#endif
+    if (best1 > 0.0) E += e1 * (FRCausticMirror(k1, sub.pxM) - 1.0);
+    if (best2 > 0.0) E += e2 * (FRCausticMirror(k2, sub.pxM) - 1.0);
+    return max(E, 0.0) * _FR_SubWL.x;
+}
+
+// One edge of Lambert's contour integral: the angle the edge a -> b subtends at the point times the cosine between its
+// plane's normal and N
+float FRSubEdgeFF(float3 a, float3 b, float3 N)
+{
+    float3 x = cross(a, b);
+    float l = length(x);
+    return l > 1e-9 ? atan2(l, dot(a, b)) * dot(x, N) / l : 0.0;
+}
+
+// The form factor from a point (normal N) to the water's rectangle (world xz, height wy), clipped to the point's front side
+float FRSubRectFF(float3 P, float3 N, float4 rect, float wy)
+{
+    float3 c0 = float3(rect.x, wy, rect.y) - P;
+    float3 c1 = float3(rect.z, wy, rect.y) - P;
+    float3 c2 = float3(rect.z, wy, rect.w) - P;
+    float3 c3 = float3(rect.x, wy, rect.w) - P;
+    float4 d = float4(dot(N, c0), dot(N, c1), dot(N, c2), dot(N, c3));
+    if (all(d <= 0.0)) return 0.0;
+    float sum = 0.0;
+    float3 exitP = 0.0, entryP = 0.0;
+    bool clipped = false;
+    [unroll] for (int i = 0; i < 4; i++)
+    {
+        float3 a = i == 0 ? c0 : (i == 1 ? c1 : (i == 2 ? c2 : c3));
+        float3 b = i == 0 ? c1 : (i == 1 ? c2 : (i == 2 ? c3 : c0));
+        float da = i == 0 ? d.x : (i == 1 ? d.y : (i == 2 ? d.z : d.w));
+        float db = i == 0 ? d.y : (i == 1 ? d.z : (i == 2 ? d.w : d.x));
+        if (da > 0.0 && db > 0.0) sum += FRSubEdgeFF(a, b, N);
+        else if (da > 0.0)
+        {
+            float3 m = a + (b - a) * (da / (da - db));
+            sum += FRSubEdgeFF(a, m, N);
+            exitP = m;
+            clipped = true;
+        }
+        else if (db > 0.0)
+        {
+            float3 m = a + (b - a) * (da / (da - db));
+            sum += FRSubEdgeFF(m, b, N);
+            entryP = m;
+            clipped = true;
+        }
+    }
+    if (clipped) sum += FRSubEdgeFF(exitP, entryP, N);
+    return saturate(abs(sum) * (0.5 / PI));
+}
+
+// The light the water sends back into its room onto P, from every body whose room holds P, less the ambient's light from
+// the water's directions that it replaces (irradiance, URP light units)
+float3 FRSubBounce(float3 P, float3 N)
+{
+    float3 E = 0.0;
+    if (_FR_SubWL2.z < 0.5) return E;
+    float3 up = (float3)SampleSH(half3(0.0h, 1.0h, 0.0h));
+    int n = (int)_FR_SubCount;
+    [loop] for (int i = 0; i < FR_SUB_MAX; i++)
+    {
+        if (i >= n) break;
+        float4 r = _FR_SubRoom[i];
+        float4 p = _FR_SubParam[i];
+        if (P.x < r.x || P.z < r.y || P.x > r.z || P.z > r.w || P.y > p.w || P.y <= p.x + 0.002) continue;
+        float4 w = _FR_SubRect[i];
+        float F = FRSubRectFF(P, N, w, p.x);
+        if (F <= 1e-5) continue;
+        float4 A = _FR_SubBounceA[i];
+        float3 Lw = _FR_SubBounceB[i].rgb + (A.rgb + A.w) * up;
+        float3 toW = float3((w.x + w.z) * 0.5, p.x, (w.y + w.w) * 0.5) - P;
+        float3 ambW = (float3)SampleSH((half3)normalize(toW));
+        // a share above 1 (SetLampShare: a stand-in for fixtures a room lacks) is not the water's light: replace the tuned part only
+        E += F * (Lw - (_FR_SubWL.y * _FR_SubWL.z / max(_FR_ZoneAmbientShare, 1.0)) * ambW);
+    }
+    return E;
+}
+
+// Both terms (FrontRooms/Surface calls this only while _FR_SubWL.w is on)
+half3 FRSubWaterLight(InputData inputData, FRSub sub)
+{
+    float3 E = FRSubBounce(inputData.positionWS, (float3)inputData.normalWS) + FRSubMirror(inputData, sub);
+    return (half3)E;
 }
 
 #endif

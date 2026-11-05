@@ -1,0 +1,29 @@
+/Users/redwang/FrontRoomsVisualWork/run_red/out/run_recede_binder.jpg 2559x4898 u=1.333 tile=1277
+TODAY arch 2 m out | armed: the goal door at 27 m | label 219 of 1251 px, data 308 of 1016 px OK
+RB arch 2 m out | armed: FD1, FD2, tracks; the end at 27 m | label 183 of 1251 px, data 440 of 1052 px OK
+TODAY release side | beyond the door: card on its latch side | label 211 of 1251 px, data 429 of 1024 px OK
+RB release side | beyond 36 m: the map's door, card | label 175 of 1251 px, data 363 of 1060 px OK
+TODAY trip + 1.0 s | 9.5 m: the front; the door lit at 27 m | label 206 of 1251 px, data 418 of 1029 px OK
+RB trip + 1.0 s | 9.5 m: the end mid-flinch at 31.1 m | label 170 of 1251 px, data 385 of 1065 px OK
+TODAY 20 m, + 4.5 s | tripped, steady (look A) | label 225 of 1251 px, data 264 of 1010 px OK
+RB 20 m, + 4.5 s | seated at 36 m; the map at 11, 12 | label 189 of 1251 px, data 363 of 1046 px OK
+TODAY rebuilt, 20 m | dropped, streamed back: tripped | label 225 of 1251 px, data 341 of 1010 px OK
+RB rebuilt, 20 m | seated at 36, no cue, no new seat | label 189 of 1251 px, data 363 of 1046 px OK
+COST renderers  TODAY  1010    RB  1453 (1163 on) | 440 of 1245 px OK
+COST slots      TODAY  1475    RB  2079 | 340 of 1245 px OK
+COST tris LOD0  TODAY  324621  RB  424279 | 360 of 1245 px OK
+COST Lights     TODAY    18    RB    23 | 340 of 1245 px OK
+COST seated RB: 1447 renderers on | 280 of 1245 px OK
+COST   the reserved length built, off per cell | 410 of 1245 px OK
+COST   5 more Lights: the 12-cell layout (card 2) | 440 of 1245 px OK
+COST   GPU frame time: not measured here | 350 of 1245 px OK
+COST tick TODAY 0.356 ms mean, 1.22 worst | 360 of 1245 px OK
+COST tick RB    0.372 ms mean, 3.98 worst | 360 of 1245 px OK
+COST   trip to 4.5 s: the recede and the T2 body | 430 of 1245 px OK
+COST map seats RB: 11 cells (index 1); 12 cells (index 2) | 520 of 1245 px OK
+COST tests 26 pass, 0 fail (R1-R24) | 300 of 1245 px OK
+COST binder: no Light or texture of its own | 380 of 1245 px OK
+COST inert: no level profile deals it | 320 of 1245 px OK
+COST room | renderers, slots, tris, Lights | label 115 of 1251 px, data 330 of 1120 px OK
+COST binder | tick, seats, tests | label 131 of 1251 px, data 198 of 1104 px OK
+ALL LABELS FIT

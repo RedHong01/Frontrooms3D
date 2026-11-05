@@ -1078,7 +1078,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 Rest = rest, Open = open, IsOpen = motion.IsOpen, OpenAt = motion.OpenAt, CloseAt = motion.CloseAt, Fold = Mathf.Max(fold, mapFold) });
             y -= h;
         }
-        // The list runs to the bottom edge (Red, 2026-10-24); its last row scrolls up clear of the home indicator.
+        // The list runs to the bottom edge (Red, 2026-10-24); its last row scrolls up clear of the home indicator, or of a pad's or
+        // the keys' band, and no further (平面视觉, 2026-11-04): every follow, ↑ ↓ and finger stops where the list ends, so no paper
+        // ever shows under its last row (an iPad's keys list CONTROLLER next to last: with the map out, the rows above it fill the
+        // view). A folding map shortens the list as it folds, so the rows over it slide back down with the fold.
         var visible = list.height - L.SettingsBottomInset;
         SettingsScrollMax = Mathf.Max(0f, (list.yMax - y) - visible);
         SettingsScroll = Mathf.Clamp(SettingsScroll, 0f, SettingsScrollMax);
@@ -1238,7 +1241,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         SettingsOpenHeight != null ? SettingsOpenHeight(r, width) : 2f * FrontRoomsTouchLayout.SettingsRowHeightOf(r);
 
     /// <summary>The list follows to show the whole row <paramref name="id"/> at the height it is going to, with the section header
-    /// that heads it (0.32 s, ease-in-out): it moves only as far as the row needs, and a finger on the list takes it over.</summary>
+    /// that heads it (0.32 s, ease-in-out): it moves only as far as the row needs, and a finger on the list takes it over. CONTROLLER
+    /// unfolding its map goes to the list's top, its header with it where both fit, else its own top (the phone's map row fills
+    /// the view, so that is where its foot meets the view's foot); never past the list's end, so where less follows than fills the
+    /// view the list ends at the band and the row sits lower.</summary>
     void FollowRow(int id)
     {
         var view = SettingsScrollViewport;
@@ -1246,6 +1252,7 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         var y = view.yMax;
         var top = float.NaN;
         var bottom = 0f;
+        var mapHead = false;
         for (var i = 0; i < slots.Count; i++)
         {
             var s = slots[i];
@@ -1258,14 +1265,21 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 bottom = y - h;
                 // The header goes with its row when both fit.
                 if (i > 0 && slots[i - 1].Header && h + slots[i - 1].Rest <= shown) top += slots[i - 1].Rest;
+                mapHead = s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadMap && MapUnfolded;
             }
             y -= h;
         }
         if (float.IsNaN(top)) return;
         var max = Mathf.Max(0f, view.yMax - y - shown);
         var target = SettingsScroll;
-        if (bottom + target < view.yMax - shown) target = view.yMax - shown - bottom;
-        if (top + target > view.yMax) target = view.yMax - top;
+        // The unfolding map's head goes to the top wherever its row is, as far as the list's end allows: its header reaches the top
+        // only with enough under it to fill the view (平面视觉, 2026-11-04: an iPad's keys list ends at DEFAULTS, under the map).
+        if (mapHead) target = view.yMax - top;
+        else
+        {
+            if (bottom + target < view.yMax - shown) target = view.yMax - shown - bottom;
+            if (top + target > view.yMax) target = view.yMax - top;
+        }
         target = Mathf.Clamp(target, 0f, max);
         if (Mathf.Abs(target - SettingsScroll) < .5f) return;
         followFrom = SettingsScroll;
@@ -1282,7 +1296,9 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
         {
             var t = FrontRoomsHandheld.ReduceMotion ? 1f : (FrontRoomsTouchMotion.Now - followAt) / ScrollS;
             SettingsScroll = Mathf.Clamp(Mathf.Lerp(followFrom, followTo, FrontRoomsTouchMotion.Evaluate(FrontRoomsTouchMotion.Ease.InOutCubic, Mathf.Clamp01(t))), 0f, SettingsScrollMax);
-            if (t >= 1f) following = false;
+            // Its glide over, a follow the list's end still holds back keeps to that end until it gets there, while a row or a map
+            // can still be moving (11-04: an iPad's keys list, its map unfolding for 0.49 s under a 0.32 s follow, stopped 4 pt short).
+            if (t >= 1f && (SettingsScroll >= followTo - .01f || FrontRoomsTouchMotion.Now - followAt >= ScrollS + UnfoldMax)) following = false;
             return;
         }
 #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
@@ -1759,9 +1775,14 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                 if (f.Button != Button.None) f.Role = Role.Button;
                 else if (MapUnfolded && PadMap != null && PadMapRect.Contains(p))
                 {
-                    // CONTROLLER's map: the lift chooses the callout under it, or listens for the chosen one (Activate).
+                    // CONTROLLER's map: the lift chooses the callout under it, or listens for the chosen one (Activate). A drag that
+                    // starts on it takes the list from where it is, as one on a row does (11-04: with no ScrollStart the list jumped
+                    // to its top under the finger).
                     f.Role = Role.Button;
                     f.Button = Button.PadMapTap;
+                    f.ScrollStart = SettingsScroll;
+                    scrollVelocity = 0f;
+                    following = false;
                 }
                 else if (LanguageTagAt(p) != -1)
                 {
@@ -1771,6 +1792,10 @@ public sealed class FrontRoomsTouchControls : MonoBehaviour
                     // The row has the focus while a finger is on it (the strip keeps the charm under it chosen); a cell swings once.
                     ActiveSettingsRow = LanguageRowId();
                     if (LanguageStrip.Grid && f.Row >= 0) LanguageStrip.HoverCell(LanguageLocal(p));
+                    // A drag up or down it takes the list from where it is (Move), as one on a row or on the map does.
+                    f.ScrollStart = SettingsScroll;
+                    scrollVelocity = 0f;
+                    following = false;
                 }
                 else if (SettingsTabAt(p, out var tabHit))
                 {

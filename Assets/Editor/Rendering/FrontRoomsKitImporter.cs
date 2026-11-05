@@ -15,7 +15,8 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
 {
     // The sidecar's final distance is the cull threshold. Bump the importer
     // version so existing kit FBX assets are re-imported with this mapping.
-    public override uint GetVersion() => 2;
+    // 3: LOD cross-fade on every kit LODGroup (FrontRoomsLodFade, tech_art row 7).
+    public override uint GetVersion() => 3;
 
     const string Folder = "Assets/Resources/Props/Models/";
     const string CreatureFolder = "Assets/Resources/Creatures/";
@@ -111,13 +112,13 @@ sealed class FrontRoomsKitImporter : AssetPostprocessor
                     : i == last ? 0f : lods[i].screenRelativeTransitionHeight;
             }
             group.SetLODs(lods);
-            group.fadeMode = LODFadeMode.None;
+            FrontRoomsLodFade.Apply(group);
             return;
         }
         var size = group.size;
         lods[0].screenRelativeTransitionHeight = .10f;
         lods[1].screenRelativeTransitionHeight = size < .6f ? .03f : .02f;
         group.SetLODs(lods);
-        group.fadeMode = LODFadeMode.None;
+        FrontRoomsLodFade.Apply(group);
     }
 }

@@ -236,11 +236,18 @@ Shader "FrontRooms/Surface"
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
             #pragma multi_compile _ _LIGHT_LAYERS
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            // LOD cross-fade (tech_art row 7, FrontRoomsLodFade): Unity turns it on only for a renderer whose LODGroup is
+            // fading, in this pass and in the shadow, depth, depth-normals and motion-vector passes below; every other draw
+            // takes the variant without it, which is the code as it was.
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+        #if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+        #endif
             // Submerged (research/bathroom_rooms/70_look_build.md, "Submerged"): under a registered body of water the colour
             // comes from the water (absorption, the trapping, the caustics); above it, in its room, the wet niches' thrown
             // light. With no body registered (_FR_SubCount 0: everywhere outside a pool zone) it returns at once.
@@ -274,6 +281,10 @@ Shader "FrontRooms/Surface"
             // parts soak and darken under the water and in the band above it; a water film evens and glosses the band (above the
             // water only: under it the water surface does the reflecting); the meniscus, the 2.7 mm skin the water draws up a
             // wall, catches the light from above; a club's pool leaves a scale line. Off (the default) returns at once.
+            // _FR_SubWaterline (FrontRoomsWaterSubmerged.Waterline; zero leaves every term as the material has it) strengthens
+            // the line where shallow water would otherwise read as a clean wet floor: water wicked higher up what can soak,
+            // more darkening, a brighter meniscus, and the tide mark: the tea-brown stain left at the top of a wet band on
+            // paper, plaster and baseboard.
             // waterY: the material's _WaterY, or (Submerged) the height of the body of water the point lies in.
             void FRWetBand(float3 positionWS, float alongM, float3 nGeo, half porous, float waterY, inout half3 albedo, inout half smoothness, inout half3 nTS)
             {
@@ -283,8 +294,10 @@ Shader "FrontRooms/Surface"
                 float above = positionWS.y - waterY;
                 // the band's top wanders a little along the wall, where the splashes reached
                 float wob = _WaterLine.z * (sin(alongM * 7.3) * 0.6 + sin(alongM * 17.9 + 1.7) * 0.4);
-                half wet = above <= 0.0 ? 1.0h : (half)(1.0 - smoothstep(_WetBand.x + wob, _WetBand.x + _WetBand.y + wob, above));
-                half soak = wet * porous * (half)_WetBand.z;
+                float4 wl = _FR_SubWaterline;
+                float top = _WetBand.x + wl.x;
+                half wet = above <= 0.0 ? 1.0h : (half)(1.0 - smoothstep(top + wob, top + _WetBand.y + wob, above));
+                half soak = wet * porous * (half)(_WetBand.z + wl.y);
                 albedo *= 1.0h - 0.42h * soak;
                 half film = above > 0.0 ? wet : 0.0h;
                 smoothness = lerp(smoothness, max(smoothness, 0.90h), film * (0.35h + 0.65h * porous));
@@ -297,8 +310,12 @@ Shader "FrontRooms/Surface"
                 // the meniscus, faded by its size on screen so it never shimmers
                 float px = max(fwidth(positionWS.y), 1e-5);
                 half men = (half)(_WetBand.w * saturate(1.0 - abs(above - 0.0014) / (0.0014 + px)) * saturate(0.0028 / px)) * wallF;
+                men = min(men * (1.0h + (half)wl.z), max(men, 1.0h));
                 smoothness = lerp(smoothness, 0.97h, men);
                 nTS = normalize(lerp(nTS, half3(0.0h, 0.75h, 0.66h), men));
+                // the tide mark: 6 mm at the band's dry edge, never thinner than a pixel, only on what soaks
+                half tide = (half)(wl.w * saturate(1.0 - abs(above - (top + _WetBand.y + wob)) / max(0.006, px))) * porous * wallF;
+                albedo = lerp(albedo, albedo * half3(0.80h, 0.68h, 0.52h), tide);
             }
 
         #if defined(_FR_TILE)
@@ -1196,6 +1213,13 @@ Shader "FrontRooms/Surface"
             #endif
             #endif
 
+            #if defined(LOD_FADE_CROSSFADE)
+                // This level's share of the LOD dither (unity_LODFade, the URP asset's Blue Noise), after every texture read
+                // of the surface (their derivatives need the whole quad) and before the lighting, where URP's Lit takes it
+                // (LitForwardPass.hlsl).
+                LODFadeCrossFade(input.positionCS);
+            #endif
+
             #if defined(_FR_DEBUG_VIEW)
                 half4 color;
                 if (_FR_DebugView > 0.5)
@@ -1222,6 +1246,19 @@ Shader "FrontRooms/Surface"
                 UNITY_BRANCH
                 if (sub.room)
                     color.rgb += s.albedo * (0.96h * s.occlusion) * FRSubThrown(input.positionWS, inputData.normalWS, sub);
+                // the room lit by its water (FRSubWaterLight: the lamps the water mirrors, the light it sends back in its
+                // own colour); off unless FrontRoomsWaterSubmerged's statics turn it on
+                UNITY_BRANCH
+                if (sub.room && _FR_SubWL.w > 0.5)
+                {
+                    // occluded like the ambient it replaces (URP takes the lesser of the material's and SSAO's indirect
+                    // occlusion): otherwise a corner SSAO has darkened loses the full unoccluded ambient and goes black
+                    half wlOcc = s.occlusion;
+                #if defined(_SCREEN_SPACE_OCCLUSION) && !defined(_SURFACE_TYPE_TRANSPARENT)
+                    wlOcc = min(wlOcc, GetScreenSpaceAmbientOcclusion(inputData.normalizedScreenSpaceUV).indirectAmbientOcclusion);
+                #endif
+                    color.rgb = max(color.rgb + s.albedo * (0.96h * wlOcc) * FRSubWaterLight(inputData, sub), 0.0h);
+                }
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
                 color.rgb = FRHeightFog(color.rgb, input.positionWS);
             #endif
@@ -1246,10 +1283,23 @@ Shader "FrontRooms/Surface"
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex ShadowPassVertex
-            #pragma fragment ShadowPassFragment
+            #pragma fragment FRShadowPassFragment
             #pragma multi_compile_instancing
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
             #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+
+            // A fading caster draws no dither into a shadow map: its two levels hand over at mid-fade instead (unity_LODFade.x
+            // is x for one level and -x for the other, so exactly one of them casts at any moment), so nothing in a shadow can
+            // crawl as the cascades step or the shadow atlas re-packs. Without the keyword this is URP's ShadowPassFragment.
+            half4 FRShadowPassFragment(Varyings input) : SV_TARGET
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+            #if defined(LOD_FADE_CROSSFADE)
+                clip(unity_LODFade.x - (unity_LODFade.x >= 0.0 ? 0.5 : -0.5));
+            #endif
+                return 0;
+            }
             ENDHLSL
         }
 
@@ -1266,6 +1316,7 @@ Shader "FrontRooms/Surface"
             #pragma vertex DepthOnlyVertex
             #pragma fragment DepthOnlyFragment
             #pragma multi_compile_instancing
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
             #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
             ENDHLSL
         }
@@ -1282,8 +1333,26 @@ Shader "FrontRooms/Surface"
             #pragma vertex DepthNormalsVertex
             #pragma fragment DepthNormalsFragment
             #pragma multi_compile_instancing
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthNormalsPass.hlsl"
+            ENDHLSL
+        }
+
+        // Object motion vectors, as URP's Lit (ObjectMotionVectors.hlsl, LOD cross-fade like the passes above; nothing here
+        // clips, so no alpha test). Drawn only for a camera that asks for motion vectors (STP, TAA, motion blur); the desktop
+        // asks for none (MSAA, no TAA, no motion blur), so there it never draws. It is the handheld STP's prerequisite (tech_art
+        // row 13b): FrontRoomsQuality turns STP on only while this shader has a MotionVectors pass.
+        Pass
+        {
+            Name "MotionVectors"
+            Tags { "LightMode" = "MotionVectors" }
+            ColorMask RG
+            Cull [_Cull]
+
+            HLSLPROGRAM
+            #pragma multi_compile_fragment _ LOD_FADE_CROSSFADE
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ObjectMotionVectors.hlsl"
             ENDHLSL
         }
     }

@@ -8,6 +8,8 @@ Rule: research/localization/WORLD_TYPE.md §3, "EXIT in the Latin and Cyrillic l
   python3 exit_legend_dieface.py [code ...] --out DIR [--tol MM]
       -> DIR/exit_legend_<code>.json for de fr es pt-BR ru ko, and a check line each. --out is required: the shipped
          legends next to this file carry keys later steps add (letterShares, lod1), so a rebuild never writes over them
+A code in WIDE gets a housing widened for its word (Red 11-04, de): EXIT's letters and stroke at the die face's own
+width, the opening the ink + 21.0 a side up to the whole mm; its legend file adds openingMm and housingMm.
 """
 import hashlib
 import json
@@ -24,6 +26,9 @@ FILLET = 0.5            # exit_sign_geom.HOLE_FILLET
 CORNER_DEG = 40.0       # a vertex turning more than this is a corner of the die (the letters' corners turn 60 deg or more); less is a facet of an arc
 WEB_MIN = 3.0           # WORLD_TYPE ties: at least 3 mm of plate
 TOL = 0.25              # arc flattening, mm: 1 px at the hero 4K row (3.9 px/mm); --tol 0.15 for a closer hero
+OPEN_W, OPEN_H, BORDER, HOUSING_H = 320.0, 186.0, 13.0, 212.0   # exit_sign_geom: the kept opening, the frame border, the pan
+SIDE_MIN = 21.0         # 1.25 x EXIT's 16.8 (WORLD_TYPE "Air at the sides")
+WIDE = {'de'}           # Red 11-04 "加宽德语框": AUSGANG at 59 % in the kept box read as a shape at 8 m
 
 
 def area(p):
@@ -110,14 +115,32 @@ def min_web(polys):
     return best
 
 
-def run(word, tol=TOL):
+def run(word, tol=TOL, wide=False):
     cmd = ['swift', SWIFT_KO, 'fit', '--tol', str(tol)] if word == '출구' else ['swift', SWIFT, 'fit', word, '--tol', str(tol)]
+    if wide:
+        cmd += ['--c', '1', '--s', '1']     # full size, full width: the box is sized to the word below
     out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
     return json.loads(out)
 
 
+def widen(d):
+    """The swift centres the word in the 320 opening: re-centre it in an opening of the ink + 21.0 a side, whole mm up."""
+    x0, _, x1, _ = d['inkBox']
+    ow = float(math.ceil(x1 - x0 + 2 * SIDE_MIN))
+    dx = (ow - OPEN_W) / 2
+    d['inkBox'] = [x0 + dx, d['inkBox'][1], x1 + dx, d['inkBox'][3]]
+    for g in d['glyphs']:
+        g['xMm'] += dx
+    for t in d['ties']:
+        t['xMm'] += dx
+    for k in ('ink', 'holes'):
+        d[k] = [[[x + dx, y] for x, y in l] for l in d[k]]
+    return d, ow
+
+
 def build(code, word, tol=TOL):
-    d = run(word, tol)
+    wide = code in WIDE
+    d, ow = widen(run(word, tol, wide=True)) if wide else (run(word, tol), OPEN_W)
     holes_raw = [ccw(dedupe([tuple(p) for p in l])) for l in d['holes']]
     holes = [fillet_reflex(p, FILLET) for p in holes_raw]
     ink = holes_raw
@@ -135,7 +158,7 @@ def build(code, word, tol=TOL):
         gx0, gx1 = g['xMm'], g['xMm'] + g['widthMm']
         pieces = sum(1 for p in holes_raw if gx0 - 0.01 <= sum(x for x, _ in p) / len(p) <= gx1 + 0.01)
         chars.append({'char': g['char'], 'counters': g['islands'], 'outer': pieces, 'xMm': round(gx0, 3), 'widthMm': round(g['widthMm'], 3)})
-    margins = {'left': round(x0, 3), 'right': round(320.0 - x1, 3), 'bottom': round(y0, 3), 'top': round(186.0 - y1, 3)}
+    margins = {'left': round(x0, 3), 'right': round(ow - x1, 3), 'bottom': round(y0, 3), 'top': round(OPEN_H - y1, 3)}
     side_air = min(margins['left'], margins['right']) / max(1e-9, min(margins['top'], margins['bottom']))
     ko = word == '출구'
     src = open(SWIFT_KO if ko else SWIFT, 'rb').read()
@@ -147,6 +170,11 @@ def build(code, word, tol=TOL):
         'width': round(d['condense'], 3), 'scale': round(d['scale'], 4),
         'inkBox': [round(v, 3) for v in d['inkBox']], 'inkW': round(x1 - x0, 3), 'inkH': round(y1 - y0, 3),
         'baselineMm': round(d['baselineMm'], 3), 'margins': margins,
+    }
+    if wide:
+        leg['openingMm'] = [ow, OPEN_H]
+        leg['housingMm'] = [ow + 2 * BORDER, HOUSING_H]
+    leg.update({
         'strokes': {'verticalStemMm': round(S, 3), 'horizontalStrokeMm': round(S, 3)},
         'islands': d['islands'], 'ties': ties, 'tieWidthMm': round(d['tieWidthMm'], 3), 'chars': chars,
         'holeVerts': sum(len(p) for p in holes),
@@ -157,19 +185,26 @@ def build(code, word, tol=TOL):
                        'round strokes on one centre; widths FHWA Series B 2000 x 0.93; no overshoot; counters held by ties'),
             'strokeMm': round(S, 3), 'filletMm': FILLET, 'filletCornerDeg': CORNER_DEG, 'tolMm': tol,
             'minWebMm': round(web, 3), 'minWebAt': [round(where[0], 2), round(where[1], 2)] if where else None,
-            'fit': {'floorInkMm': 152.4, 'sideMinMm': 21.0, 'condenseMin': 0.85,
-                    'rule': 'ink no taller than 152.4 (top and bottom >= 16.8, EXIT\'s); sides >= 21.0 (1.25 x 16.8); '
-                            'the widest skeleton that fits at the largest scale (WORLD_TYPE §3, Latin and Cyrillic EXIT)',
-                    'sideAir': round(side_air, 4)},
+            'fit': ({'floorInkMm': 152.4, 'sideMinMm': SIDE_MIN, 'openingMm': [ow, OPEN_H],
+                     'rule': 'Red 11-04 "加宽德语框": the housing is widened for the word, which keeps EXIT\'s letters (152.4) and stroke (19.05) '
+                             'at the die face\'s own width; opening = the ink + 21.0 a side, up to the whole mm (WORLD_TYPE §3, a wider box)',
+                     'sideAir': round(side_air, 4)} if wide else
+                    {'floorInkMm': 152.4, 'sideMinMm': 21.0, 'condenseMin': 0.85,
+                     'rule': 'ink no taller than 152.4 (top and bottom >= 16.8, EXIT\'s); sides >= 21.0 (1.25 x 16.8); '
+                             'the widest skeleton that fits at the largest scale (WORLD_TYPE §3, Latin and Cyrillic EXIT)',
+                     'sideAir': round(side_air, 4)}),
             'master': d['master'],
         },
         'holes': [[[round(x, 4), round(y, 4)] for x, y in p] for p in holes],
         'ink': [[[round(x, 4), round(y, 4)] for x, y in p] for p in ink],
         'note': (f'출구 (ko), the short form 叙事 signed 11-04 08:52 (95 §5); ink 152.4 mm, EXIT\'s floor; stroke 14.5 mm (the ㄹ\'s six stacked '
                  f'horizontals close at 19.05; the Hong Kong code\'s CJK reading, at least 10 mm); 长体 {100 * d["condense"]:.1f} % for 1.25 x side air'
-                 if ko else f'{word} ({code}), the 95 §5 table word for EXIT; letters {d["letterHeightMm"]:.1f} mm = {100 * d["letterHeightMm"] / 152.4:.1f} % of EXIT, '
+                 if ko else
+                 f'{word} ({code}), the 95 §5 table word for EXIT; letters {d["letterHeightMm"]:.1f} mm = EXIT\'s, stroke {S:.2f} mm, the die face at its own '
+                 f'width, in the housing widened for it (Red 11-04 "加宽德语框"): opening {ow:.0f} x {OPEN_H:.0f}, housing {ow + 2 * BORDER:.0f} x {HOUSING_H:.0f} mm'
+                 if wide else f'{word} ({code}), the 95 §5 table word for EXIT; letters {d["letterHeightMm"]:.1f} mm = {100 * d["letterHeightMm"] / 152.4:.1f} % of EXIT, '
                  f'stroke {S:.2f} mm; under the life-safety floor because the box stays (95 §6 Q2) and no shorter word exists'),
-    }
+    })
     return leg
 
 

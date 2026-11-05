@@ -1,0 +1,37 @@
+OK  | TITLE GZ OPTIONS · THE GAME'S POOLLEVEL ZONE LOOK (AS IT SHIPS TODAY) | 2713 of 3935 px
+OK  | TODAY | label 118 + data 294 of 952 px | R1 SP1 arrival
+OK  | FIELD · GAME TILE (REF) | label 484 + data 294 of 952 px | R1 SP1 arrival
+OK  | GZ-A GLAZE IN THE TILE | label 448 + data 294 of 952 px | R1 SP1 arrival
+OK  | GZ-B LAMPS HELD | label 340 + data 294 of 952 px | R1 SP1 arrival
+OK  | GZ-C + WATER · REC | label 408 + data 462 of 952 px | R1 · pool dry: rig bug
+OK  | TODAY | label 118 + data 336 of 952 px | R2 SP1 pool edge
+OK  | FIELD · GAME TILE (REF) | label 484 + data 336 of 952 px | R2 SP1 pool edge
+OK  | GZ-A GLAZE IN THE TILE | label 448 + data 336 of 952 px | R2 SP1 pool edge
+OK  | GZ-B LAMPS HELD | label 340 + data 336 of 952 px | R2 SP1 pool edge
+OK  | GZ-C + WATER · REC | label 408 + data 462 of 952 px | R2 · pool dry: rig bug
+OK  | TODAY | label 118 + data 315 of 952 px | R3 SP6 corridor
+OK  | FIELD · GAME TILE (REF) | label 484 + data 315 of 952 px | R3 SP6 corridor
+OK  | GZ-A GLAZE IN THE TILE | label 448 + data 315 of 952 px | R3 SP6 corridor
+OK  | GZ-B LAMPS HELD | label 340 + data 462 of 952 px | R3 · white wire joints
+OK  | GZ-C + WATER · REC | label 408 + data 315 of 952 px | R3 SP6 corridor
+OK  | TODAY | label 118 + data 273 of 952 px | R4 SP6 grotto
+OK  | FIELD · GAME TILE (REF) | label 484 + data 273 of 952 px | R4 SP6 grotto
+OK  | GZ-A GLAZE IN THE TILE | label 448 + data 273 of 952 px | R4 SP6 grotto
+OK  | GZ-B LAMPS HELD | label 340 + data 273 of 952 px | R4 SP6 grotto
+OK  | GZ-C + WATER · REC | label 408 + data 273 of 952 px | R4 SP6 grotto
+OK  | TODAY | label 118 + data 294 of 952 px | R5 hero 0.35 m
+OK  | FIELD · GAME TILE (REF) | label 484 + data 294 of 952 px | R5 hero 0.35 m
+OK  | GZ-A GLAZE IN THE TILE | label 448 + data 294 of 952 px | R5 hero 0.35 m
+OK  | GZ-B LAMPS HELD | label 340 + data 294 of 952 px | R5 hero 0.35 m
+OK  | GZ-C + WATER · REC | label 408 + data 420 of 952 px | R5 · halo hides core
+OK  | TODAY | label 118 + data 273 of 952 px | R6 phone tier
+OK  | FIELD · GAME TILE (REF) | label 484 + data 273 of 952 px | R6 phone tier
+OK  | GZ-A GLAZE IN THE TILE | label 448 + data 315 of 952 px | R6 · probes off
+OK  | GZ-B LAMPS HELD | label 340 + data 441 of 952 px | R6 phone · probes off
+OK  | GZ-C + WATER · REC | label 408 + data 462 of 952 px | R6 · pool dry: rig bug
+OK  | TODAY | label 118 + data 84 of 952 px | COST
+OK  | FIELD · GAME TILE (REF) | label 484 + data 84 of 952 px | COST
+OK  | GZ-A GLAZE IN THE TILE | label 448 + data 84 of 952 px | COST
+OK  | GZ-B LAMPS HELD | label 340 + data 84 of 952 px | COST
+OK  | GZ-C + WATER · REC | label 408 + data 84 of 952 px | COST
+ALL LABELS FIT

@@ -24,6 +24,11 @@
 // A slow, faint mask (calm patches, 17 3.3 item 4) scales the whole ripple by 1 +- _FR_RippleEnc.w (desktop; 0 on phones).
 // Rings (FrontRoomsWaterRings.cs): Cauchy-Poisson packets in closed form, a calm centre whose rim grows at the minimum
 // group speed (0.178 m/s), the gravity crests running out through the packet and the capillaries racing ahead.
+// Less regular rings (70_look_build.md section 11): with FrontRoomsWaterRings.SourceShape or Currents above 0 the C# turns
+// on the global keyword _FR_RINGS_SHAPED and the rings go through FRRingsAddShaped (a foot's elongated, forward-pushing
+// source with a second, weaker impulse; a slow drift that bends big rings). Everything of section 11 in this file compiles
+// only under that keyword (FrontRooms/Water declares it: multi_compile_fragment); without it (the default, and every
+// shader that does not declare it) this file is today's code, so today's variant is today's program on every tier.
 
 TEXTURE2D_ARRAY(_FR_RippleFine);  SAMPLER(sampler_FR_RippleFine);
 TEXTURE2D_ARRAY(_FR_RippleLong);  SAMPLER(sampler_FR_RippleLong);
@@ -45,6 +50,11 @@ float4 _FR_RingAiry1;    // x^2, x, 1, -
 float4 _FR_Ring0[16];    // per slot: centre x, centre z, age (s), volume (m^3, faded)
 float4 _FR_Ring1[16];    // per slot: radius a, splash radius, splash share, agitation
 float  _FR_RingCount;
+#if defined(_FR_RINGS_SHAPED)
+float4 _FR_RingShape0;   // section 11: 1 when shaped or drifting, elongation, forward push, currents
+float4 _FR_RingShape1;   // section 11: lift distance (m), lift delay (s), lift gain (0: none, the phone tier), shape
+float4 _FR_Ring2[16];    // section 11, per slot: heading x, z times the ring's shape (0 = round), seed in [0, 1), -
+#endif
 
 #define FR_RIPPLE_LUT_N 19.0
 #define FR_RIPPLE_B_SCALE 0.875          // 1 / (8 / 7)
@@ -216,6 +226,137 @@ void FRRingsAdd(float2 xz, float2 axis, float lMaj, float lMin, inout float2 slo
     }
 }
 
+#if defined(_FR_RINGS_SHAPED)
+// Section 11, FrontRoomsWaterRings.Currents: a slow drift of the water as a share of the crest speed (rms |U| =
+// _FR_RingShape0.w), four stream waves of 0.9-2.2 m whose wave vectors divide 192 m (the room stream's origin rebase never
+// moves it) and whose periods (12, 9.6, 16, 8 s) divide the mask clock's 6144 s wrap; divergence-free, so it swirls and
+// never piles water up. Frozen with the ripple clock (Reduce Motion).
+float2 FRRingCurrent(float2 xz, float t)
+{
+    float2 u = float2(0.5573, -0.8303) * cos(dot(xz, float2(2.388918, 1.603521)) - 0.5235988 * t);
+    u += float2(0.9091, 0.4167) * cos(dot(xz, float2(-1.799871, 3.926991)) - 0.6544985 * t + 1.7);
+    u += float2(-0.2412, -0.9705) * cos(dot(xz, float2(5.530512, -1.374447)) - 0.3926991 * t + 4.1);
+    u += float2(-0.7024, 0.7118) * cos(dot(xz, float2(-4.941464, -4.876014)) - 0.7853982 * t + 2.9);
+    return u * (_FR_RingShape0.w * 0.70710678);
+}
+
+// The second impulse in the far field: the wave (cs, sn) = (cos, sin) of its phase times 1 + g exp(i (omega tau - k d cos phi)).
+// Returns |1 + ...|^2 for the unresolved variance.
+float FRRingLift(float k, float om, float liftD, float liftT, float liftG, float cphi, inout float cs, inout float sn)
+{
+    if (liftG == 0.0) return 1.0;
+    float ls, lc;
+    sincos(om * liftT - k * liftD * cphi, ls, lc);
+    float qr = 1.0 + liftG * lc;
+    float qi = liftG * ls;
+    float c2 = qr * cs - qi * sn;
+    sn = qr * sn + qi * cs;
+    cs = c2;
+    return qr * qr + qi * qi;
+}
+
+// Section 11, FrontRoomsWaterRings.SourceShape and Currents: FRRingsAdd with a foot's source and a drifting medium.
+//   Shape (per slot, _FR_Ring2.xy = the heading times the ring's amount h): the body hump is rho = 1 + e h times longer
+//   than wide along the heading (a_par = a rho, a_perp = a / rho: a wave leaving at angle phi to the heading sees
+//   exp(-k^2 a(phi)^2 / 2)), it pushes forward (amplitude (1 + p cos phi) / sqrt(1 + p^2 / 2), the same energy), and a
+//   second impulse of gain g (< 0: the hollow the lifted foot leaves) d metres ahead and tau seconds later enters in the
+//   far field as 1 + g exp(i (omega tau - k d cos phi)) on each wave; d and tau vary +-30 % with the ring's seed, so no
+//   two steps make the same pattern. The splash term (aS) stays round.
+//   Currents: the crest at the pixel left the source while the drift U (a share of its speed) carried it, so it sits where
+//   the still-water ring has r (1 - U . dir): big rings bend, small ones stay round.
+void FRRingsAddShaped(float2 xz, float2 axis, float lMaj, float lMin, inout float2 slope, inout float3 cov,
+                      inout float height, inout float agitation)
+{
+    int n = (int)_FR_RingCount;
+    if (n <= 0) return;
+    float cg = _FR_RingConst0.x, km = _FR_RingConst0.y, omm = _FR_RingConst0.z, om3 = _FR_RingConst0.w;
+    float gr = _FR_RingConst1.x, sr = _FR_RingConst1.y, nu = _FR_RingConst1.z, ifade = _FR_RingConst1.w;
+    float vmax = _FR_RingConst2.x, lutN = _FR_RingConst2.y;
+    float2 cur = 0.0;
+    UNITY_BRANCH
+    if (_FR_RingShape0.w > 0.0) cur = FRRingCurrent(xz, _FR_RippleLoss.z);
+    [loop] for (int i = 0; i < 16; i++)
+    {
+        if (i >= n) break;
+        float4 r0 = _FR_Ring0[i];
+        float4 r1 = _FR_Ring1[i];
+        float4 r2 = _FR_Ring2[i];
+        float2 d = xz - r0.xy;
+        float r = max(length(d), 1e-3);
+        float t = max(r0.z, 1e-3);
+        float2 dir = d / r;
+        r = max(r * (1.0 - dot(cur, dir)), 1e-3);
+        float hs = length(r2.xy);
+        float cphi = 0.0, lobe = 1.0, liftD = 0.0, liftT = 0.0, liftG = 0.0, rho = 1.0;
+        float a2 = r1.x * r1.x;
+        if (hs > 1e-4)
+        {
+            cphi = dot(dir, r2.xy) / hs;
+            rho = 1.0 + _FR_RingShape0.y * hs;
+            a2 *= rho * rho * cphi * cphi + (1.0 - cphi * cphi) / (rho * rho);
+            float p = _FR_RingShape0.z * hs;
+            lobe = (1.0 + p * cphi) * rsqrt(1.0 + 0.5 * p * p);
+            liftD = _FR_RingShape1.x * hs * (0.7 + 0.6 * r2.z);
+            liftT = _FR_RingShape1.y * (0.7 + 0.6 * frac(r2.z * 7.31));
+            liftG = _FR_RingShape1.z * hs * saturate((t - liftT) / 0.04);
+        }
+        float pr = r1.x + 0.05 * t + 0.03;                                // the stirred patch spreads at 5 cm/s
+        if (r1.w > 0.0 && r < 4.0 * pr) agitation += r1.w * exp(-0.5 * r * r / (pr * pr)) * exp(-t / 1.5);
+        float kc = 2.5 / max(r1.y, 1e-3), kg = 0.5 / max(r1.x * rho, 1e-3);
+        float vf = max((gr + 3.0 * sr * kc * kc) / (2.0 * sqrt(gr * kc + sr * kc * kc * kc)),
+                       (gr + 3.0 * sr * kg * kg) / (2.0 * sqrt(gr * kg + sr * kg * kg * kg)));
+        if (r0.w <= 0.0 || r > min(vf, vmax) * t + 3.0 * r1.x * rho + 0.05 + liftD) continue;
+        float sc = pow(2.0 / (t * om3), 1.0 / 3.0);
+        float X = -(r - cg * t) * sc;
+        if (X > 6.0) continue;
+        float ca = dot(axis, dir);
+        float cp = axis.x * dir.y - axis.y * dir.x;
+        float lr2 = lMaj * lMaj * ca * ca + lMin * lMin * cp * cp;      // footprint^2 along the radius
+        float vol = r0.w / (2.0 * FR_RIPPLE_PI) * lobe;
+        float eta = 0.0, dr = 0.0, vr = 0.0;
+        float bw = saturate((X + 2.5) / 0.7);                             // 1 at the rim, 0 beyond X = -2.5
+        if (bw > 0.0)
+        {
+            float F = vol * ((1.0 - r1.z) * exp(-0.5 * km * km * a2) + r1.z * exp(-0.5 * km * km * r1.y * r1.y));
+            float A = F * sqrt(2.0 * FR_RIPPLE_PI * km / r) * sc * FRRingAiry(X) * exp(-(2.0 * nu * km * km + ifade) * t) * bw;
+            float ph = km * r - omm * t - 0.25 * FR_RIPPLE_PI;
+            float H = exp(-km * km * lr2 / 24.0);
+            float sn, cs;
+            sincos(ph, sn, cs);
+            float q2 = FRRingLift(km, omm, liftD, liftT, liftG, cphi, cs, sn);
+            eta += A * cs;
+            dr += -A * km * sn * H;
+            vr += 0.5 * A * A * q2 * km * km * (1.0 - H * H);
+        }
+        if (bw < 1.0 && r > cg * t)
+        {
+            float u = sqrt(saturate((r / t - cg) / (vmax - cg)));
+            float2 kk = SAMPLE_TEXTURE2D_LOD(_FR_RingLut, sampler_FR_RingLut, float2((u * (lutN - 1.0) + 0.5) / lutN, 0.5), 0).rg;
+            [unroll] for (int b = 0; b < 2; b++)
+            {
+                float k = b == 0 ? kk.x : kk.y;
+                float om = sqrt(gr * k + sr * k * k * k);
+                float om1 = (gr + 3.0 * sr * k * k) / (2.0 * om);
+                float om2 = abs(3.0 * sr * k / om - om1 * om1 / om);
+                float F = vol * ((1.0 - r1.z) * exp(-0.5 * k * k * a2) + r1.z * exp(-0.5 * k * k * r1.y * r1.y));
+                float A = F * sqrt(k / (r * t * max(om2, 1e-7))) * exp(-(2.0 * nu * k * k + ifade) * t) * (1.0 - bw);
+                float ph = k * r - om * t - (b == 0 ? 0.0 : 0.5 * FR_RIPPLE_PI);
+                float H = exp(-k * k * lr2 / 24.0);
+                float sn, cs;
+                sincos(ph, sn, cs);
+                float q2 = FRRingLift(k, om, liftD, liftT, liftG, cphi, cs, sn);
+                eta += A * cs;
+                dr += -A * k * sn * H;
+                vr += 0.5 * A * A * q2 * k * k * (1.0 - H * H);
+            }
+        }
+        slope += dr * dir;
+        cov += vr * float3(dir.x * dir.x, dir.y * dir.y, dir.x * dir.y);
+        height += eta;
+    }
+}
+#endif
+
 FRRipple FRWaterRipples(float2 xz)
 {
     FRRipple o;
@@ -225,7 +366,12 @@ FRRipple FRWaterRipples(float2 xz)
     o.agitation = 0.0;
     float lMaj, lMin;
     FRRippleFootprint(xz, o.axis, lMaj, lMin);
+#if defined(_FR_RINGS_SHAPED)
+    // section 11: FrontRoomsWaterRings.SourceShape or Currents is on (the keyword's own variant)
+    FRRingsAddShaped(xz, o.axis, lMaj, lMin, o.slope, o.cov, o.height, o.agitation);
+#else
     FRRingsAdd(xz, o.axis, lMaj, lMin, o.slope, o.cov, o.height, o.agitation);
+#endif
     if (_FR_RippleA.w <= 0.0) return o;
 
     // the constant ripple: fine A, fine B (scaled 8/7, turned 3-4-5, its own clock), long (turned 4-3-5)

@@ -32,7 +32,7 @@ using UnityEditor.SceneManagement;
 ///   breaks the door in the crosshair with the map's BreakDoor (the Relay's break) for the BROKEN example, V turns
 ///   FrontRoomsInspect.DevTargets on for the test-bed close-ups, G hides the list.
 /// - 5 MUSEUM is the museum built in the game (.Museum.cs): hub 0 and rooms 1-4 carved into the game's own map from one
-///   layout, walked by the game's own player with no title and no Relay; rooms 1-4 live (2.6, 2.7, 4.2 framed codes).
+///   layout, walked by the game's own player with no title and no Relay; rooms 1-4 live (2.6, 2.7, 4.2 as placards).
 ///   P on its hub board (or P on this menu, without the game) opens the plan: the museum from FrontRoomsShowcaseTable,
 ///   every station with its code and placard; ENTER loads the station's tour and jumps to it past the start door (.Plan.cs).
 /// - 6 ROOM TYPES is a fourth game tour on a copy tilted toward variety: every kind of room the game builds (R0-R13), found
@@ -1094,7 +1094,7 @@ public sealed partial class FrontRoomsInteractablesShowcase : MonoBehaviour
         y = MenuRow(x, y, w, s, "2", "FLOOR 1 · AS SHIPPED", "The game exactly as it ships, with the guide on top: the station, stair key, EXIT chain and U1 fall, TV, placard, body doors, windows, door lites.");
         y = MenuRow(x, y, w, s, "3", "FLOOR 1 · EVERY DEVICE", "The same floor with what the shipped profile keeps off: sash latches, foiled windows, alarm doors, Run! rooms.");
         y = MenuRow(x, y, w, s, "4", "KEYS FLOOR", "No station: E doors, locked doors, zone keys, key tags and the unlock shot.");
-        y = MenuRow(x, y, w, s, "5", "MUSEUM", "Built in the game from its own cells, doors, windows, keys and kits: hub 0 and four rooms, all live (2.6, 2.7 and 4.2 as framed codes). P on its hub board opens the plan (P here: the plan alone, no game).");
+        y = MenuRow(x, y, w, s, "5", "MUSEUM", "Built in the game from its own cells, doors, windows, keys and kits: hub 0 and four rooms, all live (2.6, 2.7 and 4.2 as placards). P on its hub board opens the plan (P here: the plan alone, no game).");
         y = MenuRow(x, y, w, s, "6", "ROOM TYPES", "Every kind of room the game builds (R0-R13) on a floor tilted toward variety: zones, rooms, columns, piles, borders, dark lamps, Run!, the stairwell, the B1 station.");
         y += 12f * s;
         var keysLine = "In a tour: G list  ·  1-0 jump  ·  [ ] page  ·  J next one  ·  H Relay held / live  ·  B break a door  ·  V dev close-ups  ·  F2 tours"

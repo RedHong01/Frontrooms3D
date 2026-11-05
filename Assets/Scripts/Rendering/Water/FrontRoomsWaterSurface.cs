@@ -44,6 +44,8 @@ public sealed class FrontRoomsWaterSurface : MonoBehaviour
     public float causticSourceRadius = .03f;
     [Tooltip("The wet niches' thrown light over this water (multiplies their glow). Below 0: the zone's (FrontRoomsZoneLookProfile.thrownLight).")]
     public float thrownGain = -1f;
+    [Tooltip("The water's mean depth (m): the colour of the light it sends back into the room (FrontRoomsWaterSubmerged.BounceGain). Below 0: by kind (Basin 1.2, Ankle 0.12).")]
+    public float depth = -1f;
 
     static int nextId = 1;
     int ringId;
@@ -64,13 +66,16 @@ public sealed class FrontRoomsWaterSurface : MonoBehaviour
         FrontRoomsWaterSubmerged.Register(ringId, new Rect(b.min.x, b.min.z, b.size.x, b.size.z),
             new Rect(box.min.x, box.min.z, box.size.x, box.size.z), y, box.max.y, absorbScale, basinAlbedo, thrownGain);
         FrontRoomsWaterSubmerged.SetSources(ringId, causticSourceA, causticSourceB, causticSourceRadius);
+        FrontRoomsWaterSubmerged.SetDepth(ringId, depth > 0f ? depth : (kind == Kind.Ankle ? .12f : 1.2f));
     }
 
-    /// <summary>Pushes changed fields (scale, sources, albedo) to the submerged look without a disable / enable.</summary>
+    /// <summary>Pushes changed fields (scale, sources, albedo, depth) to the submerged look without a disable / enable.
+    /// The body is registered again in place, so it keeps its place in FrontRoomsWaterSubmerged's list.</summary>
     public void RefreshSubmerged()
     {
         if (!isActiveAndEnabled) return;
-        OnDisable();
+        if (target != null) FrontRoomsWaterPlanar.Unregister(target);
+        if (ringId != 0) FrontRoomsWaterRings.UnregisterWater(ringId);
         OnEnable();
     }
 

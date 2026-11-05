@@ -798,8 +798,9 @@ public sealed partial class FrontRoomsInteractablesShowcase
     /// cap 120 : 44 to the name; the name in Bayon at the card's kind size beside the number's top; the kinds the room holds (the
     /// table's holds in capitals joined by " · ", two lines at most, Plex Mono, paper) beside the number from its baseline on, in
     /// the place B gives the Chinese name (the table carries none); B's foot in Plex Mono Medium, accent: the room's stations and
-    /// ABOUT 5 MIN (10_research §3: about 5 minutes a room), and "→ n.1" at the measure's right. The hub has board A, not B: no
-    /// foot. Then the room's 要你决定 with its bar (the table's question; B itself has none). Returns the y below.
+    /// ABOUT 5 MIN (10_research §3: about 5 minutes a room), and the arrow to .1 at the measure's right, as the room's inside
+    /// world sign shows it ("← 1.1", room 3's "→ 3.1"; .Museum.cs MuseumSignArrow). The hub has board A, not B: no foot. Then
+    /// the room's 要你决定 with its bar (the table's question; B itself has none). Returns the y below.
     /// </summary>
     float DrawRoomSign(int number, FrontRoomsShowcaseTable.Room sign, float x, float y, float w)
     {
@@ -817,7 +818,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
         {
             last += SignFootLead * s;
             var footW = Span(x, last, SignStations(number) + " STATIONS · ABOUT 5 MIN", signFootStyle, PlexAscent, Accent, 1f);
-            var arrow = "→ " + number + ".1";
+            var arrow = MuseumSignArrow(number);
             Span(Mathf.Max(x + footW + 24f * s, x + w - Width(arrow, signArrowStyle)), last, arrow, signArrowStyle, PlexAscent, Accent, 1f);
         }
         if (!string.IsNullOrEmpty(sign.decide)) last = DecideLines(x, last + 40f * s, w, sign.decide, cardZhBoldStyle, ZhPitch * s, 1f, true, true);

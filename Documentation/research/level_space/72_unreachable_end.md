@@ -1,6 +1,6 @@
 # Level space · 72 · The unreachable end: how games deny the far door, and five treatments
 
-Date: 2026-11-04. Line: 夸张结构调研与设计 (`level_space`). Status: FINISHED 2026-11-04; WAIT-RED (Red names the direction, §6). Placed in `research/level_space` by the line's session on login A from the drafts in `~/FrontRoomsVisualWork/level_space/drafts/run/` (`unreachable_72_draft.md`, `unreachable_72_zh.md`); §6 is the Chinese page for Red, unchanged. Written by login A (session `local_138b3879`) as the synthesis stage of the workflow login G started (cut by its plan limit at 10:01) and login B continued (cut at 12:31).
+Date: 2026-11-04. Line: 夸张结构调研与设计 (`level_space`). Status: FINISHED 2026-11-04; **BUILT IN SCENE 4 20:11** (Red 13:2x: "把每一个都在场景4里做出来看看"; §7); **RED PICKED #3 光走了 (20:2x, "我喜欢第三个，以这个去深化", with the last frame of #3's film): deepening it (§8 to come).** Placed in `research/level_space` by the line's session on login A from the drafts in `~/FrontRoomsVisualWork/level_space/drafts/run/` (`unreachable_72_draft.md`, `unreachable_72_zh.md`); §6 is the Chinese page for Red, unchanged. Written by login A (session `local_138b3879`) as the synthesis stage of the workflow login G started (cut by its plan limit at 10:01) and login B continued (cut at 12:31).
 
 **Red's ask, 2026-11-04, verbatim** (a queued message in this line's chat, origin human, 16:45:11Z, transcript `7da6f3fe`; checked under rule 15 by this stage):
 
@@ -626,3 +626,21 @@ Little Nightmares II's real structure (C30): one far door shown again and again,
 - 或者组合两个，比如"2，加上 3 的灯光"。
 - 或者回"按推荐"，就是第 2 种。
 - 也可以回"先在场景 4 做出来看看"，我们先做便宜的几种给你走。
+
+---
+
+## 7. Built in scene 4 (SP7), 2026-11-04
+
+Red, 13:2x in the level-space chat: "把每一个都在场景4里做出来看看". All five are in `FrontRoomsStructuresRunRecede.cs` (the X selector, the treatment interface) and `FrontRoomsStructuresRunEnd*.cs` (one file per treatment), landed 20:11 (fr land run_ends, gate mac + iOS 0 errors). SP7 opens on #1 (today), variant 9 -> 14, look B; X cycles 1-5 (Shift+X back), Y puts the room back, F is Reduce Flashing, N is the current treatment's own option. The treatments act in the receding variants (V); plain variants stay today's room.
+
+| # | What was built | Walk / sprint to the door (s after the trip) | Read |
+|---|---|---|---|
+| 1 机械后退 | today's T1 head + T2 re-stack | 10.12 / 7.23, door at 42 | the reference |
+| 2 彼岸漂走 (REC) | FD2 collar; at the trip the far third (17.8-27 m, lamps, dress, door) leaves as one island at 8 m/s and seats at 42 (R 15); a raw block gap under five work lamps opens behind it | 10.12 / 7.23, door at 42 | reads as §3.2; the collar (the tell) reads from FD1, not from the arch: a design call |
+| 3 光走了 | lamps ahead go out toward the door, the door's light drifts back into the dark, the lamp over the walker turns red as they reach it, then a red runway to the door | 10.12 / 7.23, door at 42 | reads as §3.3 |
+| 4 别回头 | the end steps away only while the walker looks back (two cells, then one per look, capped), never within 9 m; the door opens onto a lit 3 m stand-in room | no looks: 5.43 / 3.28, door at 27 | reads; the settling blocks are small from 19 m |
+| 5 梦里跑不动 | from FD1 the floor is a belt running back (comb plates), the door never moves; a walker always arrives | 8.48 / 4.97, door at 27; slow gait 85.32 | reads in motion; the end wall's top slots show as bare notches |
+
+Sheets: `sheets/sp7_run_ends.jpg` (5 x 5: trip, mid, climax, door, look back; WAIT-RED) and `sheets/sp7_run_ends_extras.jpg`. Films (video only, tone mark): `video/sp7_end_e1_f1.mp4` (today, sprint), `sp7_end_e2_fa.mp4` (#2, walk-sprint-walk), `sp7_end_e3_f1.mp4` (#3, sprint), `sp7_end_e4_f1.mp4` (#4, sprint with four looks back), `sp7_end_e5_f2.mp4` (#5, a walk on the belt); every film in `~/FrontRoomsVisualWork/level_space/renders/scene4/run_ends4/`. Walked in the clone: every door opened, through and back, nothing stuck (`renders/scene4/run_ends_walk3/walk_sp7_ends.tsv`). Photosafety: no film over three flashes in one second (WCAG 2.3.1); the busiest windows are #4's walks into the white hall at 42; the saturated-red capture (Harding FPA or PEAT) is still owed. Fixed during the render: #2's gap had rendered near black (raw block tinted twice, weak work lamps); #3's floor ahead between strips; the stand-in room's fill; FD1 / FD2 casings flickered against the wall opening (also in today's #1; now 4 mm proud). Logs: `~/FrontRoomsVisualWork/level_space/run_ends/log_*.txt`, `FRAME.txt`.
+
+What to try first: press 9 for SP7, X once for #2, stand behind the arch, hold Left Ctrl and run; watch the island pull away at FD1, cross the gap, E at the door at 42; 9 again to return; then walk it and stop under a work lamp in the gap, look up and back. Then X for #3 and sprint; #4: sprint and flick the view back twice, then a run that never looks back (the door at 27 opens); #5: walk, sprint, hold Shift on the belt, then stand still.

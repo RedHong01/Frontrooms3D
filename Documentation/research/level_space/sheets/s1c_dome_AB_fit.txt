@@ -1,0 +1,10 @@
+OK  | TITLE SP6 DOME HALL · LIGHT A / B | 936 of 3080 px
+OK  | A TODAY · 1 DECK VIEW | label 376 + data 697 of 1916 px | luma dome 149 · deck 126 · upper wall 135
+OK  | B DARK VAULT · 1 DECK VIEW | label 467 + data 680 of 1916 px | luma dome 64 · deck 158 · upper wall 105
+OK  | A TODAY · 2 WATER 2 M OUT | label 456 + data 408 of 1916 px | luma water 76 · deck 121
+OK  | B DARK VAULT · 2 WATER 2 M OUT | label 547 + data 408 of 1916 px | luma water 91 · deck 139
+OK  | A TODAY · 3 UP INTO THE DOME | label 491 + data 510 of 1916 px | luma dome 171 · upper wall 119
+OK  | B DARK VAULT · 3 UP INTO THE DOME | label 582 + data 476 of 1916 px | luma dome 67 · upper wall 84
+OK  | A TODAY · 4 OCULUS AND ITS DISC | label 535 + data 731 of 1916 px | luma oculus 139 · deck 122 · upper wall 126
+OK  | B DARK VAULT · 4 OCULUS AND ITS DISC | label 626 + data 731 of 1916 px | luma oculus 201 · deck 142 · upper wall 100
+ALL LABELS FIT

@@ -202,6 +202,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
     const float BayonCapHeightEm = .714f;
     /// <summary>IBM Plex Mono's cap height in em (698 / 1000 units).</summary>
     const float PlexCapHeightEm = .698f;
+    /// <summary>Source Serif 4's cap height in em (670 / 1000 units): the LANGUAGE strip's names.</summary>
+    const float SerifCapHeightEm = .67f;
     /// <summary>One wallpaper roll tile (0.75 × 1.125 m) is drawn this many points wide.</summary>
     const float FrostTileWidth = 280f;
     readonly MotionValue washAlpha = new MotionValue();
@@ -1170,8 +1172,19 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         if (string.IsNullOrEmpty(t.text)) return Vector4.zero;
         var key = t.text + "@" + t.pixelsPerUnit + "@" + (t.font != null ? t.font.name : string.Empty) + t.fontSize;
         if (capsCache.TryGetValue(key, out var caps)) return caps;
+        if (!ReadCaps(t, out caps, out _)) return Vector4.zero;
+        capsCache[key] = caps;
+        return caps;
+    }
+
+    /// <summary>Caps' reading, uncached: the caps of a Text's words as its rect sets them now, from the glyph quads (x, y from its
+    /// rect's pivot), and how many lines they take. False with nothing drawn.</summary>
+    static bool ReadCaps(Text t, out Vector4 caps, out int lines)
+    {
+        caps = Vector4.zero;
         var generator = new TextGenerator();
         generator.Populate(t.text, t.GetGenerationSettings(t.rectTransform.rect.size));
+        lines = generator.lineCount;
         float low = float.MaxValue, high = float.MinValue, left = float.MaxValue, right = float.MinValue;
         foreach (var v in generator.verts)
         {
@@ -1185,12 +1198,11 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // caps' middle; the height is Bayon's cap height, 0.714 em (平面视觉's figure; runs 11-12 drew 21.3 pt
         // chips from raster bounds); that padding, read off the height, comes off the width too (run 14 measured
         // the advance width 0.7-1.5 pt wide).
-        if (generator.vertexCount == 0) return Vector4.zero;
+        if (generator.vertexCount == 0) return false;
         var capHeight = t.fontSize * BayonCapHeightEm;
         var padding = Mathf.Max(0f, ((high - low) / ppu - capHeight) * .5f);
         caps = new Vector4((left + right) * .5f / ppu, (low + high) * .5f / ppu, (right - left) / ppu - 2f * padding, capHeight);
-        capsCache[key] = caps;
-        return caps;
+        return true;
     }
 
     static float Shake(float t) => t >= 1f ? 0f : Mathf.Sin(t * Mathf.PI * 6f) * 4f * (1f - t);
@@ -1614,6 +1626,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         // grid scroll with their row and never over the sheet's head.
         languageStrip = FrontRoomsLanguageStrip.Create(cardViewportRight, serif);
         languageStrip.SetActive(false);
+        // Its words for the list's edges (TickEdgeWords): every one it sets, made with it and kept for its life.
+        AddEdgeWords(gridWords, languageStrip.Root.GetComponentsInChildren<Text>(true), null, null, null);
         controls.LanguageStrip = languageStrip;
         controls.ChipWordWidth = ChipWordWidth;
         detailRoot = Node("Explanation", cardRoot, Vector2.zero, false);
@@ -2181,12 +2195,39 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var viewport = controls.SettingsScrollViewport;
         // The list's mask reaches 16 pt left of it for an open row's bar and underlay, and 8 pt right for a pressed row.
         var mask = Rect.MinMaxRect(viewport.xMin - 16f, viewport.yMin, viewport.xMax + 8f, viewport.yMax);
-        // With a pad's or a keyboard's band at the foot, CONTROLLER's row resting with its map out and its foot in the 8 pt the list
-        // keeps over the band (the list's follow leaves an unfolded row's foot there; the phone's map row fills the view to it): the
-        // list ends at that foot, so the row under it is clipped whole, never shown as its control's keyline in a sliver at the
-        // band's edge (11-04: RESET's, 0.01 pt from it on the phone, 0.94 pt over it on an iPad with the keys).
-        var mapFoot = PadMapFoot();
-        if (L.SettingsFooter > 0f && mapFoot > mask.yMin && mapFoot <= mask.yMin + L.SettingsBottomInset + .01f) mask.yMin = mapFoot;
+        // The list's foot clips it (平面视觉, 2026-11-04), a pad's or a keyboard's band's edge or the sheet's own: a row or a header it
+        // cuts shows down to the edge while at least half the height of its words' caps is over it (the edge past their middle),
+        // the upper half of its words saying the list goes on; with less it is clipped whole, the list ending at its top, so no
+        // control's keyline, box or thumb and no tops of letters come back in a sliver at the edge (11-04: RESET's keyline 0.94 pt
+        // over it on an iPad with the keys; the top 3.5 pt of LOOK's caps on an iPad with a pad). An open or unfolded row goes by
+        // its head's words (CapsMiddle); the words in its map or grid, each by its own (TickEdgeWords). Both edges, with a band or
+        // without, under a finger and in a follow alike (11-04: the rule is what the list's edge looks like, not what moved it). A
+        // slot keeps what it shows until its line is half a point past the edge the other way (EdgeHold).
+        var cut = -1;
+        for (var i = 0; i < slots.Count; i++)
+        {
+            var s = slots[i];
+            var top = s.Rect.yMax + controls.SettingsScroll;
+            if (top <= mask.yMin || s.Rect.yMin + controls.SettingsScroll >= mask.yMin) continue;
+            if (top - mask.yMin < CapsMiddle(i, s) + (i == footCut ? EdgeHold : -EdgeHold)) { mask.yMin = top; cut = i; }
+            break;
+        }
+        footCut = cut;
+        // The list's top edge clips it by the same line, what is over the edge measured from the row's top (11-04: at the end of
+        // an iPad's keys list, the map out, the edge cut BREAK GLASS 11 pt over its foot, the last 4 pt of its chosen cell a
+        // bright sliver under the tabs): more than the upper half of its caps over the edge and its first line is clipped whole;
+        // an open or unfolded row keeps what is under its head.
+        cut = -1;
+        for (var i = 0; i < slots.Count; i++)
+        {
+            var s = slots[i];
+            var top = s.Rect.yMax + controls.SettingsScroll;
+            if (top <= mask.yMax || s.Rect.yMin + controls.SettingsScroll >= mask.yMax) continue;
+            var over = top - mask.yMax;
+            if (over > CapsMiddle(i, s) + (i == topCut ? -EdgeHold : EdgeHold) && over < s.Rest) { mask.yMax = top - s.Rest; cut = i; }
+            break;
+        }
+        topCut = cut;
         listMaskRect = mask;
         cardViewportRight.anchoredPosition = Local(mask.center);
         cardViewportRight.sizeDelta = mask.size;
@@ -2259,7 +2300,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             if (s.Header)
             {
                 r.Label.text = s.Label;
-                r.Label.rectTransform.anchoredPosition = new Vector2(0f, -4f);
+                r.Label.rectTransform.anchoredPosition = new Vector2(0f, -SectionLabelDrop);
                 r.Label.rectTransform.sizeDelta = new Vector2(width, 16f);
                 continue;
             }
@@ -2319,6 +2360,7 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
 
         TickLanguageStrip(L, card, cardCenter);
         TickPadMap(L);
+        TickEdgeWords();
         TickDetailColumn(L, Local);
 
         // The list's scroll: a thin bar while it moves. The rows run on under the bottom edge (Red, 2026-10-24: no fade
@@ -2344,6 +2386,243 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         }
         else scrollBarImage.color = WithAlpha(Muted, 0f);
     }
+
+    /// <summary>A section's words sit this far under its middle.</summary>
+    const float SectionLabelDrop = 4f;
+
+    /// <summary>How far past an edge the other way a slot's or a word's line has to go before it changes what it shows (pt). At rest
+    /// nothing moves, so nothing changes; but a finger held still on the list moves it by its touch's wander, a pixel or so (0.33 pt
+    /// on a phone, 0.5 on an iPad), and the map's words step by whole points with it (TickPadMap), so a line resting on an edge could
+    /// cross it and back every few frames: half a point either way, a change of more than a point, before it shows or hides.</summary>
+    const float EdgeHold = .5f;
+
+    // The slot each edge clipped whole last frame (its place in the list), or -1.
+    int footCut = -1, topCut = -1;
+
+    /// <summary>How far under a slot's top the middle of its words' caps sits (pt), the line the list's edges cut it by
+    /// (TickSettings): a section's words SectionLabelDrop under its middle, a row's on its first line's centre line, at the open
+    /// size while it is open or unfolded (its head's words); the caps read off the label's own quads (Caps, cached), so the line
+    /// follows the face, the size and the language. A slot without its row yet (made later this frame, it fades in from
+    /// nothing): its line's centre.</summary>
+    float CapsMiddle(int i, FrontRoomsTouchControls.SettingsSlot s)
+    {
+        var line = s.Rest * .5f + (s.Header ? SectionLabelDrop : 0f);
+        var r = i < rows.Count ? rows[i] : null;
+        if (r == null || r.Header != s.Header) return line;
+        var label = r.LabelOpen != null && r.LabelOpen.enabled ? r.LabelOpen : r.Label;
+        return line - Caps(label).y * label.rectTransform.localScale.y;
+    }
+
+    // A word inside CONTROLLER's map or LANGUAGE's grid (TickEdgeWords): its Text, the bar its label stands on (a callout's) and that
+    // callout's leader (the map's own list of its runs), what stands beside it (an action word's changed dot and padlock), the middle
+    // of its caps as last read off its quads, held from the point its alignment sets it by, and what it was read for.
+    sealed class EdgeWord
+    {
+        public Text Text;
+        public Image Bar;
+        public IReadOnlyList<Image> Leader;
+        public Image[] Marks;
+        public string ReadText;
+        public Font ReadFont;
+        public int ReadSize;
+        public float ReadPpu;
+        public TextAnchor ReadAlignment;
+        public Vector2 Middle;
+        public bool Line, Hidden;
+    }
+
+    // The map's words (its callouts' action words and notes, its legends, the phone's caption) and the strip's, listed once each is
+    // made; whether the edges hide any of them now.
+    readonly List<EdgeWord> mapWords = new List<EdgeWord>();
+    readonly List<EdgeWord> gridWords = new List<EdgeWord>();
+    bool mapWordsHeld, gridWordsHeld;
+    // The strip's face's caps in a grid name's box (GridLine): the size, density, box height and alignment they were read for, and
+    // their middle from the point the alignment sets them by.
+    int gridFaceSize = -1;
+    float gridFacePpu, gridFaceHeight, gridFaceMiddle;
+    TextAnchor gridFaceAlignment;
+    bool gridFaceRead;
+
+    static void AddEdgeWords(List<EdgeWord> list, IList<Text> words, IList<Image> bars, IList<Image[]> marks, IList<IReadOnlyList<Image>> leaders)
+    {
+        for (var i = 0; i < words.Count; i++)
+            list.Add(new EdgeWord { Text = words[i], Bar = bars != null ? bars[i] : null, Leader = leaders != null ? leaders[i] : null, Marks = marks != null ? marks[i] : null });
+    }
+
+    /// <summary>
+    /// The words inside CONTROLLER's map and LANGUAGE's grid at the list's edges (平面视觉, 2026-11-04: the rows' rule, per line of
+    /// words; later: both edges, always, with a band or without): a word an edge leaves less than half its caps of, the middle of its
+    /// caps past the list's foot or its top edge (listMaskRect, as TickSettings set it), is hidden whole; with more it clips at the
+    /// edge. An action word's changed dot and padlock go with it (11-04: they annotate the word; one standing alone beside a hidden
+    /// word reads as a stray icon), and a callout's bar and its leader once no word on it shows (on the phone its action word alone;
+    /// on a tablet its note keeps them while it shows, its type ink on the bar; later: a leader is its callout's, not the drawing's,
+    /// and one running into the band or the top with no word at its end reads as a stray line). The grid goes by its lines
+    /// (GridLines). The drawing (the pad's outline, buttons and sticks, a trigger's fill without its legend), a shown callout's
+    /// leader, the flags and their prints clip by the mask, and a row's head goes by its own line (CapsMiddle). Hidden through the
+    /// CanvasRenderer, which nothing else here sets, so each owner keeps its colours and motion. Every word here sets one line
+    /// (no wrap, no break): one that ever took more is left to the mask, since its other lines may show whole.
+    /// </summary>
+    void TickEdgeWords()
+    {
+        var edges = cardViewportRight.rect;
+        var toList = cardViewportRight.worldToLocalMatrix;
+        EdgeWords(mapWords, ref mapWordsHeld, padMap != null && padMap.Root.gameObject.activeInHierarchy, edges, toList);
+        GridLines(languageStrip.Root.gameObject.activeInHierarchy, edges, toList);
+    }
+
+    // One set: each word hidden or shown by where its caps stand at the edges (a word keeps what it shows until its line is EdgeHold
+    // past the other way), with what it carries; with the edges off, what it hid shown again, once.
+    static void EdgeWords(List<EdgeWord> words, ref bool held, bool on, Rect edges, Matrix4x4 toList)
+    {
+        if (!on && !held) return;
+        held = on;
+        for (var i = 0; i < words.Count; i++)
+        {
+            var w = words[i];
+            w.Hidden = on && w.Text.isActiveAndEnabled && CapsLine(w, toList, out var y) && Past(y, edges, w.Hidden ? -EdgeHold : EdgeHold);
+            Show(w, !w.Hidden);
+        }
+        for (var i = 0; i < words.Count; i++)
+        {
+            var bar = words[i].Bar;
+            if (bar == null || (i > 0 && words[i - 1].Bar == bar)) continue;
+            var shows = !on;
+            for (var j = i; j < words.Count && words[j].Bar == bar; j++) if (words[j].Text.isActiveAndEnabled && !words[j].Hidden) shows = true;
+            SetShown(bar, shows);
+            // Its callout's leader with it: every run the map draws for it, those a new route adds too (the map's live list).
+            var leader = words[i].Leader;
+            if (leader == null) continue;
+            for (var j = 0; j < leader.Count; j++) SetShown(leader[j], shows);
+        }
+    }
+
+    // LANGUAGE's grid by its lines (平面视觉, 11-04: "A LANGUAGE grid row is one line", its names hiding or showing together; read
+    // off each name's own glyphs, the phone's second line spanned 1.3 pt and an edge between them left Deutsch alone): a line is the
+    // names the strip sets on one top in its cells; its first name reads where the line's caps stand (GridLine: the strip's face, so
+    // no descender and no script's own face moves it) and the line hides whole past an edge, by EdgeHold as a word. The strip's
+    // other words stand on its head (the current name, the tokens by the rail), which goes by its row's line (CapsMiddle), and a
+    // charm's own token (its art missing) is the charm's: they clip, as the flags do.
+    void GridLines(bool on, Rect edges, Matrix4x4 toList)
+    {
+        if (!on && !gridWordsHeld) return;
+        gridWordsHeld = on;
+        for (var i = 0; i < gridWords.Count; i++)
+        {
+            var w = gridWords[i];
+            var hidden = false;
+            if (on && GridName(w.Text))
+            {
+                var first = i;
+                for (var j = 0; j < i && first == i; j++)
+                    if (GridName(gridWords[j].Text) && Mathf.Abs(gridWords[j].Text.rectTransform.anchoredPosition.y - w.Text.rectTransform.anchoredPosition.y) < .5f) first = j;
+                hidden = first < i ? gridWords[first].Hidden : GridLine(w.Text, toList, out var y) && Past(y, edges, w.Hidden ? -EdgeHold : EdgeHold);
+            }
+            w.Hidden = hidden;
+            Show(w, !hidden);
+        }
+    }
+
+    // One of the grid's names: a word the strip sets itself (a charm's token is the charm's), its box under the strip's head.
+    bool GridName(Text t) => t.isActiveAndEnabled && t.transform.parent == languageStrip.Root && -t.rectTransform.anchoredPosition.y >= LanguageMetrics.Row;
+
+    // Where a grid line's caps stand, in the list's own space (y up): the line's cap top + 1/2 the face's cap height, from the
+    // baseline the strip's own face (Source Serif 4 at the names' size, in the name's box) takes there, whatever the name's case or
+    // its script's face. Read again only when the size, the density, the box's height or the alignment change, and held from the
+    // point the alignment sets it by, so the line moving with the list needs no new reading.
+    bool GridLine(Text t, Matrix4x4 toList, out float y)
+    {
+        var box = t.rectTransform.rect;
+        var ppu = t.pixelsPerUnit;
+        if (gridFaceSize != t.fontSize || gridFacePpu != ppu || gridFaceHeight != box.height || gridFaceAlignment != t.alignment)
+        {
+            gridFaceSize = t.fontSize;
+            gridFacePpu = ppu;
+            gridFaceHeight = box.height;
+            gridFaceAlignment = t.alignment;
+            gridFaceRead = FaceMiddle(t, serif, SerifCapHeightEm, out var middle);
+            gridFaceMiddle = middle - AlignedAt(box, t.alignment).y;
+        }
+        y = gridFaceRead ? toList.MultiplyPoint3x4(t.rectTransform.TransformPoint(AlignedAt(box, t.alignment) + new Vector2(0f, gridFaceMiddle))).y : 0f;
+        return gridFaceRead;
+    }
+
+    // The middle of a face's caps on the line a Text's box sets (pt from its rect's pivot, y up): the baseline under a capital H, its
+    // quad's foot less the glyph's own minY at the size the generator draws it (FrontRoomsKeyHud.MapLineBaseline's reading), then half
+    // the face's cap height. False with nothing drawn.
+    static bool FaceMiddle(Text t, Font face, float capHeightEm, out float middle)
+    {
+        middle = 0f;
+        if (face == null) return false;
+        var settings = t.GetGenerationSettings(t.rectTransform.rect.size);
+        settings.font = face;
+        settings.fontStyle = FontStyle.Normal;
+        var generator = new TextGenerator();
+        generator.Populate("H", settings);
+        if (generator.vertexCount < 4) return false;
+        var verts = generator.verts;
+        var foot = Mathf.Min(Mathf.Min(verts[0].position.y, verts[1].position.y), Mathf.Min(verts[2].position.y, verts[3].position.y));
+        var ppu = Mathf.Max(.01f, t.pixelsPerUnit);
+        var size = Mathf.RoundToInt(t.fontSize * ppu);
+        face.RequestCharactersInTexture("H", size, FontStyle.Normal);
+        if (!face.GetCharacterInfo('H', out var glyph, size, FontStyle.Normal))
+        {
+            size = Mathf.FloorToInt(t.fontSize * ppu);
+            face.RequestCharactersInTexture("H", size, FontStyle.Normal);
+            if (!face.GetCharacterInfo('H', out glyph, size, FontStyle.Normal)) return false;
+        }
+        middle = (foot - glyph.minY) / ppu + t.fontSize * capHeightEm * .5f;
+        return true;
+    }
+
+    // The middle of a word's caps in the list's own space (y up), as Caps reads them off its quads: read again only when its words,
+    // face, size, density or alignment change, and held from the point its alignment sets it by in its rect, so a legend's pop or a
+    // label's new width moves it with no new reading. False with no caps, or with more than one line.
+    static bool CapsLine(EdgeWord w, Matrix4x4 toList, out float y)
+    {
+        var t = w.Text;
+        var box = t.rectTransform.rect;
+        var ppu = t.pixelsPerUnit;
+        if (!string.Equals(w.ReadText, t.text) || !ReferenceEquals(w.ReadFont, t.font) || w.ReadSize != t.fontSize || w.ReadPpu != ppu || w.ReadAlignment != t.alignment)
+        {
+            w.ReadText = t.text;
+            w.ReadFont = t.font;
+            w.ReadSize = t.fontSize;
+            w.ReadPpu = ppu;
+            w.ReadAlignment = t.alignment;
+            var caps = Vector4.zero;
+            var lines = 0;
+            w.Line = !string.IsNullOrEmpty(t.text) && ReadCaps(t, out caps, out lines) && lines == 1;
+            w.Middle = w.Line ? new Vector2(caps.x, caps.y) - AlignedAt(box, t.alignment) : Vector2.zero;
+        }
+        y = w.Line ? toList.MultiplyPoint3x4(t.rectTransform.TransformPoint(AlignedAt(box, t.alignment) + w.Middle)).y : 0f;
+        return w.Line;
+    }
+
+    // The point a text's alignment sets it by in its rect (from the pivot): its top, middle or foot, at its left, centre or right.
+    static Vector2 AlignedAt(Rect r, TextAnchor a)
+    {
+        var column = (int)a % 3;
+        var row = (int)a / 3;
+        return new Vector2(column == 0 ? r.xMin : column == 1 ? r.center.x : r.xMax, row == 0 ? r.yMax : row == 1 ? r.center.y : r.yMin);
+    }
+
+    // A word or a bar hidden or shown by its CanvasRenderer's alpha; its colour stays its owner's.
+    static void SetShown(Graphic g, bool shown)
+    {
+        var alpha = shown ? 1f : 0f;
+        if (g.canvasRenderer.GetAlpha() != alpha) g.canvasRenderer.SetAlpha(alpha);
+    }
+
+    // A word hidden or shown with what it carries.
+    static void Show(EdgeWord w, bool shown)
+    {
+        SetShown(w.Text, shown);
+        if (w.Marks == null) return;
+        for (var i = 0; i < w.Marks.Length; i++) SetShown(w.Marks[i], shown);
+    }
+
+    // A line past the list's top edge or its foot by more than <paramref name="by"/> (pt; the list's own space, y up).
+    static bool Past(float y, Rect edges, float by) => y > edges.yMax + by || y < edges.yMin - by;
 
     readonly float[] tabWidths = new float[4];
 
@@ -2480,6 +2759,17 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             ct.anchorMin = ct.anchorMax = new Vector2(0f, 1f);
             ct.pivot = new Vector2(.5f, 1f);
             controls.PadMap = padMap;
+            // Its words, what they carry, their callouts' leaders, and the caption for the list's edges (TickEdgeWords).
+            var words = new List<Text>();
+            var bars = new List<Image>();
+            var marks = new List<Image[]>();
+            var leaders = new List<IReadOnlyList<Image>>();
+            padMap.ListWords(words, bars, marks, leaders);
+            words.Add(padCaption);
+            bars.Add(null);
+            marks.Add(null);
+            leaders.Add(null);
+            AddEdgeWords(mapWords, words, bars, marks, leaders);
         }
         var want = controls.MapUnfolded || slot.Fold > 0f;
         if (want && controls.MapUnfolded != padMapShown)
@@ -2506,8 +2796,8 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
             FitPadMap(list, tall, !changed);
             // The phone's row ends where the list's view does, whatever height its drawing fitted to (11-04: ending under its
             // drawing, its foot moved with that height, and the row under it put its RESET keyline 1 pt, then 0.01 pt, over the
-            // footer band's edge); TickSettings clips the list there while a band is up. A tablet's row is as tall as its drawing,
-            // the rows under it in view.
+            // footer band's edge); TickSettings clips the list at its foot. A tablet's row is as tall as its drawing, the rows under
+            // it in view.
             var h = Mathf.Ceil(padMap.Bounds.height + 2f * PadMapPad + caption);
             controls.PadMapHeight = padMap.ShowNotes ? h : Mathf.Max(h, shown);
         }
@@ -2603,15 +2893,6 @@ public sealed class FrontRoomsTouchControlsView : MonoBehaviour
         var b = padMap.Bounds;
         slack = Mathf.Min(list.width - b.width, tall - b.height);
         return b.height <= tall + .001f && Mathf.Ceil(list.x - b.x - .001f) <= Mathf.Floor(list.xMax - b.xMax + .001f);
-    }
-
-    /// <summary>CONTROLLER's row's foot on screen while its map is out (unfolded or folding); else -infinity.</summary>
-    float PadMapFoot()
-    {
-        foreach (var s in controls.SettingsSlots)
-            if (!s.Header && s.Row != null && s.Row.Key == FrontRoomsSettingsMenu.Key.PadMap && (controls.MapUnfolded || s.Fold > 0f))
-                return s.Rect.yMin + controls.SettingsScroll;
-        return float.NegativeInfinity;
     }
 
     /// <summary>A map row unfolding: its name grows as an open row's does (1.4x, never into the row's right end; the resting Label

@@ -2107,13 +2107,16 @@ public sealed class FrontRoomsTouchPlaytestDriver : MonoBehaviour
         yield return TerminalSwipe(mid, mid + new Vector2(90f, 0f), .15f, 76);
         Check("TT1': a swipe right pages back", m.Memo + "/" + m.Scroll != paged, paged + " -> " + m.Memo + "/" + m.Scroll);
 
-        // Soft keys: the box in row 25, and its hit running on below the picture.
+        // Soft keys: the box in row 25, and its hit running on below the picture. The key is found by the content's own word
+        // (a terminal face in another language has its own), and its column counts cells, not characters: a full-width glyph
+        // takes two (FrontRoomsTerminalFace.Cells, as the terminal lays the footer out).
         var footer = term.Footer;
-        var at = footer.IndexOf("Cancel", StringComparison.Ordinal);
+        var cancel = m.Content != null ? m.Content.words.softCancel : "Cancel";
+        var at = footer.IndexOf(cancel, StringComparison.Ordinal);
         Check("TT1': row 25 shows touch soft keys", at >= 0 && FrontRoomsInspectTerminal.CurrentNames == FrontRoomsInspectTerminal.Names.Touch, "'" + footer.Trim() + "' " + FrontRoomsInspectTerminal.CurrentNames);
         if (at >= 0)
         {
-            var key = TerminalCell(L, at + 2, FrontRoomsTerminal.FooterRow);
+            var key = TerminalCell(L, FrontRoomsTerminalFace.Cells(footer.Substring(0, at)) + 2, FrontRoomsTerminal.FooterRow);
             yield return Tap(key, 77);
             yield return Frames(.5f);
             Check("TT1': a tap on a soft key presses it (Cancel, back to MAIN)", m.Panel == TerminalPanel.Main, "panel " + m.Panel);

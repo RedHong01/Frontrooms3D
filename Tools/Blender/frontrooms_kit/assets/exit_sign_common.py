@@ -89,11 +89,12 @@ class Face:
         return V(kc.U(self.n.x, self.n.y, self.n.z)).normalized()
 
     def face_uv(self, a, b):
-        return ((a + g.HOUSING_W / 2) * MM, (b + g.HOUSING_H / 2) * MM)
+        # A widened housing (exit_sign_geom.WIDE, de) squeezes u onto the material's 0.346 m tile (UV_SX_FACE; 1.0 = EXIT).
+        return ((a + g.HOUSING_W / 2) * MM * g.UV_SX_FACE, (b + g.HOUSING_H / 2) * MM)
 
     def diff_uv(self, a, b):
         u = (g.OPEN_W / 2 - a) if self.mirror else (a + g.OPEN_W / 2)
-        return (u * MM, (b + g.OPEN_H / 2) * MM)
+        return (u * MM * g.UV_SX_DIFF, (b + g.OPEN_H / 2) * MM)
 
 
 class MB:
@@ -786,6 +787,12 @@ def exit_meta(kit, faces, chevrons="closed"):
         es["chevrons"] = "none"
         if "letterShares" in L:
             es["letterShares"] = L["letterShares"]
+        if g.WIDE:
+            # Red 2026-11-04 "加宽德语框": the pan stretched in width only (exit_sign_geom.WIDE).
+            es["housingM"] = [round(g.HOUSING_W * MM, 4), round(g.HOUSING_H * MM, 4)]
+            es["wideHousing"] = {"stemXM": round(g.STEM_X * MM, 4), "screwXM": round(g.SCREW_X * MM, 4), "canopyLM": round(g.CANOPY_L * MM, 4),
+                                 "uvSqueeze": [round(g.UV_SX_FACE, 6), round(g.UV_SX_DIFF, 6)],
+                                 "note": "Red 11-04 \"加宽德语框\": the English pan stretched in width only; lamps A / B long sources"}
         if L.get("lod1"):
             es["legendLod1"] = {"tolMm": L["lod1"]["tolMm"], "holeVerts": sum(len(h) for h in L["lod1"]["holes"]),
                                 "plate": "tied holes without the punch fillets, one wall band"}

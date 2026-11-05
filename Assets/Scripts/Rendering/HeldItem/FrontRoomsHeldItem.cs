@@ -150,6 +150,7 @@ public static class FrontRoomsHeldItem
         {
             var go = new GameObject("Held fill (HeldItem)") { hideFlags = HideFlags.DontSave };
             fill = go.AddComponent<Light>();
+            fill.GetUniversalAdditionalLightData().softShadowQuality = SoftShadowQuality.Low;   // 技术美术调研 row 16 option D
             fill.type = LightType.Point;
             fill.shadows = LightShadows.None;
             fill.range = HeldFillRange;

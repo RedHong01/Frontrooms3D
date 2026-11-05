@@ -187,8 +187,14 @@ def fingerprint(G, cx, cy, warpN, smearN, size=(7.0, 9.0), rot=0.0, pitch=0.48):
 
 
 # ------------------------------------------------------------------ the face
+def wide_px(n, mm, base_mm):
+    """Pixels across for a map over mm: the base's n, or for a widened housing (exit_sign_geom.WIDE, de) the base's pixels per
+    mm over the wider face, so the generator's pixel-sized features keep their millimetres; main() resamples to the base's n."""
+    return n if not g.WIDE else int(round(n * mm / base_mm))
+
+
 def face_maps(rng):
-    G = Grid(FACE_W, FACE_H, -g.HOUSING_W / 2, -g.HOUSING_H / 2, g.HOUSING_W, g.HOUSING_H)
+    G = Grid(wide_px(FACE_W, g.HOUSING_W, g.BASE_HOUSING_W), FACE_H, -g.HOUSING_W / 2, -g.HOUSING_H / 2, g.HOUSING_W, g.HOUSING_H)
     X, Y = G.X, G.Y
     polys = g.letter_polys_open()
     to_r = lambda poly: [g.open_to_reader(p) for p in poly]
@@ -229,7 +235,9 @@ def face_maps(rng):
     heat = np.zeros_like(X)
     for lamp in (g.LAMP_A, g.LAMP_B):
         la, lb = g.lamp_reader_mm(lamp)
-        heat += soft_blob(X, Y, la, lb + 26.0, 42.0, 34.0)
+        # A widened housing's lamps are long sources (exit_sign_geom.WIDE): the browning runs along each, as long as its spread.
+        sxh = 42.0 if not g.WIDE else 42.0 * (lamp[2] * g.OPEN_W) / (0.08 * g.BASE_OPEN_W)
+        heat += soft_blob(X, Y, la, lb + 26.0, sxh, 34.0)
     heat = np.clip(heat, 0, 1)
     warm = np.array([1.0, 0.975, 0.90], np.float32)
     alb *= (1 - (0.06 * heat + yellow))[..., None] * (1 - (1 - warm) * (heat + yellow * 3)[..., None])
@@ -371,7 +379,7 @@ def bug(G, cx, cy, length, rot, rng):
 
 
 def diffuser_maps(rng):
-    G = Grid(DIFF_W, DIFF_H, -g.OPEN_W / 2, -g.OPEN_H / 2, g.OPEN_W, g.OPEN_H)
+    G = Grid(wide_px(DIFF_W, g.OPEN_W, g.BASE_OPEN_W), DIFF_H, -g.OPEN_W / 2, -g.OPEN_H / 2, g.OPEN_W, g.OPEN_H)
     X, Y = G.X, G.Y
     hb = (Y + g.OPEN_H / 2)                      # mm from the opening's bottom
     # Insects along the bottom 25 mm (8 of them), and dust. The legend's baseline is
@@ -617,6 +625,31 @@ def enamel_maps(rng):
     return A, N, S, {"smoothMean": float(rough.mean())}
 
 
+# ------------------------------------------------------------------ a widened housing: back to the base's pixel size
+def _resize_f(ch, w, h):
+    """One float channel resampled to w x h (Lanczos 3, PIL), unclipped."""
+    return np.asarray(Image.fromarray(np.ascontiguousarray(ch, np.float32), mode="F").resize((w, h), Image.LANCZOS), np.float32)
+
+
+def resample(img, w, h, kind):
+    """A map made at the base's pixels per mm over a widened face, resampled across to the base's size (the GPU swap needs it):
+    kind "srgb" (colour in linear light, alpha as stored), "linear", or "normal" (decoded, resampled, renormalised)."""
+    a = img.astype(np.float32)
+    if kind == "normal":
+        n = a[..., :3] / 255.0 * 2.0 - 1.0
+        n = np.stack([_resize_f(n[..., k], w, h) for k in range(3)], -1)
+        n /= np.maximum(np.linalg.norm(n, axis=-1, keepdims=True), 1e-6)
+        return np.clip(np.round((n * 0.5 + 0.5) * 255), 0, 255).astype(np.uint8)
+    out = []
+    for k in range(a.shape[2]):
+        c = a[..., k] / 255.0
+        if kind == "srgb" and k < 3:
+            out.append(to_srgb8(np.clip(_resize_f(to_lin(a[..., k]), w, h), 0, 1)))
+        else:
+            out.append(lin8(np.clip(_resize_f(c, w, h), 0, 1)))
+    return np.stack(out, -1)
+
+
 # ------------------------------------------------------------------ review sheet
 def review_sheet(path, face_A, face_S, diff_A, diff_E, diff_F, en_A, m_let):
     def fit(a, w):
@@ -646,6 +679,16 @@ def main():
     fA, fN, fS, finfo, m_let = face_maps(rng)
     dA, dS, dE, dF, dinfo, fields = diffuser_maps(np.random.default_rng(19901002))
     eA, eN, eS, einfo = enamel_maps(np.random.default_rng(19880515))
+    if g.WIDE:
+        # Made at the base's pixels per mm over the wider face and opening; the copies keep the base's pixel size.
+        finfo["madeAt"] = [int(fA.shape[1]), int(fA.shape[0])]
+        dinfo["madeAt"] = [int(dA.shape[1]), int(dA.shape[0])]
+        fA, fN, fS = resample(fA, FACE_W, FACE_H, "srgb"), resample(fN, FACE_W, FACE_H, "normal"), resample(fS, FACE_W, FACE_H, "linear")
+        dA, dS = resample(dA, DIFF_W, DIFF_H, "srgb"), resample(dS, DIFF_W, DIFF_H, "linear")
+        dE, dF = resample(dE, DIFF_W, DIFF_H, "srgb"), resample(dF, DIFF_W, DIFF_H, "linear")
+        m_let = np.asarray(Image.fromarray(np.ascontiguousarray(m_let, np.float32), mode="F").resize((FACE_W, FACE_H), Image.BOX), np.float32)
+        finfo["pxPerMmShipped"] = [round(FACE_W / g.HOUSING_W, 3), round(FACE_H / g.HOUSING_H, 3)]
+        dinfo["pxPerMmShipped"] = [round(DIFF_W / g.OPEN_W, 3), round(DIFF_H / g.OPEN_H, 3)]
     out = {"ExitSign_Face_A": fA, "ExitSign_Face_N": fN, "ExitSign_Face_S": fS,
            "ExitSign_Diffuser_A": dA, "ExitSign_Diffuser_S": dS, "ExitSign_Diffuser_E": dE, "ExitSign_Diffuser_F": dF,
            "ExitSign_Enamel_A": eA, "ExitSign_Enamel_N": eN, "ExitSign_Enamel_S": eS}

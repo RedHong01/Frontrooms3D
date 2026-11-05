@@ -30,4 +30,4 @@ MonoBehaviour:
   nicheLight: {r: 1, g: 0.8, b: 0.58, a: 1}
   nicheIntensity: 2.4
   waterAbsorbScale: 4
-  thrownLight: 0
+  thrownLight: 1

@@ -32,7 +32,7 @@ using UnityEngine.InputSystem;
 //   tools rule LockRuleForTools: true for those two, false for every other museum door, so the rest stay free), 2.2 their
 //   zone's key on the floor of an open bay (the carve's key move: the game opens a locked door with the key of the zone the
 //   player stands in, so every cell of room 2 a visitor walks is one zone), taken with look + E into the key HUD; 2.5 that
-//   key's tag kit on a plinth (E · EXAMINE KEY). 2.6 STAIR KEY and 2.7 EXIT stay framed codes (tour 2; Q-1).
+//   key's tag kit on a plinth (E · EXAMINE KEY). 2.6 STAIR KEY and 2.7 EXIT stand as placards (tour 2; Q-1).
 //   The hub's two stations are framed codes.
 // - Keys: [ ] room to room, 1-7 a station (again: its next variant), 0 the hub, R the museum as built (doors shut and whole,
 //   2.1 and 2.3 locked again, the key back on 2.2, windows whole; only while the game's phase is Playing: outside it R is
@@ -73,12 +73,13 @@ public sealed partial class FrontRoomsInteractablesShowcase
     const string MuseumKeysLine = "[ ] ROOM  ·  1-7 STATION (AGAIN: VARIANT)  ·  0 HUB  ·  R RESET  ·  B BREAK  ·  P PLAN  ·  G HIDE  ·  F2 TOURS";
 
     // The world placards (inc 8b; FrontRoomsShowcasePlacards to 20_placard_type.md v2, placed by 10_research §3.2-3.7). Every
-    // length in metres; ~/FrontRoomsInteractionWork/scene3/land_inc8b/placement/model.py reads these and mirrors the placing.
+    // length in metres; ~/FrontRoomsInteractionWork/scene3/land_inc8c/placement/model.py reads these and mirrors the placing.
     /// <summary>C's clearance from walls, kits, every leaf's sweep and every arch's opening.</summary>
     const float PlacardClear = .05f;
     /// <summary>C in plan: half its width plus PlacardSlack; behind its face the slab and bracket reach PlacardBack more.</summary>
     const float PlacardSlack = .01f, PlacardBack = .03f;
-    /// <summary>Half the side of C's post and floor plate about its face's centre (v1 .13): kept out of every stop area.</summary>
+    /// <summary>Half the side of C's floor plate (builder A's 360 mm, the post on its middle), centred under the bracket
+    /// (FrontRoomsShowcasePlacards.StationBracketBack x cos(tilt) behind the face's centre): kept out of every stop area.</summary>
     const float PlacardStand = .18f;
     /// <summary>C's face grown by this in the test that it hides nothing of its exhibit from the stop's eye.</summary>
     const float PlacardViewPad = .02f;
@@ -180,11 +181,18 @@ public sealed partial class FrontRoomsInteractablesShowcase
     Vector3 museumTagLook;
     // The world placards: ONE root of ours in the game scene (unit scale at the origin, never a chunk's, so rebuilds leave it
     // be), its parts by room (index 1-4: a room's inside, on only while the player is in it or at its entry; 0 the hub's, always
-    // on), C by station (room * 8 + slot; 1.1's B apart: both stand, the door's variant shows), 1.7's four floor tags (the
-    // member on the door shows), the hub cells at each room's E and X (2 per room, museum cells).
+    // on), C by station (room * 8 + slot; 1.1's B apart: both stand, the door's variant shows) with the live word its foot
+    // shows while the station stands as a frame (where it is tried today, from its row at the build), 1.7's four floor tags
+    // (the member on the door shows), the rooms whose sign stands on the hub side (B or the number over E), the arrow each
+    // room's inside B was built with (the plan page's B card shows it), the hub cells at each room's E and X (2 per room,
+    // museum cells).
     GameObject museumPlacards;
     readonly GameObject[] museumPlacardC = new GameObject[5 * 8];
     GameObject museumPlacardC11B;
+    readonly string[] museumPlacardFrame = new string[5 * 8];
+    string museumPlacardFrame11B;
+    readonly bool[] museumHubSigns = new bool[5];
+    readonly string[] museumSignArrows = new string[5];
     readonly GameObject[] museumMemberTags = new GameObject[4];
     readonly List<Canvas>[] museumPlacardCanvases = { new List<Canvas>(), new List<Canvas>(), new List<Canvas>(), new List<Canvas>(), new List<Canvas>() };
     readonly List<Renderer>[] museumPlacardRenderers = { new List<Renderer>(), new List<Renderer>(), new List<Renderer>(), new List<Renderer>(), new List<Renderer>() };
@@ -1191,7 +1199,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
             museumMarkSlot = -1;
             museumTagClock = 0f;
             Toast("MUSEUM  ·  0  HUB", "Hub 0 and four rooms of the game's own cells, doors, windows, keys and kits, " + museumMetres + " m north of the start. "
-                + (MuseumKeysRun() ? "All four rooms are live; 2.6, 2.7 and 4.2 stand as framed codes." : "Rooms 1, 3 and 4 are live; room 2's locks and key stand as framed codes.")
+                + (MuseumKeysRun() ? "All four rooms are live; 2.6, 2.7 and 4.2 stand as placards." : "Rooms 1, 3 and 4 are live; room 2's locks and key stand as placards.")
                 + "  [ ] rooms  ·  1-7 stations  ·  P the plan.");
             var sign = RoomSign(0);
             if (sign != null)
@@ -1520,7 +1528,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
 
     /// <summary>
     /// One room's keep-outs for its placards, in room-local metres: x from the room's left wall line as one walks in (its cells
-    /// i), y from its hub wall line (cells j); boxes are (x, height, y). The model (land_inc8b/placement/model.py) builds the same.
+    /// i), y from its hub wall line (cells j); boxes are (x, height, y). The model (land_inc8c/placement/model.py) builds the same.
     /// </summary>
     sealed class PlacardScene
     {
@@ -1610,7 +1618,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
             groups[r].GetComponentsInChildren(true, museumPlacardCanvases[r]);
             groups[r].GetComponentsInChildren(true, museumPlacardRenderers[r]);
         }
-        museumPlacardMask = -1;
+        // Built with every room's on: from the first frame only the rooms the player stands at (the tick follows each move).
+        ShowMuseumPlacardRooms(MuseumPlacardMask());
         museumLiveClock = 0f;
         SyncMuseumPlacardVariants();
         if (lost.Length > 0) MuseumNote("Placards left out:" + lost + ".");
@@ -1622,6 +1631,10 @@ public sealed partial class FrontRoomsInteractablesShowcase
         museumPlacards = null;
         Array.Clear(museumPlacardC, 0, museumPlacardC.Length);
         museumPlacardC11B = null;
+        Array.Clear(museumPlacardFrame, 0, museumPlacardFrame.Length);
+        museumPlacardFrame11B = null;
+        Array.Clear(museumHubSigns, 0, museumHubSigns.Length);
+        Array.Clear(museumSignArrows, 0, museumSignArrows.Length);
         Array.Clear(museumMemberTags, 0, museumMemberTags.Length);
         for (var r = 0; r < museumPlacardCanvases.Length; r++)
         {
@@ -1644,9 +1657,16 @@ public sealed partial class FrontRoomsInteractablesShowcase
         }
         Vector2 wallPoint, outward;
         if (!MuseumInsideSign(sc, out wallPoint, out outward)) lost += " " + room + " B inside (no wall wide enough)";
-        else if (FrontRoomsShowcasePlacards.BuildRoomSign(RoomSign(room), parent,
-                     FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, wallPoint, 0f), RoomWorldDir(room, outward), FrontRoomsShowcasePlacards.RoomSignCentre)) == null)
-            lost += " " + room + " B inside";
+        else
+        {
+            // Its arrow the way its reader walks to .1's stop (10 §3.1: the inside sign's arrow gives the order).
+            Vector2 first, firstFace;
+            var sign = PlacardStop(room, 1, out first, out firstFace) ? SignToward(RoomSign(room), wallPoint, outward, first) : RoomSign(room);
+            if (FrontRoomsShowcasePlacards.BuildRoomSign(sign, parent,
+                    FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, wallPoint, 0f), RoomWorldDir(room, outward), FrontRoomsShowcasePlacards.RoomSignCentre)) == null)
+                lost += " " + room + " B inside";
+            else museumSignArrows[room] = sign.signArrow;
+        }
         var samples = new List<Vector3>();
         for (var slot = 1; slot <= 7; slot++)
         {
@@ -1664,11 +1684,14 @@ public sealed partial class FrontRoomsInteractablesShowcase
                 Debug.LogWarning("Interactables showcase (museum): " + st.code + "'s placard stands at " + bearing + " degrees, the least crowded place, but " + fails + ".");
             var pose = FrontRoomsShowcasePlacards.Standing(RoomWorld(room, floorPoint, 0f), RoomWorldDir(room, toward));
             museumPlacardC[room * 8 + slot] = FrontRoomsShowcasePlacards.BuildStationPlacard(st, parent, pose, true);
+            museumPlacardFrame[room * 8 + slot] = MuseumFrameWord(st);
             if (museumPlacardC[room * 8 + slot] == null) lost += " " + st.code + " C";
             if (room == 1 && slot == 1)
             {
                 // 1.1 is one door, A body / B E (the floor's switch): both placards stand at its place, the door's variant shows.
-                museumPlacardC11B = FrontRoomsShowcasePlacards.BuildStationPlacard(FrontRoomsShowcaseTable.Find("1.1B"), parent, pose, true);
+                var b = FrontRoomsShowcaseTable.Find("1.1B");
+                museumPlacardC11B = FrontRoomsShowcasePlacards.BuildStationPlacard(b, parent, pose, true);
+                museumPlacardFrame11B = MuseumFrameWord(b);
                 if (museumPlacardC11B == null) lost += " 1.1B C";
             }
         }
@@ -1780,9 +1803,12 @@ public sealed partial class FrontRoomsInteractablesShowcase
     }
 
     /// <summary>
-    /// B just inside a room (10_research §3.4: "beside each entry on the hub side and again just inside"): on bay .1's front by
-    /// the hub corner, where its exhibit leaves the sign's width and SignGap each side; else on the hub wall between X and E;
-    /// else on bay .7's front by the hub corner. Room-local wall point and the way out of the wall; false where none is wide enough.
+    /// B just inside a room (10_research §3.4: "beside each entry on the hub side and again just inside"), on bay .1's front, so
+    /// its reader finds .1 along the sign's own wall whatever the map did with the arches: by the hub corner, where .1's exhibit
+    /// leaves the sign's width and SignGap each side (rooms 1, 2, 4); else past the exhibit, centred in the wall between .1's and
+    /// .2's (room 3: the window's casing leaves the corner 0.64 m, the two windows 1.44 m; .1's stop 1.5 m along, 0.92 m out).
+    /// Never the hub wall, where some arches leave .1's stop more out than along or no span at all, nor .7's front, where .1 is
+    /// across the lane behind the reader. Room-local wall point and the way out of the wall; false where neither is wide enough.
     /// </summary>
     bool MuseumInsideSign(PlacardScene sc, out Vector2 wallPoint, out Vector2 outward)
     {
@@ -1790,30 +1816,43 @@ public sealed partial class FrontRoomsInteractablesShowcase
         var wh = ModuleUnits.WallHalf;
         var width = FrontRoomsShowcasePlacards.RoomSignWidth;
         var need = width + 2f * SignGap - 1e-4f;
-        float lo, hi;
-        if (FrontKind(sc.room, 1) != EdgeKind.Open && FrontSpan(sc, 1, out lo, out hi) && lo - wh >= need)
-        {
-            wallPoint = new Vector2(3f * cs - wh, wh + SignGap + width * .5f);
-            outward = new Vector2(-1f, 0f);
-            return true;
-        }
-        var a = sc.xCentre + sc.xHalf + SignGap;
-        var b = sc.eCentre - sc.eHalf - SignGap;
-        if (b - a >= width - 1e-4f)
-        {
-            wallPoint = new Vector2((a + b) * .5f, wh);
-            outward = new Vector2(0f, 1f);
-            return true;
-        }
-        if (FrontKind(sc.room, 7) != EdgeKind.Open && FrontSpan(sc, 7, out lo, out hi) && lo - wh >= need)
-        {
-            wallPoint = new Vector2(cs + wh, wh + SignGap + width * .5f);
-            outward = new Vector2(1f, 0f);
-            return true;
-        }
         wallPoint = outward = Vector2.zero;
-        return false;
+        float lo, hi, lo2, hi2;
+        if (FrontKind(sc.room, 1) == EdgeKind.Open || !FrontSpan(sc, 1, out lo, out hi)) return false;
+        if (lo - wh >= need) wallPoint = new Vector2(3f * cs - wh, wh + SignGap + width * .5f);
+        else if (FrontKind(sc.room, 2) != EdgeKind.Open && FrontSpan(sc, 2, out lo2, out hi2) && lo2 - hi >= need)
+            wallPoint = new Vector2(3f * cs - wh, (hi + lo2) * .5f);
+        else return false;
+        outward = new Vector2(-1f, 0f);
+        return true;
     }
+
+    /// <summary>
+    /// Sign B's row with its arrow the way its reader walks: → when <paramref name="target"/> (room-local: .1's stop inside, E on
+    /// the hub side) lies to the reader's right along the wall, else ← (the table writes "→ n.1"; a copy of its room with the
+    /// arrow turned, the rest as written). The reader faces the sign (-outward); their right is (facing.y, -facing.x).
+    /// </summary>
+    static FrontRoomsShowcaseTable.Room SignToward(FrontRoomsShowcaseTable.Room room, Vector2 wallPoint, Vector2 outward, Vector2 target)
+    {
+        if (room == null || string.IsNullOrEmpty(room.signArrow) || (room.signArrow[0] != '→' && room.signArrow[0] != '←')) return room;
+        var right = new Vector2(-outward.y, outward.x);
+        var arrow = Vector2.Dot(target - wallPoint, right) >= 0f ? "→" : "←";
+        if (room.signArrow.StartsWith(arrow, StringComparison.Ordinal)) return room;
+        return new FrontRoomsShowcaseTable.Room
+        {
+            number = room.number, name = room.name, holds = room.holds, decide = room.decide,
+            signNameLines = room.signNameLines, signKindsLines = room.signKindsLines, boardNameLines = room.boardNameLines,
+            nameZh = room.nameZh, signFoot = room.signFoot, signArrow = arrow + room.signArrow.Substring(1)
+        };
+    }
+
+    /// <summary>The arrow on room <paramref name="room"/>'s inside B as built ("← 1.1", SignToward), for the plan page's B card
+    /// (.Plan.cs DrawRoomSign). With none built (the menu's plan, no museum) the arrow its place gives, which no map changes
+    /// (MuseumInsideSign): by the hub corner .1's stop lies deeper, to the reader's left ("← n.1", rooms 1, 2, 4); past .1's
+    /// window, where room 3's hangs, it lies back toward the hub, to the reader's right ("→ 3.1").</summary>
+    string MuseumSignArrow(int room) =>
+        room > 0 && room < museumSignArrows.Length && !string.IsNullOrEmpty(museumSignArrows[room]) ? museumSignArrows[room]
+            : (FrontKind(room, 1) == EdgeKind.Window ? "→ " : "← ") + room + ".1";
 
     /// <summary>What a bay front shows along its wall (room-local y): a door with its frame kit, a window with its casing, an arch
     /// (and, 3.6, its card), an open front its whole width, else its kits, else the framed code. False for no bay.</summary>
@@ -1855,9 +1894,13 @@ public sealed partial class FrontRoomsInteractablesShowcase
             }
             var x = sc.eCentre + sc.eHalf + SignGap + FrontRoomsShowcasePlacards.RoomSignWidth * .5f;
             var sign = FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, new Vector2(x, -wh), 0f), RoomWorldDir(room, into), FrontRoomsShowcasePlacards.RoomSignCentre);
-            if (FrontRoomsShowcasePlacards.BuildRoomSign(RoomSign(room), parent, sign) == null) lost += " " + room + " B";
+            // Its arrow toward E beside it, the arch its reader walks through to .1.
+            var row = SignToward(RoomSign(room), new Vector2(x, -wh), into, new Vector2(sc.eCentre, -wh));
+            if (FrontRoomsShowcasePlacards.BuildRoomSign(row, parent, sign) == null) lost += " " + room + " B";
+            else museumHubSigns[room] = true;
             var number = FrontRoomsShowcasePlacards.OnWall(RoomWorld(room, new Vector2(sc.eCentre, -wh), 0f), RoomWorldDir(room, into), SignTagHeight);
             if (FrontRoomsShowcasePlacards.BuildEntryNumber(room, parent, number) == null) lost += " " + room + " number";
+            else museumHubSigns[room] = true;
         }
         var drop = ModuleUnits.PlayerEye - (FrontRoomsShowcasePlacards.BoardTop - FrontRoomsShowcasePlacards.BoardHeight * .5f);
         var reach = Mathf.Sqrt(Mathf.Max(0f, FrontRoomsShowcasePlacards.BoardFar * FrontRoomsShowcasePlacards.BoardFar - drop * drop));
@@ -1868,7 +1911,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
     }
 
     /// <summary>Board A's plan from the museum's own layout rules (MuseumRoomOf, MuseumPartOf, MuseumEdge), never pasted: each room's
-    /// cells and its alcove's, and every arch between two rooms; x = u, up = v = forward from the spawn. No alcove pictures yet.</summary>
+    /// cells and its alcove's, and every arch between two rooms; x = u, up = v = forward from the spawn. No alcove picture: none
+    /// exists yet (the alcoves are not dressed; the builder draws one into its alcove's cells once a texture is passed here).</summary>
     static FrontRoomsShowcasePlacards.Plan MuseumBoardPlan()
     {
         var lo = new Vector2Int[5];
@@ -2131,7 +2175,9 @@ public sealed partial class FrontRoomsInteractablesShowcase
         if (!KeptClear(plan, sc.blocks, PlacardClear)) mask |= 2;
         if (!KeptClear(plan, sc.swings, PlacardClear)) mask |= 4;
         if (!KeptClear(plan, sc.passages, PlacardClear)) mask |= 8;
-        var post = Obb(at, w, d, PlacardStand, PlacardStand);
+        // The floor plate stands under the bracket, behind the face's centre along d.
+        var behind = FrontRoomsShowcasePlacards.StationBracketBack * Mathf.Cos(FrontRoomsShowcasePlacards.StationTilt * Mathf.Deg2Rad);
+        var post = Obb(at + d * behind, w, d, PlacardStand, PlacardStand);
         for (var k = 0; k < sc.stops.Count; k++)
             if (PolygonDistance(post, sc.stops[k]) <= 0f)
             {
@@ -2450,9 +2496,10 @@ public sealed partial class FrontRoomsInteractablesShowcase
     // ---------- the placards while the museum stands
 
     /// <summary>
-    /// Every frame while the museum stands: a room's inside placards on only while the player stands in it or in the hub cell
-    /// at one of its arches (the hub's always: fewer canvases and draws on an iPhone), 1.1's and 1.7's variant as the door shows
-    /// it; every MuseumLiveSeconds the live state on the foot of each C in the player's room. Nothing here allocates.
+    /// Every frame while the museum stands, after the museum's keys (a jump this frame shows its room's placards in this frame):
+    /// a room's inside placards on only while the player stands in it or in the hub cell at one of its arches (the hub's always:
+    /// fewer canvases and draws on an iPhone), 1.1's and 1.7's variant as the door shows it; every MuseumLiveSeconds the live
+    /// state on the foot of each C in the player's room. Nothing here allocates (the words are constants or kept from the build).
     /// </summary>
     void TickMuseumPlacards()
     {
@@ -2467,8 +2514,9 @@ public sealed partial class FrontRoomsInteractablesShowcase
         if (room < 1 || room > 4) return;
         for (var slot = 1; slot <= 7; slot++)
         {
-            var placard = room == 1 && slot == 1 && !museumPlacardBody ? museumPlacardC11B : museumPlacardC[room * 8 + slot];
-            if (placard != null) FrontRoomsShowcasePlacards.SetLiveState(placard, MuseumLiveWord(room, slot));
+            var b = room == 1 && slot == 1 && !museumPlacardBody;
+            var placard = b ? museumPlacardC11B : museumPlacardC[room * 8 + slot];
+            if (placard != null) FrontRoomsShowcasePlacards.SetLiveState(placard, MuseumLiveWord(room, slot, b ? museumPlacardFrame11B : museumPlacardFrame[room * 8 + slot]));
         }
     }
 
@@ -2523,20 +2571,19 @@ public sealed partial class FrontRoomsInteractablesShowcase
     }
 
     /// <summary>
-    /// The live state on C's foot (20 §2 C: right-aligned, accent): the station's state in the words the museum's list uses
-    /// (MuseumRowTag, MuseumKeysTag, MuseumWindowTag, MuseumAlarmTag; a door SHUT, OPEN or BROKEN), or where a frame is tried
-    /// today. A constant string each: nothing is built per call.
+    /// The live state on C's foot (20 §2 C: right-aligned, accent, up to 10 characters): the station's state in the words the
+    /// museum's list uses (MuseumRowTag, MuseumKeysTag, MuseumWindowTag, MuseumAlarmTag; a door SHUT, OPEN or BROKEN), or for a
+    /// frame where it is tried today (<paramref name="frame"/>, MuseumFrameWord of the placard's row, kept from the build). A
+    /// constant or kept string each: nothing is built per call.
     /// </summary>
-    string MuseumLiveWord(int room, int slot)
+    string MuseumLiveWord(int room, int slot, string frame)
     {
         if (slot == 4) return room == 3 && MuseumLive(3, 4) ? MuseumWindowTag(4) : "GAME LIGHT";
         if (room == 3 && slot == 7) return "FREE";
         if (!MuseumLive(room, slot))
         {
             if (room == 3 && slot == 5 && MuseumDoorAt(3, 5) != null) return "PLAIN DOOR";
-            var st = MuseumRow(room, slot);
-            var tour = st != null ? st.tour : 0;
-            return tour == 2 ? "TOUR 2" : tour == 3 ? "TOUR 3" : tour == 4 ? "TOUR 4" : tour == 1 ? "MEDIA BAY" : "FRAME";
+            return frame ?? "FRAME";
         }
         switch (room)
         {
@@ -2558,14 +2605,28 @@ public sealed partial class FrontRoomsInteractablesShowcase
         return "";
     }
 
+    /// <summary>A frame's live word on C's foot (MuseumLiveWord): where the station is tried today, by its row's tour.</summary>
+    static string MuseumFrameWord(FrontRoomsShowcaseTable.Station st)
+    {
+        var tour = st != null ? st.tour : 0;
+        return tour == 2 ? "TOUR 2" : tour == 3 ? "TOUR 3" : tour == 4 ? "TOUR 4" : tour == 1 ? "MEDIA BAY" : "FRAME";
+    }
+
     // ---------- per frame
 
-    /// <summary>The museum's frame: the title's start, the build, the framed codes; its keys (P the plan in every state).</summary>
+    /// <summary>The museum's frame: the title's start, the build, the framed codes; its keys (P the plan in every state); then the
+    /// placards, after the keys, so a jump this frame shows its room's placards in this frame's render.</summary>
     void UpdateMuseum(Keyboard keys)
     {
         if (map == null) UpdateMuseumTitle();
         else if (museumState == MuseumState.Carved) BuildMuseum();
         else if (museumState == MuseumState.Built) TickMuseum();
+        UpdateMuseumKeys(keys);
+        if (museumState == MuseumState.Built) TickMuseumPlacards();
+    }
+
+    void UpdateMuseumKeys(Keyboard keys)
+    {
         if (keys == null || paused || FrontRooms3DGame.InspectingNow) return;
         if (keys.pKey.wasPressedThisFrame)
         {
@@ -2620,7 +2681,6 @@ public sealed partial class FrontRoomsInteractablesShowcase
 
     void TickMuseum()
     {
-        TickMuseumPlacards();
         museumTagClock -= Time.unscaledDeltaTime;
         if (museumTagClock > 0f) return;
         museumTagClock = MuseumTagSeconds;
@@ -2636,7 +2696,9 @@ public sealed partial class FrontRoomsInteractablesShowcase
     }
 
     /// <summary>The framed codes of the room the player is in (in the hub: its two stations and the four room signs), each with
-    /// its line of sight from the eye; and the station whose stop the player stands at.</summary>
+    /// its line of sight from the eye, but where a world placard shows the same code (a station's C, a room's sign B or number on
+    /// the hub side): so the hub's 0.1 and 0.2 keep theirs, and any station or sign whose placard was left out. And the station
+    /// whose stop the player stands at.</summary>
     void RefreshMuseumTags()
     {
         museumTags.Clear();
@@ -2646,12 +2708,14 @@ public sealed partial class FrontRoomsInteractablesShowcase
         var used = 0;
         if (room == 0)
         {
-            for (var r = 1; r <= 4; r++) AddMuseumTag(ref used, r, 0, MuseumSignSpot(r));
+            for (var r = 1; r <= 4; r++)
+                if (!museumHubSigns[r]) AddMuseumTag(ref used, r, 0, MuseumSignSpot(r));
             AddMuseumTag(ref used, 0, 1, MuseumSpotOf(0, 1));
             AddMuseumTag(ref used, 0, 2, MuseumSpotOf(0, 2));
         }
         else
-            for (var slot = 1; slot <= 7; slot++) AddMuseumTag(ref used, room, slot, MuseumSpotOf(room, slot));
+            for (var slot = 1; slot <= 7; slot++)
+                if (!MuseumPlacardShown(room, slot)) AddMuseumTag(ref used, room, slot, MuseumSpotOf(room, slot));
         if (view != null)
         {
             var eye = view.transform.position;
@@ -2675,6 +2739,13 @@ public sealed partial class FrontRoomsInteractablesShowcase
             museumNearRoom = room;
             museumNearSlot = slot;
         }
+    }
+
+    // A station of rooms 1-4 whose C stands (1.1: the variant on the door).
+    bool MuseumPlacardShown(int room, int slot)
+    {
+        if (room < 1 || room > 4 || slot < 1 || slot > 7) return false;
+        return (room == 1 && slot == 1 && !museumPlacardBody ? museumPlacardC11B : museumPlacardC[room * 8 + slot]) != null;
     }
 
     void AddMuseumTag(ref int used, int room, int slot, MuseumSpot spot)
@@ -3176,7 +3247,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
             return "Live: three windows with their sash latches (3.3 foiled), an alarm door and a Run! room's ALARM ZONE arch; the alcove looks through a window. 1-7 a station.";
         if (room == 4 && MuseumRoomLive(4))
             return "Live: a terminal, three ad screens, the evacuation placard, the station's papers and the four test-bed close-ups. 4.2's TV needs a station: tour 2.";
-        return "Framed codes for now: each station's code, what it is and where it can be tried today (P, then ENTER).";
+        return "Placards for now: each station's code, what it is and where it can be tried today (P, then ENTER).";
     }
 
     /// <summary>What this stop is in the museum now, one line: a live station's state and its key, or a frame's tour of today.</summary>
@@ -3590,8 +3661,8 @@ public sealed partial class FrontRoomsInteractablesShowcase
         y = Para(x, y, w, "P  THE PLAN: every station, its code and its placard; ENTER tries one.", lineStyle, Accent, 1f, 4f * s);
         y = Para(x, y, w, "[ ] ROOM TO ROOM  ·  1-7 A STATION, AGAIN FOR ITS NEXT VARIANT  ·  0 THE HUB  ·  R THE MUSEUM AS BUILT (DOORS, WINDOWS, ROOM 2'S KEY)  ·  B BREAK THE DOOR IN VIEW  ·  G HIDE  ·  F2 TOURS", smallStyle, Paper, .85f, 6f * s);
         y = Para(x, y, w, MuseumKeysRun()
-            ? "Live: room 1's six doors; room 2's locked doors, zone key and key tag; room 3's windows, alarm door and ALARM ZONE arch; room 4's terminal, screens, placard, papers and test bed. 2.6, 2.7 and 4.2 stand as framed codes; each placard says where to try that station today."
-            : "Live: room 1's six doors; room 3's windows, alarm door and ALARM ZONE arch; room 4's terminal, screens, placard, papers and test bed. Room 2's locks and key, 2.6, 2.7 and 4.2 stand as framed codes; each placard says where to try that station today.", smallStyle, Paper, .8f, 6f * s);
+            ? "Live: room 1's six doors; room 2's locked doors, zone key and key tag; room 3's windows, alarm door and ALARM ZONE arch; room 4's terminal, screens, placard, papers and test bed. 2.6, 2.7 and 4.2 stand as placards; each says where to try that station today."
+            : "Live: room 1's six doors; room 3's windows, alarm door and ALARM ZONE arch; room 4's terminal, screens, placard, papers and test bed. Room 2's locks and key, 2.6, 2.7 and 4.2 stand as placards; each says where to try that station today.", smallStyle, Paper, .8f, 6f * s);
         y = Para(x, y, w, BoardLine(3), smallStyle, Paper, .7f, 6f * s);
         var sign = RoomSign(0);
         if (sign != null && !string.IsNullOrEmpty(sign.decide))

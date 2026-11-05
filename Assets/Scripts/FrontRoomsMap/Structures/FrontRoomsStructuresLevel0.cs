@@ -368,6 +368,13 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         kit.Sign(new Vector3(3.6f, 1.5f, 9.14f), new Vector3(3.6f, 1.5f, 10.5f), "SP3 · Level 0：原样的场地和几处断点",
             "这里是 Level 0 本来的走廊和空房间，每格一盏灯。沿这条主走廊往东：左手先是楼板上的一个口子，能看到楼下；再往前地面整片沉下去 2.4 米；走廊尽头的门洞里是一间 14.6 米高的房间。南边还有一间架空地板的机房和一间分层的套间。东墙外每个区块各放一处：阶梯培训室、平行碗、岛群、下沉休息区、档案夹层、平顶阶梯地面。每处都有自己的牌子。\n"
             + "灰盒占位：楼下那一层、柜子、档案架和家具、栏杆和玻璃栏板都是灰盒，正式版换成游戏里的模型和材质。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。", 0f);
+        // Its blade (20_placard_type.md v2.5, E-blade): the arrival reads the flat sign 57 degrees off its face, so its code and
+        // title also hang on a blade square to the same wall (face z 9.08), inner edge 50 mm off it, bottom 2.10, its title on two
+        // lines at the colon (the blade's 12-em measure), top 2.36 (0.54 under the lid; the troffer at x 4.2..4.8 stays 0.39 m
+        // clear); front face x 3.799, 2.500 m from the arrival eye, read 18.5 degrees to the side and 14 up, right of the troffer
+        // line and over the spine's far end (70 section 5's main view). The flat sign stays.
+        FrontRoomsStructuresSigns.Blade(Root, Root.TransformPoint(new Vector3(3.814f, 0f, 9.08f)), Root.TransformDirection(Vector3.forward),
+            Root.TransformPoint(Arrival + Vector3.up * FrontRoomsStructuresWalker.Eye), "SP3 · Level 0：原样的场地和几处断点", Root.position.y);
         kit.Sign(new Vector3(7.2f, 1.5f, 9.14f), new Vector3(7.2f, 1.5f, 10.5f), "V1 · 楼板开口",
             "楼板上开了一个 6×6 米的口，往下 3.9 米是下一层；口子边上露出地毯、楼板和吊顶里的风管。只能看，下不去。要你决定：这个放进 Level 0 吗？", 0f);
         kit.Sign(new Vector3(27.6f, 1.5f, 9.14f), new Vector3(27.6f, 1.5f, 10.5f), "V2 · 下沉套间",

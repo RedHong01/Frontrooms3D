@@ -1,0 +1,35 @@
+OK  | TITLE SCENE 4 DISTRICT SIGNS · V2.4 AT 2.5 M | 1332 of 3162 px
+OK  | SP1 · ARRIVAL | label 238 + data 629 of 1280 px | sign 50° right: hides the nearest bay
+OK  | SP1 · SIGN AT 2.50 M | label 362 + data 544 of 1280 px | code 11.4 · title 16.5 px · PASS
+OK  | SP1 · STANDING 0.9 M IN FRONT | label 515 + data 612 of 1280 px | every line 19.8 px em or more · PASS
+OK  | SP1 · TURN RIGHT TO THE TOWER | label 525 + data 561 of 1280 px | sign hides 29 % of its lowest 3 m
+OK  | SP1 · SAME VIEW, SIGN HIDDEN | label 487 + data 680 of 1280 px | the tower seen through the arcade's arch
+OK  | SP1 · CODE AND TITLE 1:1 X3 | label 481 + data 646 of 1280 px | two lines, broken at the phrase · PASS
+OK  | SP2 · ARRIVAL | label 238 + data 697 of 1280 px | the sign stands behind you: 0 px in frame
+OK  | SP2 · TURN ROUND: SIGN 2.50 M | label 526 + data 544 of 1280 px | code 11.2 · title 16.2 px · PASS
+OK  | SP2 · TURN ROUND, SIGN HIDDEN | label 514 + data 578 of 1280 px | it stands before the south doorway
+OK  | SP3 · ARRIVAL | label 238 + data 680 of 1280 px | flat on the right wall, 9 % of the frame
+OK  | SP3 · SIGN AT 2.50 M | label 362 + data 612 of 1280 px | code 9.4 · title 14.1-16.1 px · FLAG
+OK  | SP3 · CODE AND TITLE 1:1 X3 | label 481 + data 357 of 1280 px | read 57° off its face
+OK  | SP4 · ARRIVAL | label 238 + data 561 of 1280 px | standing, right, 9 % of the frame
+OK  | SP4 · SIGN AT 2.50 M | label 362 + data 544 of 1280 px | code 11.3 · title 16.3 px · PASS
+OK  | SP4 · CODE AND TITLE 1:1 X3 | label 481 + data 391 of 1280 px | two lines at the phrase
+OK  | SP5 · ARRIVAL | label 238 + data 697 of 1280 px | flat on the right wall, 10 % of the frame
+OK  | SP5 · SIGN AT 2.50 M | label 362 + data 629 of 1280 px | code 10.0 · title 15.1-16.7 px · FLAG
+OK  | SP5 · CODE AND TITLE 1:1 X3 | label 481 + data 357 of 1280 px | read 56° off its face
+OK  | SP6 · ARRIVAL | label 238 + data 697 of 1280 px | flat on the right wall, 14 % of the frame
+OK  | SP6 · SIGN AT 2.50 M | label 362 + data 612 of 1280 px | code 9.7 · title 14.5-16.7 px · FLAG
+OK  | SP6 · CODE AND TITLE 1:1 X3 | label 481 + data 357 of 1280 px | read 57° off its face
+OK  | KIT · ARRIVAL | label 221 + data 578 of 1280 px | standing, right, 13 % of the frame
+OK  | KIT · SIGN AT 2.50 M | label 345 + data 544 of 1280 px | code 11.2 · title 16.2 px · PASS
+OK  | KIT · CODE AND TITLE 1:1 X3 | label 464 + data 136 of 1280 px | one line
+OK  | HUB · ARRIVAL (THE SPAWN) | label 447 + data 561 of 1280 px | both signs outside the view: 0 px
+OK  | HUB · KEYS, 2.50 M | label 327 + data 340 of 1280 px | title 16.0 px · PASS
+OK  | HUB · NOT HERE, 2.50 M | label 398 + data 340 of 1280 px | title 16.0 px · PASS
+OK  | SP7 · ARRIVAL | label 238 + data 612 of 1280 px | both signs behind you: 0 px in frame
+OK  | SP7 · ROOM SIGN, 2.50 M | label 419 + data 629 of 1280 px | code 14.0 · title 16.4-18.1 px · PASS
+OK  | SP7 · TREATMENTS, 2.50 M | label 448 + data 612 of 1280 px | code 9.7 · title 14.7-16.4 px · FLAG
+OK  | SP7 · ROOM SIGN 1:1 X3 | label 404 + data 476 of 1280 px | its left end is the near end
+OK  | SP7 · TREATMENTS 1:1 X3 | label 433 + data 595 of 1280 px | read 56° off its face, far end left
+OK  | HUB · KEYS 1:1 X3 | label 312 + data 323 of 1280 px | no chip; title only
+ALL LABELS FIT

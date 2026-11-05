@@ -71,6 +71,18 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
     // slot never repeats the same behaviour simply because it is the same
     // GameObject.
     const int LightRandomSeed = 24017;
+    // Door culling (技术美术调研 row 1, research/tech_art/20_ranked_changes.md 3.1; Red 2026-11-04 12:49 in its chat,
+    // "全部按推荐"): a room is drawn while the camera can see any of it: its own room, every room reached from there
+    // through doors that are open, moving or broken, or whose lite is LIVE, and the room just past the first shut door in
+    // sight (round its lites and between its leaves a shut door still shows slivers of that room). A room that nothing
+    // shows keeps its colliders, audio, doors and lamp clocks; only its drawing and its lamps' light stop.
+    /// <summary>Lab switch (tech_art measurements): false draws and lights every loaded room, as before row 1.</summary>
+    public static bool PortalCulling = true;
+    // A door the camera is about to unlatch counts as open this far before its reach, so the room it will show past the
+    // next shut door is drawn before the leaves part.
+    const float PortalWakeMargin = .75f;
+    // The lamps of a room going out of sight fade over the door lite's own LIVE / DARK time (FrontRoomsDoorLite.FadeSeconds).
+    const float PortalFadeSeconds = .4f;
 
     [Tooltip("Optional room authoring template. A copy is placed inside each streamed room root.")]
     public GameObject roomTemplate;
@@ -82,14 +94,13 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
     int emptyLeadRooms = 2;
 
     [Header("Practical light response")]
-    [SerializeField, Range(0f, 1f), Tooltip("Scales the diffuse contribution of each fluorescent practical. The same coefficient drives point-light output, bounceIntensity and the beam material.")]
+    [SerializeField, Range(0f, 1f), Tooltip("Scales the diffuse contribution of each fluorescent practical. The same coefficient drives point-light output and bounceIntensity.")]
     float diffuseCoefficient = .82f;
 
-    [SerializeField, Range(0f, 1f), Tooltip("Density of the lightweight built-in-renderer volumetric shafts below each fluorescent fixture.")]
-    float volumetricDensity = .012f;
-
-    [SerializeField, Range(.8f, 2.0f), Tooltip("Downward length of each volumetric shaft in metres.")]
-    float volumetricRange = 1.0f;
+    // Corridor beams (技术美术调研 row 9, research/tech_art/20_ranked_changes.md 3.9; Red 2026-11-04 12:49 in its chat,
+    // "全部按推荐"): the 12 additive VolumetricBeam renderers a room had (an MPB each, about 1 % of the lamp colour at their
+    // peak) are gone from every room. Visible dust in lamp light comes back only where a room family asks for it
+    // (SetRoomDust, FrontRoomsDustShaft): one shared material, no MPB, faded at the scene's depth and edge-on.
 
     sealed class RoomSlot
     {
@@ -150,9 +161,13 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         public Renderer[] lightDiffusers;
         // The lens is the troffer kit's (FrontRoomsTrofferKit): it keeps the kit's material and tops out at its LensPeak.
         public bool[] lightDiffuserKit;
-        public Renderer[] volumetricRenderers;
         public MaterialPropertyBlock[] lightDiffuserBlocks;
-        public MaterialPropertyBlock[] volumetricBlocks;
+        // Dust in lamp light (row 9, SetRoomDust): 0 = clear air (every room today). The shafts, one under each troffer's
+        // lens, are built the first time the room's air is dusty and follow its lamps from then on.
+        public float dust;
+        public MeshRenderer[] dustShafts;
+        public Light[] dustLights;
+        public uint[] dustValues;
         public float[] lightOutputLevel;
         public bool[] lightOutputEnabled;
         public GameObject[] profileVariants;
@@ -162,6 +177,28 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         // Set once the room's lamps are cued (ScheduleRoomLight / ActivateRoomLightImmediately):
         // a loose exit-sign lamp only plays its drop-outs while someone can be there.
         public bool lampsScheduled;
+        // Title rooms (FrontRoomsRoomStream.TitleRooms; only with a programme other than Today): the family this slot stands
+        // for, its vignette while it is here, lights off behind a shut title door, Descent's WAKE room, the slot's own L03
+        // channel targets (handed back when a vignette with lamps of its own leaves), a family lamp's second renderer and
+        // halo, and the shell pieces a vignette may put away.
+        public TitleFamily family;
+        public FrontRoomsTitleVignette vignette;
+        public bool lightsDimmed, wakeLit;
+        public Light[] ownLights;
+        public float[] ownBaseIntensity;
+        public bool[] ownWasEnabled, ownDiffuserKit;
+        public Renderer[] ownDiffusers, lightSecond, lightHalo;
+        public MaterialPropertyBlock[] lightSecondBlocks, lightHaloBlocks;
+        public GameObject shellFloor;
+        public GameObject[] shellBaseboards;
+        // Door culling (row 1, UpdatePortals): whether the camera can see any of this room. Not seen, nothing of it is
+        // drawn (forceRenderingOff; its outlet sets off) while its colliders, audio, doors and lamp clocks run on as before;
+        // portalGain fades its lamps' light (1 = what their own clocks say, 0 = off).
+        public bool portalSeen = true;
+        public bool portalDrawn = true;
+        public float portalGain = 1f;
+        public readonly System.Collections.Generic.List<Renderer> portalRenderers = new System.Collections.Generic.List<Renderer>(160);
+        public readonly System.Collections.Generic.List<FrontRoomsWallFixtureSet> portalFixtureSets = new System.Collections.Generic.List<FrontRoomsWallFixtureSet>(8);
     }
 
     enum LampState { Off, Waiting, Striking, Rising, Steady, Unstable, Dead }
@@ -183,7 +220,6 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
     Material runBedMaterial;
     Material runRailMaterial;
     Material doorHardwareMaterial;
-    Material volumetricLightMaterial;
     AudioClip doorCreakClip;
     AudioClip doorLatchClip;
     AudioClip doorTravelClip;
@@ -299,22 +335,6 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         }
     }
 
-    void EnsureVolumetricLightMaterial()
-    {
-        if (volumetricLightMaterial != null) return;
-        var shader = Resources.Load<Shader>("Lighting/VolumetricBeam");
-        if (shader == null)
-        {
-            Debug.LogWarning("[FrontRooms3D] VolumetricBeam shader is unavailable; fluorescent shafts will stay disabled.");
-            return;
-        }
-        volumetricLightMaterial = new Material(shader)
-        {
-            name = "FrontRooms / volumetric fluorescent beam",
-            renderQueue = 3000
-        };
-    }
-
     /// <summary>Build the fixed room pool around the camera's current position.</summary>
     public void Initialize(Camera camera, Material wall, Material floor, Material ceiling,
         Material trim, Material fixture, Material door, AudioClip doorCreak = null,
@@ -354,7 +374,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         terminalLocked = false;
         TerminalDoorHeld = false;
 
-        EnsureVolumetricLightMaterial();
+        // Title rooms: the programme and its bank of family vignettes (nothing with Today, the default).
+        BeginTitleRooms(false);
 
         var cameraZ = streamCamera == null ? 0f : streamCamera.transform.position.z;
         centerX = streamCamera == null ? 0f : streamCamera.transform.position.x;
@@ -371,6 +392,12 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             room.root.transform.position = new Vector3(centerX, 0f, room.startZ);
             BuildRoom(room, i);
             pool[i] = room;
+            if (TitleRoomsOn)
+            {
+                AssignTitleFamily(room, i);
+                ResetRoomLights(room);
+                RefreshRoomMaterials(room);
+            }
         }
         // The first title room is already occupied when the sequence begins.
         // Subsequent rooms receive their light cue from the door that connects
@@ -383,6 +410,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         // title_tv: once per stream, in the second title room (play only: edit-mode tools build no screens).
         if (Application.isPlaying) BuildTitleTv(FindSequence(TitleTvSequence));
         initialized = true;
+        UpdatePortals(0f);
         // GLASS G6 HOOK: no title-stream cubes yet, so the title rooms reflect the Level 0 cube, not Unity's default sky.
         if (Application.isPlaying) FrontRoomsLook.SetZoneReflection(FrontRoomsLook.ReflectionZone.Level0, 0f);
     }
@@ -396,7 +424,6 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         Material trim, Material fixture, Material door,
         Material[] profileWalls, Material[] profileFloors, Material[] profileCeilings)
     {
-        EnsureVolumetricLightMaterial();
         wallMaterial = wall;
         floorMaterial = floor;
         ceilingMaterial = ceiling;
@@ -407,6 +434,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         profileFloorMaterials = profileFloors;
         profileCeilingMaterials = profileCeilings;
         centerX = 0f;
+        // Title rooms: with a programme other than Today the preview also shows every family vignette (BuildTitleFamilyPreview).
+        BeginTitleRooms(true);
         var profiles = (RoomRule[])Enum.GetValues(typeof(RoomRule));
         for (var i = 0; i < profiles.Length; i++)
         {
@@ -420,6 +449,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             ApplyDoorPose(room);
             ActivateRoomLightImmediately(room);
         }
+        BuildTitleFamilyPreview(profiles.Length);
     }
 
     /// <summary>
@@ -483,6 +513,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         else firstDoorMotionProgress = 1f;
         MaintainPool();
         RebaseIfNeeded();
+        if (TitleRoomsOn) UpdateTitleLook();
+        UpdatePortals(dt);
     }
 
     /// <summary>
@@ -521,7 +553,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
     {
         if (!initialized || streamCamera == null) return -1;
         for (var room = FindCurrentRoom(); room != null; room = FindSequence(room.sequence + 1))
-            if (!room.doorOpen && !room.doorOpening && !room.doorBroken && room.doorProgress <= 0f) return room.sequence;
+            if (!room.doorOpen && !room.doorOpening && !room.doorBroken && room.doorProgress <= 0f) return AirlockTerminal(room);
         return -1;
     }
 
@@ -542,6 +574,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         if (!initialized || frozen) return;
         var terminal = FindSequence(sequence);
         if (terminal == null) return;
+        // Title rooms: a sealed family terminal (Descent) turns to Level 0, the rooms behind light up again.
+        PrepareTitleHandoff(terminal);
         frozen = true;
         terminalSequence = sequence;
         terminalLocked = false;
@@ -575,6 +609,9 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         // (research/placard/10_spec.md §4.6). The far-side reveal plane is the face it sits on.
         var roomRoot = terminal.root.transform;
         FrontRoomsPlacard.Prepare(roomRoot, roomRoot.TransformPoint(0f, 0f, RoomLength), roomRoot.TransformPoint(0f, 0f, RoomLength + DoorWallDepth * .5f + .002f).z);
+        // Door culling (row 1): the player holds the camera now and may look anywhere, so every room the stream keeps is
+        // drawn again with its lamps at full, before the first frame of play.
+        UpdatePortals(0f);
     }
 
     /// <summary>
@@ -599,6 +636,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             DestroyTitleTv();
             return true;
         }
+        // Title rooms: the bank's vignettes that stand in no room, one a call, then the bank.
+        if (DisposeOneTitleBankPiece()) return true;
         for (var i = 0; i < MaxRooms; i++)
         {
             var room = pool[i];
@@ -636,6 +675,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
     {
         if (!frozen || terminalLocked) return;
         terminalLocked = true;
+        // Title rooms: the family lamps' URP data goes before the game destroys the stream's Lights (ReleaseTitleLampData).
+        ReleaseTitleLampData();
         var room = FindSequence(terminalSequence);
         // Door vision (T-L1): the terminal door's lites go DARK for good.
         if (room != null)
@@ -662,7 +703,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         var inner = RoomWidth * .5f;
         var span = halfWidth - inner;
         if (span <= .01f) return;
-        var wall = ProfileMaterial(profileWallMaterials, room.rule, wallMaterial);
+        var wall = RoomWallMaterial(room);
         Box(room.root.transform, "door wall extension left", new Vector3(-(inner + span * .5f), RoomHeight * .5f, RoomLength), new Vector3(span, RoomHeight, DoorWallDepth), wall);
         Box(room.root.transform, "door wall extension right", new Vector3(inner + span * .5f, RoomHeight * .5f, RoomLength), new Vector3(span, RoomHeight, DoorWallDepth), wall);
     }
@@ -686,6 +727,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             var rule = RuleForStreamSequence(room.sequence);
             if (rule == room.rule) continue;
             room.rule = rule;
+            if (room.profileVariants != null && room.profileVariants[(int)rule] == null) BuildProfileVariant(room, (int)rule);
             ResetRoomLights(room);
             RefreshRoomMaterials(room);
         }
@@ -827,7 +869,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
                     {
                         next.connected = true;
                         if (next.rearSeal != null) next.rearSeal.SetActive(false);
-                        ScheduleRoomLight(next);
+                        ConnectTitleRoom(next);
                     }
                 }
             }
@@ -842,6 +884,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
                 room.doorSoundPlayed = false;
                 if (room.doorAudio != null) room.doorAudio.Stop();
                 ApplyDoorPose(room);
+                // Title rooms: the room behind the shut door goes dark (never seen again before it recycles, unless Space).
+                DimRoom(room);
             }
             if (room.doorClosing && !(BodyDoors && frozen && terminal))
             {
@@ -992,6 +1036,9 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         var nextSequence = newest.sequence + 1;
         oldest.sequence = nextSequence;
         oldest.rule = RuleForStreamSequence(nextSequence);
+        oldest.lightsDimmed = false;
+        // Title rooms: the slot takes the programme's family for its new sequence while it is sealed (two shut doors away).
+        AssignTitleFamily(oldest, nextSequence);
         oldest.startZ = newest.endZ;
         oldest.endZ = oldest.startZ + RoomLength;
         oldest.root.transform.position = new Vector3(centerX, 0f, oldest.startZ);
@@ -1034,6 +1081,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         if (frozen) return;
         var z = streamCamera.transform.position.z;
         if (Mathf.Abs(z) <= RebaseThreshold) return;
+        // Title rooms: only while nothing but a Level 0 room can be seen (a family print may not divide 192 m).
+        if (TitleRoomsOn && !TitleRebaseAllowed()) return;
         var shift = Mathf.Floor(z / RebaseThreshold) * RebaseThreshold;
         if (Mathf.Abs(shift) < .01f) return;
         var cameraPosition = streamCamera.transform.position;
@@ -1056,6 +1105,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         transitionStartZ -= shift;
         TotalRebaseShift += shift;
         rebaseCount++;
+        if (TitleRoomsOn) RefreshSeenOnly();
     }
 
     /// <summary>Start Z of any sequence; rooms are contiguous, so unloaded ones are extrapolated.</summary>
@@ -1104,6 +1154,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             next.connected = true;
             if (next.rearSeal != null) next.rearSeal.SetActive(false);
             ScheduleRoomLight(next);
+            ShowPortal(next);
         }
         return true;
     }
@@ -1171,8 +1222,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             // T-bar geometry is modelled: long raised strips read as wireframe
             // in a first-person corridor.
             // 2'x4' troffers, one grid cell each, grouped per lamp so a fixture,
-            // its light and its beam move together when AlignFixtures snaps them
-            // to the world grid. The troffer is the visual kit's L03 (Red
+            // its light and (in a dusty room) its dust shaft move together when
+            // AlignFixtures snaps them to the world grid. The troffer is the visual kit's L03 (Red
             // 2026-10-31, FrontRoomsTrofferKit): its lens keeps the diffuser's
             // name (CacheRoomLightVisuals reads it), its housing and the soil
             // stain hang from the ceiling plane; no colliders (the ceiling box
@@ -1189,7 +1240,6 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
                     Box(fixture, "fluorescent recessed pan " + fixtureIndex, new Vector3(0f, RoomHeight - .015f, 0f), new Vector3(TrofferWidth - .012f, .03f, TrofferLength - .012f), FrontRoomsSurfaces.PaintedMetal);
                     Box(fixture, "fluorescent diffuser " + fixtureIndex, new Vector3(0f, RoomHeight - .033f, 0f), new Vector3(TrofferWidth - .06f, .006f, TrofferLength - .06f), fixtureMaterial ?? roomCeiling);
                 }
-                BuildVolumetricBeam(fixture, fixtureIndex, ProfileLightColor(room.rule));
                 var lightObject = new GameObject("fluorescent light " + fixtureIndex);
                 lightObject.transform.SetParent(fixture, false);
                 // A troffer only throws light downward: a wide spot at the lens
@@ -1198,6 +1248,10 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
                 lightObject.transform.localPosition = new Vector3(0f, RoomHeight - .05f, 0f);
                 lightObject.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 var light = lightObject.AddComponent<Light>();
+                // 技术美术调研 row 16, option D (Red 2026-11-04 14:14, "按推荐"): URP's per-light data with the soft-shadow
+                // filter set to Low explicitly, as FrontRoomsMapWorld.ShippedShadowFilter does for the map's lamps, so the
+                // Editor, clones and players filter this lamp alike (bias values stay on pipeline settings).
+                UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(light).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;
                 light.type = LightType.Spot;
                 light.spotAngle = 162f;
                 light.innerSpotAngle = 96f;
@@ -1218,6 +1272,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
 
         CacheRoomLights(room);
         CacheRoomLightVisuals(room);
+        if (TitleRoomsOn) CaptureOwnLamps(room);
         ResetRoomLights(room);
 
         room.rearSeal = Box(room.root.transform, "opaque rear boundary seal", new Vector3(0f, RoomHeight * .5f, RearSealOffset), new Vector3(RoomWidth, RoomHeight, .18f), ProfileMaterial(profileWallMaterials, room.rule, wallMaterial));
@@ -1253,59 +1308,6 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             var cellZ = (Mathf.Floor((origin.z + FixtureZ[i % FixtureZ.Length]) / GridZ) + .5f) * GridZ;
             room.fixtures[i].localPosition = new Vector3(cellX + column * GridX - origin.x, 0f, cellZ - origin.z);
         }
-    }
-
-    GameObject BuildVolumetricBeam(Transform fixture, int fixtureIndex, Color color)
-    {
-        var beam = new GameObject("volumetric fluorescent beam " + fixtureIndex);
-        beam.transform.SetParent(fixture, false);
-        // The mesh is a short, tapered frustum below the diffuser. Keeping it
-        // as one low-poly surface avoids the crossed-quad edge lines that read
-        // like a wireframe in the first-person camera.
-        beam.transform.localPosition = new Vector3(0f, RoomHeight - .04f, 0f);
-        var meshFilter = beam.AddComponent<MeshFilter>();
-        var renderer = beam.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = volumetricLightMaterial;
-        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-        renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-        renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-        meshFilter.sharedMesh = CreateVolumetricFrustumMesh(volumetricRange);
-        if (volumetricLightMaterial != null)
-        {
-            renderer.enabled = true;
-            renderer.sharedMaterial.SetColor("_Color", color);
-        }
-        else renderer.enabled = false;
-        return beam;
-    }
-
-    static Mesh CreateVolumetricFrustumMesh(float range)
-    {
-        var topX = .18f;
-        var topZ = .03f;
-        var bottomX = .28f;
-        var bottomZ = .06f;
-        var mesh = new Mesh { name = "Fluorescent volumetric frustum" };
-        mesh.SetVertices(new[]
-        {
-            new Vector3(-topX, 0f, -topZ), new Vector3(topX, 0f, -topZ),
-            new Vector3(topX, 0f, topZ), new Vector3(-topX, 0f, topZ),
-            new Vector3(-bottomX, -range, -bottomZ), new Vector3(bottomX, -range, -bottomZ),
-            new Vector3(bottomX, -range, bottomZ), new Vector3(-bottomX, -range, bottomZ)
-        });
-        mesh.SetUVs(0, new[]
-        {
-            new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f),
-            new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f)
-        });
-        mesh.SetTriangles(new[]
-        {
-            0, 4, 5, 0, 5, 1, // front
-            2, 6, 7, 2, 7, 3  // back
-        }, 0);
-        mesh.RecalculateBounds();
-        return mesh;
     }
 
     void BuildDoor(RoomSlot room)
@@ -1572,6 +1574,17 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         room.exitSigns = new FrontRoomsExitSign[room.profileVariants.Length][];
         for (var ruleIndex = 0; ruleIndex < room.profileVariants.Length; ruleIndex++)
         {
+            // Title rooms (a programme other than Today) build only the Lobby variant; the legacy cycle builds the others
+            // when a test asks for it (BeginPlayableSequence).
+            if (!legacyVariants && ruleIndex != (int)RoomRule.Lobby) continue;
+            BuildProfileVariant(room, ruleIndex);
+        }
+    }
+
+    void BuildProfileVariant(RoomSlot room, int ruleIndex)
+    {
+        EnsurePropMaterials();
+        {
             var rule = (RoomRule)ruleIndex;
             var props = new GameObject("Profile props / " + rule);
             props.transform.SetParent(room.root.transform, false);
@@ -1721,9 +1734,11 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
     void RefreshRoomMaterials(RoomSlot room)
     {
         if (room == null || room.root == null) return;
-        var wall = ProfileMaterial(profileWallMaterials, room.rule, wallMaterial);
-        var floor = ProfileMaterial(profileFloorMaterials, room.rule, floorMaterial);
-        var ceiling = ProfileMaterial(profileCeilingMaterials, room.rule, ceilingMaterial);
+        // Title rooms: a family's finish on the slot's shell (RoomWallMaterial and friends give the profile's without one).
+        var wall = RoomWallMaterial(room);
+        var floor = RoomFloorMaterial(room);
+        var ceiling = RoomCeilingMaterial(room);
+        var vignetteRoot = room.vignette?.root != null ? room.vignette.root.transform : null;
         var renderers = room.root.GetComponentsInChildren<Renderer>(true);
         for (var i = 0; i < renderers.Length; i++)
         {
@@ -1731,7 +1746,14 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             if (renderer == null) continue;
             // title_tv: the kits keep their own materials ("Kit_TVWallBracket_LOD0" would read as a wall).
             if (titleTv != null && renderer.transform.IsChildOf(titleTv.transform)) continue;
+            // Title rooms: a vignette keeps its own finishes; the room-side door reveals wear the room's wall.
+            if (vignetteRoot != null && renderer.transform.IsChildOf(vignetteRoot)) continue;
             var name = renderer.gameObject.name.ToLowerInvariant();
+            if (TitleRoomsOn && name.StartsWith("door reveal", StringComparison.Ordinal) && !name.EndsWith("/ far side", StringComparison.Ordinal))
+            {
+                renderer.sharedMaterial = wall;
+                continue;
+            }
             // Name rule: no exit-sign label or part may contain these words (research/exit_sign/10_spec.md §3.3).
             if (name.Contains("floor") || name.Contains("carpet")) renderer.sharedMaterial = floor;
             else if (name.Contains("ceiling")) renderer.sharedMaterial = ceiling;
@@ -1743,19 +1765,23 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             {
                 var light = room.roomLights[i];
                 if (light == null) continue;
-                light.color = ProfileLightColor(room.rule);
+                // Title rooms: a vignette's own lamps keep the colour and output they were built with.
+                if (OwnLampsIn(room)) continue;
+                light.color = RoomLightColor(room);
                 if (light.gameObject.name.Contains("fluorescent"))
                 {
-                    room.lightBaseIntensity[i] = ProfileLightIntensity(room.rule);
-                    light.range = ProfileLightRange(room.rule);
+                    room.lightBaseIntensity[i] = RoomLightIntensity(room);
+                    light.range = RoomLightRange(room);
                     light.bounceIntensity = diffuseCoefficient;
                 }
             }
+            // Title rooms: shadows by room family (技术美术调研 row 4; with a programme only, unless FamilyShadowsInToday).
+            ApplyShadowRoles(room);
         }
         // A door's far-side reveal is seen from the next room, so it wears that
         // room's paper; this room's wall also faces back into the previous one.
         var next = FindSequence(room.sequence + 1);
-        SetFarSideReveals(room, next != null ? ProfileMaterial(profileWallMaterials, next.rule, wall) : wall);
+        SetFarSideReveals(room, next != null ? (next.vignette?.wall != null ? next.vignette.wall : ProfileMaterial(profileWallMaterials, next.rule, wall)) : wall);
         var previous = FindSequence(room.sequence - 1);
         if (previous != null) SetFarSideReveals(previous, wall);
         // Prismatic lenses in Level 0 and Run; parabolic louvers in the Office.
@@ -1763,7 +1789,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         // the profile's colour reaches it as the drive (ApplyFixtureVisual).
         var lens = room.rule == RoomRule.Office ? FrontRoomsSurfaces.OfficeLouver : (fixtureMaterial ?? FrontRoomsSurfaces.TrofferLens);
         var kitLens = FrontRoomsTrofferKit.LensMaterial;
-        if (room.lightDiffusers != null)
+        if (room.lightDiffusers != null && !OwnLampsIn(room))
             for (var i = 0; i < room.lightDiffusers.Length; i++)
                 if (room.lightDiffusers[i] != null) room.lightDiffusers[i].sharedMaterial = KitLens(room, i) && kitLens != null ? kitLens : lens;
         if (room.lightOutputLevel != null)
@@ -1771,7 +1797,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
                 ApplyFixtureVisual(room, i, room.lightOutputLevel[i], room.lightOutputEnabled != null && i < room.lightOutputEnabled.Length && room.lightOutputEnabled[i]);
         if (room.profileVariants != null)
             for (var i = 0; i < room.profileVariants.Length; i++)
-                if (room.profileVariants[i] != null) room.profileVariants[i].SetActive(i == (int)room.rule);
+                if (room.profileVariants[i] != null) room.profileVariants[i].SetActive(i == (int)room.rule && room.vignette == null);
     }
 
     static void SetFarSideReveals(RoomSlot room, Material material)
@@ -1799,9 +1825,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         var count = room.roomLights == null ? 0 : room.roomLights.Length;
         room.lightDiffusers = new Renderer[count];
         room.lightDiffuserKit = new bool[count];
-        room.volumetricRenderers = new Renderer[count];
         room.lightDiffuserBlocks = new MaterialPropertyBlock[count];
-        room.volumetricBlocks = new MaterialPropertyBlock[count];
         room.lightOutputLevel = new float[count];
         room.lightOutputEnabled = new bool[count];
         var renderers = room.root.GetComponentsInChildren<Renderer>(true);
@@ -1811,22 +1835,11 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             if (renderer == null) continue;
             var name = renderer.gameObject.name;
             var marker = name.IndexOf("fluorescent diffuser ", StringComparison.OrdinalIgnoreCase);
-            var isBeam = name.IndexOf("volumetric fluorescent beam ", StringComparison.OrdinalIgnoreCase) >= 0;
-            if (marker < 0 && !isBeam) continue;
-            var start = marker >= 0 ? marker + "fluorescent diffuser ".Length : name.IndexOf("volumetric fluorescent beam ", StringComparison.OrdinalIgnoreCase) + "volumetric fluorescent beam ".Length;
-            if (!int.TryParse(name.Substring(start), out var fixtureIndex) || fixtureIndex < 0 || fixtureIndex >= count) continue;
-            if (isBeam)
-            {
-                room.volumetricRenderers[fixtureIndex] = renderer;
-                room.volumetricBlocks[fixtureIndex] = new MaterialPropertyBlock();
-                renderer.sharedMaterial = volumetricLightMaterial;
-            }
-            else
-            {
-                room.lightDiffusers[fixtureIndex] = renderer;
-                room.lightDiffuserKit[fixtureIndex] = FrontRoomsTrofferKit.IsKitLens(renderer);
-                room.lightDiffuserBlocks[fixtureIndex] = new MaterialPropertyBlock();
-            }
+            if (marker < 0) continue;
+            if (!int.TryParse(name.Substring(marker + "fluorescent diffuser ".Length), out var fixtureIndex) || fixtureIndex < 0 || fixtureIndex >= count) continue;
+            room.lightDiffusers[fixtureIndex] = renderer;
+            room.lightDiffuserKit[fixtureIndex] = FrontRoomsTrofferKit.IsKitLens(renderer);
+            room.lightDiffuserBlocks[fixtureIndex] = new MaterialPropertyBlock();
         }
     }
 
@@ -1869,6 +1882,12 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             room.lampNoisePhase = new float[count];
         }
         LampOdds(room.rule, out var deadChance, out var unstableChance);
+        // Title rooms: the family's own odds (a vignette riding the slot's L03, or its own lamps).
+        if (room.vignette != null)
+        {
+            deadChance = room.vignette.deadChance;
+            unstableChance = room.vignette.unstableChance;
+        }
         var sequence = Mathf.Max(0, room.sequence);
         for (var lamp = 0; lamp < count; lamp++)
         {
@@ -1893,6 +1912,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             room.lampRiseFrom[lamp] = 0f;
             room.lampUnstableElapsed[lamp] = 0f;
         }
+        ConfigureVignetteLamps(room);
         room.lampsScheduled = false;
         ConfigureExitSigns(room);
     }
@@ -1980,14 +2000,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         if (light == null || room.lightWasEnabled == null || fixtureIndex >= room.lightWasEnabled.Length || !room.lightWasEnabled[fixtureIndex]) return;
         normalizedIntensity = Mathf.Clamp01(normalizedIntensity);
         var active = enabled && normalizedIntensity > .0005f;
-        // Built-in realtime GI is intentionally disabled in this project, so
-        // bounceIntensity alone is not a visible diffuse control. Scale the
-        // direct practical output as well, while keeping a useful floor when
-        // the coefficient is tuned down for a darker grade.
-        var diffuseScale = Mathf.Lerp(.45f, 1f, Mathf.Clamp01(diffuseCoefficient));
         light.bounceIntensity = Mathf.Clamp01(diffuseCoefficient);
-        light.enabled = active;
-        light.intensity = room.lightBaseIntensity[fixtureIndex] * normalizedIntensity * diffuseScale;
+        ApplyLampLight(room, fixtureIndex, normalizedIntensity, active);
         if (room.lightOutputLevel != null && fixtureIndex < room.lightOutputLevel.Length)
             room.lightOutputLevel[fixtureIndex] = normalizedIntensity;
         if (room.lightOutputEnabled != null && fixtureIndex < room.lightOutputEnabled.Length)
@@ -1995,9 +2009,38 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         ApplyFixtureVisual(room, fixtureIndex, normalizedIntensity, active);
     }
 
+    /// <summary>One fixture's Light: its lamp's own level, times its room's door-culling fade (1 while the room can be seen).</summary>
+    void ApplyLampLight(RoomSlot room, int fixtureIndex, float level, bool active)
+    {
+        var light = room.roomLights[fixtureIndex];
+        if (light == null || room.lightWasEnabled == null || fixtureIndex >= room.lightWasEnabled.Length || !room.lightWasEnabled[fixtureIndex]) return;
+        // Built-in realtime GI is intentionally disabled in this project, so
+        // bounceIntensity alone is not a visible diffuse control. Scale the
+        // direct practical output as well, while keeping a useful floor when
+        // the coefficient is tuned down for a darker grade.
+        var diffuseScale = Mathf.Lerp(.45f, 1f, Mathf.Clamp01(diffuseCoefficient));
+        // Title rooms: a room behind a shut title door keeps its lamp states with its lights off (DimRoom).
+        light.enabled = active && room.portalGain > 0f && !room.lightsDimmed;
+        light.intensity = room.lightBaseIntensity[fixtureIndex] * level * diffuseScale * room.portalGain;
+    }
+
+    /// <summary>Every Light of the room again, at the level its lamp last set, times the room's fade.</summary>
+    void ApplyLampLights(RoomSlot room)
+    {
+        if (room.roomLights == null || room.lightOutputLevel == null || room.lightOutputEnabled == null) return;
+        var n = Mathf.Min(room.roomLights.Length, Mathf.Min(room.lightOutputLevel.Length, room.lightOutputEnabled.Length));
+        for (var i = 0; i < n; i++) ApplyLampLight(room, i, room.lightOutputLevel[i], room.lightOutputEnabled[i]);
+    }
+
     void ApplyFixtureVisual(RoomSlot room, int fixtureIndex, float level, bool enabled)
     {
-        var color = ProfileLightColor(room.rule);
+        // Title rooms: a family's own lamps (pendant, strip, wrap, niche) take the map's drive (TitleRooms).
+        if (OwnLampsIn(room))
+        {
+            ApplyVignetteLampVisual(room, fixtureIndex, level, enabled);
+            return;
+        }
+        var color = RoomLightColor(room);
         if (room.lightDiffusers != null && fixtureIndex < room.lightDiffusers.Length && room.lightDiffusers[fixtureIndex] != null)
         {
             var renderer = room.lightDiffusers[fixtureIndex];
@@ -2009,15 +2052,194 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
             block.SetColor("_Color", Color.Lerp(new Color(.045f, .042f, .035f), Color.white, enabled ? level : 0f));
             renderer.SetPropertyBlock(block);
         }
-        if (room.volumetricRenderers == null || fixtureIndex >= room.volumetricRenderers.Length || room.volumetricRenderers[fixtureIndex] == null) return;
-        var volume = room.volumetricRenderers[fixtureIndex];
-        var volumeBlock = room.volumetricBlocks[fixtureIndex] ?? (room.volumetricBlocks[fixtureIndex] = new MaterialPropertyBlock());
-        volume.GetPropertyBlock(volumeBlock);
-        volumeBlock.SetColor("_Color", color);
-        volumeBlock.SetFloat("_Density", enabled ? volumetricDensity * level : 0f);
-        volumeBlock.SetFloat("_DiffuseCoefficient", Mathf.Clamp01(diffuseCoefficient));
-        volume.enabled = enabled && volumetricDensity > .0005f;
-        volume.SetPropertyBlock(volumeBlock);
+        ApplyDustShaft(room, fixtureIndex, color, level, enabled);
+    }
+
+    // ------------------------------------------------------------------ dust in lamp light (技术美术调研 row 9)
+
+    /// <summary>
+    /// How dusty a room's air is: 0 = clear (every room today) .. 1 = thick (the shader's _Density); the dusty family of
+    /// research/tech_art/sheets/r9_dust_shaft.jpg and video/r9_dust_shaft.mp4 is the level that sheet names. The room family decides. The title rooms' one line, where a slot takes its family (title_stream's AttachVignette):
+    /// <c>SetRoomDust(room, dust);</c> and <c>SetRoomDust(room, 0f);</c> where it gives the family back (ReleaseVignette).
+    /// The first call above 0 builds the room's shafts, one under each troffer's lens (FrontRoomsDustShaft); they follow
+    /// their lamps (strike, flicker, failing, dead), go with the room when it is out of sight (door culling) and stay built,
+    /// switched off, at 0. A family with its own lamps builds its shafts with FrontRoomsDustShaft.Build and drives them with
+    /// FrontRoomsDustShaft.Drive from its own lamp tick.
+    /// </summary>
+    void SetRoomDust(RoomSlot room, float dust)
+    {
+        if (room == null) return;
+        room.dust = Mathf.Clamp01(dust);
+        if (room.dust > 0f && room.dustShafts == null) BuildDustShafts(room);
+        if (room.dustShafts == null || room.lightOutputLevel == null || room.lightOutputEnabled == null) return;
+        var color = RoomLightColor(room);
+        var n = Mathf.Min(room.dustShafts.Length, Mathf.Min(room.lightOutputLevel.Length, room.lightOutputEnabled.Length));
+        for (var i = 0; i < n; i++) ApplyDustShaft(room, i, color, room.lightOutputLevel[i], room.lightOutputEnabled[i]);
+    }
+
+    void BuildDustShafts(RoomSlot room)
+    {
+        if (room.fixtures == null || !FrontRoomsDustShaft.Supported || FrontRoomsDustShaft.Material == null) return;
+        room.dustShafts = new MeshRenderer[room.fixtures.Length];
+        room.dustLights = new Light[room.fixtures.Length];
+        room.dustValues = new uint[room.fixtures.Length];
+        for (var i = 0; i < room.fixtures.Length; i++)
+        {
+            if (room.fixtures[i] == null) continue;
+            // The lamp this shaft hangs under: a shaft shows only that lamp's light (a family that hands the room's lamp
+            // channels to lamps of its own leaves these shafts dark).
+            room.dustLights[i] = room.fixtures[i].GetComponentInChildren<Light>(true);
+            // Under the lens face (the kit hangs it 2 cm below the ceiling plane), in the fixture's grid cell.
+            var shaft = FrontRoomsDustShaft.Build(room.fixtures[i], new Vector3(0f, RoomHeight - .03f, 0f), FrontRoomsDustShaft.TrofferLensHalfX,
+                FrontRoomsDustShaft.TrofferLensHalfZ, FrontRoomsDustShaft.TrofferShaftLength, "dust shaft " + i);
+            room.dustShafts[i] = shaft;
+            // A room out of sight (door culling) draws nothing: the new shafts join its hidden parts and come back with them.
+            if (shaft != null && !room.portalDrawn)
+            {
+                shaft.forceRenderingOff = true;
+                room.portalRenderers.Add(shaft);
+            }
+        }
+    }
+
+    void ApplyDustShaft(RoomSlot room, int fixtureIndex, Color color, float level, bool enabled)
+    {
+        if (room.dustShafts == null || room.dustValues == null || fixtureIndex < 0 || fixtureIndex >= room.dustShafts.Length || room.dustShafts[fixtureIndex] == null) return;
+        var own = room.roomLights != null && fixtureIndex < room.roomLights.Length && room.dustLights[fixtureIndex] != null
+            && ReferenceEquals(room.roomLights[fixtureIndex], room.dustLights[fixtureIndex]);
+        // The seed keeps each shaft's dust its own (12 shafts a room, 5 rooms).
+        var value = FrontRoomsDustShaft.Pack(color, own && enabled ? level * room.dust : 0f, 37 * fixtureIndex + 101 * PoolIndex(room) + 11);
+        if (value == room.dustValues[fixtureIndex] && room.dustShafts[fixtureIndex].enabled == (value != 0u)) return;
+        room.dustValues[fixtureIndex] = value;
+        FrontRoomsDustShaft.Drive(room.dustShafts[fixtureIndex], value);
+    }
+
+    // ------------------------------------------------------------------ door culling (技术美术调研 row 1)
+
+    /// <summary>
+    /// Door culling: which rooms the camera can see any of, so what is drawn and lit. Called at the end of Tick (after the
+    /// doors, lamps, pool and rebase have moved, so the frame that follows shows it), Initialize and EndStreamAt;
+    /// BeginDoorOpening and BreakDoor show a room at once. The hooks of 20_ranked_changes 3.1: the walk ahead passes the
+    /// door FirstClosedDoorSequence names and stops at the next shut one; the shut-behind branch of TickNearbyDoors is what
+    /// takes the room behind out of sight; the seal lift in BeginDoorOpening is where a room comes back. An ended stream
+    /// (frozen) and PortalCulling off draw every room.
+    /// </summary>
+    void UpdatePortals(float dt)
+    {
+        if (!initialized || streamCamera == null) return;
+        var current = PortalCulling && !frozen ? FindCurrentRoom() : null;
+        for (var i = 0; i < MaxRooms; i++)
+            if (pool[i] != null) pool[i].portalSeen = current == null;
+        if (current != null)
+        {
+            var cameraZ = streamCamera.transform.position.z;
+            current.portalSeen = true;
+            // Ahead (the title camera always looks this way): through every door open to sight, and past the first shut one,
+            // whose lite edges and leaf gaps show slivers of the room behind it. Nothing past a second shut door is seen.
+            var shutDoors = 1;
+            for (var room = current; ;)
+            {
+                var next = FindSequence(room.sequence + 1);
+                if (next == null) break;
+                if (!FarDoorOpenToSight(room, true, cameraZ))
+                {
+                    if (shutDoors == 0) break;
+                    shutDoors--;
+                }
+                next.portalSeen = true;
+                room = next;
+            }
+            // Behind: the same once the player holds the camera; the title camera never turns, so there a shut door behind
+            // it hides its room (it shuts 4 m behind the camera).
+            shutDoors = hasControl ? 1 : 0;
+            for (var room = current; ;)
+            {
+                var behind = FindSequence(room.sequence - 1);
+                if (behind == null) break;
+                if (!FarDoorOpenToSight(behind, false, cameraZ))
+                {
+                    if (shutDoors == 0) break;
+                    shutDoors--;
+                }
+                behind.portalSeen = true;
+                room = behind;
+            }
+        }
+        for (var i = 0; i < MaxRooms; i++)
+            if (pool[i] != null) ApplyPortal(pool[i], dt);
+    }
+
+    /// <summary>Whether the far door of <paramref name="room"/> lets the camera see past it, looking ahead (+Z) or back.</summary>
+    bool FarDoorOpenToSight(RoomSlot room, bool ahead, float cameraZ)
+    {
+        if (room.doorOpen || room.doorOpening || room.doorClosing || room.doorBroken || room.doorProgress > 0f) return true;
+        // A LIVE lite shows the room past it (FrontRoomsDoorLite). Looking back through one needs a camera that turns.
+        if ((ahead || hasControl) && LiteReady(room)) return true;
+        // About to unlatch: TickNearbyDoors opens a stream door from 4 m before it to 1 m past it.
+        var distance = room.endZ - cameraZ;
+        return distance < 4f + PortalWakeMargin && distance > -1f - PortalWakeMargin;
+    }
+
+    /// <summary>A door has just unlatched onto <paramref name="room"/>: drawn, its lamps at full, from this frame.</summary>
+    void ShowPortal(RoomSlot room)
+    {
+        if (room == null) return;
+        room.portalSeen = true;
+        ApplyPortal(room, 0f);
+    }
+
+    void ApplyPortal(RoomSlot room, float dt)
+    {
+        if (room.portalSeen != room.portalDrawn) SetPortalDrawn(room, room.portalSeen);
+        // Seen: its lamps are at full now (in the title only the room behind the camera ever fades, and it comes back only
+        // at EndStreamAt). Not seen: they fade, so no hum or spill of theirs ever jumps.
+        var gain = room.portalSeen ? 1f : Mathf.MoveTowards(room.portalGain, 0f, dt / PortalFadeSeconds);
+        if (gain == room.portalGain) return;
+        room.portalGain = gain;
+        ApplyLampLights(room);
+    }
+
+    void SetPortalDrawn(RoomSlot room, bool drawn)
+    {
+        room.portalDrawn = drawn;
+        // Collected as the room goes out of sight (so pieces added since it was built go too) and given back from the
+        // same list, so a part moved out of it meanwhile (EndStreamAt's terminal seal) is drawn again as well.
+        if (!drawn) CollectPortalParts(room);
+        for (var i = 0; i < room.portalRenderers.Count; i++)
+            if (room.portalRenderers[i] != null) room.portalRenderers[i].forceRenderingOff = !drawn;
+        for (var i = 0; i < room.portalFixtureSets.Count; i++)
+            if (room.portalFixtureSets[i] != null) room.portalFixtureSets[i].enabled = drawn;
+    }
+
+    // Door culling x title rooms (title_stream_rooms, FrontRoomsRoomStream.TitleRooms): a family vignette moves between a slot
+    // and the bank while its slot is sealed. Joining a slot that is out of sight it is not drawn either and joins the slot's
+    // list (so the slot's next SetPortalDrawn gives it back); leaving, it is drawn again (it may carry the forced-off state of
+    // the room it left). The list is reused: nothing is allocated after the first call.
+    readonly System.Collections.Generic.List<Renderer> titleVignetteRenderers = new System.Collections.Generic.List<Renderer>(512);
+
+    partial void TitleVignetteMoved(RoomSlot room, FrontRoomsTitleVignette vignette, bool attached)
+    {
+        if (vignette == null || vignette.root == null) return;
+        var hidden = attached && room != null && !room.portalDrawn;
+        vignette.root.GetComponentsInChildren(true, titleVignetteRenderers);
+        for (var i = 0; i < titleVignetteRenderers.Count; i++)
+            if (titleVignetteRenderers[i] != null) titleVignetteRenderers[i].forceRenderingOff = hidden;
+        titleVignetteRenderers.Clear();
+        if (hidden) CollectPortalParts(room);
+    }
+
+    void CollectPortalParts(RoomSlot room)
+    {
+        room.portalRenderers.Clear();
+        room.portalFixtureSets.Clear();
+        if (room.root == null) return;
+        room.root.GetComponentsInChildren(true, room.portalRenderers);
+        room.root.GetComponentsInChildren(true, room.portalFixtureSets);
+        // title_tv draws as before: its screen warms its decoder while the set is in the frustum (FrontRoomsScreenVideo).
+        if (!TitleTvIn(room)) return;
+        var tv = titleTv.transform;
+        for (var i = room.portalRenderers.Count - 1; i >= 0; i--)
+            if (room.portalRenderers[i] != null && room.portalRenderers[i].transform.IsChildOf(tv)) room.portalRenderers.RemoveAt(i);
     }
 
     void BeginDoorOpening(RoomSlot room)
@@ -2034,6 +2256,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         {
             var next = FindSequence(room.sequence + 1);
             if (next != null && next.rearSeal != null && next.rearSeal.activeSelf) next.rearSeal.SetActive(false);
+            // Door culling (row 1): the room it opens onto is drawn, its lamps at full, from the frame the latch releases.
+            ShowPortal(next);
         }
         if (room.doorSoundPlayed) return;
         room.doorSoundPlayed = true;
@@ -2165,6 +2389,7 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         var info = FrontRoomsKitLibrary.GetInfo(asset);
         var glow = info != null && info.TryAnchor("glow", out var anchor) ? anchor : new Vector3(0f, 1.96f - RoomHeight, 0f);
         var red = new GameObject("run exit sign light").AddComponent<Light>();
+        UnityEngine.Rendering.Universal.LightExtensions.GetUniversalAdditionalLightData(red).softShadowQuality = UnityEngine.Rendering.Universal.SoftShadowQuality.Low;   // row 16 option D, as the troffers
         red.transform.SetParent(sign.transform, false);
         red.transform.localPosition = glow;
         red.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);

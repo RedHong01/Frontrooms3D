@@ -49,6 +49,10 @@ public static class FrontRoomsWaterSubmerged
     public static int ForceMode = -1;
     /// <summary>Tools: false publishes no body (the term off, as outside a pool zone), whatever is registered.</summary>
     public static bool Enabled = true;
+    /// <summary>The waterline on top of each material's wet band (FRWetBand), for shallow water that would otherwise read
+    /// as a clean wet floor: x raises the band (m, water wicked up what can soak), y adds darkening, z the meniscus gain
+    /// (1 = twice as bright), w the tide mark at the band's dry edge (0..1). Zero (the default) changes nothing.</summary>
+    public static Vector4 Waterline;
     /// <summary>Where the viewer is (FrontRoomsWaterPlanar sets it each frame; tools before they render): with more bodies
     /// than the shader holds (MaxBodies), the nearest are published.</summary>
     public static Vector3 ViewerPosition;
@@ -75,6 +79,9 @@ public static class FrontRoomsWaterSubmerged
         public float y, top, scale, albedo, thrown;
         public Light srcA, srcB;
         public float radius;
+        public float depth = -1f;                     // the water's mean depth (m) for its bounce (SetDepth; below 0: 1.2)
+        public Vector3 rho;                           // its return albedo, cached for rhoKey
+        public Vector3 rhoKey = new Vector3(-1f, -1f, -1f);
     }
 
     sealed class Lamp
@@ -110,6 +117,7 @@ public static class FrontRoomsWaterSubmerged
     static readonly int LampColId = Shader.PropertyToID("_FR_SubLampCol");
     static readonly int LampCountId = Shader.PropertyToID("_FR_SubLampCount");
     static readonly int ThrownId = Shader.PropertyToID("_FR_SubThrown");
+    static readonly int WaterlineId = Shader.PropertyToID("_FR_SubWaterline");
     static readonly int LutId = Shader.PropertyToID("_FR_SubLut");
     static readonly int FineId = Shader.PropertyToID("_FR_CausticFine");
     static readonly int LongId = Shader.PropertyToID("_FR_CausticLong");
@@ -118,6 +126,18 @@ public static class FrontRoomsWaterSubmerged
     static readonly int TexId = Shader.PropertyToID("_FR_CausticTex");
 
     public static int BodyCount => bodies.Count;
+
+    /// <summary>The i-th registered body's rectangle (world xz) and water height (the zone look's height fog over terraced
+    /// water, tools); false past the end.</summary>
+    public static bool GetBody(int i, out Rect water, out float y)
+    {
+        water = default(Rect);
+        y = 0f;
+        if (i < 0 || i >= bodies.Count || bodies[i] == null) return false;
+        water = bodies[i].water;
+        y = bodies[i].y;
+        return true;
+    }
     public static int LampCount => lamps.Count;
     public static string Problem { get; private set; }
     public static Mode LastMode { get; private set; }
@@ -131,8 +151,10 @@ public static class FrontRoomsWaterSubmerged
         lastFrame = -1;
         ForceMode = -1;
         Enabled = true;
+        Waterline = Vector4.zero;
         Problem = null;
         Shader.SetGlobalFloat(CountId, 0f);
+        Shader.SetGlobalVector(WaterlineId, Vector4.zero);
         Shader.SetGlobalFloat(LampCountId, 0f);
     }
 
@@ -141,8 +163,13 @@ public static class FrontRoomsWaterSubmerged
     /// absorption scale (Q1: the club 1, the level 3-5, a room or two 9; below 0 = the zone's) and the basin's albedo.</summary>
     public static void Register(int id, Rect water, Rect room, float waterY, float roomTop, float absorbScale, float basinAlbedo, float thrownGain)
     {
+        // a body registered again keeps its place in the list (FrontRoomsWaterSurface.RefreshSubmerged), as a new one
+        var at = -1;
+        for (var i = 0; i < bodies.Count; i++) if (bodies[i] != null && bodies[i].id == id) { at = i; break; }
         Unregister(id, false);
-        bodies.Add(new Body { id = id, water = water, room = room, y = waterY, top = roomTop, scale = absorbScale, albedo = basinAlbedo, thrown = thrownGain });
+        var body = new Body { id = id, water = water, room = room, y = waterY, top = roomTop, scale = absorbScale, albedo = basinAlbedo, thrown = thrownGain };
+        if (at >= 0 && at <= bodies.Count) bodies.Insert(at, body);
+        else bodies.Add(body);
         Publish(true);
     }
 
@@ -302,6 +329,7 @@ public static class FrontRoomsWaterSubmerged
             if (Time.frameCount == lastFrame) return;
             lastFrame = Time.frameCount;
         }
+        Shader.SetGlobalVector(WaterlineId, Waterline);
         for (var i = bodies.Count - 1; i >= 0; i--) if (bodies[i] == null) bodies.RemoveAt(i);
         if (bodies.Count > MaxBodies) bodies.Sort(ByViewerDistance);
         var n = Enabled ? Mathf.Min(bodies.Count, MaxBodies) : 0;
@@ -370,6 +398,7 @@ public static class FrontRoomsWaterSubmerged
         Shader.SetGlobalVector(FineDId, fineD);
         Shader.SetGlobalVector(LongDId, longD);
         Shader.SetGlobalVector(TexId, texels);
+        PublishWaterLight(n, mode);
     }
 
     static int ByViewerDistance(Body a, Body b)
@@ -392,16 +421,19 @@ public static class FrontRoomsWaterSubmerged
         return new Vector4(p.x, p.y, p.z, radius);
     }
 
+    /// <summary>The body whose water a lamp is in: the lowest surface above it (equal heights keep the first, as
+    /// FRSubFind does), so a niche of a catch pool beside a higher terrace stays the catch pool's.</summary>
     static int BodyUnder(Vector3 p, int n)
     {
+        var best = -1;
         for (var i = 0; i < n; i++)
         {
             var b = bodies[i];
             if (p.y >= b.y) continue;
             var r = b.water;
-            if (p.x >= r.xMin - .4f && p.x <= r.xMax + .4f && p.z >= r.yMin - .4f && p.z <= r.yMax + .4f) return i;
+            if (p.x >= r.xMin - .4f && p.x <= r.xMax + .4f && p.z >= r.yMin - .4f && p.z <= r.yMax + .4f && (best < 0 || b.y < bodies[best].y)) best = i;
         }
-        return -1;
+        return best;
     }
 
     static float ScaleOf(Body b)
@@ -435,6 +467,246 @@ public static class FrontRoomsWaterSubmerged
             s += " | body " + b.id + " y " + b.y.ToString("0.000") + " absorb x" + ScaleOf(b).ToString("0.0") + " thrown x" + ThrownOf(b).ToString("0.00")
                 + (b.srcA != null ? " srcA " + b.srcA.name : "") + (b.srcB != null ? " srcB " + b.srcB.name : "");
         if (Problem != null) s += " | PROBLEM " + Problem;
+        return s;
+    }
+
+    // ------------------------------------------------------------------------------------------------ the room lit by its water
+    // 70_look_build.md section 12 (Red, 2026-11-04, on scene 4: the room takes neither light nor colour from its water).
+    // FrontRoomsWaterSubmerged.hlsl FRSubWaterLight: the mirror (the overhead lamps the water reflects onto the ceiling and
+    // walls, with the long ripple's net) and the bounce (the light that went into the water and came back out in the water's
+    // colour, a Lambertian rectangle seen from each surface). Every static's default is today's frame: nothing runs.
+
+    /// <summary>The overhead lamps the water mirrors onto its room (Fresnel R, the ripple's net): 0 off (today), 1 as physics
+    /// gives it. Desktop only (ForceMirror): phones and WebGL keep the bounce.</summary>
+    public static float MirrorGain;
+    /// <summary>The light the water sends back into its room in its own colour (absorption by depth and the zone's scale, the
+    /// basin's albedo, the trapping), from the lamps above it and the ambient: 0 off (today), 1 as physics gives it.</summary>
+    public static float BounceGain;
+    /// <summary>The share of the ambient's light from the water's directions that the bounce replaces: 1 the water's own light
+    /// instead of the zone's grey there (energy kept), 0 the bounce added on top.</summary>
+    public static float BounceReplace = 1f;
+    /// <summary>The share of each wet niche's glow that comes up over the whole water (the basin's white tile carries the
+    /// light across before it leaves) instead of at the niche (FRSubThrown): 0 today; the niche light's total is kept.</summary>
+    public static float NicheSpread;
+    /// <summary>The radius (m) of a lamp the water mirrors when it is not one of a body's compact caustic sources: the blur of
+    /// its net on the ceiling (a troffer's lens about 0.3, a down-fill 0.2, a 50 mm low-voltage spot 0.025).</summary>
+    public static float MirrorLampRadius = .25f;
+    /// <summary>Tools: -1 the tier decides (the mirror on desktop only); 0 off, 1 on.</summary>
+    public static int ForceMirror = -1;
+
+    /// <summary>The looks Red picks from in the structures scene (each path alone, and the recommendation).</summary>
+    public enum WaterLightLook { Today = 0, Mirror = 1, Bounce = 2, Spread = 3, Recommended = 4 }
+
+    /// <summary>The recommended values (70 section 12): the mirror and the bounce as physics gives them, half of the niches'
+    /// glow spread over the basin.</summary>
+    public const float RecMirror = 1f, RecBounce = 1f, RecSpread = .5f;
+
+    public static WaterLightLook CurrentWaterLight { get; private set; }
+
+    /// <summary>Sets the statics for one look and publishes (callers re-render their realtime reflection probes after it,
+    /// so the tile and the probe tiers reflect the lit room).</summary>
+    public static void SetWaterLight(WaterLightLook look)
+    {
+        CurrentWaterLight = look;
+        var rec = look == WaterLightLook.Recommended;
+        MirrorGain = look == WaterLightLook.Mirror || rec ? RecMirror : 0f;
+        BounceGain = look == WaterLightLook.Bounce || rec ? RecBounce : 0f;
+        NicheSpread = look == WaterLightLook.Spread || rec ? RecSpread : 0f;
+        BounceReplace = 1f;
+        MirrorLampRadius = .25f;
+        lightsScanned = -1f;
+        Publish(true);
+    }
+
+    /// <summary>The bounce reads the water's mean depth (m); FrontRoomsWaterSurface sets it (its depth field, else by kind).</summary>
+    public static void SetDepth(int id, float depth)
+    {
+        foreach (var x in bodies)
+            if (x.id == id) x.depth = depth;
+    }
+
+    /// <summary>The share of the light falling on the water that comes back up out of it, per colour channel: down through
+    /// the column (the LUT's D), the basin's albedo, back up and out (X: 1 - R inside the critical cone), the trapping
+    /// (1 / (1 - albedo P)); a = (0.29, 0.048, 0.006) per metre x the scale. The dry tile's own 0.8 for comparison: clear water
+    /// 0.12 m (0.53, 0.61, 0.63), 0.9 m (0.24, 0.51, 0.61); the level's x4 at 0.12 m (0.35, 0.56, 0.62).</summary>
+    public static Vector3 ReturnAlbedo(float depth, float scale, float albedo)
+    {
+        var r = Vector3.zero;
+        for (var ch = 0; ch < 3; ch++)
+        {
+            var tau = Absorption[ch] * Mathf.Max(scale, 0f) * Mathf.Max(depth, 0f);
+            double dIn = 0.0, xOut = 0.0, pTrap = 0.0;
+            const int steps = 256;
+            for (var j = 0; j < steps; j++)
+            {
+                var th = (j + .5) / steps * Math.PI * .5;
+                var c = Math.Cos(th);
+                var sn = Math.Sin(th);
+                var w = 2.0 * c * sn * (Math.PI * .5 / steps);
+                var cw = Math.Sqrt(Math.Max(0.0, 1.0 - sn * sn / (N * N)));
+                dIn += w * (1.0 - Fresnel(c, N)) * Math.Exp(-tau / Math.Max(cw, 1e-4));
+                var up = Fresnel(c, 1.0 / N);
+                xOut += w * (1.0 - up) * Math.Exp(-tau / Math.Max(c, 1e-4));
+                pTrap += w * up * Math.Exp(-2.0 * tau / Math.Max(c, 1e-4));
+            }
+            r[ch] = (float)(dIn * albedo * xOut / Math.Max(1.0 - albedo * pTrap, 1e-3));
+        }
+        return r;
+    }
+
+    /// <summary>The water's reflectance for the room's diffuse light (1 - the LUT's D(0)): 0.066.</summary>
+    public static readonly float DiffuseReflectance = 1f - LutAt(0.0).x;
+
+    static readonly Vector4[] bounceA = new Vector4[MaxBodies], bounceB = new Vector4[MaxBodies];
+    static readonly List<Light> roomLamps = new List<Light>();
+    static float lightsScanned = -1f;
+    static readonly int WLId = Shader.PropertyToID("_FR_SubWL");
+    static readonly int WL2Id = Shader.PropertyToID("_FR_SubWL2");
+    static readonly int BounceAId = Shader.PropertyToID("_FR_SubBounceA");
+    static readonly int BounceBId = Shader.PropertyToID("_FR_SubBounceB");
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetWaterLight()
+    {
+        MirrorGain = BounceGain = NicheSpread = 0f;
+        BounceReplace = 1f;
+        MirrorLampRadius = .25f;
+        ForceMirror = -1;
+        CurrentWaterLight = WaterLightLook.Today;
+        roomLamps.Clear();
+        lightsScanned = -1f;
+        Shader.SetGlobalVector(WLId, Vector4.zero);
+    }
+
+    static void PublishWaterLight(int n, Mode mode)
+    {
+        var spread = Mathf.Clamp01(NicheSpread);
+        var gain = Mathf.Max(BounceGain, 0f);
+        var mirror = MirrorGain > 0f && (ForceMirror >= 0 ? ForceMirror > 0 : mode == Mode.Desktop);
+        var bounce = gain > 0f || spread > 0f;
+        if (!mirror && !bounce)
+        {
+            Shader.SetGlobalVector(WLId, Vector4.zero);
+            return;
+        }
+        if (bounce)
+        {
+            if (gain > 0f) ScanLamps();
+            for (var i = 0; i < MaxBodies; i++)
+            {
+                if (i >= n) { bounceA[i] = bounceB[i] = Vector4.zero; continue; }
+                var b = bodies[i];
+                var rho = ReturnAlbedoOf(b);
+                var e = gain > 0f ? LampsOnWater(b) : Vector3.zero;
+                bounceA[i] = new Vector4(rho.x * gain, rho.y * gain, rho.z * gain, DiffuseReflectance * gain);
+                bounceB[i] = new Vector4(rho.x * e.x * gain, rho.y * e.y * gain, rho.z * e.z * gain, 0f);
+            }
+            if (spread > 0f)
+            {
+                // a Lambertian glow I0 leaves the surface with flux 0.525 pi I0 (1 - P(0)); spread over the water it is a
+                // radiance of that flux over the water's area (URP units)
+                for (var k = 0; k < MaxLamps; k++)
+                {
+                    var c = lampCol[k];
+                    if (c.w <= 0f) continue;
+                    var bi = (int)(lampPos[k].w + .5f);
+                    if (bi < 0 || bi >= n) continue;
+                    var area = Mathf.Max(bodies[bi].water.width * bodies[bi].water.height, .25f);
+                    var s = spread * c.w * .525f * Mathf.PI / area;
+                    bounceB[bi] += new Vector4(c.x * s, c.y * s, c.z * s, 0f);
+                }
+                Shader.SetGlobalVector(ThrownId, new Vector4(1f - spread, GlowRadius, 0f, 0f));
+            }
+            Shader.SetGlobalVectorArray(BounceAId, bounceA);
+            Shader.SetGlobalVectorArray(BounceBId, bounceB);
+        }
+        Shader.SetGlobalVector(WLId, new Vector4(mirror ? MirrorGain : 0f, gain, Mathf.Clamp01(BounceReplace), 1f));
+        Shader.SetGlobalVector(WL2Id, new Vector4(mirror ? 1f : 0f, Mathf.Max(MirrorLampRadius, .001f), bounce ? 1f : 0f, 0f));
+    }
+
+    static Vector3 ReturnAlbedoOf(Body b)
+    {
+        var key = new Vector3(b.depth > 0f ? b.depth : 1.2f, ScaleOf(b), Mathf.Clamp(b.albedo, 0f, .95f));
+        if (key != b.rhoKey)
+        {
+            b.rhoKey = key;
+            b.rho = ReturnAlbedo(key.x, key.y, key.z);
+        }
+        return b.rho;
+    }
+
+    /// <summary>The scene's point and spot lights, found again once a second in Play mode (every publish in edit mode).</summary>
+    static void ScanLamps()
+    {
+        var now = Application.isPlaying ? Time.unscaledTime : -1f;
+        if (Application.isPlaying && lightsScanned >= 0f && now - lightsScanned < 1f) return;
+        lightsScanned = Application.isPlaying ? now : -1f;
+        roomLamps.Clear();
+        foreach (var l in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            if (l != null && (l.type == LightType.Point || l.type == LightType.Spot)) roomLamps.Add(l);
+    }
+
+    /// <summary>The mean irradiance (URP units) the lamps of the body's room above the water give the water, over a grid of
+    /// points about 1.5 m apart, as URP lights a floor: colour x intensity, the range fade, the cone, the cosine.</summary>
+    static Vector3 LampsOnWater(Body b)
+    {
+        var w = b.water;
+        int nx = Mathf.Clamp(Mathf.CeilToInt(w.width / 1.5f), 2, 8), nz = Mathf.Clamp(Mathf.CeilToInt(w.height / 1.5f), 2, 8);
+        var sum = Vector3.zero;
+        foreach (var l in roomLamps)
+        {
+            if (l == null || !l.isActiveAndEnabled || l.intensity <= 0f) continue;
+            var lp = l.transform.position;
+            if (lp.y <= b.y + .05f || lp.y > b.top + .5f || lp.x < b.room.xMin - .5f || lp.x > b.room.xMax + .5f || lp.z < b.room.yMin - .5f || lp.z > b.room.yMax + .5f) continue;
+            var col = l.color.linear * l.intensity;
+            if (UnityEngine.Rendering.GraphicsSettings.lightsUseColorTemperature && l.useColorTemperature) col *= Mathf.CorrelatedColorTemperatureToRGB(l.colorTemperature);
+            var range2 = l.range * l.range;
+            float cosOuter = 1f, inv = 0f;
+            var spot = l.type == LightType.Spot;
+            if (spot)
+            {
+                cosOuter = Mathf.Cos(l.spotAngle * .5f * Mathf.Deg2Rad);
+                var cosInner = Mathf.Cos(l.innerSpotAngle * .5f * Mathf.Deg2Rad);
+                inv = 1f / Mathf.Max(cosInner - cosOuter, .001f);
+            }
+            var fwd = l.transform.forward;
+            var e = 0f;
+            for (var i = 0; i < nx; i++)
+                for (var j = 0; j < nz; j++)
+                {
+                    var q = new Vector3(w.xMin + (i + .5f) * w.width / nx, b.y, w.yMin + (j + .5f) * w.height / nz);
+                    var v = lp - q;
+                    var d2 = Mathf.Max(v.sqrMagnitude, 1e-4f);
+                    if (d2 >= range2) continue;
+                    var f = d2 / range2;
+                    var smooth = Mathf.Clamp01(1f - f * f);
+                    var dir = v / Mathf.Sqrt(d2);
+                    var a = smooth * smooth / d2 * dir.y;
+                    if (spot)
+                    {
+                        var s = Mathf.Clamp01((Vector3.Dot(fwd, -dir) - cosOuter) * inv);
+                        a *= s * s;
+                    }
+                    e += a;
+                }
+            e /= nx * nz;
+            sum += new Vector3(col.r, col.g, col.b) * e;
+        }
+        return sum;
+    }
+
+    /// <summary>Tools and logs: the water-light statics and each body's bounce.</summary>
+    public static string DescribeWaterLight()
+    {
+        var s = "water light " + CurrentWaterLight + ": mirror " + MirrorGain.ToString("0.00") + " bounce " + BounceGain.ToString("0.00")
+            + " replace " + BounceReplace.ToString("0.00") + " spread " + NicheSpread.ToString("0.00") + " lamp radius " + MirrorLampRadius.ToString("0.000")
+            + " | lamps scanned " + roomLamps.Count;
+        for (var i = 0; i < Mathf.Min(bodies.Count, MaxBodies); i++)
+        {
+            var b = bodies[i];
+            s += " | body " + b.id + " depth " + (b.depth > 0f ? b.depth : 1.2f).ToString("0.00") + " rho " + b.rho.ToString("F3")
+                + " A " + bounceA[i].ToString("F4") + " B " + bounceB[i].ToString("F4");
+        }
         return s;
     }
 }

@@ -536,9 +536,11 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         // the bay floor through the goal wall; shadowed, the slot itself cuts the spill to the trapezoid on the bay floor.
         foreach (var x in new[] { 1.75f, 7.25f })
         {
-            // 40 (was 14): shadowed, the slot under the half-raised door is the only way the light reaches the dock, so it must
-            // clip to lead the x1.6-strip dock walls (L 208) (review SP5-F2, by eye).
-            var head = kit.Lamp("high-pressure sodium", LightType.Spot, new Vector3(x, -3.64f + 4f, 43.5f), new Vector3(4.5f - x, -3.2f, -3.5f), 90f, 60f, 40f, 16f, Sodium, true,
+            // 240 (14, then 40): shadowed, the slot under the half-raised door is the only way the light reaches the dock, so it must
+            // clip to lead the dock walls under their x1.0 strips (review SP5-F2; Red 11-04 S4 B). Measured in render9 (BT.709 luma,
+            // the slot's opening against the four walls): at 40 the slot was 105 / 100 against the walls' 173 / 136 (platform /
+            // truck bay); at 240 it is 192 / 188 (its bright part, p90, 204 / 202 over the walls' p90 195 / 168), still sodium amber.
+            var head = kit.Lamp("high-pressure sodium", LightType.Spot, new Vector3(x, -3.64f + 4f, 43.5f), new Vector3(4.5f - x, -3.2f, -3.5f), 90f, 60f, 240f, 16f, Sodium, true,
                 new Vector3(.4f, .25f, .35f), FrontRoomsPoolMaterials.Surface("RunB_GalvSteel", new Color(.6f, .62f, .63f)), Sodium * 6f);
             if (kit.Host != null && kit.Host.Look != null) kit.Host.Look.Shadowed(head);
         }
@@ -558,13 +560,14 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
             var pitch = Mathf.Atan((SoffitAt(z - .61f) - SoffitAt(z + .61f)) / 1.22f) * Mathf.Rad2Deg;
             Strip(new Vector3(0f, s - .02f, z), false, Mathf.Abs(z - 10.8f) < .1f ? .78f : 1f, 10f, true, pitch);
         }
-        // The dock: one R-B strip per cell at x1.6, and the dock light. The dock's strips light only while the walker is in the
+        // The dock: one R-B strip per cell at x1.0 (70 had x1.6; Red 11-04, S4 B, "每个都按推荐来做": the dock's strips step down so
+        // the sodium slot under the overhead door is the brightest thing in the dock), and the dock light. The dock's strips light only while the walker is in the
         // dock or the goal door is open (review SP5-F3: every row reached landing C through the goal wall, unshadowed); the
         // north row casts its shadows, so the overhead door's wall stops lighting the outside ramp white (review SP5-F2).
         for (var i = 0; i < 3; i++)
             for (var j = 0; j < 4; j++)
             {
-                var ds = Strip(new Vector3(-1.5f + 3f * i + 1.5f, DockCeil - .02f, 27f + 3f * j + 1.5f), false, 1.6f, 14f);
+                var ds = Strip(new Vector3(-1.5f + 3f * i + 1.5f, DockCeil - .02f, 27f + 3f * j + 1.5f), false, 1f, 14f);
                 dockStrips.Add(ds);
                 if (j == 3 && kit.Host != null && kit.Host.Look != null) kit.Host.Look.Shadowed(ds);
             }
@@ -630,6 +633,7 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
         lightGo.transform.localPosition = new Vector3(0f, -.092f, 0f);
         lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         var l = lightGo.AddComponent<Light>();
+        FrontRoomsMapWorld.ShippedShadowFilter(l);
         l.type = LightType.Spot;
         l.spotAngle = 172f;
         l.innerSpotAngle = 124f;
@@ -678,11 +682,21 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
 
     void BuildSigns()
     {
-        // The arrival's sign spot is inside the corridor's east wall: on the wall, to the right, out of the main view.
-        kit.Sign(new Vector3(1.36f, FloorAt(4f) + 1.5f, 4f), new Vector3(0f, FloorAt(4f) + 1.5f, 4f), "SP5 · Run!：一路下坡到卸货间",
+        // The arrival's sign spot is inside the corridor's east wall: on the wall, to the right, out of the main view, its face's
+        // centre 2.50 m from the arrival eye (20_placard_type.md v2.4, E's FAR; was z 4.0, 2.88 m): z 3.562, its south end at
+        // the cage's last post (z 3.0, on x 1.5; the panel's back is at x 1.395).
+        kit.Sign(new Vector3(1.36f, FloorAt(3.562f) + 1.5f, 3.562f), new Vector3(0f, FloorAt(3.562f) + 1.5f, 3.562f), "SP5 · Run!：一路下坡到卸货间",
             "游戏里的 Run!：设备走廊和它尽头的目标门。走廊 27 米：先平走一格，入口一边是铁丝网储物笼，一边是开着门的杂物间；后 24 米是 1:8 的坡道，一共下降 3 米；每 9 米一道防火门墙，过了门框再下两级小台阶（共 0.3 米）。坡道中段头顶开着一口设备竖井，里面的爬梯够不着。走廊尽头那扇门后面是 5.4 米高的卸货间：平台比卡车位高 1.2 米，边上拉着链条护栏；卷帘门只拉起一半，门下露出通往夜里街道的坡道，钠灯照得橘黄，是这里最亮的东西。按 T 停电，停电后只剩应急灯，再按一次恢复。\n"
             + "灰盒占位：铁丝网储物笼；竖井里的管线和爬梯；卸货间的混凝土地面和平台边；门外的坡道和钠灯；卷帘门、卸货调节板、链条护栏、风管、消防水带箱、打卡钟这些还没做的新道具。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
-            + "要你决定：1 走廊两侧的小房间能进还是只能看（63 Q1）？入口左边的杂物间开着门，可以走进去试。 2 卷帘门下面露出什么（63 Q3）？现在放的是钠灯下通往街道的坡道。 3 装卸平台边：真实的开口边，还是现在这种可拆的链条护栏加摆门（63 Q2）？ 4 储物笼里站着一个替身：铁丝网、龙骨架这类看得穿的隔断，Relay 应该能隔着看见你，还是像墙一样挡住（62 Q1）？ 5 竖井、储物笼、卸货间，各自放进游戏吗？（坡道什么时候出现、多长，你已经同意了：71 的决定 2，第 3 档起出现，1:8，最长 24 米，最多下降 3 米；它和别的新结构一样，你走过、说可以，才进游戏。）", FloorAt(4f));
+            + "要你决定：1 走廊两侧的小房间能进还是只能看（63 Q1）？入口左边的杂物间开着门，可以走进去试。 2 卷帘门下面露出什么（63 Q3）？现在放的是钠灯下通往街道的坡道。 3 装卸平台边：真实的开口边，还是现在这种可拆的链条护栏加摆门（63 Q2）？ 4 储物笼里站着一个替身：铁丝网、龙骨架这类看得穿的隔断，Relay 应该能隔着看见你，还是像墙一样挡住（62 Q1）？ 5 竖井、储物笼、卸货间，各自放进游戏吗？（坡道什么时候出现、多长，你已经同意了：71 的决定 2，第 3 档起出现，1:8，最长 24 米，最多下降 3 米；它和别的新结构一样，你走过、说可以，才进游戏。）", FloorAt(3.562f));
+        // Its blade (20_placard_type.md v2.5, E-blade): the arrival reads the flat sign 56 degrees off its face, so its code and
+        // title also hang on a blade square to the east wall (face x 1.42), inner edge 50 mm off it, bottom 2.10 over the ramp
+        // under it (FloorAt 3.8475 = -0.106), its title on one line (11 ems, inside the blade's 12-em measure), top 2.283: under
+        // the duct (underside 2.45, 0.16 m clear) and the main (2.57), 0.38 m past the twin head (z 3.15..3.45), 14 mm over the
+        // flat sign's top (the ramp falls 36 mm from the sign's centre to here); front face z 3.8325, 2.500 m from the arrival
+        // eye, read 18 degrees to the side and 11 up. (Two lines would leave 0.09 m under the duct.)
+        FrontRoomsStructuresSigns.Blade(Root, Root.TransformPoint(new Vector3(1.42f, 0f, 3.8475f)), Root.TransformDirection(Vector3.left),
+            Root.TransformPoint(Arrival + Vector3.up * FrontRoomsStructuresWalker.Eye), "SP5 · Run!：一路下坡到卸货间", Root.position.y + FloorAt(3.8475f));
         // The Relay stand-in on run 2 (Run! B's proxy spot), facing north.
         kit.Relay(new Vector3(-.8f, FloorAt(11.4f), 11.4f), new Vector3(-.8f, FloorAt(11.4f), 20f));
         kit.Mark(new Vector3(1.3f, FloorAt(6f) + 1.4f, 6f), Vector3.left, "坡道 1:8 · 24 米降 3.0");

@@ -82,3 +82,35 @@ From 游戏视觉 (workflow `visual-run-rethink`, account A, parent session loca
 - **The Run door** (our card 4) adds no event: it is a normal wooden door (rule 10), and its sounds are the doors'. The trip about 2.5 m inside is 关卡设计's device point (their card 5); its sound is yours (71 §9, 声音设计 3).
 - **Unchanged:** every hook above (`RigBuilt`, `RigDropped`, `StateChanged`, `MainsDropped`, `TransferRelay`, `ResetStarted`) and the re-strike's timing, 0.15 s a cell from the entrance, now over the room's own length (7 to 14 cells).
 - **Waiting with our card 3 (WAIT-RED):** a click per cell as the red trip front passes, and B's pulse.
+
+## Update 2026-11-04 · card 3, the red looks (READY, not applied yet)
+
+From 游戏视觉 (workflow `run_red`, account A, parent session local_be0f3747), for `research/level_space/71_run_room.md` §9, 游戏视觉 3 (decision 6) and your card 2 ("a relay click per cell as a front passes … the red tubes' ballast hum"). Red's words on the red tube (灯具适配's chat, 11-04): "加，用更亮档", then "用这个点位吧" (the HDR sheet's brightest column). Package `W/apply/run_red_looks.sh`; build log `60_production_66.md` section C3. Inert until Red has walked SP7 (rule 5b): with `runRooms` off nothing is built. We play nothing (rule 24).
+
+**The look a room trips into** is `FrontRoomsRunRig.RedLook` (`Today`, `AlarmCircuit` = A, `AlarmPulse` = B), from the static `FrontRoomsRunRig.DefaultRedLook`, which ships **A**: B, the look Red picked, waits behind it until a Harding FPA or PEAT capture passes its pulse. Today is the trip as landed.
+
+| Hook | Shape | When |
+|---|---|---|
+| `RedStrike` (new) | `Action<int, Vector3>`: the strip, its world point | A and B: once per strip as its red tube and its Light turn red, 0.35 s after the dark band passes it, so one battery relay a cell at 0.15 s a cell from the entrance toward the goal door (9 cells: 0.35 s to 1.55 s after the trip). Reduce Flashing: every strip at the trip. Never in Today, after `TripImmediate`, or for a receding room's hidden strips (they come with `StripStrike`). |
+| `PulseStarted` (new) | `Action<int, Vector3>`: the pulse 0 .. 11, the entrance strip's world point | B only: every 2.5 s from 3.0 s after the trip (a receding room: from 1 s after its final seat at the earliest), 12 at most; the dip then runs to the goal door at 20 m/s. Never under Reduce Flashing. |
+| `TransferRelay` (unchanged shape) | | In A and B the pool heads' relays pull in as the band passes them (0.35 s + their distance from the entrance strip / 20 m/s); the goal head's at 0.35 s as before. Today: as before. |
+| `MainsDropped`, `StateChanged`, `ResetStarted` | unchanged | unchanged. |
+
+- **What your fixture voice reads now:** in A and B each strip's Light (`run b wrap light k`, the name you read) does not stay dark after the trip: it turns red at 3.5 (the white is 5.5), so your level reads about 0.64 of its white once the red is up (about 0.22 at B's dips), and `RunWrapEvents` hears the red strike as a starter tick and a strike (dark below 0.15, lit above 0.3). If the red tube's ballast should sound unlike the white tubes, `RedStrike` is its event; the Light's level is the strip's white plus its red.
+- **The reset** is as built: the red goes out with the heads in one step (Reduce Flashing: it fades with them over 0.5 s), then the white re-strike from the entrance at 0.15 s a cell.
+
+## Update 2026-11-04 · RB, the receding room in the binder (READY, not applied yet)
+
+From 游戏视觉 (workflow `run_red`, stage "Recede binder", account A, parent session local_be0f3747), for 关卡设计's card 4 ("the binder's two calls", their note of 11-04 12:50) and our contract's binder lines (`W/apply/run_rethink_contract/README.md`, "Final" and "RB"). Package `W/apply/run_recede_binder.sh`, stacked on `run_red_looks`; build log `60_production_66.md` section RB. Inert until Red has walked SP7 (rule 5b): no level profile can deal a receding room (the map's `runRecede` is never serialized), so the game builds none. We play nothing (rule 24).
+
+The update of 11-04 above promised "the hook that hands you each room's recede comes with those binder lines, as `RigBuilt` hands you the rig". Here it is:
+
+| Hook | Shape | When |
+|---|---|---|
+| `FrontRoomsRunRigBinder.RecedeBuilt` (new, static) | `Action<FrontRoomsRunRoom, FrontRoomsRunRecede>` | a receding room's end is built and bound, raised right after `RigBuilt` for the same room, and again after each rebuild. Subscribe to the recede's `Cue` (the 16 `RunRecedeCue`s above) here. A room rebuilt after its recede began is already seated when this is raised: nothing replays. |
+| `FrontRoomsRunRigBinder.RecedeDropped` (new, static) | same | just before the end is destroyed (a chunk dropped, the floor changed), before `RigDropped`. Unsubscribe here. |
+
+- **The order in a receding room:** the map trips it at the 9 m frame (FD1, not 1.5 m) until its last seat: the rig's `StateChanged` / `MainsDropped` / `TransferRelay` as in every room, and the end's clock starts with them; the end's first cue (`MagnetRelease` 0) comes when the gaze gate opens (the player's camera within 35° of the goal, or past 18 m), at once for a player who looks down the corridor. Each seat (`Seat`, `FinalSeat`) is also the moment the map opens the cells up to it (关卡设计's `RunRoomSeated`, the same frame).
+- **B's pulses** (if B ships): in a receding room `PulseStarted` waits for the final seat, the first at the later of 3.0 s after the trip and 1.0 s after `FinalSeat`.
+- **Tools:** `binder.RecedeOf(room)` hands you the recede of a built room (null for every other room).
+- **Unchanged:** every other hook (`RigBuilt`, `RigDropped`, the rig's events, card 3's `RedStrike` and `PulseStarted`, the 16 `RunRecedeCue`s) and every plain room.

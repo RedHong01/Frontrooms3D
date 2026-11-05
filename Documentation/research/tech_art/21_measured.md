@@ -79,3 +79,28 @@ ESTIMATE: SSAO ~27 ms at 27.2 Mpx = ~1.0 ms per Mpx on the M3 Max Editor; Medium
 | corridor0 | 846 -> 209 (-75 %) | 86 -> 57 | 161k -> 33k | 308 -> 0 | 20 -> 20 | 4.3 -> 1.8 | 0.081 % |
 | corridor1 | 833 -> 135 (-84 %) | 74 -> 42 | 153k -> 19k | 348 -> 0 | 24 -> 12 | 6.1 -> 4.0 | 0.108 % |
 | corridor2 | 953 -> 210 (-78 %) | 103 -> 54 | 224k -> 48k | 507 -> 0 | 36 -> 24 | 9.7 -> 4.7 | 0.076 % |
+
+## Mac player capture (player1, 2026-11-04 14:08, Red in the 技术美术调研 chat: "现在做")
+Development Mac player built from proj_build (main as of 13:29: fill-light shadow off, near lamp tick, handheld light budget already in), own bundle id `com.redwang.frontroomsss.techartprobe`, FMOD on NOSOUND (checked at boot, mid-run and end), Metal M3 Max, quality Ultra, MSAA 4x, URP soft shadows on at High. Probe `W/tech_art/probe/player/`, data `W/tech_art/captures/player1/` (frames.tsv, lights.tsv, imgdiff.tsv, probe_log.txt). Same views as above.
+
+Row 16, which lamps carry `UniversalAdditionalLightData` in the player:
+| view | lights on | shadowed | shadowed with the component |
+|---|---|---|---|
+| corridor0 / 1 / 2 | 21 / 24 / 36 | 5 / 8 / 12 | 0 / 0 / 0 (the one light that has it is the scene's "Soft ambient direction", now unshadowed) |
+| maze heavy / median / lights | 87 / 85 / 86 | 7 / 7 / 7 | 0 / 0 / 0 (1,598 runtime lights in the built chunks, none with it) |
+So in players every lamp shadow uses URP's Low soft-shadow filter; the Editor adds the component on pipeline settings and shows High. Confirmed.
+
+Image change when every bare light gets the component on pipeline settings ("ald" = the Editor look), 1920x1080, grain off:
+| view | ald: px > 8/255 | ald: px > 2/255 | max | SSAO Medium (known identical) px > 8/255 |
+|---|---|---|---|---|
+| corridor0 / 1 / 2 | 0.004 / 0.074 / 0.005 % | 0.47 / 0.57 / 0.34 % | 20 / 167 / 25 | 0.004 / 0.073 / 0.004 % |
+| maze heavy / median / lights | 0.001 / 0.007 / 0.007 % | 0.82 / 0.43 / 0.39 % | 16 / 23 / 21 | 0.002 / 0.005 / 0.007 % |
+At the noise floor (the same numbers as SSAO Medium; corridor1's 167 is the wall TV in both). The only structured change is 2-5/255 along soft contact shadows (the office chair's shadow on the carpet). Sheet `ta09_player_shadow_filter.jpg`.
+
+GPU frame time (FrameTimingManager) at the 3024x1964 panel size, base = mean of two base runs, interleaved:
+| view | base ms | ald (High filter) | SSAO Medium | SSAO off |
+|---|---|---|---|---|
+| corridor0 / 1 / 2 | 58.7 / 63.8 / 62.6 | -1 / +40 / +11 % | -7 / +8 / -6 % | -55 / -39 / -38 % |
+| maze heavy / median / lights | 100.5 / 114.9 / 107.5 | +22 / +14 / +26 % | -2 / -6 / -29 % | -25 / -21 / -49 % |
+UNDER LOAD: the GPU was shared with Red's open Editor and another line's Unity batch, base repeats differ by up to 15 % at this size and up to 2x at 1080p, and FrameTimingManager's GPU time on Metal reads above the frame interval (command buffers overlap), so these rank, they do not budget. Directions that held: SSAO off saves a fifth to a half; High filtering costs about a tenth to a quarter in 5 of 6 views; SSAO Medium is within the noise here (the Editor's interleaved run8 gave -14 %).
+Not measurable in a Mac player: per-pass GPU ms (`SystemInfo.supportsGpuRecorder` is False in the player too, as in Editor batch); it needs an Xcode GPU frame capture. Row 11's lamp tick: the player's main-thread recorder includes the GPU wait, so the tick's share does not show.

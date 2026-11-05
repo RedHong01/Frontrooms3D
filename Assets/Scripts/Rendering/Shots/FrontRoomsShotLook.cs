@@ -213,6 +213,7 @@ public static class FrontRoomsShotLook
                 {
                     var go = new GameObject("Shot light (unlock)") { hideFlags = HideFlags.DontSave };
                     shotLight = go.AddComponent<Light>();
+                    shotLight.GetUniversalAdditionalLightData().softShadowQuality = SoftShadowQuality.Low;   // 技术美术调研 row 16 option D
                     shotLight.type = LightType.Point;
                     shotLight.shadows = LightShadows.None;
                     shotLight.range = ShotLightRange;

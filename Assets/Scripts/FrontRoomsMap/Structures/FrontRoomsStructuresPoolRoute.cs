@@ -200,13 +200,15 @@ public sealed class FrontRoomsStructuresPoolRoute : FrontRoomsStructuresDistrict
     }
 
     // A placard by a stop: ahead and to one side of the view, on a dry floor of the plan (else the other side, else nearer).
+    // The first two spots put the face's centre 2.50 m from the stop's eye (20_placard_type.md v2.4, E's FAR, for these
+    // 0.8 m panels on the stop's floor); the next four are the earlier spots (2.42 and 1.67 m), kept as the fallbacks.
     void Sign(int stop, string title, string body)
     {
         if (stop < 0 || stop >= Stops.Count || map == null || plan == null) return;
         var s = Stops[stop];
         var fwd = Quaternion.Euler(0f, s.yaw, 0f) * Vector3.forward;
         var right = Vector3.Cross(Vector3.up, fwd);
-        var tries = new[] { new Vector2(1.0f, 2.2f), new Vector2(-1.0f, 2.2f), new Vector2(.9f, 1.4f), new Vector2(-.9f, 1.4f), new Vector2(0f, 2.6f) };
+        var tries = new[] { new Vector2(1.0f, 2.285f), new Vector2(-1.0f, 2.285f), new Vector2(1.0f, 2.2f), new Vector2(-1.0f, 2.2f), new Vector2(.9f, 1.4f), new Vector2(-.9f, 1.4f), new Vector2(0f, 2.6f) };
         foreach (var t in tries)
         {
             var at = s.position + right * t.x + fwd * t.y;
