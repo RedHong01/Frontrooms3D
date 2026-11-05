@@ -715,22 +715,195 @@ namespace FrontRooms.Map
                     if (best < 0 || pair.Value.Count > runs[best].Count || (pair.Value.Count == runs[best].Count && pair.Key < best)) best = pair.Key;
                 var run = runs[best];
                 run.Sort();
-                var pick = run[run.Count / 2];
+                var pick = ClearOf(run);
                 DecodeEdge(pick, out var pa, out var pb);
                 var A = RoomAt(pa);
                 var Bm = RoomAt(pb);
                 edges[pick] = EdgeKind.Arch;
-                var rec = new ModuleEdgeRecord { archWidth = 1.4f };
-                if (A.zone.theme == ZoneTheme.PoolLevel && Bm.zone.theme == ZoneTheme.PoolLevel)
-                {
-                    rec.style = PoolEdgeStyle.RoundArch;
-                    rec.crown = 2.3f;
-                    rec = Settle(rec, A, A, Bm);
-                }
-                records[pick] = rec;
+                records[pick] = RepairRecord(A, Bm);
                 Repairs++;
                 notes.Add("Repair: opened " + A.label + " to " + Bm.label + " at " + pa + "-" + pb + ".");
             }
+        }
+
+        const float RepairArch = 1.4f;
+
+        // The arch Repair opens between two rooms: 1.4 m, round-headed with its crown 2.3 m over the base between two
+        // PoolLevel rooms, else the map's rect arch.
+        ModuleEdgeRecord RepairRecord(PoolRoom A, PoolRoom Bm)
+        {
+            var rec = new ModuleEdgeRecord { archWidth = RepairArch };
+            if (A.zone.theme == ZoneTheme.PoolLevel && Bm.zone.theme == ZoneTheme.PoolLevel)
+            {
+                rec.style = PoolEdgeStyle.RoundArch;
+                rec.crown = 2.3f;
+                rec = Settle(rec, A, A, Bm);
+            }
+            return rec;
+        }
+
+        // The middle of the run, or the edge nearest it (one either side in turn, the lower first) that no kit of either room
+        // stands across (KitsAcross). The level-space line's scene 4 route P, 11-05: on every variant B seed the arch into
+        // PL_PoMo opened in its west wall behind the room's own glass block wall (1.10 of its 1.40 m), and the player walked
+        // through the panel. The room the opening leads to is chosen as before; only its place along that run moves. Every
+        // edge covered: the middle all the same (its kits are then left out, MarkKitsAcross).
+        long ClearOf(List<long> run)
+        {
+            var mid = run.Count / 2;
+            var cs = MapGrid.CellSize;
+            for (var step = 0; step < 2 * run.Count; step++)
+            {
+                var i = mid + (step + 1) / 2 * (step % 2 == 1 ? -1 : 1);
+                if (i < 0 || i >= run.Count) continue;
+                DecodeEdge(run[i], out var a, out var b);
+                var rec = RepairRecord(RoomAt(a), RoomAt(b));
+                if (KitsAcross(run[i], cs * .5f, RepairArch * .5f, OpeningTop(EdgeKind.Arch, rec, a, b, RepairArch), rec.style == PoolEdgeStyle.RoundArch, KitSpanMargin, null) == 0)
+                    return run[i];
+            }
+            return run[mid];
+        }
+
+        // The opening's top in map metres, as the pool pass builds it (FrontRoomsMapWorld.Pool.cs, the arch branch; keep the
+        // two in step): a round arch's crown; else the rect or gate head, ModuleUnits.ArchTop over the lower base under both
+        // ceilings by the header and 2 m over the higher floor at least; a door the map's DoorHeight over 0.
+        float OpeningTop(EdgeKind kind, ModuleEdgeRecord rec, GridCoord a, GridCoord b, float width)
+        {
+            if (kind == EdgeKind.Door) return ModuleUnits.DoorHeight;
+            PoolRoom A = RoomAt(a), B = RoomAt(b);
+            var ceilMin = Math.Min(A != null ? A.CeilingY : 99f, B != null ? B.CeilingY : 99f);
+            var baseMin = Math.Min(A != null ? A.BaseY : 0f, B != null ? B.BaseY : 0f);
+            var floorMax = Math.Max(CellOf(a).floorY, CellOf(b).floorY);
+            if (rec.style == PoolEdgeStyle.RoundArch)
+            {
+                var crown = Math.Min(rec.crown > 0f || baseMin < -.01f ? rec.crown : baseMin + 2.3f, ceilMin - PoolRules.CrownClearance);
+                crown = Math.Max(crown, floorMax + width * .5f + 1.2f);
+                return Math.Min(crown, ceilMin - .05f);
+            }
+            var top = baseMin + Math.Min(ModuleUnits.ArchTop, ceilMin - baseMin - ModuleUnits.ArchHeaderMin);
+            return top < floorMax + 2f ? Math.Min(floorMax + 2f, ceilMin - .05f) : top;
+        }
+
+        // A kit stands across an opening when its box (ModuleStandIn.Footprint) comes within KitReach of the wall line, starts
+        // under the opening's top, and overlaps its span (plus a margin either side) at the kit's lowest point (a round head
+        // narrows the span above its springing, so a pipe or a clock beside the curve is clear). Repair keeps KitSpanMargin
+        // clear; a kit is left out only where it truly overlaps (margin 0).
+        const float KitReach = .35f, KitSpanMargin = .1f, KitTopMargin = .02f;
+
+        /// <summary>
+        /// The kits of either room standing across an opening of the edge between two cells: centred <paramref name="centre"/>
+        /// metres along the edge from its west or south end, <paramref name="half"/> its half-width, <paramref name="top"/> its
+        /// top in map metres, <paramref name="round"/> for a round head, <paramref name="margin"/> metres either side. Each is
+        /// added to <paramref name="into"/> (room index times 65536 plus the kit's index); with null the count stops at the first.
+        /// </summary>
+        int KitsAcross(long edge, float centre, float half, float top, bool round, float margin, HashSet<long> into)
+        {
+            DecodeEdge(edge, out var a, out var b);
+            var cs = MapGrid.CellSize;
+            var alongX = a.y != b.y;
+            var line = (alongX ? b.y : b.x) * cs;
+            var start = (alongX ? a.x : a.y) * cs;
+            var found = 0;
+            for (var side = 0; side < 2; side++)
+            {
+                var cell = side == 0 ? a : b;
+                var room = RoomAt(cell);
+                if (room == null || room.module == null) continue;
+                var kits = PoolRules.SkinOf(room.module).standIns;
+                if (kits == null) continue;
+                var floor = CellOf(cell).floorY;
+                for (var k = 0; k < kits.Length; k++)
+                {
+                    var s = kits[k];
+                    if (!s.Footprint(out var hx, out var hz, out var bottom)) continue;
+                    var low = (s.fromBase ? room.BaseY : floor) + s.y + bottom;
+                    if (low >= top - KitTopMargin) continue;
+                    var yaw = s.yaw * (Math.PI / 180.0);
+                    float cos = (float)Math.Abs(Math.Cos(yaw)), sin = (float)Math.Abs(Math.Sin(yaw));
+                    float px = room.origin.x * cs + s.x, pz = room.origin.y * cs + s.z;
+                    // The kit's X axis runs along (cos, -sin) in plan x, z and its Z axis along (sin, cos) (Unity's yaw).
+                    float off, along, offExtent, alongExtent;
+                    if (alongX) { off = Math.Abs(pz - line); along = px - start; offExtent = sin * hx + cos * hz; alongExtent = cos * hx + sin * hz; }
+                    else { off = Math.Abs(px - line); along = pz - start; offExtent = cos * hx + sin * hz; alongExtent = sin * hx + cos * hz; }
+                    if (off - offExtent > KitReach) continue;
+                    var span = half;
+                    var spring = top - half;
+                    if (round && low > spring) span = (float)Math.Sqrt(Math.Max(0f, half * half - (low - spring) * (low - spring)));
+                    if (along + alongExtent <= centre - span - margin || along - alongExtent >= centre + span + margin) continue;
+                    found++;
+                    if (into == null) return found;
+                    into.Add(((long)room.index << 16) | (uint)k);
+                }
+            }
+            return found;
+        }
+
+        readonly HashSet<long> kitsLeftOut = new HashSet<long>();
+
+        /// <summary>A kit of the room's module (its index in the skin's standIns) that an opening of the plan crosses: the pool pass leaves it out.</summary>
+        public bool KitLeftOut(PoolRoom room, int kit) => room != null && kitsLeftOut.Contains(((long)room.index << 16) | (uint)kit);
+
+        // Every opening between two rooms that a kit stands across (a module's own arch meeting its neighbour's wall kit, or
+        // a Repair arch with no clear edge): the kit is left out (a fixture cannot hang where the wall is open), with a note.
+        // An arch without an authored width is where the map's hash puts it (MapArch.Opening, the plan's Seed is the map's);
+        // a door's whole possible span counts.
+        void MarkKitsAcross()
+        {
+            kitsLeftOut.Clear();
+            var cs = MapGrid.CellSize;
+            var hits = new HashSet<long>();
+            foreach (var pair in edges)
+            {
+                if (pair.Value != EdgeKind.Arch && pair.Value != EdgeKind.Door) continue;
+                DecodeEdge(pair.Key, out var a, out var b);
+                int ra = RoomIndex(a), rb = RoomIndex(b);
+                if (ra < 0 || rb < 0 || ra == rb) continue;
+                OpeningOf(pair.Key, pair.Value, a, b, out var centre, out var half, out var top, out var round);
+                hits.Clear();
+                if (KitsAcross(pair.Key, centre, half, top, round, 0f, hits) == 0) continue;
+                foreach (var key in hits)
+                {
+                    if (!kitsLeftOut.Add(key)) continue;
+                    var room = rooms[(int)(key >> 16)];
+                    notes.Add("Left out: " + PoolRules.SkinOf(room.module).standIns[(int)(key & 0xffff)].kit + " of " + room.label + ", across the opening at " + a + "-" + b + ".");
+                }
+            }
+        }
+
+        // An Arch or Door edge's opening: its centre and half-width along the edge from the west or south end, its top in map
+        // metres, a round head. An arch without an authored width is where the map's hash puts it (MapArch.Opening, the plan's
+        // Seed is the map's); a door counts its whole possible span.
+        void OpeningOf(long id, EdgeKind kind, GridCoord a, GridCoord b, out float centre, out float half, out float top, out bool round)
+        {
+            var cs = MapGrid.CellSize;
+            records.TryGetValue(id, out var rec);
+            float width;
+            if (kind == EdgeKind.Door) { width = cs - 2f * ModuleUnits.ArchCornerMargin; centre = cs * .5f; }
+            else if (rec.archWidth > 0f) { width = rec.archWidth; centre = cs * .5f; }
+            else MapArch.Opening(Seed, a, a.y != b.y, out width, out centre);
+            half = width * .5f;
+            round = kind == EdgeKind.Arch && rec.style == PoolEdgeStyle.RoundArch;
+            top = OpeningTop(kind, rec, a, b, width);
+        }
+
+        /// <summary>
+        /// The opening of the edge between two neighbouring cells at height <paramref name="y"/> (map metres), as metres along
+        /// the edge from its west or south end; false for a wall or at or over the opening's top (a round head narrows above
+        /// its springing). The pool pass keeps its wall lamps clear of it (the valance, FrontRoomsMapWorld.Pool.cs).
+        /// </summary>
+        public bool OpeningSpanAt(GridCoord a, GridCoord b, float y, out float from, out float to)
+        {
+            from = to = 0f;
+            if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+            var id = MapGrid.EdgeId(a, b);
+            if (!edges.TryGetValue(id, out var kind) || (kind != EdgeKind.Arch && kind != EdgeKind.Door)) return false;
+            OpeningOf(id, kind, a, b, out var centre, out var half, out var top, out var round);
+            if (y >= top) return false;
+            var span = half;
+            var spring = top - half;
+            if (round && y > spring) span = (float)Math.Sqrt(Math.Max(0f, half * half - (y - spring) * (y - spring)));
+            from = centre - span;
+            to = centre + span;
+            return true;
         }
 
         // Only inside one part, never the approach, never the fire stair's sides, only where the floors meet within a step.
@@ -1006,6 +1179,7 @@ namespace FrontRooms.Map
             exit = new ExitPlan { found = true, exitCell = ExitCell, frontCell = FrontCell, distance = distance, bandMin = distance, bandMax = distance, candidates = 1 };
             if (warnings != null) foreach (var w in warnings) notes.Add(w);
             MakeFocus(from, order);
+            MarkKitsAcross();
             planMs = ms;
             Ready = true;
         }
@@ -1016,11 +1190,19 @@ namespace FrontRooms.Map
         {
             focus.Clear();
             var cs = MapGrid.CellSize;
+            // A room's stop stands 1 m in from the edge by which the walk first reaches a cell of it out of the basin (no Wade,
+            // no stair, no void). The walk takes any drop, so a room's first cell can be its basin: the level-space line's route P, 11-05,
+            // M0 (PL_Leisure) entered from M1 by its north arch straight into 0.75 m of water on 4 of 39 seeds. A room with no
+            // such cell keeps its first.
             var entry = new Dictionary<int, GridCoord>();
+            var standing = new HashSet<int>();
             foreach (var cell in order)
             {
                 var r = RoomIndex(cell);
-                if (r >= 0 && !entry.ContainsKey(r)) entry[r] = cell;
+                if (r < 0 || standing.Contains(r)) continue;
+                var c = CellOf(cell);
+                if (c.water != CellWater.Wade && c.connector == CellConnector.None) { entry[r] = cell; standing.Add(r); }
+                else if (!entry.ContainsKey(r)) entry[r] = cell;
             }
 
             PoolFocus RoomFocus(string name, PoolRoom room)

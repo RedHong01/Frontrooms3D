@@ -1,0 +1,44 @@
+L0_E.jpg | L0 EYE | label 108 px + data 170 px in cell 633 px | FITS
+L0_W3.jpg | L0 3 M | label 115 px + data 238 px in cell 633 px | FITS
+L0_G.jpg | L0 GRAZING | label 181 px + data 187 px in cell 633 px | FITS
+L0_H.jpg | L0 0.35 M | label 176 px + data 153 px in cell 633 px | FITS
+L0_J.jpg | L0 FOOT | label 131 px + data 187 px in cell 633 px | FITS
+L0_P.jpg | L0 PHONE | label 153 px + data 221 px in cell 633 px | FITS
+Office_E.jpg | OFFICE EYE | label 170 px + data 170 px in cell 633 px | FITS
+Office_W3.jpg | OFFICE 3 M | label 177 px + data 238 px in cell 633 px | FITS
+Office_G.jpg | OFFICE GRAZING | label 243 px + data 187 px in cell 633 px | FITS
+Office_H.jpg | OFFICE 0.35 M | label 238 px + data 153 px in cell 633 px | FITS
+Office_J.jpg | OFFICE FOOT | label 193 px + data 187 px in cell 633 px | FITS
+Office_P.jpg | OFFICE PHONE | label 215 px + data 221 px in cell 633 px | FITS
+Tall_E.jpg | TALL EYE | label 136 px + data 170 px in cell 633 px | FITS
+Tall_W3.jpg | TALL 3 M | label 143 px + data 238 px in cell 633 px | FITS
+Tall_G.jpg | TALL GRAZING | label 209 px + data 187 px in cell 633 px | FITS
+Tall_H.jpg | TALL 0.35 M | label 204 px + data 153 px in cell 633 px | FITS
+Tall_J.jpg | TALL FOOT | label 159 px + data 187 px in cell 633 px | FITS
+Tall_P.jpg | TALL PHONE | label 181 px + data 221 px in cell 633 px | FITS
+Low_E.jpg | LOW EYE | label 130 px + data 170 px in cell 633 px | FITS
+Low_W3.jpg | LOW 3 M | label 137 px + data 238 px in cell 633 px | FITS
+Low_G.jpg | LOW GRAZING | label 203 px + data 187 px in cell 633 px | FITS
+Low_H.jpg | LOW 0.35 M | label 198 px + data 153 px in cell 633 px | FITS
+Low_J.jpg | LOW FOOT | label 153 px + data 187 px in cell 633 px | FITS
+Low_P.jpg | LOW PHONE | label 175 px + data 221 px in cell 633 px | FITS
+Station_E.jpg | STATION EYE | label 188 px + data 170 px in cell 633 px | FITS
+Station_W3.jpg | STATION 3 M | label 195 px + data 238 px in cell 633 px | FITS
+Station_G.jpg | STATION GRAZING | label 261 px + data 187 px in cell 633 px | FITS
+Station_H.jpg | STATION 0.35 M | label 256 px + data 153 px in cell 633 px | FITS
+Station_J.jpg | STATION FOOT | label 211 px + data 187 px in cell 633 px | FITS
+Station_P.jpg | STATION PHONE | label 233 px + data 221 px in cell 633 px | FITS
+Run_E.jpg | RUN! EYE | label 135 px + data 170 px in cell 633 px | FITS
+Run_W3.jpg | RUN! 2.6 M | label 177 px + data 238 px in cell 633 px | FITS
+Run_G.jpg | RUN! GRAZING | label 208 px + data 187 px in cell 633 px | FITS
+Run_H.jpg | RUN! 0.35 M | label 203 px + data 153 px in cell 633 px | FITS
+Run_J.jpg | RUN! FOOT | label 158 px + data 187 px in cell 633 px | FITS
+Run_P.jpg | RUN! PHONE | label 180 px + data 221 px in cell 633 px | FITS
+Stair_E.jpg | STAIR EYE | label 151 px + data 238 px in cell 633 px | FITS
+Stair_W3.jpg | STAIR 2.4 M | label 193 px + data 238 px in cell 633 px | FITS
+Stair_G.jpg | STAIR GRAZING | label 224 px + data 187 px in cell 633 px | FITS
+Stair_H.jpg | STAIR 0.35 M | label 219 px + data 153 px in cell 633 px | FITS
+Stair_J.jpg | STAIR FOOT | label 174 px + data 187 px in cell 633 px | FITS
+Stair_P.jpg | STAIR PHONE | label 196 px + data 221 px in cell 633 px | FITS
+sheet sheets/sd_today_families.jpg 3838x3418
+ALL LABELS FIT

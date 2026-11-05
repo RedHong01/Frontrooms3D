@@ -1222,35 +1222,61 @@ public sealed class FrontRoomsStructuresRunRecede : FrontRoomsStructuresDistrict
 
     void BuildSigns()
     {
-        // 70 section 9's sign, flat on the vestibule's east wall facing west, centre (1.42, 1.5, -4.044), out of the main view;
+        // 70 section 9's sign, flat on the vestibule's east wall facing west (on two panels since v2.7, below), out of the main view;
         // its text verbatim with the plan's key letters (70: L length, C light, G entrance, V Reduce Flashing -> V, L, O, F here,
         // as 70 allows). Two changes for what happened after 70's 06:22 edit, so the sign never asks what Red has answered or
         // lists a stand-in that is gone: Red said yes to the red tube on 11-04 (the brighter level, then the brightest column;
         // 70 section 10 already marks it answered, on on arrival), so it left the greybox list (the strip kit's own tube now)
         // and its open item (the measurements renumbered 1).
-        // z -4.044 (was -4.0): the placard spec v2.4 puts every arrival 2.5 m from its district sign; the arrival eye
-        // (0, 1.62, -2) to this panel's face centre (panel 1.575 m tall) is 2.500 m here (2.464 at -4.0). The settings plate
-        // beside it (z -5.7..-4.7) stays 56 mm clear of the panel's end.
-        kit.Sign(new Vector3(HalfW - .03f, 1.5f, -4.044f), new Vector3(-1.2f, 1.5f, -4.044f), "SP7 · Run!：会往后退的门",
+        // Two panels (20_placard_type.md v2.7, E; 平面视觉 11-04 23:3x): in one column this sign stood 1.575 m tall and its
+        // lowest rows read 13.7-16.0 px standing 0.9 m in front, and two columns could not carry it (9.15 px at the best
+        // split, signs_v26), so it stands as two one-column panels side by side in reading order, 100 mm apart, tops level at
+        // 2.05: the first (north, the reader's left) the code and title, the description and the keys; the second (south) the
+        // greybox row and what is still open, its body level with the first's. Each is read standing 0.9 m in front of it:
+        // 22.44 px least on the first (1.075 m tall), 25.15 on the second (0.80 m, E's least height)
+        // (signs_v26_tools/signs_columns.py). The pair needs 2.5 m of wall: the first stands about where the one-column sign
+        // stood, z -3.32..-4.52 (centre -3.92, 2.38 m from the arrival eye; under its blade, whose bottom is 0.05 m over its top),
+        // the second south of it, z -4.62..-5.82, 0.10 m off the south wall; the settings plate moves to the west wall
+        // (below). Kept north of the plate instead (the second where the sign stood, the first at z -2.14..-3.34) the first
+        // stood right of the Run door in stop s04's view (x 1294..1550 px of 1920, beside the door's frame) and cut into the
+        // turned-round frame's left edge 0.14 m from the eye; as placed, s04 keeps the one-column sign's footprint at its right
+        // edge (x 1524..1920) and the arrival's main view is unchanged (signs_v26_tools/sp7_two_panels.py --variants).
+        FrontRoomsStructuresSigns.PlacardPair(Root, Root.TransformPoint(new Vector3(HalfW - .03f, 1.5f, -3.92f)), Root.TransformPoint(new Vector3(-1.2f, 1.5f, -3.92f)), "SP7 · Run!：会往后退的门",
             "游戏里的 Run!（Run! B 的设备走廊），平地，最长 14 格、42 米。你 11 月 3 日对 71 的九个决定回了\"全部按推荐\"，这里照推荐搭好，让你亲眼走一遍；走过以后你说可以，会退的门、Run 门入口和红色灯光才进游戏；觉得哪里不对，直接告诉我们。走法和游戏一样：Ctrl 冲刺（体力 5 秒），Shift 慢走。进来时是\"会退的 9→14 格\"：跨过 9 米那道防火门框，警报触发，尽头的墙和门往后退：先猛缩两格，再一格一格退，最后重重停住，门就是真门，推开是一间亮着的大厅。走路时门只在第一下猛缩时变远，按住 Shift 慢走才会一直越退越远；冲到离门 12 米以内，剩下的一段一口气滑到底。\n"
-            + "按键：V 长度（普通 7 / 9 / 12 / 14 格，会退 9→12 / 9→14 格）；B 后退方式（T2 砖块拆开再砌回，电脑和 iPad 用；T1 整面墙滑走，网页版用）；L 触发后的灯光（今天的 / A 警报回路 / B 警报脉冲，你同意的推荐 / C 红潮）；H 红灯管；O 入口（拱门 / 带小方窗的 Run 门，只在普通长度）；F 减少闪烁；T 手动触发，再按一次恢复：白光从入口一格一格亮回来（你喜欢的那段）；Y 把门放回原位再试；X 换后退的做法（72 号文档的五种，Shift+X 往回，对面墙上的牌子写了每一种怎么试）；N 当前做法自己的选项（有的话）。旁边的小牌子显示现在的设置。\n"
-            + "灰盒占位：砖块重组的路径（简单程序动画）、轨道、门吸、密封条、墙上的\"印子\"；灯光由场景 4 专用的脚本模拟，正式效果等游戏视觉做；没有声音，没有会动的 Relay。不到 14 格时尽头的门在这里打不开，因为门后是还没亮出来的走廊（游戏里这扇门永远不锁）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
-            + "还没定的：1 要在游戏里实测、这里测不出来的：机器人测被追着领先 8 米冲进会退的房间能不能逃掉、冲到门口关上门的人有多少真能甩掉它、12 格和 14 格在 100 个种子里放得下多少；B 的光敏安全用 Harding FPA 或 PEAT 测。", 0f);
+            + "按键：V 长度（普通 7 / 9 / 12 / 14 格，会退 9→12 / 9→14 格）；B 后退方式（T2 砖块拆开再砌回，电脑和 iPad 用；T1 整面墙滑走，网页版用）；L 触发后的灯光（今天的 / A 警报回路 / B 警报脉冲，你同意的推荐 / C 红潮）；H 红灯管；O 入口（拱门 / 带小方窗的 Run 门，只在普通长度）；F 减少闪烁；T 手动触发，再按一次恢复：白光从入口一格一格亮回来（你喜欢的那段）；Y 把门放回原位再试；X 换后退的做法（72 号文档的五种，Shift+X 往回，对面墙上的牌子写了每一种怎么试）；N 当前做法自己的选项（有的话）。对面墙上的小牌子显示现在的设置。",
+            "灰盒占位：砖块重组的路径（简单程序动画）、轨道、门吸、密封条、墙上的\"印子\"；灯光由场景 4 专用的脚本模拟，正式效果等游戏视觉做；没有声音，没有会动的 Relay。不到 14 格时尽头的门在这里打不开，因为门后是还没亮出来的走廊（游戏里这扇门永远不锁）。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
+            + "还没定的：1 要在游戏里实测、这里测不出来的：机器人测被追着领先 8 米冲进会退的房间能不能逃掉、冲到门口关上门的人有多少真能甩掉它、12 格和 14 格在 100 个种子里放得下多少；B 的光敏安全用 Harding FPA 或 PEAT 测。", Root.position.y);
+        // Its blade (20_placard_type.md v2.6, E-blade; 平面视觉 11-04 22:5x: the arrival reads this sign 56 degrees off its face,
+        // its characters squeezed to about half their width), built once like the treatments' blade: square to the east wall
+        // (face x 1.42), inner edge 50 mm off it, bottom 2.10, its title on one line (9.2 ems), top 2.283 (0.62 under the lid,
+        // 0.62 under the troffer's east edge); front face z -4.309, 2.500 m from the arrival eye, behind the arrival (turn round),
+        // read 18.4 degrees to the side and 13.2 up; 0.34 m from the treatments' blade across the middle, both bottoms 2.10, the
+        // planes 10 mm apart (each blade 2.500 m); 0.05 m over the first panel's top, its plane 0.20 m north of that panel's
+        // south end. Read from the north, the east-wall blade's free end is on the right of the face the arrival reads, so its
+        // row stands flush right there (v2.7, every blade: the row against the free end; flush left had read code cap 10.8,
+        // title 15.95 px, under E's floors): chip cap 43, code 11.35, title 16.6 px or more (signs_v26_tools/blades_v27.py).
+        // VestibuleAmbient reaches it as it does the other.
+        FrontRoomsStructuresSigns.Blade(Root, Root.TransformPoint(new Vector3(HalfW, 0f, -4.3238f)), Root.TransformDirection(Vector3.left),
+            Root.TransformPoint(Arrival + Vector3.up * FrontRoomsStructuresWalker.Eye), "SP7 · Run!：会往后退的门", Root.position.y);
         // The treatments' placard (X) on the west wall, across from this one.
         BuildEndSign();
         // Its blade (20_placard_type.md v2.5, E-blade), built once (its title never changes, so X leaves it): the arrival reads
         // the treatments' placard 56 degrees off its face, so its code and title also hang on a blade square to the west wall
         // (face x -1.42), inner edge 50 mm off it, bottom 2.10, its title on two lines before the bracket (the blade's 12-em
         // measure), top 2.36 (0.54 under the lid; 0.52 under the troffer's west edge); front face z -4.299, 2.500 m from the
-        // arrival eye, behind the arrival as the placard (turn round), read 18.5 degrees to the side and 14 up. The vestibule's
-        // Level 0 ambient reaches it (VestibuleAmbient runs after this).
+        // arrival eye, behind the arrival as the placard (turn round), read 18.5 degrees to the side and 14 up; its front face
+        // flush left, at its free end, and its back face flush right (v2.7). The vestibule's Level 0 ambient reaches it
+        // (VestibuleAmbient runs after this).
         FrontRoomsStructuresSigns.Blade(Root, Root.TransformPoint(new Vector3(-HalfW, 0f, -4.314f)), Root.TransformDirection(Vector3.right),
             Root.TransformPoint(Arrival + Vector3.up * FrontRoomsStructuresWalker.Eye), "SP7 · 后退的五种做法（按 X 换）", Root.position.y);
-        // The plate beside the sign: the current settings, in the placard's colours (taller since the treatments: X's lines).
+        // The plate across from the sign: the current settings, in the placard's colours (taller since the treatments: X's
+        // lines). On the west wall facing east since v2.7 (it stood on the east wall at z -5.2, where the sign's second panel
+        // stands now), south of the treatments' placard (58 mm clear of its end) and across from the second panel; the
+        // sign's keys say so (对面墙上的小牌子).
         var plate = new GameObject("SP7 settings plate");
         plate.transform.SetParent(Root, false);
-        plate.transform.localPosition = new Vector3(HalfW - .02f, 1.5f, -5.2f);
-        plate.transform.localRotation = Quaternion.LookRotation(Vector3.right);
+        plate.transform.localPosition = new Vector3(-HalfW + .02f, 1.5f, -5.22f);
+        plate.transform.localRotation = Quaternion.LookRotation(Vector3.left);
         var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
         panel.name = "Panel";
         UnityEngine.Object.Destroy(panel.GetComponent<Collider>());

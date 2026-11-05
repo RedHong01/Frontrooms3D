@@ -1,0 +1,20 @@
+E_idold_raw.png | E MAIN | label 101 px + data 289 px in cell 1274 px | FITS
+E_idnew_raw.png | E NEW TODAY | label 202 px + data 204 px in cell 1274 px | FITS
+E_iddiff.png | E DIFF X64 | label 178 px + data 255 px in cell 1274 px | FITS
+W3_idold_raw.png | W3 MAIN | label 137 px + data 289 px in cell 1274 px | FITS
+W3_idnew_raw.png | W3 NEW TODAY | label 238 px + data 204 px in cell 1274 px | FITS
+W3_iddiff.png | W3 DIFF X64 | label 214 px + data 255 px in cell 1274 px | FITS
+G_idold_raw.png | G MAIN | label 103 px + data 289 px in cell 1274 px | FITS
+G_idnew_raw.png | G NEW TODAY | label 204 px + data 204 px in cell 1274 px | FITS
+G_iddiff.png | G DIFF X64 | label 180 px + data 255 px in cell 1274 px | FITS
+J_idold_raw.png | J MAIN | label 102 px + data 289 px in cell 1274 px | FITS
+J_idnew_raw.png | J NEW TODAY | label 203 px + data 204 px in cell 1274 px | FITS
+J_iddiff.png | J DIFF X64 | label 179 px + data 255 px in cell 1274 px | FITS
+C_idold_raw.png | C MAIN | label 103 px + data 289 px in cell 1274 px | FITS
+C_idnew_raw.png | C NEW TODAY | label 204 px + data 204 px in cell 1274 px | FITS
+C_iddiff.png | C DIFF X64 | label 180 px + data 255 px in cell 1274 px | FITS
+D_idold_raw.png | D MAIN | label 104 px + data 289 px in cell 1274 px | FITS
+D_idnew_raw.png | D NEW TODAY | label 205 px + data 204 px in cell 1274 px | FITS
+D_iddiff.png | D DIFF X64 | label 181 px + data 255 px in cell 1274 px | FITS
+sheet sheets/os_identity.jpg 3838x5092
+ALL LABELS FIT

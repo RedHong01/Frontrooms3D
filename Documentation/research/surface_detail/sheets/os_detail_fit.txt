@@ -1,0 +1,16 @@
+W3_today_crop.jpg | TODAY 3 M 1:1 | label 240 px + data 306 px in cell 1916 px | FITS
+W3_new_crop.jpg | NEW REC 3 M 1:1 | label 280 px + data 306 px in cell 1916 px | FITS
+G_today_crop.jpg | TODAY GRAZING 1:1 | label 306 px + data 238 px in cell 1916 px | FITS
+G_new_crop.jpg | NEW REC GRAZING 1:1 | label 346 px + data 238 px in cell 1916 px | FITS
+C_today_crop.jpg | TODAY CEILING 1:1 | label 292 px + data 204 px in cell 1916 px | FITS
+C_new_crop.jpg | NEW REC CEILING 1:1 | label 332 px + data 204 px in cell 1916 px | FITS
+FG_today_crop.jpg | TODAY CARPET 1:1 | label 295 px + data 204 px in cell 1916 px | FITS
+FG_new_crop.jpg | NEW REC CARPET 1:1 | label 335 px + data 204 px in cell 1916 px | FITS
+J_today_crop.jpg | TODAY FOOT 1:1 | label 256 px + data 204 px in cell 1916 px | FITS
+J_new_crop.jpg | NEW REC FOOT 1:1 | label 296 px + data 204 px in cell 1916 px | FITS
+DH_today_crop.jpg | TODAY DESK 1:1 | label 258 px + data 323 px in cell 1916 px | FITS
+DH_new_crop.jpg | NEW REC DESK 1:1 | label 298 px + data 323 px in cell 1916 px | FITS
+QG_today_crop.jpg | TODAY PANEL 1:1 | label 273 px + data 255 px in cell 1916 px | FITS
+QG_new_crop.jpg | NEW REC PANEL 1:1 | label 313 px + data 255 px in cell 1916 px | FITS
+sheet sheets/os_detail.jpg 3840x8352
+ALL LABELS FIT

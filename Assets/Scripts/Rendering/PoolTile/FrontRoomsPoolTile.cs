@@ -17,7 +17,17 @@ using UnityEngine;
 ///   Tread, Riser        the pool stairs' white tread (abrasive) and riser (glazed), mesh UV in metres
 ///   Nosing              the stairs' dark nosing L (50 mm on the tread, 25 mm down the riser; Red 10-31 17:24), mesh UV
 ///   Coping              full bullnose coping, 300 mm units, mesh UV across the unrolled profile
-/// Nothing here runs until a caller asks for a material; no other material changes.
+///   FieldMesh, CourseMesh  the field and the course on mesh UVs in metres (the structures scene's tile and band)
+/// The tile's look (70_look_build.md section 13; Red 2026-11-04, the Pools tile and the dish, verbatim there): SetLook picks
+/// one for every pool tile material at once (FrontRooms/Surface reads the globals Publish writes). Today = the tile as landed
+/// 11-04 12:52, bit for bit; GZC = the glaze line's GZ-C as given (research/level_space/73_pool_glaze.md, Red's pick 16:4x);
+/// DishShallow, DishMedium (REC, the default), DishDeep = GZ-C's glaze with Red's dish (the centre sunk, the four corners up)
+/// and the Pools levers (hand-set joints, lippage, gloss and tone per tile, each tile its own cushion and waviness).
+/// The dish also goes into the tone (section 13.15; Red's rule from the walls, VISUAL_STANDARD 1.2: relief in the tone as well as
+/// the normal): the sunk centre a little darker, the raised corners a little lighter, a narrow cavity at the joints, from each
+/// tile's own shape, fading to the tile's mean tone with the view distance. DishTone scales it (1 = the recommended amount, 0 =
+/// the dish in the normal only, as landed 11-05 04:22).
+/// Nothing here runs until a caller asks for a material or a look; no other material changes.
 /// </summary>
 public static class FrontRoomsPoolTile
 {
@@ -27,8 +37,65 @@ public static class FrontRoomsPoolTile
 
     public static readonly string[] Kinds =
     {
-        "Field", "FieldClub", "Course", "CourseClub", "Cap", "Mosaic", "MosaicClub", "Lane", "Deck", "Tread", "Riser", "Nosing", "Coping"
+        "Field", "FieldClub", "Course", "CourseClub", "Cap", "Mosaic", "MosaicClub", "Lane", "Deck", "Tread", "Riser", "Nosing", "Coping",
+        "FieldMesh", "CourseMesh"
     };
+
+    /// <summary>The tile's look. Today = the landed tile, bit for bit; the others: see the class summary.</summary>
+    public enum PoolTileLook { Today = 0, GZC = 1, DishShallow = 2, DishMedium = 3, DishDeep = 4 }
+
+    /// <summary>The look every pool tile shows until SetLook says otherwise: Red's pick after trying the looks in scene 4
+    /// (2026-11-05, in the level_space line's chat: DishDeep, for now).</summary>
+    public const PoolTileLook DefaultLook = PoolTileLook.DishDeep;
+
+    /// <summary>The look the shader shows now.</summary>
+    public static PoolTileLook Look { get; private set; } = DefaultLook;
+
+    /// <summary>The glaze's slope variance in the face map (rad^2; gen_pool_tile.py make_face, "true variance"): what its mips
+    /// average away goes into the roughness, so far tiles keep their sheen instead of turning to mirrors.</summary>
+    public const float FaceSlopeVariance = 3.7e-5f;
+
+    static readonly int LookId = Shader.PropertyToID("_FR_TileLook");
+    static readonly int Look2Id = Shader.PropertyToID("_FR_TileLook2");
+    static readonly int GlazeId = Shader.PropertyToID("_FR_TileGlaze");
+    static readonly int AAId = Shader.PropertyToID("_FR_TileAA");
+    static readonly int ToneId = Shader.PropertyToID("_FR_TileTone");
+    static int publishedTier = -1;
+
+    /// <summary>How strongly the dish also shows in the tile's tone (section 13.15): a multiplier on each look's own amount.
+    /// 1 = the recommended amount; 0 = the dish in the normal only (the tile as landed 11-05 04:22, bit for bit); 1.5 = half again.
+    /// Setting it shows at once on every pool tile (a global: no material is edited); scene 4 compares with it.</summary>
+    public static float DishTone
+    {
+        get { return dishTone; }
+        set { dishTone = Mathf.Max(0f, value); Publish(); }
+    }
+
+    /// <summary>DishTone at load: Red's pick with DishDeep (2026-11-05, the tone sheet's 1.5 column); 1 was the recommendation.</summary>
+    public const float DefaultDishTone = 1.5f;
+    static float dishTone = DefaultDishTone;
+
+    /// <summary>The dish's tone is set for the hero's 0.35 m and falls with the view distance: half at 0.35 m + ToneNear (a
+    /// gradient over a whole tile is what the eye sees least well up close and best at 5-15 m, where a tile wall must not turn
+    /// into a quilt of pillows). Past ToneFadeEnd (from 0.35 x of it) every texel takes the tile's mean tone, the joint's cavity
+    /// too. By distance, not by pixels: the same on every screen. The phone tier's are shorter (its screen shows a tile at about
+    /// a third of the angle; the texels past the fade also skip the tone's arithmetic).</summary>
+    public const float ToneNear = .8f, ToneNearPhone = .5f, ToneFadeEnd = 8f, ToneFadeEndPhone = 4.5f;
+
+    /// <summary>A look's own tone at DishTone 1: x the tone per mm of the dish's height at 0.35 m (the sunk centre darker, the
+    /// raised corners lighter; it follows each tile's own depth), y the darkening at the cushion's foot (the joint's cavity, a
+    /// narrow band over the cushion and the grout's sides). Today: none.</summary>
+    public static Vector2 ToneOf(PoolTileLook look)
+    {
+        switch (look)
+        {
+            case PoolTileLook.GZC: return new Vector2(.21f, .12f);
+            case PoolTileLook.DishShallow: return new Vector2(.35f, .12f);
+            case PoolTileLook.DishMedium: return new Vector2(.35f, .14f);
+            case PoolTileLook.DishDeep: return new Vector2(.28f, .16f);
+            default: return Vector2.zero;
+        }
+    }
 
     static readonly Dictionary<string, Material> shared = new Dictionary<string, Material>();
     static readonly Dictionary<string, Material> atWater = new Dictionary<string, Material>();
@@ -39,6 +106,76 @@ public static class FrontRoomsPoolTile
     {
         shared.Clear();
         atWater.Clear();
+        Look = DefaultLook;
+        dishTone = DefaultDishTone;
+        publishedTier = -1;
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void PublishAtStart() { Publish(); }
+
+#if UNITY_EDITOR
+    [UnityEditor.InitializeOnLoadMethod]
+    static void PublishInEditor() { Publish(); }
+#endif
+
+    /// <summary>Show a look on every pool tile material (a global switch: no material is edited). Scene 4 and the tools call it.</summary>
+    public static void SetLook(PoolTileLook look)
+    {
+        Look = look;
+        Publish();
+    }
+
+    /// <summary>The next look in the order Today, GZC, DishShallow, DishMedium, DishDeep (for a key that cycles them).</summary>
+    public static PoolTileLook NextLook(PoolTileLook look)
+    {
+        return (PoolTileLook)(((int)look + 1) % 5);
+    }
+
+    /// <summary>Writes the current look's globals (FrontRooms/Surface's _FR_TileLook, _FR_TileLook2, _FR_TileGlaze, _FR_TileAA,
+    /// _FR_TileTone). Today writes zeros: the shader's today path. Also called when the tier changes (the phone maps are half
+    /// size) and when DishTone changes.</summary>
+    public static void Publish()
+    {
+        var phone = PhoneTier;
+        publishedTier = phone ? 1 : 0;
+        var look = Vector4.zero;
+        var look2 = Vector4.zero;
+        // GZ-C's glaze (73 sections 4.1, 5.1): core 0.97, halo 0.62 at 0.2 (their tuning note: 0.4 hid the core at 0.35 m),
+        // box projection on; specular AA 0.10 / 0.18
+        var glaze = new Vector4(.97f, .62f, .2f, 1f);
+        var aa = new Vector4(.10f, .18f, FaceSlopeVariance, phone ? 1f : 0f);
+        switch (Look)
+        {
+            case PoolTileLook.GZC:
+                // 73 section 7: tilt sd 0.20 deg, saddle sd 0.05 mm, bow 0.15-0.40 mm (80 % domed); no Pools levers
+                look = new Vector4(1f, 0f, .2f, 0f);
+                look2 = new Vector4(.20f, .05f, .15f, .40f);
+                break;
+            case PoolTileLook.DishShallow:
+                look = new Vector4(2f, .25f, .85f, 1f);
+                look2 = new Vector4(.20f, .08f, 0f, 0f);
+                break;
+            case PoolTileLook.DishMedium:
+                look = new Vector4(3f, .45f, .85f, 1f);
+                look2 = new Vector4(.20f, .12f, 0f, 0f);
+                break;
+            case PoolTileLook.DishDeep:
+                look = new Vector4(4f, .75f, .85f, 1f);
+                look2 = new Vector4(.22f, .18f, 0f, 0f);
+                break;
+            default:
+                glaze = Vector4.zero;
+                aa = Vector4.zero;
+                break;
+        }
+        Shader.SetGlobalVector(LookId, look);
+        Shader.SetGlobalVector(Look2Id, look2);
+        Shader.SetGlobalVector(GlazeId, glaze);
+        Shader.SetGlobalVector(AAId, aa);
+        // the dish in tone (section 13.15): the look's own amounts times DishTone, the dish's falloff and the fade's end
+        var tone = ToneOf(Look) * dishTone;
+        Shader.SetGlobalVector(ToneId, new Vector4(tone.x, tone.y, phone ? ToneNearPhone : ToneNear, phone ? ToneFadeEndPhone : ToneFadeEnd));
     }
 
     /// <summary>The phone tier, as the lamp kits take it.</summary>
@@ -53,6 +190,7 @@ public static class FrontRoomsPoolTile
     /// <summary>The kind's shared material for a given tier; a missing phone twin falls back to the desktop one.</summary>
     public static Material Get(string kind, bool phone)
     {
+        if (publishedTier != (PhoneTier ? 1 : 0)) Publish();
         var key = kind + (phone ? "_Phone" : "");
         Material m;
         if (shared.TryGetValue(key, out m)) return m;

@@ -1,0 +1,22 @@
+G_Today_crop.jpg | TODAY GRAZING 1:1 | label 306 px + data 255 px in cell 761 px | FITS
+G_GZC_crop.jpg | GZ-C GRAZING 1:1 | label 281 px + data 255 px in cell 761 px | FITS
+G_DishShallow_crop.jpg | DISH S GRAZING 1:1 | label 310 px + data 255 px in cell 761 px | FITS
+G_DishMedium_crop.jpg | DISH M REC GRAZING 1:1 | label 385 px + data 255 px in cell 761 px | FITS
+G_DishDeep_crop.jpg | DISH D GRAZING 1:1 | label 312 px + data 255 px in cell 761 px | FITS
+H_Today_crop.jpg | TODAY 0.35 M 1:1 | label 301 px + data 221 px in cell 761 px | FITS
+H_GZC_crop.jpg | GZ-C 0.35 M 1:1 | label 276 px + data 221 px in cell 761 px | FITS
+H_DishShallow_crop.jpg | DISH S 0.35 M 1:1 | label 305 px + data 221 px in cell 761 px | FITS
+H_DishMedium_crop.jpg | DISH M REC 0.35 M 1:1 | label 380 px + data 221 px in cell 761 px | FITS
+H_DishDeep_crop.jpg | DISH D 0.35 M 1:1 | label 307 px + data 221 px in cell 761 px | FITS
+S8_Today_crop.jpg | TODAY 3 M 1:1 | label 240 px + data 187 px in cell 761 px | FITS
+S8_GZC_crop.jpg | GZ-C 3 M 1:1 | label 215 px + data 187 px in cell 761 px | FITS
+S8_DishShallow_crop.jpg | DISH S 3 M 1:1 | label 244 px + data 187 px in cell 761 px | FITS
+S8_DishMedium_crop.jpg | DISH M REC 3 M 1:1 | label 319 px + data 187 px in cell 761 px | FITS
+S8_DishDeep_crop.jpg | DISH D 3 M 1:1 | label 246 px + data 187 px in cell 761 px | FITS
+S9_Today_crop.jpg | TODAY WATER 1:1 | label 283 px + data 255 px in cell 761 px | FITS
+S9_GZC_crop.jpg | GZ-C WATER 1:1 | label 258 px + data 255 px in cell 761 px | FITS
+S9_DishShallow_crop.jpg | DISH S WATER 1:1 | label 287 px + data 255 px in cell 761 px | FITS
+S9_DishMedium_crop.jpg | DISH M REC WATER 1:1 | label 362 px + data 255 px in cell 761 px | FITS
+S9_DishDeep_crop.jpg | DISH D WATER 1:1 | label 289 px + data 255 px in cell 761 px | FITS
+sheet sheets/pt_tile_detail.jpg 3837x2290
+ALL LABELS FIT

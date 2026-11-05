@@ -1,0 +1,44 @@
+L0_E_idold_raw.png | L0 E MAIN | label 155 px + data 272 px in cell 1274 px | FITS
+L0_E_idnew_raw.png | L0 E NEW TODAY | label 256 px + data 204 px in cell 1274 px | FITS
+L0_E_iddiff.png | L0 E DIFF X64 | label 232 px + data 255 px in cell 1274 px | FITS
+L0_F_idold_raw.png | L0 F MAIN | label 156 px + data 272 px in cell 1274 px | FITS
+L0_F_idnew_raw.png | L0 F NEW TODAY | label 257 px + data 204 px in cell 1274 px | FITS
+L0_F_iddiff.png | L0 F DIFF X64 | label 233 px + data 255 px in cell 1274 px | FITS
+L0_C_idold_raw.png | L0 C MAIN | label 157 px + data 272 px in cell 1274 px | FITS
+L0_C_idnew_raw.png | L0 C NEW TODAY | label 258 px + data 204 px in cell 1274 px | FITS
+L0_C_iddiff.png | L0 C DIFF X64 | label 234 px + data 255 px in cell 1274 px | FITS
+Tall_E_idold_raw.png | TALL E MAIN | label 183 px + data 272 px in cell 1274 px | FITS
+Tall_E_idnew_raw.png | TALL E NEW TODAY | label 284 px + data 204 px in cell 1274 px | FITS
+Tall_E_iddiff.png | TALL E DIFF X64 | label 260 px + data 255 px in cell 1274 px | FITS
+Low_E_idold_raw.png | LOW E MAIN | label 177 px + data 272 px in cell 1274 px | FITS
+Low_E_idnew_raw.png | LOW E NEW TODAY | label 278 px + data 204 px in cell 1274 px | FITS
+Low_E_iddiff.png | LOW E DIFF X64 | label 254 px + data 255 px in cell 1274 px | FITS
+Run_E_idold_raw.png | RUN E MAIN | label 173 px + data 272 px in cell 1274 px | FITS
+Run_E_idnew_raw.png | RUN E NEW TODAY | label 274 px + data 204 px in cell 1274 px | FITS
+Run_E_iddiff.png | RUN E DIFF X64 | label 250 px + data 255 px in cell 1274 px | FITS
+Run_W3_idold_raw.png | RUN W3 MAIN | label 209 px + data 272 px in cell 1274 px | FITS
+Run_W3_idnew_raw.png | RUN W3 NEW TODAY | label 310 px + data 204 px in cell 1274 px | FITS
+Run_W3_iddiff.png | RUN W3 DIFF X64 | label 286 px + data 255 px in cell 1274 px | FITS
+Run_F_idold_raw.png | RUN F MAIN | label 174 px + data 272 px in cell 1274 px | FITS
+Run_F_idnew_raw.png | RUN F NEW TODAY | label 275 px + data 204 px in cell 1274 px | FITS
+Run_F_iddiff.png | RUN F DIFF X64 | label 251 px + data 255 px in cell 1274 px | FITS
+Station_E_idold_raw.png | STATION E MAIN | label 235 px + data 272 px in cell 1274 px | FITS
+Station_E_idnew_raw.png | STATION E NEW TODAY | label 336 px + data 204 px in cell 1274 px | FITS
+Station_E_iddiff.png | STATION E DIFF X64 | label 312 px + data 255 px in cell 1274 px | FITS
+Station_W3_idold_raw.png | STATION W3 MAIN | label 271 px + data 272 px in cell 1274 px | FITS
+Station_W3_idnew_raw.png | STATION W3 NEW TODAY | label 372 px + data 204 px in cell 1274 px | FITS
+Station_W3_iddiff.png | STATION W3 DIFF X64 | label 348 px + data 255 px in cell 1274 px | FITS
+Station_F_idold_raw.png | STATION F MAIN | label 236 px + data 272 px in cell 1274 px | FITS
+Station_F_idnew_raw.png | STATION F NEW TODAY | label 337 px + data 204 px in cell 1274 px | FITS
+Station_F_iddiff.png | STATION F DIFF X64 | label 313 px + data 255 px in cell 1274 px | FITS
+Stair_E_idold_raw.png | STAIR E MAIN | label 198 px + data 272 px in cell 1274 px | FITS
+Stair_E_idnew_raw.png | STAIR E NEW TODAY | label 299 px + data 204 px in cell 1274 px | FITS
+Stair_E_iddiff.png | STAIR E DIFF X64 | label 275 px + data 255 px in cell 1274 px | FITS
+Stair_W3_idold_raw.png | STAIR W3 MAIN | label 234 px + data 272 px in cell 1274 px | FITS
+Stair_W3_idnew_raw.png | STAIR W3 NEW TODAY | label 335 px + data 204 px in cell 1274 px | FITS
+Stair_W3_iddiff.png | STAIR W3 DIFF X64 | label 311 px + data 255 px in cell 1274 px | FITS
+Stair_J_idold_raw.png | STAIR J MAIN | label 199 px + data 272 px in cell 1274 px | FITS
+Stair_J_idnew_raw.png | STAIR J NEW TODAY | label 300 px + data 204 px in cell 1274 px | FITS
+Stair_J_iddiff.png | STAIR J DIFF X64 | label 276 px + data 255 px in cell 1274 px | FITS
+sheet sheets/rs_identity.jpg 3838x11496
+ALL LABELS FIT

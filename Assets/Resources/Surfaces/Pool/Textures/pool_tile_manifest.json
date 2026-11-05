@@ -17,8 +17,28 @@
    ],
    "guid": "951fe424ed644b1d9406c40534663a92",
    "mesh_uv": false,
+   "real": [
+    [
+     0.6,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.935,
+     0.08,
+     0.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Cap",
-   "sha1": "7db3e8f55f80af09ecccd5c82e9cee8ecea624de",
+   "sha1": "11f0f89ab119612f74d5920459d81512164021f6",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -43,8 +63,28 @@
    ],
    "guid": "8c541df688094008a1ff4472cdd75c65",
    "mesh_uv": false,
+   "real": [
+    [
+     0.6,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.935,
+     0.08,
+     0.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Cap",
-   "sha1": "746ae3c927276cf8be34141b034d0d8632d1c04b",
+   "sha1": "ac4f52c246a8cc80f0786ff2b1a5f00ad28f9cbe",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -69,8 +109,28 @@
    ],
    "guid": "fd2ebd9ca31b478285bbff79b1f6fded",
    "mesh_uv": true,
+   "real": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.02
+    ],
+    [
+     0.0,
+     0.92,
+     0.0,
+     0.0
+    ],
+    [
+     3.0,
+     2.0,
+     0.0,
+     0.8
+    ]
+   ],
    "set": "Coping",
-   "sha1": "04e9a326ad0e3661cb055beaaabb0481855265cd",
+   "sha1": "1a41ee08344b262caf766003a9c3c404f62e8700",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -95,8 +155,28 @@
    ],
    "guid": "a30c127919154b4db27c508376adeaaa",
    "mesh_uv": true,
+   "real": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.02
+    ],
+    [
+     0.0,
+     0.92,
+     0.0,
+     0.0
+    ],
+    [
+     3.0,
+     2.0,
+     0.0,
+     0.8
+    ]
+   ],
    "set": "Coping",
-   "sha1": "bbe9a9d6f91662895a93ef788b4e840fff8df804",
+   "sha1": "f1571a7c0446bc9a09e2f26a753726377d640de9",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -121,8 +201,28 @@
    ],
    "guid": "92ac22ca4cb34b41b191b12f94e4ea1d",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "b07b17ea3d7b447da9e85f50eb7f4f9608ae2320",
+   "sha1": "137ac927b3c54a856e252f81016af052264305e9",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -147,8 +247,28 @@
    ],
    "guid": "4632069af1674e14b7385cf3f579ea83",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "57b5f2a225351d26d22bf6827016c1f2ca4f98cc",
+   "sha1": "2b2c39364d15c2041a1b53443d09d23c0d09e874",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -173,14 +293,126 @@
    ],
    "guid": "cb93c70057ce4ae4b749e6cb0bd5ca1a",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "682459acb133f6b330bae1f8052d226202d84e88",
+   "sha1": "dc82ef35abd36813c6c3edd3cde2f42963e3064b",
    "tier": "_Phone",
    "tile_size": [
     1.2,
     1.2
    ],
    "wear": 1.0
+  },
+  "Prop_PoolTile_CourseMesh": {
+   "base": [
+    0.4,
+    0.76,
+    0.77
+   ],
+   "edge": [
+    0.7,
+    0.86,
+    0.86
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "010f72af3f50438d91217133a11c5357",
+   "mesh_uv": true,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
+   "set": "Field",
+   "sha1": "80a4eda9ca2de6c9660eb4e8ca17912722596c97",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_CourseMesh_Phone": {
+   "base": [
+    0.4,
+    0.76,
+    0.77
+   ],
+   "edge": [
+    0.7,
+    0.86,
+    0.86
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "0af73a78022742adbe0781053a30a0e9",
+   "mesh_uv": true,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
+   "set": "Field",
+   "sha1": "53459d5a7d946afaa9dee878478edad07df3203e",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
   },
   "Prop_PoolTile_Course_Phone": {
    "base": [
@@ -199,8 +431,28 @@
    ],
    "guid": "3e1e736fdbcb4c6cb7b98f6288921ee5",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "fe6739782662722a7dd7f353befd99b55f7bb0a7",
+   "sha1": "e38a83646a503be337b1904b6b1626dbdcb76d54",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -225,8 +477,28 @@
    ],
    "guid": "f9e9a2b4d10047aab0ccd921aa4e8d6b",
    "mesh_uv": false,
+   "real": [
+    [
+     0.5,
+     0.6,
+     0.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.31,
+     0.15,
+     0.0
+    ],
+    [
+     4.0,
+     1.4,
+     1.5,
+     1.0
+    ]
+   ],
    "set": "Deck",
-   "sha1": "5f732491ca5885c6129c383f813566b783d6c20f",
+   "sha1": "34a36ece45ac535f09e586d81fcbf48fe63d54b3",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -251,8 +523,28 @@
    ],
    "guid": "69c76bddecc5481faeb0d31d1d86b4c6",
    "mesh_uv": false,
+   "real": [
+    [
+     0.5,
+     0.6,
+     0.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.31,
+     0.15,
+     0.0
+    ],
+    [
+     4.0,
+     1.4,
+     1.5,
+     1.0
+    ]
+   ],
    "set": "Deck",
-   "sha1": "3b96b4bed25adc76097e7dd710a812ca30c1ff00",
+   "sha1": "d3bbc4e8562515d4e5fbbe879d229327deb76884",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -277,8 +569,28 @@
    ],
    "guid": "4bd70ae8d0d44251a31bedc949da8bc7",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "dedb6799fa4b0505364aa62c6b43cc07f584ee46",
+   "sha1": "9ad85e920b8123ab41e4d5da81422cd785ae9025",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -303,8 +615,28 @@
    ],
    "guid": "0faaae71e5f1493a8ee39ec26fe036e7",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "7f5d3a6fb7b948711139cb274ac5b2c6e149c3f0",
+   "sha1": "04ea2f4cd45a8ee2050ceae5d458b02521ac48b8",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -329,14 +661,126 @@
    ],
    "guid": "a2011960b6eb4ec68485ceefae40cabc",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "2ab8047616dd11acccc54c052a1a72c6fd28304c",
+   "sha1": "c6c15f3b67604b8a5f89b4843277f2dedbd778c8",
    "tier": "_Phone",
    "tile_size": [
     1.2,
     1.2
    ],
    "wear": 1.0
+  },
+  "Prop_PoolTile_FieldMesh": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "aeafadddb6e34f42acf9d60b21cc80f3",
+   "mesh_uv": true,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
+   "set": "Field",
+   "sha1": "e72216ab2f48bfa6ac77ebf148ddcb4759028064",
+   "tier": "desktop",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
+  },
+  "Prop_PoolTile_FieldMesh_Phone": {
+   "base": [
+    0.93,
+    0.95,
+    0.96
+   ],
+   "edge": [
+    0.8,
+    0.81,
+    0.8
+   ],
+   "grid": [
+    8,
+    8
+   ],
+   "guid": "2ed9fc0b8cc64794a1247e9b7cc1d721",
+   "mesh_uv": true,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
+   "set": "Field",
+   "sha1": "98d808b5e5775af636aca4d1ef853fe373ec55fd",
+   "tier": "_Phone",
+   "tile_size": [
+    1.2,
+    1.2
+   ],
+   "wear": 0.0
   },
   "Prop_PoolTile_Field_Phone": {
    "base": [
@@ -355,8 +799,28 @@
    ],
    "guid": "c42437160309450f9f7e05ec33df9a4d",
    "mesh_uv": false,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "98af376589c27dfc74e84d5ead5a496151b932a6",
+   "sha1": "89a2dd0d40d946e694e1dace209a7f53bee2456d",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -381,8 +845,28 @@
    ],
    "guid": "e84222d0965f455892259cb1d39c6f0d",
    "mesh_uv": false,
+   "real": [
+    [
+     0.25,
+     0.3,
+     0.0,
+     0.04
+    ],
+    [
+     0.0,
+     0.47,
+     0.05,
+     0.0
+    ],
+    [
+     2.0,
+     1.0,
+     1.0,
+     0.6
+    ]
+   ],
    "set": "Mosaic",
-   "sha1": "81a76f0118b4e8ffadcd3185681fb739489ed8ac",
+   "sha1": "8718f67ee46f91f0f38917c425672932a00353a4",
    "tier": "desktop",
    "tile_size": [
     0.6,
@@ -407,8 +891,28 @@
    ],
    "guid": "4250ecd6422d40aba3f9a840c5419f55",
    "mesh_uv": false,
+   "real": [
+    [
+     0.25,
+     0.3,
+     0.0,
+     0.04
+    ],
+    [
+     0.0,
+     0.47,
+     0.05,
+     0.0
+    ],
+    [
+     2.0,
+     1.0,
+     1.0,
+     0.6
+    ]
+   ],
    "set": "Mosaic",
-   "sha1": "8d7bf8f45368deff288aef001575297a55cb9241",
+   "sha1": "7aaeac1ee4cf3a4ef14bbc79189f22a733f26297",
    "tier": "_Phone",
    "tile_size": [
     0.6,
@@ -433,8 +937,28 @@
    ],
    "guid": "71a24421111747c6a05f43bbd70d47d0",
    "mesh_uv": false,
+   "real": [
+    [
+     0.25,
+     0.3,
+     0.0,
+     0.04
+    ],
+    [
+     0.0,
+     0.47,
+     0.05,
+     0.0
+    ],
+    [
+     2.0,
+     1.0,
+     1.0,
+     0.6
+    ]
+   ],
    "set": "Mosaic",
-   "sha1": "68f42e5eecf630f7fe2b4790dc6d16f181a69050",
+   "sha1": "79757a0d0f749710e052e33dfa0bf056b476d6c2",
    "tier": "desktop",
    "tile_size": [
     0.6,
@@ -459,8 +983,28 @@
    ],
    "guid": "3ea7bf7a6b1f4ebf8d39c0f33099f55e",
    "mesh_uv": false,
+   "real": [
+    [
+     0.25,
+     0.3,
+     0.0,
+     0.04
+    ],
+    [
+     0.0,
+     0.47,
+     0.05,
+     0.0
+    ],
+    [
+     2.0,
+     1.0,
+     1.0,
+     0.6
+    ]
+   ],
    "set": "Mosaic",
-   "sha1": "bd29fe6e3b168280ab5bd35ad902d941ba0f569e",
+   "sha1": "360efe5b3f9966403090082088c2343f7ed00c56",
    "tier": "desktop",
    "tile_size": [
     0.6,
@@ -485,8 +1029,28 @@
    ],
    "guid": "4fc5d809c2f1447892bc8ad5ad0e123f",
    "mesh_uv": false,
+   "real": [
+    [
+     0.25,
+     0.3,
+     0.0,
+     0.04
+    ],
+    [
+     0.0,
+     0.47,
+     0.05,
+     0.0
+    ],
+    [
+     2.0,
+     1.0,
+     1.0,
+     0.6
+    ]
+   ],
    "set": "Mosaic",
-   "sha1": "047aef945a4e7ef24df59c799862924ef25505e6",
+   "sha1": "e3ef7cec8628e2b75cc93b4802f191530a28e140",
    "tier": "_Phone",
    "tile_size": [
     0.6,
@@ -511,8 +1075,28 @@
    ],
    "guid": "9c67c64b75d24f4a860b8911cbda66d4",
    "mesh_uv": false,
+   "real": [
+    [
+     0.25,
+     0.3,
+     0.0,
+     0.04
+    ],
+    [
+     0.0,
+     0.47,
+     0.05,
+     0.0
+    ],
+    [
+     2.0,
+     1.0,
+     1.0,
+     0.6
+    ]
+   ],
    "set": "Mosaic",
-   "sha1": "0604c2a47745c7dd143786108e42ece5334173e0",
+   "sha1": "fdb5d85dd76d568ab1446762c4366dd6e4284609",
    "tier": "_Phone",
    "tile_size": [
     0.6,
@@ -537,8 +1121,28 @@
    ],
    "guid": "601e9717f33c419a97a9db19b056d0b6",
    "mesh_uv": true,
+   "real": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.02
+    ],
+    [
+     0.0,
+     0.9,
+     0.0,
+     0.0
+    ],
+    [
+     3.0,
+     1.6,
+     0.0,
+     0.7
+    ]
+   ],
    "set": "Nosing",
-   "sha1": "444c463beb47a2bb937de486d78d01813d19289a",
+   "sha1": "4d52d1c6bae04b1aa6c59d423d44694c1682ac16",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -563,8 +1167,28 @@
    ],
    "guid": "6a121986ea834f29a70ee66949b94f3b",
    "mesh_uv": true,
+   "real": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.02
+    ],
+    [
+     0.0,
+     0.9,
+     0.0,
+     0.0
+    ],
+    [
+     3.0,
+     1.6,
+     0.0,
+     0.7
+    ]
+   ],
    "set": "Nosing",
-   "sha1": "b6602be90348d3c0888657a699c70eebd17625a1",
+   "sha1": "ec5514c4916cc9b18e6324fa292c2306c33d577d",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -589,8 +1213,28 @@
    ],
    "guid": "7397b37b24a44779bcf671065cdfca90",
    "mesh_uv": true,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "12f05bec940ad70d110c3949c79a816ad42faa47",
+   "sha1": "3f05927186ffb673847fe76723c6c0a1e3dec21c",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -615,8 +1259,28 @@
    ],
    "guid": "4f715aa37bc74675a38388e0a5225197",
    "mesh_uv": true,
+   "real": [
+    [
+     1.0,
+     0.5,
+     1.0,
+     0.03
+    ],
+    [
+     0.4,
+     0.935,
+     0.12,
+     1.0
+    ],
+    [
+     3.0,
+     1.8,
+     1.2,
+     0.7
+    ]
+   ],
    "set": "Field",
-   "sha1": "651f752241a128eea7d40df204de3f91f014972c",
+   "sha1": "cae03e60051bb7c35109ca71f2a5fe1bc56f073d",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -641,8 +1305,28 @@
    ],
    "guid": "4596a8a8444543c9bf111d73830ba99c",
    "mesh_uv": true,
+   "real": [
+    [
+     0.5,
+     0.6,
+     0.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.31,
+     0.15,
+     0.0
+    ],
+    [
+     4.0,
+     1.4,
+     1.5,
+     1.0
+    ]
+   ],
    "set": "Deck",
-   "sha1": "1832dc33b43090dc22d69943eec6bf417637fa5e",
+   "sha1": "2661a64a5dfcd464665161d0a206578528209f0f",
    "tier": "desktop",
    "tile_size": [
     1.2,
@@ -667,8 +1351,28 @@
    ],
    "guid": "fd5a55d80e264ccdbb0a757fa732b299",
    "mesh_uv": true,
+   "real": [
+    [
+     0.5,
+     0.6,
+     0.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.31,
+     0.15,
+     0.0
+    ],
+    [
+     4.0,
+     1.4,
+     1.5,
+     1.0
+    ]
+   ],
    "set": "Deck",
-   "sha1": "607485b7038c7ec8c1cc4b86c1196507957710bf",
+   "sha1": "802d7201469e87b0d1a909ac7a667f3ad8b4b63e",
    "tier": "_Phone",
    "tile_size": [
     1.2,
@@ -733,6 +1437,58 @@
    ],
    "tiles_u": 8,
    "tiles_v": 8
+  },
+  "Face": {
+   "clipped_share": 0.0,
+   "clipped_share_Phone": 0.0,
+   "face_k": 14.285714285714285,
+   "grain": [
+    [
+     1.6,
+     0.03
+    ],
+    [
+     0.8,
+     0.012
+    ]
+   ],
+   "grain_k": 0.8333333333333334,
+   "lost_var_by_mip": [
+    2.183e-06,
+    9.02e-06,
+    2.1752e-05,
+    3.1293e-05,
+    3.6128e-05,
+    3.6872e-05,
+    3.6949e-05,
+    3.6959e-05,
+    3.696e-05,
+    3.6961e-05,
+    3.6961e-05
+   ],
+   "lost_var_by_mip_Phone": [
+    9.02e-06,
+    2.1752e-05,
+    3.1293e-05,
+    3.6128e-05,
+    3.6872e-05,
+    3.6949e-05,
+    3.6959e-05,
+    3.696e-05,
+    3.6961e-05,
+    3.6961e-05
+   ],
+   "peel": [
+    5.0,
+    0.003
+   ],
+   "rms_deg_per_axis": 0.2463,
+   "span_mm": 600.0,
+   "swell": [
+    14.0,
+    0.006
+   ],
+   "var_rad2_true": 3.6960638681193814e-05
   },
   "Field": {
    "edge_r_mm": 1.8,
@@ -1033,6 +1789,34 @@
    "size": [
     1024,
     1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Face_F.png": {
+   "alpha": true,
+   "bytes": 3055564,
+   "face": true,
+   "guid": "0c5f921682554d99ab2c3f13d69d2334",
+   "linear": true,
+   "normal": false,
+   "sha1": "f8b6462f0e5b65117d4cc17fcb69077f6ca0d56d",
+   "size": [
+    1024,
+    1024
+   ],
+   "wrapV": "repeat"
+  },
+  "PoolTile_Face_F_Phone.png": {
+   "alpha": true,
+   "bytes": 712407,
+   "face": true,
+   "guid": "65899a7900df498b9ee0af921f817278",
+   "linear": true,
+   "normal": false,
+   "sha1": "a21ef35c2a4db1d11fcae03ea12ad8568123f962",
+   "size": [
+    512,
+    512
    ],
    "wrapV": "repeat"
   },

@@ -12,6 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _FR_DETAIL
   - _FR_OWN_LIGHTS
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -30,6 +31,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
         m_Texture: {fileID: 2800000, guid: 7a69a075d289844bd8188bc7d17cd5c9, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMap:
+        m_Texture: {fileID: 2800000, guid: 1a3822443f2ce486690e97faf7690bad, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
@@ -52,6 +57,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _WearMap:
+        m_Texture: {fileID: 2800000, guid: c55e9d8c0fe714b47bc0385622cddf84, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
@@ -71,12 +80,17 @@ Material:
     - _PrintAmount: 1
     - _Smoothness: 1.35
     - _StainStrength: 0
+    - _UseDetail: 1
     - _UseEmission: 0
     - _UseLampField: 0
     - _UsePrint: 0
     - _WetStrength: 0
     m_Colors:
     - _BaseColor: {r: 0.7412, g: 0.7451, b: 0.7216, a: 1}
+    - _DetailA: {r: 0, g: 0, b: 0, a: 0.35}
+    - _DetailB: {r: 0, g: 0.35, b: 1, a: 0.06}
+    - _DetailC: {r: 0, g: 0, b: -0.8, a: 3}
+    - _DetailKind: {r: 10, g: 2.4, b: 0, a: 0.7}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _InkCream: {r: 0.89019996, g: 0.8353, b: 0.5804, a: 1}
     - _InkDeep: {r: 0.4627, g: 0.41569996, b: 0.20389995, a: 1}

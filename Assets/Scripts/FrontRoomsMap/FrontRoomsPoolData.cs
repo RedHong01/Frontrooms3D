@@ -133,6 +133,46 @@ namespace FrontRooms.Map
         public string kit;
         public float x, z, y, yaw, length;
         public bool collider, fromBase;
+
+        /// <summary>
+        /// The kit's box as FrontRoomsPoolStandIns builds it (keep the two in step): half its size along its local X and Z
+        /// round its point, and its lowest point under y, in metres. False for the kits flat on the floor (drains, depth
+        /// marks, court lines) and the fire stair's rail and gate, which never stand in an opening. FrontRoomsPoolPlan reads
+        /// it so that an arch it opens does not land behind a kit standing against that wall.
+        /// </summary>
+        public bool Footprint(out float halfX, out float halfZ, out float bottom)
+        {
+            var l = length;
+            halfZ = .05f;
+            bottom = 0f;
+            switch (kit)
+            {
+                case "Kit_TowelDesk": halfX = (l > 0f ? l : 3f) * .5f + .05f; halfZ = .36f; return true;
+                case "Kit_SignBlank": halfX = (l > 0f ? l : 1.2f) * .5f; halfZ = .03f; bottom = -.2f; return true;
+                case "Kit_LockerBank": halfX = (l > 0f ? l : 3.4f) * .5f; halfZ = .22f; return true;
+                case "Kit_LockerBench": halfX = (l > 0f ? l : 3.4f) * .5f; halfZ = .18f; return true;
+                case "Kit_ShowerSet": halfX = .08f; halfZ = .3f; bottom = 1f; return true;
+                case "Kit_GlassBlockHalfWall": halfX = (l > 0f ? l : 2.9f) * .5f + .01f; halfZ = .07f; return true;
+                case "Kit_GlassBlockWall": halfX = (l > 0f ? l : 3.4f) * .5f; halfZ = .03f; return true;
+                case "Kit_PoolLadder": halfX = .29f; halfZ = .39f; return true;
+                case "Kit_GuardChair": halfX = .34f; halfZ = .33f; return true;
+                case "Kit_RingBuoy": halfX = .39f; halfZ = .11f; bottom = -.39f; return true;
+                case "Kit_RulesBoard": halfX = .6f; halfZ = .03f; bottom = -.45f; return true;
+                case "Kit_PaceClock": halfX = .44f; halfZ = .05f; bottom = -.44f; return true;
+                case "Kit_ObsWindow": halfX = .5f; halfZ = .04f; bottom = -.19f; return true;
+                case "Kit_Soffit": halfX = (l > 0f ? l : 15f) * .5f; halfZ = 1.5f; return true;
+                case "Kit_Beam": halfX = (l > 0f ? l : 15f) * .5f; halfZ = .25f; return true;
+                case "Kit_PipeRun": halfX = (l > 0f ? l : 6f) * .5f; halfZ = .08f; bottom = -.07f; return true;
+                case "Kit_Oculus": halfX = .78f; halfZ = .05f; bottom = -.78f; return true;
+                // The tube leaves the wall behind it and bends down into the water ahead; its whole run counts as its depth.
+                case "Kit_SlideTube": halfX = .5f; halfZ = 3.7f; bottom = -2.1f; return true;
+                case "Kit_FloorDrain": case "Kit_MainDrainGrate": case "Kit_DepthMark": case "Kit_CourtLines":
+                case "Kit_PipeRail": case "Kit_GateBars":
+                    halfX = 0f;
+                    return false;
+                default: halfX = .25f; halfZ = .25f; return true;
+            }
+        }
     }
 
     /// <summary>

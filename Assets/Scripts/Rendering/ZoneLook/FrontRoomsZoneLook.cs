@@ -47,6 +47,9 @@ public static class FrontRoomsZoneLook
     public static readonly int HeightFogColorId = Shader.PropertyToID("_FR_HeightFogColor");
     /// <summary>The blended lamp share at the render (1 = as tuned): FrontRooms/Surface's water bounce replaces only the tuned ambient.</summary>
     public static readonly int AmbientShareId = Shader.PropertyToID("_FR_ZoneAmbientShare");
+    /// <summary>FrontRooms/Surface's _FR_ZoneSSAO: x the share of the shared SSAO's darkening the pool tile's real look takes
+    /// off (1 - the blended contactShade; 0 = the renderer's, outside every zone and with no look volume).</summary>
+    public static readonly int ZoneSSAOId = Shader.PropertyToID("_FR_ZoneSSAO");
 
     // ------------------------------------------------------------------------------------------- registry
     static readonly List<FrontRoomsZoneLookVolume> volumes = new List<FrontRoomsZoneLookVolume>();
@@ -339,7 +342,7 @@ public static class FrontRoomsZoneLook
         public Color fogColor;
         public float fogDensity;
         public SphericalHarmonicsL2 probe;
-        public Vector4 heightFog, heightFogColor;
+        public Vector4 heightFog, heightFogColor, zoneSSAO;
         public float ambientShare;
     }
 
@@ -417,6 +420,7 @@ public static class FrontRoomsZoneLook
             heightFog = Shader.GetGlobalVector(HeightFogId),
             heightFogColor = Shader.GetGlobalVector(HeightFogColorId),
             ambientShare = Shader.GetGlobalFloat(AmbientShareId),
+            zoneSSAO = Shader.GetGlobalVector(ZoneSSAOId),
         };
     }
 
@@ -432,6 +436,7 @@ public static class FrontRoomsZoneLook
         Shader.SetGlobalVector(HeightFogId, s.heightFog);
         Shader.SetGlobalVector(HeightFogColorId, s.heightFogColor);
         Shader.SetGlobalFloat(AmbientShareId, s.ambientShare);
+        Shader.SetGlobalVector(ZoneSSAOId, s.zoneSSAO);
     }
 
     /// <summary>The blended look at a position, from base values (what the context found). False when no zone weighs in.</summary>
@@ -445,6 +450,7 @@ public static class FrontRoomsZoneLook
         public float fillScale;
         /// <summary>The lamp share, weighted like the probe (1 = as tuned).</summary>
         public float ambientShare;
+        public float contactShade;
         public string strongest;
         public float strongestWeight;
     }
@@ -494,6 +500,7 @@ public static class FrontRoomsZoneLook
                 blend.heightLinear = new Color(baseHeightColor.x, baseHeightColor.y, baseHeightColor.z, 1f);
                 blend.fillScale = 1f;
                 blend.ambientShare = 1f;
+                blend.contactShade = 1f;
                 blend.strongest = "";
             }
             var sh = p.AmbientProbe;
@@ -526,6 +533,7 @@ public static class FrontRoomsZoneLook
             blend.heightDensity = Mathf.Lerp(blend.heightDensity, hd, w);
             blend.fillScale = Mathf.Lerp(blend.fillScale, lit ? p.fillScale * share : p.fillScale, w);
             blend.ambientShare = Mathf.Lerp(blend.ambientShare, share, w);
+            blend.contactShade = Mathf.Lerp(blend.contactShade, p.contactShade, w);
             if (w > blend.strongestWeight) { blend.strongestWeight = w; blend.strongest = v.zone; }
         }
         return any;
@@ -568,6 +576,8 @@ public static class FrontRoomsZoneLook
         {
             Shader.SetGlobalVector(HeightFogId, Vector4.zero);
         }
+        // the pool tile's contact shade (a float the tile's real look reads; the SSAO feature and its keywords are untouched)
+        Shader.SetGlobalVector(ZoneSSAOId, new Vector4(Mathf.Clamp01(1f - b.contactShade), 0f, 0f, 0f));
     }
 
     // ------------------------------------------------------------------------------------------- the zone's lamps and waters

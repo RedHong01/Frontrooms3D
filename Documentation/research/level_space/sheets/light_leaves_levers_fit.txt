@@ -1,0 +1,17 @@
+OK  | TITLE SP7 · #3 THE LIGHT LEAVES · LEVERS | 1535 of 3851 px
+OK  | 1 REC (REFERENCE) · MID | label 521 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 5 CUT · MID | label 248 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 6 TIDE · TRIP | label 277 + data 315 of 952 px | t 0.70 s · 28 m
+OK  | 7 HAULED · MID | label 321 + data 315 of 952 px | t 1.70 s · 33 m
+OK  | 8 THREE BREATHS · MID | label 482 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 9 RIGID WALL · MID | label 394 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 10 RE-STACK · MID | label 396 + data 315 of 952 px | t 1.70 s · 33 m
+OK  | 11 SPARKS · SPARKS | label 439 + data 315 of 952 px | t 1.20 s · 32 m
+OK  | 12 LONG CARRY · MID | label 445 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 13 WARM GUIDE · MID | label 449 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 14 OVERTAKE · PULSE | label 453 + data 315 of 952 px | t 5.70 s · 42 m
+OK  | 15 COUNTED · RUNWAY | label 471 + data 315 of 952 px | t 4.25 s · 42 m
+OK  | 16 NO RUNWAY · DARK | label 466 + data 315 of 952 px | t 5.70 s · 42 m
+OK  | 17 WHITE WASH · RESET | label 500 + data 315 of 952 px | t 2.20 s · 42 m
+OK  | 18 SWALLOWED · MID | label 444 + data 315 of 952 px | t 1.70 s · 27 m
+ALL LABELS FIT

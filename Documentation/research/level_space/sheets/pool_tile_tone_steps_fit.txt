@@ -1,0 +1,26 @@
+OK  | TITLE SCENE 4 · POOL TILE · DISH TONE STEPS | 1297 of 3080 px
+OK  | TONE 0 · AS LANDED 04:22 | label 450 + data 187 of 954 px | hero 0.35 m
+OK  | TONE 0.5 | label 148 + data 187 of 954 px | hero 0.35 m
+OK  | TONE 1 · DEFAULT | label 293 + data 187 of 954 px | hero 0.35 m
+OK  | TONE 1.5 | label 148 + data 187 of 954 px | hero 0.35 m
+OK  | TONE 0 · AS LANDED 04:22 | label 450 + data 357 of 954 px | hero · two tiles 2.3x
+OK  | TONE 0.5 | label 148 + data 357 of 954 px | hero · two tiles 2.3x
+OK  | TONE 1 · DEFAULT | label 293 + data 357 of 954 px | hero · two tiles 2.3x
+OK  | TONE 1.5 | label 148 + data 357 of 954 px | hero · two tiles 2.3x
+OK  | TONE 0 · AS LANDED 04:22 | label 450 + data 340 of 954 px | hero · the reference
+OK  | TONE 0.5 | label 148 + data 255 of 954 px | hero · tone x10
+OK  | TONE 1 · DEFAULT | label 293 + data 255 of 954 px | hero · tone x10
+OK  | TONE 1.5 | label 148 + data 255 of 954 px | hero · tone x10
+OK  | TONE 0 · AS LANDED 04:22 | label 450 + data 204 of 954 px | 3 m end wall
+OK  | TONE 0.5 | label 148 + data 204 of 954 px | 3 m end wall
+OK  | TONE 1 · DEFAULT | label 293 + data 204 of 954 px | 3 m end wall
+OK  | TONE 1.5 | label 148 + data 204 of 954 px | 3 m end wall
+OK  | TONE 0 · AS LANDED 04:22 | label 450 + data 170 of 954 px | 3 m · 2.4x
+OK  | TONE 0.5 | label 148 + data 170 of 954 px | 3 m · 2.4x
+OK  | TONE 1 · DEFAULT | label 293 + data 170 of 954 px | 3 m · 2.4x
+OK  | TONE 1.5 | label 148 + data 170 of 954 px | 3 m · 2.4x
+OK  | TONE 0 · AS LANDED 04:22 | label 450 + data 323 of 954 px | 3 m · the reference
+OK  | TONE 0.5 | label 148 + data 238 of 954 px | 3 m · tone x10
+OK  | TONE 1 · DEFAULT | label 293 + data 238 of 954 px | 3 m · tone x10
+OK  | TONE 1.5 | label 148 + data 238 of 954 px | 3 m · tone x10
+ALL LABELS FIT

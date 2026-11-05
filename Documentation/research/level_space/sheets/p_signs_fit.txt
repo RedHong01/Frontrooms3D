@@ -1,0 +1,22 @@
+OK  | TITLE SCENE 4 · POOL ROUTE SIGNS · V2.9 | 1199 of 3148 px
+OK  | P STOP 0 · ENTRANCE | label 347 + data 408 of 954 px | as you stand · end clear
+OK  | STOP 0 · BLADE | label 257 + data 544 of 954 px | code 12.42 · title 17.17 / 16.63
+OK  | STOP 0 · 2.5 M | label 258 + data 459 of 954 px | code 11.47 · title 16.58 px
+OK  | STOP 0 · 0.9 M | label 258 + data 238 of 954 px | least 25.16 px
+OK  | P STOP 4 · FAR DOOR | label 345 + data 340 of 954 px | arch and clock clear
+OK  | STOP 4 · BLADE | label 257 + data 187 of 954 px | title 16.70
+OK  | STOP 4 · 2.5 M | label 258 + data 238 of 954 px | title 16.58 px
+OK  | STOP 4 · TURNED | label 280 + data 493 of 954 px | north wall, right of the arch
+OK  | P STOP 7 · M0 · A | label 310 + data 442 of 954 px | as you stand · basin clear
+OK  | M0 A · TURNED | label 246 + data 476 of 954 px | entry wall, left of the arch
+OK  | M0 A · BLADE | label 223 + data 408 of 954 px | code 11.82 · title 16.98
+OK  | M0 B · TURNED | label 247 + data 493 of 954 px | entry wall, north of the arch
+OK  | P STOP 11 · EXIT | label 282 + data 408 of 954 px | door and EXIT sign clear
+OK  | STOP 11 · BLADE | label 283 + data 408 of 954 px | code 12.17 · title 16.60
+OK  | P STOP 12 · FIRE STAIR | label 383 + data 272 of 954 px | the flight clear
+OK  | STOP 12 · BLADE | label 283 + data 187 of 954 px | title 16.65
+OK  | V2.9 · SP1 · 2.5 M | label 337 + data 459 of 954 px | code 11.84 · title 17.03 px
+OK  | V2.9 · SP5 · 0.9 M | label 337 + data 476 of 954 px | two columns · least 16.94 px
+OK  | V2.9 · SP7 · 0.9 M | label 337 + data 408 of 954 px | panel 1 · least 22.41 px
+OK  | V2.9 · HUB · 2.5 M | label 333 + data 238 of 954 px | title 16.60 px
+ALL LABELS FIT

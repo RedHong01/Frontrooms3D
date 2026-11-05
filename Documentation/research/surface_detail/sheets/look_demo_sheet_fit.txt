@@ -1,0 +1,22 @@
+look_demo_sheet.jpg, 20 tiles, cell 954 px wide at 3840 (u 2.00)
+0 TITLE CARD                       need  426 px of 954  fits
+1 POOL HALL                        need  756 px of 954  fits
+2 HALL CEILING                     need  911 px of 954  fits
+3 POOL LEVEL                       need  856 px of 954  fits
+4 DARK ZONE                        need  814 px of 954  fits
+5 OFFICE                           need  818 px of 954  fits
+6 LEVEL 0                          need  839 px of 954  fits
+7 TALL HALL                        need  733 px of 954  fits
+8 LOW ROOM                         need  789 px of 954  fits
+9 RUN! · LOOK B                    need  906 px of 954  fits
+10 STATION                         need  760 px of 954  fits
+11 STAIRWELL                       need  854 px of 954  fits
+12 TITLE · TOUR                    need  844 px of 954  fits
+13 TITLE · OFFICE                  need  853 px of 954  fits
+14 TITLE · RUN!                    need  665 px of 954  fits
+15 TITLE · POOL                    need  876 px of 954  fits
+16 INTO THE MAP                    need  761 px of 954  fits
+17 GLASSRT A                       need  851 px of 954  fits
+18 GLASSRT B                       need  835 px of 954  fits
+19 END CARD                        need  686 px of 954  fits
+ALL LABELS FIT

@@ -1,0 +1,23 @@
+pt_v2/S1_Today.jpg | TODAY POOL HALL EYE | label 334 px + data 493 px in cell 1916 px | FITS
+pt_v2/S1_DishMedium.jpg | NEW REC POOL HALL EYE | label 374 px + data 493 px in cell 1916 px | FITS
+pt_v2/G_Today.jpg | TODAY POOL LEVEL EYE | label 349 px + data 527 px in cell 1916 px | FITS
+pt_v2/G_DishMedium.jpg | NEW REC POOL LEVEL EYE | label 389 px + data 527 px in cell 1916 px | FITS
+os_v5/E_today.jpg | TODAY OFFICE EYE | label 277 px + data 323 px in cell 1916 px | FITS
+os_v5/E_new.jpg | NEW REC OFFICE EYE | label 317 px + data 323 px in cell 1916 px | FITS
+rs_v1/L0_E_today.jpg | TODAY LEVEL 0 EYE | label 298 px + data 408 px in cell 1916 px | FITS
+rs_v1/L0_E_new.jpg | NEW REC LEVEL 0 EYE | label 338 px + data 408 px in cell 1916 px | FITS
+rs_v1/Tall_E_today.jpg | TODAY TALL HALL EYE | label 328 px + data 357 px in cell 1916 px | FITS
+rs_v1/Tall_E_new.jpg | NEW REC TALL HALL EYE | label 368 px + data 357 px in cell 1916 px | FITS
+rs_v1/Low_E_today.jpg | TODAY LOW ROOM EYE | label 333 px + data 425 px in cell 1916 px | FITS
+rs_v1/Low_E_new.jpg | NEW REC LOW ROOM EYE | label 373 px + data 425 px in cell 1916 px | FITS
+rs_v1/Run_E_today.jpg | TODAY RUN! EYE | label 242 px + data 323 px in cell 1916 px | FITS
+rs_v1/Run_E_new.jpg | NEW REC RUN! EYE | label 282 px + data 323 px in cell 1916 px | FITS
+rs_v1/Station_E_today.jpg | TODAY STATION EYE | label 295 px + data 357 px in cell 1916 px | FITS
+rs_v1/Station_E_new.jpg | NEW REC STATION EYE | label 335 px + data 357 px in cell 1916 px | FITS
+rs_v1/Stair_E_today.jpg | TODAY STAIRWELL EYE | label 338 px + data 323 px in cell 1916 px | FITS
+rs_v1/Stair_E_new.jpg | NEW REC STAIRWELL EYE | label 378 px + data 323 px in cell 1916 px | FITS
+image | TODAY COST | label 184 px + data 289 px in cell 1916 px | FITS
+image | NEW REC COST | label 224 px + data 289 px in cell 1916 px | FITS
+title | Surface detail · every family, TODAY | NEW at eye height | 1913 px in 3080 px | FITS
+sheet /Users/redwang/FrontRoomsVisualWork/surface_detail/sheets/sd_overview.jpg 3840x11814
+ALL LABELS FIT

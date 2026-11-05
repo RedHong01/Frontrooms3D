@@ -1,0 +1,22 @@
+S8_idold_raw.png | S8 MAIN | label 128 px + data 289 px in cell 954 px | FITS
+S8_idnew_raw.png | S8 NEW TODAY | label 229 px + data 204 px in cell 954 px | FITS
+S8_iddiff.png | S8 DIFF X64 | label 205 px + data 255 px in cell 954 px | FITS
+S8_idrec_raw.png | S8 NEW REC | label 192 px + data 204 px in cell 954 px | FITS
+G_idold_raw.png | G MAIN | label 103 px + data 289 px in cell 954 px | FITS
+G_idnew_raw.png | G NEW TODAY | label 204 px + data 204 px in cell 954 px | FITS
+G_iddiff.png | G DIFF X64 | label 180 px + data 255 px in cell 954 px | FITS
+G_idrec_raw.png | G NEW REC | label 167 px + data 204 px in cell 954 px | FITS
+H_idold_raw.png | H MAIN | label 104 px + data 289 px in cell 954 px | FITS
+H_idnew_raw.png | H NEW TODAY | label 205 px + data 204 px in cell 954 px | FITS
+H_iddiff.png | H DIFF X64 | label 181 px + data 255 px in cell 954 px | FITS
+H_idrec_raw.png | H NEW REC | label 168 px + data 204 px in cell 954 px | FITS
+S2_idold_raw.png | S2 MAIN | label 128 px + data 289 px in cell 954 px | FITS
+S2_idnew_raw.png | S2 NEW TODAY | label 229 px + data 204 px in cell 954 px | FITS
+S2_iddiff.png | S2 DIFF X64 | label 205 px + data 255 px in cell 954 px | FITS
+S2_idrec_raw.png | S2 NEW REC | label 192 px + data 204 px in cell 954 px | FITS
+S10_idold_raw.png | S10 MAIN | label 154 px + data 289 px in cell 954 px | FITS
+S10_idnew_raw.png | S10 NEW TODAY | label 255 px + data 204 px in cell 954 px | FITS
+S10_iddiff.png | S10 DIFF X64 | label 231 px + data 255 px in cell 954 px | FITS
+S10_idrec_raw.png | S10 NEW REC | label 218 px + data 204 px in cell 954 px | FITS
+sheet sheets/pt_identity.jpg 3840x3399
+ALL LABELS FIT

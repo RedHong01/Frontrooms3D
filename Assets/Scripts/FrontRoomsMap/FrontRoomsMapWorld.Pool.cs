@@ -818,8 +818,44 @@ public sealed partial class FrontRoomsMapWorld
         _ = cs;
     }
 
+    // Where a valance meant for p (metres along its wall of length run) stands with ValanceClear to the wall's openings
+    // (along-wall spans at its foot): p itself, else the nearest place just past an opening, inside p's own 6 m and 0.3 m
+    // off the corners; at 2.4 m, else 1.8, else 1.2. False: none fits.
+    const float ValanceClear = .1f;
+
+    static bool ValanceSpot(List<Vector2> openings, float p, float run, out float spot, out float length)
+    {
+        foreach (var l in new[] { 2.4f, 1.8f, 1.2f })
+        {
+            var half = l * .5f;
+            float lo = Mathf.Max(p - 3f + half, half + .3f), hi = Mathf.Min(p + 3f - half, run - half - .3f);
+            bool Free(float c)
+            {
+                if (c < lo - 1e-4f || c > hi + 1e-4f) return false;
+                foreach (var o in openings)
+                    if (c + half + ValanceClear > o.x && c - half - ValanceClear < o.y) return false;
+                return true;
+            }
+            length = l;
+            spot = p;
+            if (Free(p)) return true;
+            var best = float.MaxValue;
+            foreach (var o in openings)
+            {
+                var left = o.x - ValanceClear - half;
+                var right = o.y + ValanceClear + half;
+                if (Free(left) && Mathf.Abs(left - p) < Mathf.Abs(best - p)) best = left;
+                if (Free(right) && Mathf.Abs(right - p) < Mathf.Abs(best - p)) best = right;
+            }
+            if (best < float.MaxValue) { spot = best; return true; }
+        }
+        spot = p;
+        length = 0f;
+        return false;
+    }
+
     // The lamps of one room by its kit (Valance, Rig with underwater niches, StairLights, Niche), and PC_Lockers' globes.
-    void PoolRoomLamps(BuiltChunk chunk, MapChunk data, PoolRoom room, Vector3 roomOrigin, float baseY, float ceilingY)
+    void PoolRoomLamps(BuiltChunk chunk, MapChunk data, FrontRoomsPoolPlan plan, PoolRoom room, Vector3 roomOrigin, float baseY, float ceilingY)
     {
         var skin = PoolRules.SkinOf(room.module);
         var cs = MapGrid.CellSize;
@@ -839,25 +875,42 @@ public sealed partial class FrontRoomsMapWorld
             case PoolLampKit.Valance:
             {
                 // Along the two longest walls, one per 6 m: a white box 0.66-0.78 under the ceiling, its top glowing; an up spot and a bounce.
+                // Each keeps clear of its wall's openings at its foot (FrontRoomsPoolPlan.OpeningSpanAt; the level-space line's
+                // route P, 11-05: at the wall's middle it crossed an arch's head in PL_Chain, PL_Turn and PL_Weird on every
+                // plan): it slides along its own 6 m, shortens to 1.8 or 1.2 m if it must, else that one is left out.
                 var alongX = w >= d;
                 var run = alongX ? w : d;
+                var cells = alongX ? room.width : room.depth;
                 var glow = FrontRoomsPoolMaterials.Glow("valance", new Color(1.1f, 1.18f, 1.2f));
+                var foot = ceilingY - .78f;
+                var openings = new List<Vector2>();
                 for (var wall = 0; wall < 2; wall++)
-                for (var p = 3f; p < run; p += 6f)
                 {
-                    var inset = .3f;
-                    var x = alongX ? p : (wall == 0 ? inset : w - inset);
-                    var z = alongX ? (wall == 0 ? inset : d - inset) : p;
-                    var lamp = LampAtLocal(x, z);
-                    if (lamp == ModuleLamp.Off) continue;
-                    var local = roomOrigin + new Vector3(x, ceilingY - .72f, z);
-                    var size = alongX ? new Vector3(2.4f, .12f, .12f) : new Vector3(.12f, .12f, 2.4f);
-                    var box = PoolLensBox(chunk, "STAND-IN valance " + room.label, local, Quaternion.identity, size, white);
-                    var strip = PoolLensBox(chunk, "Valance glow " + room.label, local + Vector3.up * .065f, Quaternion.identity, new Vector3(size.x * .96f, .01f, size.z * .96f), glow);
-                    var cell = CellAtLocal(x, z);
-                    PoolFixture(chunk, cell, local + Vector3.up * .1f, Quaternion.Euler(-90f, 0f, 0f), LightType.Spot, 150f, 100f, 3.06f, 3.6f, new Color(.86f, .96f, 1f), lamp, strip ?? box, new Color(1.1f, 1.18f, 1.2f), tier, 1 + wall);
-                    if (box != null)
-                        PoolFixture(chunk, cell, local + Vector3.down * .1f, Quaternion.Euler(90f, 0f, 0f), LightType.Spot, 170f, 130f, 1.63f, 4.2f, new Color(.86f, .96f, 1f), lamp, box, Color.black, tier, 3 + wall);
+                    openings.Clear();
+                    for (var i = 0; i < cells; i++)
+                    {
+                        var inside = alongX ? new GridCoord(room.origin.x + i, wall == 0 ? room.origin.y : room.origin.y + room.depth - 1)
+                            : new GridCoord(wall == 0 ? room.origin.x : room.origin.x + room.width - 1, room.origin.y + i);
+                        var outside = alongX ? new GridCoord(inside.x, inside.y + (wall == 0 ? -1 : 1)) : new GridCoord(inside.x + (wall == 0 ? -1 : 1), inside.y);
+                        if (plan != null && plan.OpeningSpanAt(inside, outside, foot, out var f, out var t)) openings.Add(new Vector2(i * cs + f, i * cs + t));
+                    }
+                    for (var p = 3f; p < run; p += 6f)
+                    {
+                        if (!ValanceSpot(openings, p, run, out var spot, out var length)) continue;
+                        var inset = .3f;
+                        var x = alongX ? spot : (wall == 0 ? inset : w - inset);
+                        var z = alongX ? (wall == 0 ? inset : d - inset) : spot;
+                        var lamp = LampAtLocal(x, z);
+                        if (lamp == ModuleLamp.Off) continue;
+                        var local = roomOrigin + new Vector3(x, ceilingY - .72f, z);
+                        var size = alongX ? new Vector3(length, .12f, .12f) : new Vector3(.12f, .12f, length);
+                        var box = PoolLensBox(chunk, "STAND-IN valance " + room.label, local, Quaternion.identity, size, white);
+                        var strip = PoolLensBox(chunk, "Valance glow " + room.label, local + Vector3.up * .065f, Quaternion.identity, new Vector3(size.x * .96f, .01f, size.z * .96f), glow);
+                        var cell = CellAtLocal(x, z);
+                        PoolFixture(chunk, cell, local + Vector3.up * .1f, Quaternion.Euler(-90f, 0f, 0f), LightType.Spot, 150f, 100f, 3.06f, 3.6f, new Color(.86f, .96f, 1f), lamp, strip ?? box, new Color(1.1f, 1.18f, 1.2f), tier, 1 + wall);
+                        if (box != null)
+                            PoolFixture(chunk, cell, local + Vector3.down * .1f, Quaternion.Euler(90f, 0f, 0f), LightType.Spot, 170f, 130f, 1.63f, 4.2f, new Color(.86f, .96f, 1f), lamp, box, Color.black, tier, 3 + wall);
+                    }
                 }
                 break;
             }
@@ -1025,7 +1078,7 @@ public sealed partial class FrontRoomsMapWorld
             var skin = PoolRules.SkinOf(room.module);
             var baseY = skin.baseY;
             var ceilingY = room.CeilingY;
-            try { PoolRoomLamps(chunk, data, room, roomOrigin, baseY, ceilingY); }
+            try { PoolRoomLamps(chunk, data, plan, room, roomOrigin, baseY, ceilingY); }
             catch (Exception e) { Debug.LogWarning("[FrontRoomsMap] POOL · lamps of " + room.label + " failed: " + e.Message); }
             if (skin.ceiling == PoolCeiling.GridDeadMissing) PoolMissingTiles(room, roomOrigin, ceilingY, blockOf, get, origin, data);
             if (skin.standIns != null && skin.standIns.Length > 0)
@@ -1201,8 +1254,11 @@ public sealed partial class FrontRoomsMapWorld
         var chunkMetres = new Vector3(data.Origin.x * cs, 0f, data.Origin.y * cs);
         Func<Vector3, float> floorAt = p => plan.FloorAt(p.x + chunkMetres.x, p.z + chunkMetres.z);
         Action<Vector3, Vector3> collide = (c, s) => { if (collision != null) collision.Box(c, s, origin, 1f); };
-        foreach (var s in skin.standIns)
+        for (var i = 0; i < skin.standIns.Length; i++)
         {
+            // A kit an opening of the plan crosses stays out (FrontRoomsPoolPlan.KitLeftOut, with a plan note).
+            if (plan.KitLeftOut(room, i)) continue;
+            var s = skin.standIns[i];
             var local = roomOrigin + new Vector3(s.x, 0f, s.z);
             // The floor 5 cm behind the kit's point: a kit standing on a basin edge (the ladders at x 3.0) takes the deck
             // it stands on, not the basin floor the edge's far cell would give.

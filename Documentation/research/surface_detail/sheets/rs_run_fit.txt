@@ -1,0 +1,28 @@
+Run_E_today.jpg | TODAY EYE 1.62 M | label 294 px + data 221 px in cell 1916 px | FITS
+Run_E_new.jpg | NEW REC EYE 1.62 M | label 334 px + data 221 px in cell 1916 px | FITS
+Run_W3_today.jpg | TODAY WALL 2.57 M | label 321 px + data 476 px in cell 1916 px | FITS
+Run_W3_new.jpg | NEW REC WALL 2.57 M | label 361 px + data 476 px in cell 1916 px | FITS
+Run_G_today.jpg | TODAY GRAZING | label 234 px + data 357 px in cell 1916 px | FITS
+Run_G_new.jpg | NEW REC GRAZING | label 274 px + data 357 px in cell 1916 px | FITS
+Run_H_today.jpg | TODAY 0.35 M | label 229 px + data 323 px in cell 1916 px | FITS
+Run_H_new.jpg | NEW REC 0.35 M | label 269 px + data 323 px in cell 1916 px | FITS
+Run_R_today.jpg | TODAY RAKING | label 217 px + data 323 px in cell 1916 px | FITS
+Run_R_new.jpg | NEW REC RAKING | label 257 px + data 323 px in cell 1916 px | FITS
+Run_F_today.jpg | TODAY FLOOR EYE | label 269 px + data 408 px in cell 1916 px | FITS
+Run_F_new.jpg | NEW REC FLOOR EYE | label 309 px + data 408 px in cell 1916 px | FITS
+Run_FG_today.jpg | TODAY FLOOR GRAZING | label 342 px + data 391 px in cell 1916 px | FITS
+Run_FG_new.jpg | NEW REC FLOOR GRAZING | label 382 px + data 391 px in cell 1916 px | FITS
+Run_FH_today.jpg | TODAY FLOOR 0.5 M | label 311 px + data 68 px in cell 1916 px | FITS
+Run_FH_new.jpg | NEW REC FLOOR 0.5 M | label 351 px + data 68 px in cell 1916 px | FITS
+Run_J_today.jpg | TODAY WALL FOOT | label 276 px + data 323 px in cell 1916 px | FITS
+Run_J_new.jpg | NEW REC WALL FOOT | label 316 px + data 323 px in cell 1916 px | FITS
+Run_P_today.jpg | TODAY PHONE EYE | label 271 px + data 357 px in cell 1916 px | FITS
+Run_P_new.jpg | NEW REC PHONE EYE | label 311 px + data 357 px in cell 1916 px | FITS
+Run_PW3_today.jpg | TODAY PHONE WALL | label 298 px + data 357 px in cell 1916 px | FITS
+Run_PW3_new.jpg | NEW REC PHONE WALL | label 338 px + data 357 px in cell 1916 px | FITS
+Run_PF_today.jpg | TODAY PHONE FLOOR | label 314 px + data 357 px in cell 1916 px | FITS
+Run_PF_new.jpg | NEW REC PHONE FLOOR | label 354 px + data 357 px in cell 1916 px | FITS
+image | TODAY COST | label 184 px + data 289 px in cell 1916 px | FITS
+image | NEW REC COST | label 224 px + data 289 px in cell 1916 px | FITS
+sheet sheets/rs_run.jpg 3840x14785
+ALL LABELS FIT

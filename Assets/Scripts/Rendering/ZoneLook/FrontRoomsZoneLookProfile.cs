@@ -55,6 +55,10 @@ public sealed class FrontRoomsZoneLookProfile : ScriptableObject
     [Tooltip("The wet niches' thrown light (their glow out of the basin onto ceilings and walls): 1 = the physical share (FrontRoomsWaterSubmerged.NicheGlow), 0 = none.")]
     public float thrownLight = 1f;
 
+    [Header("Contact shade on the pool tile (FrontRooms/Surface's real look)")]
+    [Tooltip("The share of the shared SSAO's darkening this zone's pool tile keeps (1 = the renderer's, as before). White porcelain bounces so much light that real contact shade is faint; the shared intensity 1.6 drew every base, parapet and riser corner as dark wire (level_space review SP6-F12). 0.6 is about intensity 0.7 under 1.6 (URP's SSAO: darkening ~ intensity^0.6). Only the tile's real look reads it (FrontRoomsPoolTile.Look not Today); the SSAO feature itself is untouched.")]
+    [Range(0f, 1f)] public float contactShade = 1f;
+
     [System.NonSerialized] bool hasProbe;
     [System.NonSerialized] SphericalHarmonicsL2 probe;
 
@@ -124,6 +128,7 @@ public sealed class FrontRoomsZoneLookProfile : ScriptableObject
                 p.nicheIntensity = 2.4f;
                 p.waterAbsorbScale = 1f;            // the club's water is physical (Q1)
                 p.thrownLight = 0f;                 // no wet niches in the club's corridors
+                p.contactShade = .7f;               // white tile wainscot: the corners' contact shade a third lighter
                 return true;
             case "PoolHall":
                 // the pool hall under indirect metal halide (P1-A): white tile, the ceiling lit, cool aqua-grey, a light humid
@@ -150,6 +155,7 @@ public sealed class FrontRoomsZoneLookProfile : ScriptableObject
                 p.nicheIntensity = .8f;
                 p.waterAbsorbScale = 1f;            // the club's basin: physical water (Q1)
                 p.thrownLight = 1f;
+                p.contactShade = .65f;              // the hall's porcelain: bases, parapets and the coping's foot
                 return true;
             case "PoolLevel":
                 // the turn and the pool level: daylight fluorescent with no source seen, high key, a faint aqua haze; the
@@ -175,6 +181,7 @@ public sealed class FrontRoomsZoneLookProfile : ScriptableObject
                 // level with wet niches (scene 4's catch pools and court basins) throws their glow at the physical share
                 // (17 4.3, FrontRoomsWaterSubmerged.NicheGlow; 0 until 11-04 hid it under the zone look, 70 12.10)
                 p.thrownLight = 1f;
+                p.contactShade = .6f;               // all porcelain, high key: the lightest contact shade
                 return true;
             case "PoolDark":
                 // Red's fixed dark zone (18 section 3; Q4 "follow"): every overhead dead, the wet niches only; the grade's white
@@ -210,6 +217,7 @@ public sealed class FrontRoomsZoneLookProfile : ScriptableObject
                 // the niches' glow carries the room at night (16 section 3: "ceiling caustics carry the room"): 2.5x the
                 // physical share estimated for the stand-in spots (sub_v3 S6 at 1x left the ceiling near black, mean 32)
                 p.thrownLight = 2.5f;
+                p.contactShade = .8f;               // the dark zone: the niches alone light it, so its corners keep more shade
                 return true;
         }
         return false;

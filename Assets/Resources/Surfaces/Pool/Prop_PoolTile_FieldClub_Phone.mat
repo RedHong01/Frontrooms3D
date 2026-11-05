@@ -44,6 +44,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: c8077c77214a4537897815a39f37bc58, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _TileFaceMap:
+        m_Texture: {fileID: 2800000, guid: 65899a7900df498b9ee0af921f817278, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
@@ -78,5 +82,8 @@ Material:
     - _TileLot: {r: 0.025, g: 0.035, b: 0, a: 0}
     - _WetBand: {r: 0.05, g: 0.08, b: 1, a: 0.75}
     - _WaterLine: {r: 0.6, g: 0.012, b: 0.004, a: 0}
+    - _TileForm: {r: 1, g: 0.5, b: 1, a: 0.03}
+    - _TileForm2: {r: 0.4, g: 0.935, b: 0.12, a: 1}
+    - _TileEdge: {r: 3, g: 1.8, b: 1.2, a: 0.7}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

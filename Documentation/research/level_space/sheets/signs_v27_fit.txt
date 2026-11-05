@@ -1,0 +1,17 @@
+OK  | TITLE SCENE 4 DISTRICT SIGNS · PLACARD V2.7 | 1317 of 3162 px
+OK  | SP5 · FLAT SIGN · 0.9 M | label 409 + data 765 of 1280 px | 2 columns · 53 lines · least 16.98 px (16.97)
+OK  | SP7 · PANEL 1 · 0.9 M | label 388 + data 765 of 1280 px | h 1.075 m · 20 lines · least 22.44 px (22.44)
+OK  | SP7 · PANEL 2 · 0.9 M | label 388 + data 765 of 1280 px | h 0.800 m · 13 lines · least 25.15 px (25.15)
+OK  | SP3 · FROM THE ARRIVAL | label 401 + data 765 of 1280 px | 2.50 m · code 12.04 · title 16.70 / 16.31* px
+OK  | SP5 · FROM THE ARRIVAL | label 401 + data 629 of 1280 px | 2.50 m · code 12.31 · title 16.24* px
+OK  | SP6 · FROM THE ARRIVAL | label 401 + data 748 of 1280 px | 2.00 m · code 15.09 · title 20.63 / 19.62 px
+OK  | SP3 · 1:1 X3 | label 229 + data 646 of 1280 px | row at the free end · 23° off its face
+OK  | SP5 · 1:1 X3 | label 229 + data 646 of 1280 px | row at the free end · 21° off its face
+OK  | SP6 · 1:1 X3 | label 229 + data 646 of 1280 px | row at the free end · 29° off its face
+OK  | SP7 · PAIR TURNED ROUND | label 424 + data 765 of 1280 px | room 12.91 / 18.62 · treatments 12.97 / 18.70
+OK  | SP7 · PAIR 1:1 X3 | label 309 + data 646 of 1280 px | each row at its free end, mid-corridor
+OK  | SP3 · BACK FACE | label 280 + data 731 of 1280 px | 2.50 m · code 11.17* · title 16.33* / 16.58
+OK  | SP3 · BACK 1:1 X3 | label 320 + data 850 of 1280 px | right way round · row moved 313 mm to the free end
+OK  | SP7 · S04, RUN DOOR | label 358 + data 714 of 1280 px | door clear · panel 1 at x 1531-1919 (1524)
+OK  | FONT · STROKE WEIGHT | label 367 + data 782 of 1280 px | now 0.95-1.06 of neighbours · 11-04: 0.70-0.90
+ALL LABELS FIT

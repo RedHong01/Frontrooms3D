@@ -683,17 +683,22 @@ public sealed class FrontRoomsStructuresRun : FrontRoomsStructuresDistrict
     void BuildSigns()
     {
         // The arrival's sign spot is inside the corridor's east wall: on the wall, to the right, out of the main view, its face's
-        // centre 2.50 m from the arrival eye (20_placard_type.md v2.4, E's FAR; was z 4.0, 2.88 m): z 3.562, its south end at
-        // the cage's last post (z 3.0, on x 1.5; the panel's back is at x 1.395).
-        kit.Sign(new Vector3(1.36f, FloorAt(3.562f) + 1.5f, 3.562f), new Vector3(0f, FloorAt(3.562f) + 1.5f, 3.562f), "SP5 · Run!：一路下坡到卸货间",
+        // centre 2.50 m from the arrival eye (20_placard_type.md v2.4, E's FAR; was z 4.0, 2.88 m), its south end at the cage's
+        // last post (z 3.0, on x 1.5; the panel's back is at x 1.395). In two columns (v2.6, 平面视觉 11-04 22:5x): in one its last
+        // two questions read 15.60 / 15.98 px standing 0.9 m in front (review11), under 16.48, and it cannot rise under its blade
+        // (15 mm over its top) and the duct over that; the description and the greybox row left, the questions right,
+        // the panel 1.383 m tall (was 1.457), every line 16.97 px or more at 0.9 m (signs_v26_tools/signs_columns.py). Its centre
+        // stands 37 mm higher, so the spot moves 6 mm north to keep 2.500 m: z 3.568 (was 3.562).
+        FrontRoomsStructuresSigns.Placard(Root, Root.TransformPoint(new Vector3(1.36f, FloorAt(3.568f) + 1.5f, 3.568f)),
+            Root.TransformPoint(new Vector3(0f, FloorAt(3.568f) + 1.5f, 3.568f)), "SP5 · Run!：一路下坡到卸货间",
             "游戏里的 Run!：设备走廊和它尽头的目标门。走廊 27 米：先平走一格，入口一边是铁丝网储物笼，一边是开着门的杂物间；后 24 米是 1:8 的坡道，一共下降 3 米；每 9 米一道防火门墙，过了门框再下两级小台阶（共 0.3 米）。坡道中段头顶开着一口设备竖井，里面的爬梯够不着。走廊尽头那扇门后面是 5.4 米高的卸货间：平台比卡车位高 1.2 米，边上拉着链条护栏；卷帘门只拉起一半，门下露出通往夜里街道的坡道，钠灯照得橘黄，是这里最亮的东西。按 T 停电，停电后只剩应急灯，再按一次恢复。\n"
             + "灰盒占位：铁丝网储物笼；竖井里的管线和爬梯；卸货间的混凝土地面和平台边；门外的坡道和钠灯；卷帘门、卸货调节板、链条护栏、风管、消防水带箱、打卡钟这些还没做的新道具。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。\n"
-            + "要你决定：1 走廊两侧的小房间能进还是只能看（63 Q1）？入口左边的杂物间开着门，可以走进去试。 2 卷帘门下面露出什么（63 Q3）？现在放的是钠灯下通往街道的坡道。 3 装卸平台边：真实的开口边，还是现在这种可拆的链条护栏加摆门（63 Q2）？ 4 储物笼里站着一个替身：铁丝网、龙骨架这类看得穿的隔断，Relay 应该能隔着看见你，还是像墙一样挡住（62 Q1）？ 5 竖井、储物笼、卸货间，各自放进游戏吗？（坡道什么时候出现、多长，你已经同意了：71 的决定 2，第 3 档起出现，1:8，最长 24 米，最多下降 3 米；它和别的新结构一样，你走过、说可以，才进游戏。）", FloorAt(3.562f));
+            + "要你决定：1 走廊两侧的小房间能进还是只能看（63 Q1）？入口左边的杂物间开着门，可以走进去试。 2 卷帘门下面露出什么（63 Q3）？现在放的是钠灯下通往街道的坡道。 3 装卸平台边：真实的开口边，还是现在这种可拆的链条护栏加摆门（63 Q2）？ 4 储物笼里站着一个替身：铁丝网、龙骨架这类看得穿的隔断，Relay 应该能隔着看见你，还是像墙一样挡住（62 Q1）？ 5 竖井、储物笼、卸货间，各自放进游戏吗？（坡道什么时候出现、多长，你已经同意了：71 的决定 2，第 3 档起出现，1:8，最长 24 米，最多下降 3 米；它和别的新结构一样，你走过、说可以，才进游戏。）", Root.position.y + FloorAt(3.568f), 2);
         // Its blade (20_placard_type.md v2.5, E-blade): the arrival reads the flat sign 56 degrees off its face, so its code and
         // title also hang on a blade square to the east wall (face x 1.42), inner edge 50 mm off it, bottom 2.10 over the ramp
         // under it (FloorAt 3.8475 = -0.106), its title on one line (11 ems, inside the blade's 12-em measure), top 2.283: under
-        // the duct (underside 2.45, 0.16 m clear) and the main (2.57), 0.38 m past the twin head (z 3.15..3.45), 14 mm over the
-        // flat sign's top (the ramp falls 36 mm from the sign's centre to here); front face z 3.8325, 2.500 m from the arrival
+        // the duct (underside 2.45, 0.16 m clear) and the main (2.57), 0.38 m past the twin head (z 3.15..3.45), 15 mm over the
+        // flat sign's top (the ramp falls 35 mm from the sign's centre to here); front face z 3.8325, 2.500 m from the arrival
         // eye, read 18 degrees to the side and 11 up. (Two lines would leave 0.09 m under the duct.)
         FrontRoomsStructuresSigns.Blade(Root, Root.TransformPoint(new Vector3(1.42f, 0f, 3.8475f)), Root.TransformDirection(Vector3.left),
             Root.TransformPoint(Arrival + Vector3.up * FrontRoomsStructuresWalker.Eye), "SP5 · Run!：一路下坡到卸货间", Root.position.y + FloorAt(3.8475f));

@@ -1,0 +1,42 @@
+OK  | TITLE SCENE 4 · POOL TILE LOOKS | 1113 of 3851 px
+OK  | TODAY | label 118 + data 231 of 952 px | SP1 arrival
+OK  | GZ-C | label 90 + data 231 of 952 px | SP1 arrival
+OK  | DISH SHALLOW | label 279 + data 231 of 952 px | SP1 arrival
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 231 of 952 px | SP1 arrival
+OK  | DISH DEEP | label 199 + data 231 of 952 px | SP1 arrival
+OK  | TODAY | label 118 + data 399 of 952 px | SP1 catch pool edge
+OK  | GZ-C | label 90 + data 399 of 952 px | SP1 catch pool edge
+OK  | DISH SHALLOW | label 279 + data 399 of 952 px | SP1 catch pool edge
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 399 of 952 px | SP1 catch pool edge
+OK  | DISH DEEP | label 199 + data 399 of 952 px | SP1 catch pool edge
+OK  | TODAY | label 118 + data 315 of 952 px | SP1 wall · 2.4x
+OK  | GZ-C | label 90 + data 315 of 952 px | SP1 wall · 2.4x
+OK  | DISH SHALLOW | label 279 + data 315 of 952 px | SP1 wall · 2.4x
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 315 of 952 px | SP1 wall · 2.4x
+OK  | DISH DEEP | label 199 + data 315 of 952 px | SP1 wall · 2.4x
+OK  | TODAY | label 118 + data 252 of 952 px | SP2 F0 basin
+OK  | GZ-C | label 90 + data 252 of 952 px | SP2 F0 basin
+OK  | DISH SHALLOW | label 279 + data 252 of 952 px | SP2 F0 basin
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 252 of 952 px | SP2 F0 basin
+OK  | DISH DEEP | label 199 + data 252 of 952 px | SP2 F0 basin
+OK  | TODAY | label 118 + data 252 of 952 px | SP6 corridor
+OK  | GZ-C | label 90 + data 252 of 952 px | SP6 corridor
+OK  | DISH SHALLOW | label 279 + data 252 of 952 px | SP6 corridor
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 252 of 952 px | SP6 corridor
+OK  | DISH DEEP | label 199 + data 252 of 952 px | SP6 corridor
+OK  | TODAY | label 118 + data 210 of 952 px | SP6 grotto
+OK  | GZ-C | label 90 + data 210 of 952 px | SP6 grotto
+OK  | DISH SHALLOW | label 279 + data 210 of 952 px | SP6 grotto
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 210 of 952 px | SP6 grotto
+OK  | DISH DEEP | label 199 + data 210 of 952 px | SP6 grotto
+OK  | TODAY | label 118 + data 273 of 952 px | SP6 dome deck
+OK  | GZ-C | label 90 + data 273 of 952 px | SP6 dome deck
+OK  | DISH SHALLOW | label 279 + data 273 of 952 px | SP6 dome deck
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 273 of 952 px | SP6 dome deck
+OK  | DISH DEEP | label 199 + data 273 of 952 px | SP6 dome deck
+OK  | TODAY | label 118 + data 231 of 952 px | hero · 2.4x
+OK  | GZ-C | label 90 + data 231 of 952 px | hero · 2.4x
+OK  | DISH SHALLOW | label 279 + data 231 of 952 px | hero · 2.4x
+OK  | DISH MEDIUM · DEFAULT | label 473 + data 231 of 952 px | hero · 2.4x
+OK  | DISH DEEP | label 199 + data 231 of 952 px | hero · 2.4x
+ALL LABELS FIT

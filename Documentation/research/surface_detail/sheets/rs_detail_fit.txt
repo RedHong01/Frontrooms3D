@@ -1,0 +1,18 @@
+L0_F_today_crop.jpg | TODAY L0 CARPET 1:1 | label 349 px + data 340 px in cell 1916 px | FITS
+L0_F_new_crop.jpg | NEW REC L0 CARPET 1:1 | label 389 px + data 340 px in cell 1916 px | FITS
+L0_C_today_crop.jpg | TODAY L0 CEILING 1:1 | label 346 px + data 204 px in cell 1916 px | FITS
+L0_C_new_crop.jpg | NEW REC L0 CEILING 1:1 | label 386 px + data 204 px in cell 1916 px | FITS
+Run_W3_today_crop.jpg | TODAY RUN! WALL 1:1 | label 341 px + data 306 px in cell 1916 px | FITS
+Run_W3_new_crop.jpg | NEW REC RUN! WALL 1:1 | label 381 px + data 306 px in cell 1916 px | FITS
+Run_FG_today_crop.jpg | TODAY RUN! VCT 1:1 | label 317 px + data 119 px in cell 1916 px | FITS
+Run_FG_new_crop.jpg | NEW REC RUN! VCT 1:1 | label 357 px + data 119 px in cell 1916 px | FITS
+Station_W3_today_crop.jpg | TODAY STATION WALL 1:1 | label 394 px + data 153 px in cell 1916 px | FITS
+Station_W3_new_crop.jpg | NEW REC STATION WALL 1:1 | label 434 px + data 153 px in cell 1916 px | FITS
+Station_FG_today_crop.jpg | TODAY STATION VCT 1:1 | label 370 px + data 119 px in cell 1916 px | FITS
+Station_FG_new_crop.jpg | NEW REC STATION VCT 1:1 | label 410 px + data 119 px in cell 1916 px | FITS
+Stair_W3_today_crop.jpg | TODAY STAIR WALL 1:1 | label 357 px + data 153 px in cell 1916 px | FITS
+Stair_W3_new_crop.jpg | NEW REC STAIR WALL 1:1 | label 397 px + data 153 px in cell 1916 px | FITS
+Stair_FH_today_crop.jpg | TODAY STAIR FLOOR 1:1 | label 373 px + data 68 px in cell 1916 px | FITS
+Stair_FH_new_crop.jpg | NEW REC STAIR FLOOR 1:1 | label 413 px + data 68 px in cell 1916 px | FITS
+sheet sheets/rs_detail.jpg 3840x9506
+ALL LABELS FIT

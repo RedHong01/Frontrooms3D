@@ -1,0 +1,20 @@
+OK  | TITLE SCENE 4 DISTRICT SIGNS · PLACARD V2.8 | 1317 of 3162 px
+OK  | SP7 · TREATMENTS BLADE | label 412 + data 748 of 1280 px | 2.50 m · code 12.30 · title 16.65 / 17.20 px
+OK  | SP7 · BRACKET LINE · X4 | label 417 + data 714 of 1280 px | v2.7 above, v2.8 below · ink 10 mm in (41)
+OK  | SP7 · TREATMENTS BACK | label 397 + data 663 of 1280 px | 1.42 m · flush right · 27.30 / 28.52 px
+OK  | P · FAR DOOR · 2.5 M | label 364 + data 646 of 1280 px | no chip · title 16.26* px · E floor 16
+OK  | P · FIRE STAIR · 2.5 M | label 376 + data 748 of 1280 px | harness stand-in · no chip · title 16.03* px
+OK  | P · TITLES · 1:1 X3 | label 331 + data 833 of 1280 px | name and colon open the title · Noto Sans SC Bold
+OK  | SP3 · FROM THE ARRIVAL | label 401 + data 748 of 1280 px | 2.50 m · code 12.30 · title 16.96 / 16.54 px
+OK  | SP5 · FROM THE ARRIVAL | label 401 + data 612 of 1280 px | 2.50 m · code 12.59 · title 16.48 px
+OK  | SP6 · FROM THE ARRIVAL | label 401 + data 748 of 1280 px | 2.00 m · code 15.42 · title 20.92 / 19.89 px
+OK  | SP7 · ROOM BLADE | label 304 + data 612 of 1280 px | 2.50 m · code 11.60 · title 16.85 px
+OK  | SP3 · BACK FACE | label 280 + data 748 of 1280 px | 2.50 m · code 11.41 · title 16.57 / 16.82 px
+OK  | SP3 · SP5 · 1:1 X3 | label 342 + data 765 of 1280 px | cap 44 · em 63 · 35 px · rows at the free end
+OK  | SP7 · PAIR TURNED ROUND | label 424 + data 663 of 1280 px | least code 13.21 · least title 18.92 px
+OK  | SP7 · PANEL 2 · 0.9 M | label 388 + data 714 of 1280 px | bracket line hung 16.5 mm · least 25.15 px
+OK  | P · STOP 4 AS BUILT | label 326 + data 714 of 1280 px | FLAG · sign dead ahead 2.61 m, in the arch
+OK  | P · STOP 12 AS BUILT | label 352 + data 697 of 1280 px | FLAG · no sign: no dry floor on its spots
+OK  | P · STOP 4 · PLAN | label 306 + data 697 of 1280 px | red sign today · green dry with both ends
+OK  | P · STOP 12 · PLAN | label 332 + data 612 of 1280 px | only the stair head is dry · r 2.0 m
+ALL LABELS FIT

@@ -10,7 +10,8 @@ using UnityEngine.Rendering;
 /// "STAND-IN ..." in the hierarchy so the rendering line's real kit replaces this one table. Kit-local axes: X the long
 /// axis, Y up, +Z the front (a kit's back stands against a wall); yaw turns it as Unity does (yaw 90: X runs along -Z,
 /// the front faces +X). The reference point is the kit's centre on its floor, except Kit_PipeRail, which starts there and
-/// runs along -X (with yaw 90: along +Z), following the floor. Sizes in metres; length 0 is the kit's default.
+/// runs along -X (with yaw 90: along +Z), following the floor. Sizes in metres; length 0 is the kit's default. A kit's box
+/// changed here changes ModuleStandIn.Footprint too (the pool plan keeps its openings clear of kits by it).
 /// </summary>
 public static class FrontRoomsPoolStandIns
 {

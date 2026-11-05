@@ -1,0 +1,33 @@
+image | TODAY MAIN | EYE · HALL WALL | label 179 px + data 255 px in cell 761 px | FITS
+image | TODAY DIFF X64 | 0 px, max 0 | label 256 px + data 187 px in cell 761 px | FITS
+image | TONE 0 MAIN | EYE · HALL WALL | label 196 px + data 255 px in cell 761 px | FITS
+image | TONE 0 DIFF X64 | 0 px, max 0 | label 273 px + data 187 px in cell 761 px | FITS
+HW_tone_map.png | TONE 1 CHANGE | 1% = 32 levels | label 242 px + data 238 px in cell 761 px | FITS
+image | TODAY MAIN | 3 M | label 179 px + data 51 px in cell 761 px | FITS
+image | TODAY DIFF X64 | 0 px, max 0 | label 256 px + data 187 px in cell 761 px | FITS
+image | TONE 0 MAIN | 3 M | label 196 px + data 51 px in cell 761 px | FITS
+image | TONE 0 DIFF X64 | 0 px, max 0 | label 273 px + data 187 px in cell 761 px | FITS
+S8_tone_map.png | TONE 1 CHANGE | 1% = 32 levels | label 242 px + data 238 px in cell 761 px | FITS
+image | TODAY MAIN | 0.35 M HERO | label 179 px + data 187 px in cell 761 px | FITS
+image | TODAY DIFF X64 | 0 px, max 0 | label 256 px + data 187 px in cell 761 px | FITS
+image | TONE 0 MAIN | 0.35 M HERO | label 196 px + data 187 px in cell 761 px | FITS
+image | TONE 0 DIFF X64 | 0 px, max 0 | label 273 px + data 187 px in cell 761 px | FITS
+H2_tone_map.png | TONE 1 CHANGE | 1% = 32 levels | label 242 px + data 238 px in cell 761 px | FITS
+image | TODAY MAIN | UNDER WATER | label 179 px + data 187 px in cell 761 px | FITS
+image | TODAY DIFF X64 | 0 px, max 0 | label 256 px + data 187 px in cell 761 px | FITS
+image | TONE 0 MAIN | UNDER WATER | label 196 px + data 187 px in cell 761 px | FITS
+image | TONE 0 DIFF X64 | 1 px, max 1 | label 273 px + data 187 px in cell 761 px | FITS
+UW_tone_map.png | TONE 1 CHANGE | 1% = 32 levels | label 242 px + data 238 px in cell 761 px | FITS
+image | TODAY MAIN | DARK ZONE | label 179 px + data 153 px in cell 761 px | FITS
+image | TODAY DIFF X64 | 0 px, max 0 | label 256 px + data 187 px in cell 761 px | FITS
+image | TONE 0 MAIN | DARK ZONE | label 196 px + data 153 px in cell 761 px | FITS
+image | TONE 0 DIFF X64 | 0 px, max 0 | label 273 px + data 187 px in cell 761 px | FITS
+DK_tone_map.png | TONE 1 CHANGE | 1% = 32 levels | label 242 px + data 238 px in cell 761 px | FITS
+image | TODAY MAIN | 10 M WALL | label 179 px + data 153 px in cell 761 px | FITS
+image | TODAY DIFF X64 | 0 px, max 0 | label 256 px + data 187 px in cell 761 px | FITS
+image | TONE 0 MAIN | 10 M WALL | label 196 px + data 153 px in cell 761 px | FITS
+image | TONE 0 DIFF X64 | 0 px, max 0 | label 273 px + data 187 px in cell 761 px | FITS
+W10_tone_map.png | TONE 1 CHANGE | 1% = 32 levels | label 242 px + data 238 px in cell 761 px | FITS
+TITLE POOL TILE · DISH TONE · IDENTITY | 1078 px of 3840 px
+sheet sheets/pt_dish_tone_identity.jpg 3837x3358
+ALL LABELS FIT

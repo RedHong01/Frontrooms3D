@@ -36,7 +36,8 @@ namespace FrontRooms.Map
             Edge(m, ModuleSide.North, 1, ModuleEdge.Arch, 1.2f, PoolEdgeStyle.None, 0f, 0);
             StandIn(m, "Kit_TowelDesk", 3f, 3.6f, 0f, 0f, 0f, true, false);
             StandIn(m, "Kit_SignBlank", 1.5f, 5.9f, 2.12f, 180f, 0f, false, false);
-            StandIn(m, "Kit_SignBlank", 4.2f, 5.9f, 2.18f, 180f, 0f, false, false);
+            // Over the north arch (1.2 m, its head at 2.2): centred on it, its foot 5 cm over the head (it hung 22 cm into it).
+            StandIn(m, "Kit_SignBlank", 4.5f, 5.9f, 2.45f, 180f, 0f, false, false);
             Keep(m, "PC_Entry");
 
             // PC_Lockers
@@ -89,7 +90,8 @@ namespace FrontRooms.Map
             StandIn(m, "Kit_GuardChair", 1.2f, 12f, 0f, 90f, 0f, true, false);
             StandIn(m, "Kit_RingBuoy", 0.12f, 18f, 1.4f, 90f, 0f, false, false);
             StandIn(m, "Kit_RulesBoard", 14.88f, 6f, 1.6f, 270f, 0f, false, false);
-            StandIn(m, "Kit_PaceClock", 7.5f, 23.88f, 2.6f, 180f, 0f, false, false);
+            // Over the north round arch (crown 2.3): its rim 11 cm over the crown (it sat 14 cm down into the opening).
+            StandIn(m, "Kit_PaceClock", 7.5f, 23.88f, 2.85f, 180f, 0f, false, false);
             StandIn(m, "Kit_DepthMark", 2.6f, 4f, 0f, 90f, 0f, false, false);
             StandIn(m, "Kit_DepthMark", 12.4f, 4f, 0f, 270f, 0f, false, false);
             StandIn(m, "Kit_DepthMark", 2.6f, 9f, 0f, 90f, 0f, false, false);
@@ -223,7 +225,9 @@ namespace FrontRooms.Map
             Rect(m, 0, 0, 4, 4, CellWater.Ankle, -.15f, -.15f, -0.03f, false);
             Edge(m, ModuleSide.South, 1, ModuleEdge.Arch, 1.4f, PoolEdgeStyle.None, 0f, 0);
             Edge(m, ModuleSide.North, 1, ModuleEdge.Arch, 2.4f, PoolEdgeStyle.RoundArch, 3.15f, 3);
-            StandIn(m, "Kit_GlassBlockWall", 0.1f, 6.2f, 0.15f, 90f, 3.4f, false, false);
+            // The glass block wall on the west wall's south half (z 0.6-4.0; it stood at 4.5-7.9): the arch the planner opens
+            // into this wall then takes row 2, mid-wall, with free wall either side for the route's sign (level space, 11-05).
+            StandIn(m, "Kit_GlassBlockWall", 0.1f, 2.3f, 0.15f, 90f, 3.4f, false, false);
             StandIn(m, "Kit_Oculus", 11.9f, 8.5f, 2.9f, 270f, 0f, false, false);
             Keep(m, "PL_PoMo");
 

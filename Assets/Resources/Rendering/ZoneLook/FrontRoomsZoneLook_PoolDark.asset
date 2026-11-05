@@ -31,3 +31,4 @@ MonoBehaviour:
   nicheIntensity: 3
   waterAbsorbScale: 3
   thrownLight: 2.5
+  contactShade: 0.8

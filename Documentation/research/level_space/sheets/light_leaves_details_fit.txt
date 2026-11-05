@@ -1,0 +1,14 @@
+OK  | TITLE SP7 · #3 THE LIGHT LEAVES · DETAILS | 1554 of 3851 px
+OK  | 1 REC · THE CLACKS · 3X | label 529 + data 378 of 1192 px | t 0.20 s from 15 m
+OK  | 1 REC · THE CLOUD, EMBERS · 2X | label 685 + data 420 of 1192 px | t 0.95 s from 18.2 m
+OK  | 1 REC · BROWNOUT · 4X | label 510 + data 420 of 1192 px | t 1.20 s from 14.4 m
+OK  | 2 LONE LIGHT · 4X | label 380 + data 420 of 1192 px | t 1.20 s from 14.4 m
+OK  | 3 HAUL · 4X | label 259 + data 420 of 1192 px | t 1.20 s from 14.4 m
+OK  | 4 AS BUILT · 4X | label 331 + data 420 of 1192 px | t 1.70 s from 14.4 m
+OK  | 1 REC · 4X | label 238 + data 420 of 1192 px | t 1.70 s from 14.4 m
+OK  | 2 LONE LIGHT · 4X | label 380 + data 420 of 1192 px | t 1.70 s from 14.4 m
+OK  | 3 HAUL · 4X | label 259 + data 420 of 1192 px | t 1.70 s from 14.4 m
+OK  | 11 SPARKS · 4X | label 345 + data 378 of 1192 px | t 1.20 s from 12 m
+OK  | 1 REC · THE BEAM · 2X | label 486 + data 231 of 1192 px | at the door
+OK  | 4 AS BUILT · NO BEAM · 2X | label 559 + data 231 of 1192 px | at the door
+ALL LABELS FIT

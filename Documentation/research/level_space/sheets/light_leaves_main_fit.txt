@@ -1,0 +1,32 @@
+OK  | TITLE SP7 · #3 THE LIGHT LEAVES · DEEPENED | 1639 of 3851 px
+OK  | 1 REC · TRIP | label 269 + data 315 of 952 px | t 0.70 s · 28 m
+OK  | 1 REC · MID | label 251 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 1 REC · RUNWAY | label 341 + data 315 of 952 px | t 4.25 s · 42 m
+OK  | 1 REC · DOOR | label 286 + data 315 of 952 px | t 7.00 s · 42 m
+OK  | 1 REC · BACK | label 283 + data 315 of 952 px | t 7.52 s · 42 m
+OK  | 2 LONE LIGHT · TRIP | label 411 + data 315 of 952 px | t 0.70 s · 28 m
+OK  | 2 LONE LIGHT · MID | label 393 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 2 LONE LIGHT · RUNWAY | label 483 + data 315 of 952 px | t 4.25 s · 42 m
+OK  | 2 LONE LIGHT · DOOR | label 428 + data 315 of 952 px | t 7.00 s · 42 m
+OK  | 2 LONE LIGHT · BACK | label 425 + data 315 of 952 px | t 7.52 s · 42 m
+OK  | 3 HAUL · TRIP | label 290 + data 315 of 952 px | t 0.70 s · 29 m
+OK  | 3 HAUL · MID | label 272 + data 315 of 952 px | t 1.70 s · 33 m
+OK  | 3 HAUL · RUNWAY | label 362 + data 315 of 952 px | t 4.25 s · 39 m
+OK  | 3 HAUL · DOOR | label 307 + data 315 of 952 px | t 8.50 s · 42 m
+OK  | 3 HAUL · BACK | label 304 + data 336 of 952 px | t 10.58 s · 42 m
+OK  | 4 AS BUILT · TRIP | label 362 + data 315 of 952 px | t 0.70 s · 28 m
+OK  | 4 AS BUILT · MID | label 344 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 4 AS BUILT · RUNWAY | label 434 + data 315 of 952 px | t 4.25 s · 42 m
+OK  | 4 AS BUILT · DOOR | label 379 + data 315 of 952 px | t 7.00 s · 42 m
+OK  | 4 AS BUILT · BACK | label 376 + data 315 of 952 px | t 7.52 s · 42 m
+OK  | 19 REC+L1 · TRIP | label 381 + data 315 of 952 px | t 0.70 s · 28 m
+OK  | 19 REC+L1 · MID | label 363 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 19 REC+L1 · RUNWAY | label 453 + data 315 of 952 px | t 4.25 s · 42 m
+OK  | 19 REC+L1 · DOOR | label 398 + data 315 of 952 px | t 7.00 s · 42 m
+OK  | 19 REC+L1 · BACK | label 395 + data 315 of 952 px | t 7.52 s · 42 m
+OK  | 20 REC+L1+L2 · TRIP | label 460 + data 315 of 952 px | t 0.70 s · 28 m
+OK  | 20 REC+L1+L2 · MID | label 442 + data 315 of 952 px | t 1.70 s · 36 m
+OK  | 20 REC+L1+L2 · RUNWAY | label 532 + data 315 of 952 px | t 4.25 s · 42 m
+OK  | 20 REC+L1+L2 · DOOR | label 477 + data 315 of 952 px | t 7.00 s · 42 m
+OK  | 20 REC+L1+L2 · BACK | label 474 + data 315 of 952 px | t 7.52 s · 42 m
+ALL LABELS FIT

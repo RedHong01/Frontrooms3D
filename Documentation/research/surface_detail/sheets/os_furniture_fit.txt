@@ -1,0 +1,16 @@
+D_today.jpg | TODAY DESK 3/4 | label 262 px + data 374 px in cell 1916 px | FITS
+D_new.jpg | NEW REC DESK 3/4 | label 302 px + data 374 px in cell 1916 px | FITS
+DH_today.jpg | TODAY DESK TOP 0.42 M | label 388 px + data 374 px in cell 1916 px | FITS
+DH_new.jpg | NEW REC DESK TOP 0.42 M | label 428 px + data 374 px in cell 1916 px | FITS
+PD_today.jpg | TODAY PHONE DESK | label 296 px + data 357 px in cell 1916 px | FITS
+PD_new.jpg | NEW REC PHONE DESK | label 336 px + data 357 px in cell 1916 px | FITS
+Q_today.jpg | TODAY PANEL 3/4 | label 277 px + data 255 px in cell 1916 px | FITS
+Q_new.jpg | NEW REC PANEL 3/4 | label 317 px + data 255 px in cell 1916 px | FITS
+QG_today.jpg | TODAY PANEL GRAZING | label 339 px + data 238 px in cell 1916 px | FITS
+QG_new.jpg | NEW REC PANEL GRAZING | label 379 px + data 238 px in cell 1916 px | FITS
+P_today.jpg | TODAY PHONE EYE | label 271 px + data 357 px in cell 1916 px | FITS
+P_new.jpg | NEW REC PHONE EYE | label 311 px + data 357 px in cell 1916 px | FITS
+image | TODAY COST | label 184 px + data 289 px in cell 1916 px | FITS
+image | NEW REC COST | label 224 px + data 289 px in cell 1916 px | FITS
+sheet sheets/os_furniture.jpg 3840x8058
+ALL LABELS FIT

@@ -110,6 +110,19 @@ Shader "FrontRooms/Surface"
         _TileWear ("Wear: grout dirt, crazing, chips (0 pristine, 1 club)", Range(0, 1)) = 0
         _TileShade ("Joint relief in the tone (walls; the lamps are overhead)", Range(0, 4)) = 0.6
         _TileLot ("Odd lots: share of off-shade tiles, their shift", Vector) = (0, 0.035, 0, 0)
+        // The tile's real look (research/bathroom_rooms/70_look_build.md section 13; GZ-C's glaze, research/level_space/
+        // 73_pool_glaze.md, folded in): read only while the global _FR_TileLook.x is over 0.5 (FrontRoomsPoolTile.SetLook; 0 =
+        // Today: the path above, bit-identical). Every tile draws its own shape (a dish, its corners, twist, tilt, a bowed edge,
+        // the cushion edge, the struck grout, lippage against its neighbours), set-out (its offset in its joints, now and then a
+        // turn), gloss and glaze waviness from a hash of its cell; the environment is box projected and comes in two lobes (the
+        // glaze's sharp core in a soft halo); specular anti-aliasing filters the gloss by the normal's change per pixel. The
+        // face map holds the waviness only (gen_pool_tile.py make_face). The dish also goes into the tone (section 13.15: the
+        // sunk centre a little darker, the raised corners a little lighter, a narrow cavity at the joints; the global
+        // _FR_TileTone, FrontRoomsPoolTile.DishTone). WebGL compiles it out.
+        [NoScaleOffset] _TileFaceMap ("Tile real look: face map (glaze slopes RG, grout grain BA; linear)", 2D) = "gray" {}
+        _TileForm ("Tile real look: shape scale, joint jitter mm, two-lobe glaze, gloss variety", Vector) = (0, 0, 0, 0)
+        _TileForm2 ("Tile real look: peel variety, face smoothness, lippage mm, face source (1 cushion + face map)", Vector) = (0, 0.935, 0, 0)
+        _TileEdge ("Tile real look: joint mm, cushion radius mm, face corner radius mm, grout depth mm", Vector) = (3, 1.8, 1.2, 0.7)
 
         // Wet band (any material of this shader; off while _WaterY is below -999, the default): under and just above a water
         // surface at _WaterY (world metres) porous parts (grout, unglazed faces) are darker, a water film evens the rest, a thin
@@ -117,6 +130,20 @@ Shader "FrontRooms/Surface"
         _WaterY ("Water height (world m; -1000 = no water)", Float) = -1000
         _WetBand ("Wet band: height above the water m, fade m, darkening, meniscus", Vector) = (0.03, 0.05, 1, 1)
         _WaterLine ("Waterline: scale line strength, its height m, band edge wobble m, unused", Vector) = (0, 0.012, 0.003, 0)
+
+        // Surface detail (research/surface_detail/60_build.md section 2; tools Tools/lookdev/surface_detail): what a made and used
+        // surface carries beyond its maps, by kind (_DetailKind.x: 1 painted gypsum board, 2 carpet tile, 3 lay-in ceiling, 4 panel
+        // fabric, 5 laminate worksurface, 6 painted steel, 7 vinyl cove base): its sheets, joints and fasteners, lots and tiles laid
+        // by hand, the paint's passes and touch-ups, the marks of chairs, shoes, cups and the vacuum, the fine relief of its finish,
+        // sheen where cloth catches the light, micro-shadowing in its recesses under the lamps. Only the materials that enable it
+        // change; the global _FR_Detail.x = 1 (FrontRoomsSurfaceDetail.Today) gives today's surfaces exactly. WebGL compiles it out.
+        [Toggle(_FR_DETAIL)] _UseDetail ("Surface detail (kind terms; global switch FrontRoomsSurfaceDetail.Today)", Float) = 0
+        _DetailKind ("Detail: kind, detail map span m, detail normal, micro-shadowing", Vector) = (0, 0.3, 0, 0)
+        _DetailA ("Detail A (per kind, 60_build.md 2.3)", Vector) = (0, 0, 0, 0)
+        _DetailB ("Detail B (per kind)", Vector) = (0, 0, 0, 0)
+        _DetailC ("Detail C (per kind)", Vector) = (0, 0, 0, 0)
+        [NoScaleOffset] _DetailMap ("Detail map (RG slopes, B gloss, A tone; linear)", 2D) = "gray" {}
+        [NoScaleOffset] _WearMap ("Wear map (per kind; linear)", 2D) = "black" {}
     }
 
     SubShader
@@ -179,9 +206,18 @@ Shader "FrontRooms/Surface"
             half _TileWear;
             half _TileShade;
             float4 _TileLot;
+            // The tile's real look: in every pass, so the SRP batcher layout never changes.
+            float4 _TileForm;
+            float4 _TileForm2;
+            float4 _TileEdge;
             float _WaterY;
             float4 _WetBand;
             float4 _WaterLine;
+            // Surface detail: in every pass, so the SRP batcher layout never changes.
+            float4 _DetailKind;
+            float4 _DetailA;
+            float4 _DetailB;
+            float4 _DetailC;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -222,6 +258,8 @@ Shader "FrontRooms/Surface"
             #pragma shader_feature_local_fragment _FR_SHEEN
             // Pool tile (Prop_PoolTile_* only). Off: bit-identical.
             #pragma shader_feature_local_fragment _FR_TILE
+            // Surface detail (the Office's materials and what they share; 60_build.md section 2). Off: bit-identical.
+            #pragma shader_feature_local_fragment _FR_DETAIL
             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
             // shader_feature: no material enables it, so player builds strip it; the editor
             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
@@ -373,6 +411,518 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if defined(_FR_TILE) && !defined(SHADER_API_GLES3) && !defined(SHADER_API_WEBGPU)
+            #define FR_TILE_REAL 1
+        #else
+            #define FR_TILE_REAL 0
+        #endif
+
+        #if FR_TILE_REAL
+            // ---------------------------------------------------------------- pool tile, the real look (70 section 13)
+            // Globals, written by FrontRoomsPoolTile.SetLook / Publish (0 everywhere = today's tile):
+            float4 _FR_TileLook;    // x look (0 today, 1 GZ-C as given, 2-4 the dish), y dish depth mm, z dished share, w the Pools levers (0 / 1)
+            float4 _FR_TileLook2;   // x tilt sd deg, y twist sd mm, z GZ-C bow lo mm, w GZ-C bow hi mm
+            float4 _FR_TileGlaze;   // x core smoothness, y halo smoothness, z halo weight, w box projection (1 on)
+            float4 _FR_TileAA;      // x AA screen variance, y AA threshold, z the face map's slope variance (rad^2), w its lod offset (phone 1)
+            float4 _FR_TileTone;    // the dish in tone (13.15): x tone per mm of the dish's height at 0.35 m, y the joint's cavity at the cushion's foot, z the dish's falloff with distance (m), w the fade's end (m)
+            // Written by FrontRoomsZoneLook (the zone's contact shade, by its weight): x the share of the shared SSAO's darkening
+            // taken off the tile (0, unset: the renderer's).
+            float4 _FR_ZoneSSAO;
+            TEXTURE2D(_TileFaceMap);
+
+            #define FR_TILE_FACE_SPAN 0.6       // the face map's span in metres (gen_pool_tile.py FACE_SPAN_MM)
+            #define FR_TILE_FACE_K 14.285714    // its glaze slope code: 0.5 + slope * K (gen_pool_tile.py FACE_K)
+            #define FR_TILE_GRAIN_K 0.8333333   // its grout grain code (GRAIN_K)
+
+            uint2 FRTileWrap(float2 cellF, float2 period)
+            {
+                return (uint2)(cellF - period * floor(cellF / period));
+            }
+
+            // four numbers in [0, 1] (8 bits each) from one hash of the cell
+            float4 FRTileH8(uint2 c, uint salt)
+            {
+                uint x = FRTileHashU(c, salt);
+                return float4(x & 0xffu, (x >> 8) & 0xffu, (x >> 16) & 0xffu, x >> 24) / 255.0;
+            }
+
+            // A tile's set-out (salt 11): its offset in its joints (cells, uniform within +-jitC), now and then a turn (one tile
+            // in six, up to 0.25 degrees: a wedge joint), and its height against its neighbours (lippage, unit sd).
+            void FRTileSetOut(uint2 c, float2 jitC, float var, out float2 off, out float turn, out float lip)
+            {
+                float4 h = FRTileH8(c, 11u);
+                off = (h.xy * 2.0 - 1.0) * jitC;
+                turn = h.w < 0.16 ? (h.w / 0.16 * 2.0 - 1.0) * 0.0043633 * var : 0.0;
+                lip = (h.z * 2.0 - 1.0) * 1.7320508;
+            }
+
+            // One axis of the hand-set joints. f the position in the cell (0..1), s the nearer joint (-1 left or below, +1 right
+            // or above), dOwn this tile's offset here, dN the neighbour's across that joint (cells), jc the joint's width
+            // (cells). The face moves with its tile; the joint between the two is stretched or squeezed to its new width (it
+            // never closes: offsets stay under half a joint), so the maps are read continuously across it.
+            float FRTileJointRemap(float f, float s, float dOwn, float dN, float jc)
+            {
+                float a = s < 0.0 ? -0.5 * jc + dN : 1.0 - 0.5 * jc + dOwn;
+                float b = s < 0.0 ? 0.5 * jc + dOwn : 1.0 + 0.5 * jc + dN;
+                float m0 = s < 0.0 ? -0.5 * jc : 1.0 - 0.5 * jc;
+                bool inJ = s < 0.0 ? f < b : f > a;
+                return inJ ? m0 + (f - a) / max(b - a, 1e-5) * jc : f - dOwn;
+            }
+
+            // The tile's shape over its face as slopes: dh/dx, dh/dy in mm per unit of x, y (-1..1 across the face; halfMM mm
+            // per unit), from the shape hashes (salts 13-15). The dish looks (Red, 11-04 16:5x: a dish, the centre sunk and the
+            // four corners up): on most tiles (a few near flat, a few domed), shallow or deep, a round bowl or a flat floor with
+            // steep corners, the corners raised more, a twist (two corners up), one tile in three with one edge bowed, a tilt.
+            // GZ-C as given (look 1, 73 section 7): its bow (domed U(lo, hi) on 80 %, dished at 0.65 x that on 20 %), saddle, tilt.
+            float2 FRTileShapeSlope(uint2 c, float2 xy, float halfMM)
+            {
+                float4 a = FRTileH8(c, 13u);
+                float4 b = FRTileH8(c, 14u);
+                float4 t = FRTileH8(c, 15u);
+                float x = xy.x, y = xy.y;
+                // tilt: mm at the edge, sd _FR_TileLook2.x degrees (two uniforms: triangular, sd 1 after x 2.449)
+                float tilt = tan(radians(_FR_TileLook2.x)) * halfMM * 2.4494897;
+                float2 g = float2(t.x + t.y - 1.0, t.z + t.w - 1.0) * tilt;
+                // twist (saddle): w x y, sd _FR_TileLook2.y mm at the corners
+                float w = (b.x + b.y - 1.0) * 2.4494897 * _FR_TileLook2.y;
+                g += w * float2(y, x);
+                if (_FR_TileLook.x < 1.5)
+                {
+                    // GZ-C: h = bow (1 - r^2 / 75^2), r in mm from the centre
+                    float bow = lerp(_FR_TileLook2.z, _FR_TileLook2.w, a.x);
+                    bow = a.y < 0.2 ? -0.65 * bow : bow;
+                    g += (-2.0 * bow * halfMM * halfMM / 5625.0) * float2(x, y);
+                }
+                else
+                {
+                    // the dish: h = D s^p + C x^2 y^2, s = (x^2 + y^2) / 2 (0 at the centre, 1 at the corners)
+                    float D = _FR_TileLook.y * lerp(0.45, 1.55, a.x);
+                    float share = _FR_TileLook.z;
+                    D = a.y < share ? D : (a.y < share + (1.0 - share) * 0.6 ? 0.15 * D : -0.5 * D);
+                    float p = lerp(1.0, 2.4, a.z * a.z);
+                    float s = 0.5 * (x * x + y * y);
+                    g += D * p * pow(max(s, 1e-4), p - 1.0) * float2(x, y);
+                    float C = D * 0.4 * a.w;
+                    g += 2.0 * C * float2(x * y * y, y * x * x);
+                    if (b.z < 0.33)
+                    {
+                        // one edge bowed: its middle up or down, fading to the opposite edge
+                        float E = (b.w * 2.0 - 1.0) * 0.45 * _FR_TileLook.y;
+                        float e = floor(b.z * 12.0);
+                        bool alongX = e < 1.5;
+                        float sg = (e == 0.0 || e == 2.0) ? 1.0 : -1.0;
+                        float q = alongX ? x : y;
+                        float r = alongX ? y : x;
+                        float k = 0.5 * (1.0 + sg * r);
+                        float dq = -2.0 * q * E * k * k;
+                        float dr = E * (1.0 - q * q) * k * sg;
+                        g += alongX ? float2(dq, dr) : float2(dr, dq);
+                    }
+                }
+                return g;
+            }
+
+            // ---------------------------------------------------------------- the dish in tone (70 section 13.15)
+            // Red, 11-04 16:5x: the dish, the centre sunk and the four corners up. Half a millimetre of dish tilts the face by a
+            // fraction of a degree: a lamp's reflection shows it, soft light does not (scene 4, 11-05 04:3x: the white face read
+            // the same in every look). VISUAL_STANDARD 1.2: relief goes into the tone as well as the normal. So the same dish also
+            // sets the tone: a little darker where it is sunk, a little lighter where it is raised (soft overhead light sees less
+            // of a hollow: an occlusion of the sky, not a shadow), and the cushion and the grout's sides darken in a narrow band
+            // at the joints, so each tile reads as a slightly pillowed, slightly sunk piece. Both from the tile's own shape (the
+            // hashes and numbers of FRTileShapeSlope and the cushion), so tone and normal agree tile by tile; both fade to the
+            // tile's mean tone with the view distance (no quilt of pillows on a far wall, on any screen) and are filtered by the
+            // pixel's footprint (no dashes, no moire). Off (_FR_TileTone.xy 0: FrontRoomsPoolTile.DishTone 0, or Today) none of
+            // this runs.
+
+            // the joint's cavity at the joint's middle (the struck grout's most open point, 1 at the foot) and its tail onto the
+            // face (in cushion radii past the foot)
+            #define FR_TILE_TONE_GMID 0.6
+            #define FR_TILE_TONE_TAIL 1.2
+
+            // The tile's form as height over its face (mm, + toward the viewer) less its mean over the face: the dish, its raised
+            // corners and a bowed edge (GZ-C: its bow), from the hashes and numbers of FRTileShapeSlope. Tilt and twist are left
+            // out: a plane and a saddle hold no hollow.
+            float FRTileShapeHeight(uint2 c, float2 xy, float halfMM)
+            {
+                float4 a = FRTileH8(c, 13u);
+                float4 b = FRTileH8(c, 14u);
+                float x = xy.x, y = xy.y;
+                float r2 = x * x + y * y;
+                if (_FR_TileLook.x < 1.5)
+                {
+                    // GZ-C: h = bow (1 - r^2 / 75^2), r = |xy| halfMM mm; r^2 averages 2/3 halfMM^2 over the face
+                    float bow = lerp(_FR_TileLook2.z, _FR_TileLook2.w, a.x);
+                    bow = a.y < 0.2 ? -0.65 * bow : bow;
+                    return -bow * halfMM * halfMM / 5625.0 * (r2 - 0.6666667);
+                }
+                // the dish: D (s^p - its mean) + C (x^2 y^2 - 1/9), s = (x^2 + y^2) / 2; the mean of s^p over the face as a fit
+                // (1/3 at p 1, 0.121 at p 2.4; within 0.0008)
+                float D = _FR_TileLook.y * lerp(0.45, 1.55, a.x);
+                float share = _FR_TileLook.z;
+                D = a.y < share ? D : (a.y < share + (1.0 - share) * 0.6 ? 0.15 * D : -0.5 * D);
+                float p = lerp(1.0, 2.4, a.z * a.z);
+                float s = 0.5 * r2;
+                float h = D * (pow(max(s, 1e-6), p) - 1.0 / (1.2907 + p * (0.8611 + 0.8550 * p)));
+                h += D * 0.4 * a.w * (x * x * y * y - 0.1111111);
+                if (b.z < 0.33)
+                {
+                    // one edge bowed: E (1 - q^2) k^2, its mean 2/9 E
+                    float E = (b.w * 2.0 - 1.0) * 0.45 * _FR_TileLook.y;
+                    float e = floor(b.z * 12.0);
+                    bool alongX = e < 1.5;
+                    float sg = (e == 0.0 || e == 2.0) ? 1.0 : -1.0;
+                    float q = alongX ? x : y;
+                    float k = 0.5 * (1.0 + sg * (alongX ? y : x));
+                    h += E * ((1.0 - q * q) * k * k - 0.2222222);
+                }
+                return h;
+            }
+
+            // The joint's cavity across one edge, as its integral from the joint's middle (x = -halfJ) to x (mm into the face,
+            // negative in the joint): over the struck grout it rises from FR_TILE_TONE_GMID at the middle to 1 at the cushion's
+            // foot (the inside corner sees the least sky), stays 1 over the glaze's fillet to d0, then falls over the cushion
+            // onto the face (exp, scale wT).
+            float FRTileBandI(float x, float halfJ, float d0, float wT)
+            {
+                float u = clamp(x + halfJ, 0.0, halfJ);
+                float I = FR_TILE_TONE_GMID * u + (1.0 - FR_TILE_TONE_GMID) * u * u * u / (3.0 * halfJ * halfJ);
+                I += clamp(x, 0.0, d0);
+                return I + wT * (1.0 - exp(-max(x - d0, 0.0) / wT));
+            }
+
+            // The cavity box-filtered over the pixel's footprint across the edge (L mm), exactly for this profile (the neighbour's
+            // side of the joint is its mirror): as the joint shrinks on screen it keeps its darkening's integral, so it neither
+            // breaks into dashes nor changes the wall's mean.
+            float FRTileBand(float x, float L, float halfJ, float d0, float wT)
+            {
+                // a window reaching past the joint's middle takes the neighbour's side as this one's mirror
+                float a = x - 0.5 * L;
+                bool mirror = a < -halfJ;
+                float Ia = FRTileBandI(mirror ? -2.0 * halfJ - a : a, halfJ, d0, wT);
+                return (FRTileBandI(x + 0.5 * L, halfJ, d0, wT) - (mirror ? -Ia : Ia)) / L;
+            }
+
+            // The tone of a tile texel, a multiplier: 1 - A m + w (t - A (band - m)). t the dish (_FR_TileTone.x per mm of
+            // FRTileShapeHeight at 0.35 m, falling with the distance; on the glaze, scaled by the kind's shape scale as the slope
+            // is), A the cavity at the foot (_FR_TileTone.y; the cushion kinds only), m its mean over the tile, w the fade with
+            // the view distance: past it a texel takes the tile's mean tone, so the wall's mean is the same near and far.
+            float FRTileTone(uint2 c, float2 lmm, float2 hf, float2 pitchMM, float glaze, float2 dUVdx, float2 dUVdy, float hRad, float var, float3 positionWS)
+            {
+                // the fade with the view distance: whole to 0.35 x _FR_TileTone.w, gone at _FR_TileTone.w (m)
+                float dist = length(GetCameraPositionWS() - positionWS);
+                float wView = 1.0 - smoothstep(0.35 * _FR_TileTone.w, max(_FR_TileTone.w, 0.01), dist);
+                // the cushion as FRTileSurfaceReal draws it: the tile's own radius, the grout's depth at the foot; the cavity's
+                // integral across one edge (to the face's middle) times the cell's perimeter over its area is its mean
+                float A = _TileForm2.w > 0.5 ? _FR_TileTone.y : 0.0;
+                float r = _TileEdge.y * (1.0 + (lerp(0.85, 1.3, hRad) - 1.0) * var);
+                float gF = _TileEdge.w;
+                float d0 = r - sqrt(max(r * r - (r - gF) * (r - gF), 0.0));
+                float wT = FR_TILE_TONE_TAIL * r;
+                float halfJ = max(0.5 * _TileEdge.x, 1e-3);
+                float across = halfJ * (FR_TILE_TONE_GMID + (1.0 - FR_TILE_TONE_GMID) / 3.0) + d0 + wT;
+                float bandMean = across * 2.0 * (pitchMM.x + pitchMM.y) / (pitchMM.x * pitchMM.y);
+                float tone = 1.0 - A * bandMean;
+                // past the fade the texel is the tile's mean: nothing more to do
+                UNITY_BRANCH
+                if (wView > 0.0)
+                {
+                    // the pixel's footprint along u and v (mm), as the cushion's fade takes it
+                    float2 pxMM = 1000.0 * float2(length(float2(dUVdx.x, dUVdy.x)) * _TileSize.x, length(float2(dUVdx.y, dUVdy.y)) * _TileSize.y);
+                    float t = 0.0;
+                    if (_TileForm.x > 0.0)
+                    {
+                        // the dish is one wave per tile: a gradient over a whole tile is what the eye sees least well up close
+                        // (a tile at 0.35 m spans 24 degrees) and best at 5-15 m, so its amount is set at the hero's 0.35 m and
+                        // falls with the distance over _FR_TileTone.z m (half at 0.35 + z); its only filter is the tile's size in
+                        // pixels (gone below 3)
+                        float tilePx = min(pitchMM.x, pitchMM.y) / max(max(pxMM.x, pxMM.y), 1e-3);
+                        float wNear = _FR_TileTone.z / max(_FR_TileTone.z + max(dist - 0.35, 0.0), 1e-3);
+                        t = _FR_TileTone.x * wNear * FRTileShapeHeight(c, lmm / hf, hf.x) * _TileForm.x * glaze * saturate((tilePx - 3.0) / 5.0);
+                    }
+                    float band = bandMean;
+                    if (A > 0.0)
+                    {
+                        // the distance into the face (mm, negative in the joint; the face's rounded corners) and the footprint
+                        // across the edge
+                        float rc = min(_TileEdge.z, hf.x);
+                        float2 q = abs(lmm) - (hf - rc);
+                        float dIn = -(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - rc);
+                        float2 od = (q.x > 0.0 && q.y > 0.0) ? normalize(q) : (q.x > q.y ? float2(1.0, 0.0) : float2(0.0, 1.0));
+                        band = FRTileBand(max(dIn, -halfJ), max(dot(abs(od), pxMM), 0.05), halfJ, d0, wT);
+                    }
+                    tone += wView * (t - A * (band - bandMean));
+                }
+                return tone;
+            }
+
+            // tile data -> albedo, mask, tangent normal and porosity (as FRTileSurface), the two-lobe weight of this texel and the
+            // face map's slope variance its mip has averaged away (rad^2, for the roughness)
+            void FRTileSurfaceReal(float2 uv, float3 nGeo, float3 positionWS, out half4 albedo, out half4 mask, out half3 nTS, out half porous, out half lobes, out float lostVar)
+            {
+                float var = _FR_TileLook.w;
+                float2 grid = max(_TileGrid.xy, 1.0);
+                float2 pitchM = max(_TileSize.xy, 1e-3) / grid;
+                float2 pitchMM = pitchM * 1000.0;
+                float2 jc = _TileEdge.x / pitchMM;
+                float2 jitC = (_TileForm.y * var) / pitchMM;
+                if (grid.y < 1.5) jitC.y = 0.0;
+                float2 dUVdx = ddx(uv);
+                float2 dUVdy = ddy(uv);
+                float2 g = uv * grid;
+                // the setter's lines drift a little over metres (periods 3.84 and 4.8 m divide 192 m)
+                g += float2(sin(g.y * pitchM.y * 1.3089969), sin(g.x * pitchM.x * 1.6362461)) * jitC * 0.9;
+                float2 cellF = floor(g);
+                float2 f = g - cellF;
+                float2 period = max(round(192.0 / pitchM), 1.0);
+                float2 side = float2(f.x < 0.5 ? -1.0 : 1.0, f.y < 0.5 ? -1.0 : 1.0);
+                uint2 c0 = FRTileWrap(cellF, period);
+                uint2 cU = FRTileWrap(cellF + float2(side.x, 0.0), period);
+                uint2 cV = FRTileWrap(cellF + float2(0.0, side.y), period);
+                float2 o0, oU, oV;
+                float t0, tU, tV, l0, lU, lV;
+                FRTileSetOut(c0, jitC, var, o0, t0, l0);
+                FRTileSetOut(cU, jitC, var, oU, tU, lU);
+                FRTileSetOut(cV, jitC, var, oV, tV, lV);
+                // a turn moves a tile's u offset along v and its v offset along u (small angles, in cells)
+                float ry = pitchM.y / pitchM.x;
+                float uR = FRTileJointRemap(f.x, side.x, o0.x - t0 * (f.y - 0.5) * ry, oU.x - tU * (f.y - 0.5) * ry, jc.x);
+                float vR = FRTileJointRemap(f.y, side.y, o0.y + t0 * (f.x - 0.5) / ry, oV.y + tV * (f.x - 0.5) / ry, jc.y);
+                float2 uvS = (cellF + float2(uR, vR)) / grid;
+                half4 d = SAMPLE_TEXTURE2D_GRAD(_BaseMap, sampler_BaseMap, uvS, dUVdx, dUVdy);
+                mask = SAMPLE_TEXTURE2D_GRAD(_MaskMap, sampler_MaskMap, uvS, dUVdx, dUVdy);
+                half grout = d.b;
+                half glaze = 1.0h - grout;
+                float4 h16 = FRTileH8(c0, 16u);
+                float4 h17 = FRTileH8(c0, 17u);
+                // the face: mm from its centre, its half size, and -1..1 across it
+                float2 lmm = (float2(uR, vR) - 0.5) * pitchMM;
+                float2 hf = max(0.5 * pitchMM - 0.5 * _TileEdge.x, 1.0);
+                float2 slope = 0.0;
+                UNITY_BRANCH
+                if (_TileForm.x > 0.0)
+                    slope = FRTileShapeSlope(c0, lmm / hf, hf.x) / hf * (_TileForm.x * (float)glaze);
+                lostVar = 0.0;
+                half3 n;
+                UNITY_BRANCH
+                if (_TileForm2.w > 0.5)
+                {
+                    // the cushion edge and the struck grout (the set's geometry, _TileEdge, as the maps draw it): the face rounds
+                    // over r mm into the joint, the glaze thickening at its foot; the grout g mm under the face there, dipping
+                    // 0.85 g more at the joint's middle; each tile its own radius, and a proud edge (lippage) rolls further
+                    float r = _TileEdge.y * (1.0 + (lerp(0.85, 1.3, h17.y) - 1.0) * var);
+                    float rc = min(_TileEdge.z, hf.x);
+                    float2 q = abs(lmm) - (hf - rc);
+                    float dIn = -(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - rc);
+                    float2 outDir = (q.x > 0.0 && q.y > 0.0) ? normalize(q) : (q.x > q.y ? float2(1.0, 0.0) : float2(0.0, 1.0));
+                    outDir *= float2(lmm.x < 0.0 ? -1.0 : 1.0, lmm.y < 0.0 ? -1.0 : 1.0);
+                    float gF = _TileEdge.w;
+                    float halfJ = max(0.5 * _TileEdge.x, 1e-3);
+                    // the cushion and the joint are a few millimetres: where a pixel spans them (past about 1.5 m) their slopes
+                    // average out, as the maps' mips average today's cushion; point-sampled they would alias into dark and white
+                    // joints. Per axis, from the pixel's footprint along u and v (mm).
+                    float2 pxMM = 1000.0 * float2(length(float2(dUVdx.x, dUVdy.x)) * _TileSize.x, length(float2(dUVdx.y, dUVdy.y)) * _TileSize.y);
+                    float2 kRes = saturate((2.0 * r / max(pxMM, 1e-3) - 1.0) / 3.0);
+                    float s;
+                    if (dIn >= 0.0)
+                    {
+                        float rd = r - min(dIn, r);
+                        float shoulder = rd / max(sqrt(max(r * r - rd * rd, 0.0)), 0.06);
+                        float d0 = r - sqrt(max(r * r - (r - gF) * (r - gF), 0.0));
+                        float lipStep = (abs(outDir.x) * (l0 - lU) + abs(outDir.y) * (l0 - lV)) * _TileForm2.z * var;
+                        float roll = 2.0 * lipStep / r * saturate(1.0 - dIn / r);
+                        s = (dIn < r ? max(shoulder + roll, 0.15 * shoulder) : 0.0) * smoothstep(d0 - 0.12, d0 + 0.22, dIn);
+                    }
+                    else
+                        s = 1.7 * gF * saturate((dIn + halfJ) / halfJ) / halfJ;
+                    slope -= outDir * s * kRes;
+                    // the glaze's waviness through this tile's own window of the face map, its strength the tile's own
+                    float2 kF = _TileSize.xy / FR_TILE_FACE_SPAN;
+                    float2 uvF = uvS * kF + h17.zw;
+                    half4 fm = SAMPLE_TEXTURE2D_GRAD(_TileFaceMap, sampler_BaseMap, uvF, dUVdx * kF, dUVdy * kF);
+                    float peel = 1.0 + (h17.x * 2.0 - 1.0) * _TileForm2.x * var;
+                    float faceW = (float)glaze * smoothstep(0.0, r, dIn);
+                    slope += ((float2)fm.rg - 0.5) * (peel * faceW / FR_TILE_FACE_K);
+                    slope += ((float2)fm.ba - 0.5) * ((float)grout / FR_TILE_GRAIN_K);
+                    // the slope variance the face map's mip has averaged away (gen_pool_tile.py: lost by mip), for the roughness
+                    float2 tx = dUVdx * kF * 1024.0;
+                    float2 ty = dUVdy * kF * 1024.0;
+                    float lod = 0.5 * log2(max(max(dot(tx, tx), dot(ty, ty)), 1e-8)) + _FR_TileAA.w;
+                    lostVar = _FR_TileAA.z * peel * peel * faceW * smoothstep(-0.3, 3.8, lod);
+                    n = (half3)normalize(float3(-slope, 1.0));
+                }
+                else
+                {
+                    // the set's own normal map (trims, ribs, the mosaic's and the deck's faces) with the shape on it
+                    half3 nm = UnpackNormalScale(SAMPLE_TEXTURE2D_GRAD(_BumpMap, sampler_BumpMap, uvS, dUVdx, dUVdy), _BumpScale);
+                    float2 sm = -(float2)nm.xy / max((float)nm.z, 0.2);
+                    n = (half3)normalize(float3(-(sm + slope), 1.0));
+                }
+                // colour as FRTileSurface; with the Pools levers a tone step per tile on top of the lot jitter
+                half j = (half)_TileGrid.w * (FRTileHash(c0, 1u) * 2.0h - 1.0h) + (half)((h16.w * 2.0 - 1.0) * 0.006 * var);
+                half odd = FRTileHash(c0, 2u) < (half)_TileLot.x ? 1.0h : 0.0h;
+                half3 oddShift = FRTileHash(c0, 3u) < 0.5h ? half3(-0.55h, 0.0h, 0.75h) : half3(0.45h, 0.2h, -0.65h);
+                half3 lot = 1.0h + j + odd * (half)_TileLot.y * oddShift;
+                half chips = mask.a * _TileWear * glaze;
+                half thick = d.g * (1.0h - chips);
+                half m = 0.75h + 0.5h * d.r;
+                half3 glazeCol = lerp(_EdgeColor.rgb, _BaseColor.rgb, thick) * lot;
+                half3 col = lerp(glazeCol, _GroutColor.rgb, grout) * m;
+                half dirt = saturate(mask.b * _TileWear);
+                col = lerp(col, _DirtColor.rgb, dirt * 0.55h);
+                half wallF = 1.0h - saturate(abs((half)nGeo.y) * 2.0h);
+                col *= 1.0h + _TileShade * n.y * wallF * glaze;
+                // the dish in tone (section 13.15; off when FrontRoomsPoolTile.DishTone is 0: the arithmetic above, untouched)
+                UNITY_BRANCH
+                if (_FR_TileTone.x + _FR_TileTone.y > 0.0)
+                    col *= (half)FRTileTone(c0, lmm, hf, pitchMM, (float)glaze, dUVdx, dUVdy, h17.y, var, positionWS);
+                albedo = half4(max(col, 0.0h), 1.0h);
+                // gloss per tile (the Pools levers): a little brighter or duller, one in seven a hazy glaze
+                half dg = (half)(((h16.x * 2.0 - 1.0) * _TileForm.w - (h16.y < 0.14 ? lerp(0.04, 0.09, h16.z) : 0.0)) * var);
+                mask.r = lerp(mask.r, 0.35h, chips) * (1.0h - 0.04h * _TileWear * glaze) - dirt * 0.18h + dg * glaze;
+                porous = max(grout, saturate((0.55h - mask.r) / 0.4h));
+                nTS = n;
+                lobes = (half)_TileForm.z * glaze;
+            }
+
+            // Specular anti-aliasing (Tokuyoshi-Kaplanyan 2021, core RP's ProjectedSpaceGeometricNormalFiltering): addVar is the
+            // normal's screen-space variance (x 2) plus what the face map's mips averaged away, clamped at the threshold.
+            half FRTileAA(half smoothness, float addVar)
+            {
+                float r = PerceptualSmoothnessToRoughness(smoothness);
+                float r2 = saturate(r * r + min(addVar, _FR_TileAA.y * _FR_TileAA.y));
+                return (half)RoughnessToPerceptualSmoothness(sqrt(r2));
+            }
+
+            // a lobe of the same BRDF at another smoothness (as InitializeBRDFDataDirect sets one; GZ-C's FRGlazeLobe)
+            BRDFData FRTileLobe(BRDFData b, half smoothness)
+            {
+                b.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(smoothness);
+                b.roughness = max(PerceptualRoughnessToRoughness(b.perceptualRoughness), HALF_MIN_SQRT);
+                b.roughness2 = max(b.roughness * b.roughness, HALF_MIN);
+                b.grazingTerm = saturate(smoothness + b.reflectivity);
+                b.normalizationTerm = b.roughness * half(4.0) + half(2.0);
+                b.roughness2MinusOne = b.roughness2 - half(1.0);
+                return b;
+            }
+
+            // the probe in the reflected direction, box projected for the tile (no URP keyword: the probe's own flag decides)
+            half3 FRTileEnvSample(half3 R, float3 positionWS, half perceptualRoughness, float2 uvSS)
+            {
+                half3 dir = _FR_TileGlaze.w > 0.5 ? BoxProjectedCubemapDirection(R, positionWS, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax) : R;
+                return GlossyEnvironmentReflection(dir, positionWS, perceptualRoughness, 1.0h, uvSS);
+            }
+
+            // The environment (URP's GlobalIllumination, 17.6): on glaze two lobes of the same probe, a sharp core inside a soft
+            // halo (hazy gloss, Barla 2018; GZ-C 73 5.1), each with its own environment BRDF so the energy stays at the glaze's F0;
+            // unglazed tile one lobe. The cavity occludes the probe by direction (Lagarde 2014), not flatly.
+            half3 FRTileGI(BRDFData brdf, half core, half halo, half haloW, half3 bakedGI, half occlusion, float3 positionWS, half3 normalWS, half3 viewDirectionWS, float2 uvSS)
+            {
+                half3 R = reflect(-viewDirectionWS, normalWS);
+                half NoV = saturate(dot(normalWS, viewDirectionWS));
+                half fresnelTerm = Pow4(1.0h - NoV);
+                BRDFData bc = FRTileLobe(brdf, core);
+                half3 spec = FRTileEnvSample(R, positionWS, bc.perceptualRoughness, uvSS) * EnvironmentBRDFSpecular(bc, fresnelTerm) * (1.0h - haloW);
+                if (haloW > 0.001h)
+                {
+                    BRDFData bh = FRTileLobe(brdf, halo);
+                    spec += FRTileEnvSample(R, positionWS, bh.perceptualRoughness, uvSS) * EnvironmentBRDFSpecular(bh, fresnelTerm) * haloW;
+                }
+                half specOcc = saturate(PositivePow(NoV + occlusion, exp2(-16.0h * bc.roughness - 1.0h)) - 1.0h + occlusion);
+                return bakedGI * brdf.diffuse * occlusion + spec * specOcc;
+            }
+
+            // micro-shadowing from the cavity (Brinck-Maximov, The Technical Art of Uncharted 4), at half strength: the grout's
+            // recess darkens under a grazing lamp and opens under a frontal one
+            half FRTileMicroShadow(half NdotL, half ao)
+            {
+                half a = lerp(1.0h, ao, 0.5h);
+                return saturate(NdotL + 2.0h * a * a - 1.0h);
+            }
+
+            // UniversalFragmentPBR (URP 17.6 Lighting.hlsl) for the real look: the lamps' lobe filtered (specular AA), the zone's
+            // contact shade, the two-lobe box-projected environment (FRTileGI), micro-shadowing on every light.
+            half4 FRTilePBR(InputData inputData, SurfaceData surfaceData, half lobes, float addVar)
+            {
+                bool specularHighlightsOff = false;
+                half scale = saturate(surfaceData.smoothness / max((half)_TileForm2.y, 0.05h));
+                half sAA = FRTileAA(surfaceData.smoothness, addVar);
+                half core = lerp(sAA, FRTileAA(saturate(scale * (half)_FR_TileGlaze.x), addVar), lobes);
+                half halo = FRTileAA(saturate(scale * (half)_FR_TileGlaze.y), addVar);
+                half haloW = (half)_FR_TileGlaze.z * lobes;
+                surfaceData.smoothness = sAA;
+                BRDFData brdfData;
+                InitializeBRDFData(surfaceData, brdfData);
+            #if defined(DEBUG_DISPLAY)
+                half4 debugColor;
+                if (CanDebugOverrideOutputColor(inputData, surfaceData, brdfData, debugColor))
+                    return debugColor;
+            #endif
+                BRDFData brdfDataClearCoat = CreateClearCoatBRDFData(surfaceData, brdfData);
+                half4 shadowMask = CalculateShadowMask(inputData);
+                AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
+            #if defined(_SCREEN_SPACE_OCCLUSION) && !defined(_SURFACE_TYPE_TRANSPARENT)
+                // the zone's contact shade: white porcelain bounces too much light for the shared SSAO's dark corners
+                UNITY_BRANCH
+                if (_FR_ZoneSSAO.x > 0.0)
+                {
+                    AmbientOcclusionFactor raw = GetScreenSpaceAmbientOcclusion(inputData.normalizedScreenSpaceUV);
+                    half keep = 1.0h - (half)saturate(_FR_ZoneSSAO.x);
+                    aoFactor.indirectAmbientOcclusion = min(1.0h - keep * (1.0h - raw.indirectAmbientOcclusion), surfaceData.occlusion);
+                    aoFactor.directAmbientOcclusion = 1.0h - keep * (1.0h - raw.directAmbientOcclusion);
+                }
+            #endif
+                uint meshRenderingLayers = GetMeshRenderingLayer();
+                Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+                MixRealtimeAndBakedGI(mainLight, inputData.normalWS, inputData.bakedGI);
+                LightingData lightingData = CreateLightingData(inputData, surfaceData);
+                lightingData.giColor = FRTileGI(brdfData, core, halo, haloW, inputData.bakedGI, aoFactor.indirectAmbientOcclusion,
+                                                inputData.positionWS, inputData.normalWS, inputData.viewDirectionWS, inputData.normalizedScreenSpaceUV);
+                half ao = surfaceData.occlusion;
+            #ifdef _LIGHT_LAYERS
+                if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
+            #endif
+                    lightingData.mainLightColor = LightingPhysicallyBased(brdfData, brdfDataClearCoat, mainLight,
+                                                                          inputData.normalWS, inputData.viewDirectionWS,
+                                                                          surfaceData.clearCoatMask, specularHighlightsOff)
+                                                * FRTileMicroShadow(saturate(dot(inputData.normalWS, mainLight.direction)), ao);
+            #if defined(_ADDITIONAL_LIGHTS)
+                uint pixelLightCount = GetAdditionalLightsCount();
+            #if USE_CLUSTER_LIGHT_LOOP
+                [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                {
+                    CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff)
+                                                            * FRTileMicroShadow(saturate(dot(inputData.normalWS, light.direction)), ao);
+                }
+            #endif
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff)
+                                                            * FRTileMicroShadow(saturate(dot(inputData.normalWS, light.direction)), ao);
+                LIGHT_LOOP_END
+            #endif
+            #if defined(_ADDITIONAL_LIGHTS_VERTEX)
+                lightingData.vertexLightingColor += inputData.vertexLighting * brdfData.diffuse;
+            #endif
+            #if REAL_IS_HALF
+                return min(CalculateFinalColor(lightingData, surfaceData.alpha), HALF_MAX);
+            #else
+                return CalculateFinalColor(lightingData, surfaceData.alpha);
+            #endif
+            }
+        #endif
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -433,6 +983,906 @@ Shader "FrontRooms/Surface"
                 if (a.x >= a.z) return float3(n.x >= 0 ? 1 : -1, 0, 0);
                 return float3(0, 0, n.z >= 0 ? 1 : -1);
             }
+
+        #if defined(_FR_DETAIL) && !defined(SHADER_API_GLES3) && !defined(SHADER_API_WEBGPU)
+            #define FR_DETAIL 1
+        #else
+            #define FR_DETAIL 0
+        #endif
+
+        #if FR_DETAIL
+            // ---------------------------------------------------------------- surface detail (60_build.md section 2)
+            // Global, written by FrontRoomsSurfaceDetail (unset = 0, 0: the revised surfaces at the full tier): x 1 = today's surfaces
+            // exactly (the switch); y 1 = the reduced tier (phones: no detail map fetch, no micro-shadowing).
+            float4 _FR_Detail;
+            TEXTURE2D(_DetailMap);  SAMPLER(sampler_DetailMap);
+            TEXTURE2D(_WearMap);
+
+            #define FR_DETAIL_K 4.0     // the detail map's slope code: 0.5 + slope * K (gen_office_detail.py SLOPE_K)
+
+            struct FRDetailOut
+            {
+                half micro;         // micro-shadowing strength (0 off)
+                half sheen;         // cloth sheen weight (0 off)
+                half3 sheenColor;
+            };
+
+            uint FRDetailHashU(uint3 c, uint salt)
+            {
+                uint x = c.x * 73856093u ^ c.y * 19349663u ^ c.z * 83492791u ^ salt * 2654435761u;
+                x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16;
+                return x;
+            }
+
+            // four numbers in [0, 1] (8 bits each) from one hash
+            float4 FRDetailH8(uint3 c, uint salt)
+            {
+                uint x = FRDetailHashU(c, salt);
+                return float4(x & 0xffu, (x >> 8) & 0xffu, (x >> 16) & 0xffu, x >> 24) / 255.0;
+            }
+
+            // an index that repeats every n (cells of a world grid wrap with the 192 m rebase)
+            uint FRDetailWrap(float i, float n)
+            {
+                return (uint)(i - n * floor(i / n));
+            }
+
+            // smooth 1-D value noise (0..1)
+            float FRDetailNoise1(float x, uint seed)
+            {
+                float i = floor(x), f = x - i;
+                f = f * f * (3.0 - 2.0 * f);
+                uint k = (uint)(int)i;
+                float a = (FRDetailHashU(uint3(k, seed, 7u), 3u) & 0xffffu) / 65535.0;
+                float b = (FRDetailHashU(uint3(k + 1u, seed, 7u), 3u) & 0xffffu) / 65535.0;
+                return lerp(a, b, f);
+            }
+
+            // One id per flat wall: axis, sign and the plane's offset in 0.25 m classes, 192 m periodic (as the paper's FRWallId).
+            uint FRDetailWallId(float3 p, float3 n)
+            {
+                float3 a = abs(n);
+                uint axis = a.x >= a.z ? 0u : 1u;
+                uint pos = (a.x >= a.z ? n.x : n.z) >= 0.0 ? 1u : 0u;
+                int plane = (int)round(dot(p, n) * 4.0);
+                plane = ((plane % 768) + 768) % 768;
+                return (uint)plane * 4u + axis * 2u + pos;
+            }
+
+            // A line of width w (metres) centred at distance 0, faded to its area mean once it is under a pixel (px metres).
+            float FRDetailLine(float d, float w, float px)
+            {
+                return saturate((0.5 * w + 0.5 * px - abs(d)) / px) * saturate(w / px);
+            }
+
+            // The mip for a map of texel size texel (metres) seen at px metres per pixel. The path takes no derivative at all: an
+            // explicit ddx in the program changes how the hardware takes the implicit ones elsewhere on curved meshes, and the switch
+            // must leave today's frame exact (60_build.md 2.4).
+            float FRDetailLod(float px, float texel)
+            {
+                return max(log2(max(px, 1e-6) / texel), 0.0);
+            }
+
+            // the object's own lot (kit pieces: every desk, panel and pedestal a separate draw)
+            float4 FRDetailObjectHash(uint salt)
+            {
+                float3 o = float3(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13, UNITY_MATRIX_M._m23);
+                return FRDetailH8((uint3)(int3)floor(o * 4.0 + 8192.0), salt);
+            }
+
+            // ---- fine relief: the detail map (paint stipple, laminate suede), RNM over the map's normal, its gloss and tone; faded
+            // where a texel is under a third of a pixel (the mips would flatten it anyway; this keeps its gloss from sparkling)
+            void FRDetailFine(float2 m, float px, inout half3 albedo, inout half smoothness, inout half3 nTS)
+            {
+                float span = max(_DetailKind.y, 1e-3);
+                half4 d = SAMPLE_TEXTURE2D_LOD(_DetailMap, sampler_DetailMap, m / span, FRDetailLod(px, span / 512.0));
+                half fade = (half)saturate(1.5 - px / (span / 512.0) / 3.0);
+                half2 sl = (d.rg - 0.5h) * (half)(1.0 / FR_DETAIL_K) * (half)_DetailKind.z * fade;
+                nTS = BlendNormalRNM(normalize(nTS), normalize(half3(-sl, 1.0h)));
+                smoothness += (d.b - 0.5h) * 0.4h * fade;
+                albedo *= 1.0h + (d.a - 0.5h) * 0.4h * fade;
+            }
+
+            // ---- 1: painted gypsum board (Office_Wall). Boards 1.2 m wide hung on end from a joint somewhere on each wall; every joint
+            // taped and feathered about 300 mm wide (the paint flashes over it, most often duller, and its crown bends the sheen);
+            // screws on the studs every 0.4 m along and 0.3 m up, each spotted (a few popped); the paint rolled in passes about 0.6 m
+            // wide with lap lines where wet met dry, touched up here and there from another can, cut in by brush under the ceiling;
+            // chair backs burnish a band at 0.72-0.98 m; shoes, chair casters and the vacuum mark the foot (_WearMap: the strip 4.8 x
+            // 0.6 m, v 0 at the floor). The lamps are overhead, so the knockdown's relief goes into the tone as well.
+            // A: joint sheen, joint tone, fastener visibility, knockdown relief in the tone
+            // B: pass sheen, touch-up share, touch-up sheen, cut-in band m      C: chair band, foot marks, unused, unused
+            void FRDetailBoard(float3 p, float3 nGeo, float2 m, float px, half3 nMap, inout half3 albedo, inout half smoothness, inout half3 nTS)
+            {
+                uint wall = FRDetailWallId(p, nGeo);
+                float4 hw = FRDetailH8(uint3(wall, 0u, 0u), 31u);
+                float y = p.y;
+                // the boards and their joints
+                const float BW = 1.2;
+                float u = m.x + hw.x * BW;
+                float bi = floor(u / BW);
+                float fu = u - bi * BW;
+                float side = fu < 0.5 * BW ? -1.0 : 1.0;
+                float dj = side < 0.0 ? fu : BW - fu;
+                uint jid = FRDetailWrap(bi + (side > 0.0 ? 1.0 : 0.0), 160.0);
+                float4 hj = FRDetailH8(uint3(wall, jid, 1u), 32u);
+                float4 hj2 = FRDetailH8(uint3(wall, jid, 7u), 38u);
+                float feather = 0.13 + 0.05 * hj.x;
+                // the finish coat is heavier in places along the joint (two octaves); some joints hardly show at all
+                float coat = 0.35 + 0.65 * (0.6 * FRDetailNoise1(y * 1.3 + hj.y * 37.0, jid * 7u + wall)
+                                          + 0.4 * FRDetailNoise1(y * 4.1 + hj2.x * 19.0, jid * 7u + wall + 1u));
+                coat *= 0.3 + 0.7 * hj2.y;
+                float jb = (1.0 - smoothstep(0.35 * feather, feather, dj)) * coat;
+                half flash = hj.z < 0.78 ? -(0.55h + 0.45h * (half)hj.w) : (0.5h + 0.5h * (half)hj.w);
+                smoothness += (half)_DetailA.x * flash * (half)jb;
+                albedo *= 1.0h + (half)(_DetailA.y * jb);
+                // the crown (0.45-0.85 mm over the feather): h = c (1 - x^2)^2, its slope across the wall in the normal
+                float crown = (0.00045 + 0.0004 * hj.y) * coat;
+                float x = saturate(dj / feather);
+                nTS.x += (half)(-side * 4.0 * crown * x * (1.0 - x * x) / feather);
+                // the paper tape's edges, 26 mm each side of the joint: a faint ridge in the sheen at the hero distance
+                smoothness -= (half)(0.025 * FRDetailLine(dj - 0.026, 0.002, px) * coat);
+
+                // fasteners: the studs under the board (0.4 m apart; the board's edges sit on studs too), a screw every 0.3 m up
+                uint bid = FRDetailWrap(bi, 160.0);
+                float4 hb = FRDetailH8(uint3(wall, bid, 2u), 33u);
+                float si = round(fu / 0.4);
+                float y0 = 0.15 + 0.06 * hb.x;
+                float ri = round((y - y0) / 0.3);
+                // each screw where the hand put it: up to 40 mm off its row, a few mm off the stud; most spots never show
+                float4 hs = FRDetailH8(uint3(wall, bid * 4u + (uint)si, FRDetailWrap(ri, 64.0) + 3u), 34u);
+                float2 d2 = float2(fu - si * 0.4 - (hs.x - 0.5) * 0.012, y - (y0 + 0.3 * ri) - (hs.w - 0.5) * 0.08);
+                float r = length(d2);
+                float spotR = 0.016 + 0.01 * frac(hs.x * 7.0);
+                float vis = (hs.y < 0.55 ? 0.0 : (hs.y < 0.9 ? 0.3 : 0.8)) * _DetailA.z;
+                vis *= step(0.05, y0 + 0.3 * ri) * step(y0 + 0.3 * ri, _CeilingHeight - 0.05);
+                float spot = (1.0 - smoothstep(spotR * 0.45, spotR + 0.5 * px, r)) * vis;
+                smoothness -= (half)(0.03 * spot);
+                albedo *= 1.0h + (half)(0.004 * spot);
+                // a popped screw (one in thirty): a 12 mm dome 0.4 mm proud, its hairline ring; the lamps are overhead, so its
+                // upper side is lighter in the tone too
+                float pop = (hs.z > 0.967 ? 1.0 : 0.0) * _DetailA.z * step(0.05, y0 + 0.3 * ri);
+                float pr = 0.006;
+                float k = saturate(r / pr);
+                float2 sl = (r > 1e-5 && r < pr) ? d2 / r * (0.0008 * k / pr) : float2(0.0, 0.0);
+                nTS.xy += (half2)(sl * pop);
+                albedo *= 1.0h + (half)(sl.y * pop * 0.6);
+                albedo *= 1.0h - (half)(0.12 * FRDetailLine(r - pr, 0.0008, px) * pop);
+
+                // the paint: rolled in passes, each a little different; lap lines where wet met dry (glossier: twice the film)
+                float pw = 0.55 + 0.15 * hw.y;
+                float uu = m.x + 0.07 * (FRDetailNoise1(y * 0.9 + hw.z * 13.0, wall * 3u + 11u) - 0.5) + hw.w * pw;
+                float pIdx = floor(uu / pw);
+                float fp = uu - pIdx * pw;
+                float dl = min(fp, pw - fp);
+                float4 hp = FRDetailH8(uint3(wall, FRDetailWrap(pIdx, 1024.0), 4u), 35u);
+                float lap = (1.0 - smoothstep(0.012, 0.05, dl)) * hp.x * hp.x * 1.5;
+                float runOut = smoothstep(0.25, 0.7, y) * (1.0 - smoothstep(_CeilingHeight - 0.5, _CeilingHeight - 0.1, y));
+                smoothness += (half)(_DetailB.x * ((hp.y - 0.5) * 0.6 + lap * runOut));
+
+                // touch-ups: a patch rolled over a repair or a mark, from another can (mostly glossier, now and then flatter;
+                // a shade off), a soft rounded rectangle in its 1.2 x 0.9 m cell
+                float2 tc = float2(m.x / 1.2, y / 0.9);
+                float2 ci = floor(tc);
+                float4 ht = FRDetailH8(uint3(wall, FRDetailWrap(ci.x, 1024.0), FRDetailWrap(ci.y, 16.0) + 8u), 36u);
+                float4 ht2 = FRDetailH8(uint3(wall, FRDetailWrap(ci.x, 1024.0), FRDetailWrap(ci.y, 16.0) + 40u), 37u);
+                float2 hsz = float2(0.06 + 0.18 * ht.y, 0.05 + 0.13 * ht.z);
+                float2 cc = (ci + 0.25 + 0.5 * ht2.xy) * float2(1.2, 0.9);
+                float2 q = abs(float2(m.x, y) - cc) - hsz + 0.03;
+                float sdf = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 0.03;
+                float tf = 0.02 + 0.04 * ht2.z;
+                float tu = (1.0 - smoothstep(-0.3 * tf, tf, sdf)) * (ht.x < _DetailB.y ? 1.0 : 0.0) * step(0.15, cc.y);
+                smoothness += (half)(_DetailB.z * (ht2.w < 0.7 ? 1.0 : -0.7) * tu);
+                albedo *= 1.0h + (half)((ht.w - 0.5) * 0.4 * _DetailB.z * tu);
+
+                // cut in by brush under the ceiling: a band 50-90 mm deep, its own sheen, brush ridges along it
+                float cutD = _DetailB.w * (0.75 + 0.5 * FRDetailNoise1(m.x * 2.3 + hw.y * 9.0, wall + 77u));
+                float cut = smoothstep(_CeilingHeight - cutD - 0.01, _CeilingHeight - cutD + 0.01, y);
+                smoothness += (half)(cut * (hw.z < 0.5 ? 0.025 : -0.02));
+                float brush = FRDetailNoise1(y * 700.0 + FRDetailNoise1(m.x * 3.0, wall + 5u) * 9.0, wall + 9u) - 0.5;
+                nTS.y += (half)(cut * brush * 0.03 * saturate(0.0025 / px - 0.3));
+
+                // chair backs against the wall: burnished and greyed in patches at 0.72-0.98 m
+                float chair = smoothstep(0.70, 0.78, y) * (1.0 - smoothstep(0.92, 1.0, y))
+                            * smoothstep(0.55, 0.85, FRDetailNoise1(m.x * 1.3 + hw.x * 21.0, wall + 13u)) * _DetailC.x;
+                smoothness += (half)(0.05 * chair);
+                albedo *= 1.0h - (half)(0.03 * chair);
+
+                // the foot: black rubber from heels, casters and the vacuum's bumper, grey abrasion
+                UNITY_BRANCH
+                if (y < 0.62)
+                {
+                    half4 w = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, float2(m.x / 4.8, y / 0.6), FRDetailLod(px, 4.8 / 2048.0));
+                    half black = saturate(w.r * (half)_DetailC.y);
+                    half grey = saturate(w.g * (half)_DetailC.y);
+                    albedo = lerp(albedo, albedo * 0.18h + 0.02h, black * 0.85h);
+                    smoothness += 0.06h * black - 0.06h * grey;
+                    albedo *= 1.0h + 0.06h * grey;
+                }
+
+                // the knockdown's relief in the tone (its upper sides a little lighter), faded in with distance: at the hero distance
+                // the lamps still draw it; past 2 m a tilt this small no longer reads, so the tone carries it
+                albedo *= 1.0h + (half)(_DetailA.w * saturate(px / 0.0025)) * nMap.y;
+            }
+
+            // ---- 2: carpet tile (Office_Carpet: 0.6 m tiles laid quarter-turn; the map holds 2 x 2). Each tile its own dye lot,
+            // now and then a newer replacement or a stain (the atlas's quadrants 0-1); the pile lies one way per tile, so the
+            // checker lightens looking along the lay and darkens against it, as you move; seams open here and there; a corner lifts.
+            // A: lot tone, lot hue, pile sheen, seam variation   B: newer share, newer lift, stain share, stain strength
+            void FRDetailCarpet(float3 p, float2 m, float px, float3 t, float3 b, inout half3 albedo, inout half3 nTS)
+            {
+                const float TS = 0.6;
+                float2 cf = floor(m / TS);
+                uint2 c = uint2(FRDetailWrap(cf.x, 320.0), FRDetailWrap(cf.y, 320.0));
+                float2 f = m / TS - cf;
+                float4 h = FRDetailH8(uint3(c, 0u), 41u);
+                half lot = (half)(_DetailA.x * (h.x * 2.0 - 1.0));
+                half hue = (half)(_DetailA.y * (h.y * 2.0 - 1.0));
+                albedo *= half3(1.0h + lot + hue, 1.0h + lot, 1.0h + lot - hue);
+                half fresh = h.z < _DetailB.x ? 1.0h : 0.0h;
+                albedo = lerp(albedo, albedo * (1.0h + (half)_DetailB.y) + 0.004h, fresh);
+                // the lay: the map's quarter-turn (tiles with cx + cy even lie along v, odd along u), a few degrees off per tile
+                float ang = ((c.x + c.y) % 2u == 0u ? 1.5707963 : 0.0) + (h.w - 0.5) * 0.35;
+                float2 lay = float2(cos(ang), sin(ang));
+                float3 V = GetWorldSpaceNormalizeViewDir(p);
+                float2 v2 = float2(dot(V, t), dot(V, b));
+                float vl = length(v2);
+                half along = vl > 1e-4 ? (half)dot(-v2 / vl, lay) : 0.0h;
+                albedo *= 1.0h + (half)_DetailA.z * along * (half)saturate(vl * 1.4) * (1.0h - 0.5h * fresh);
+                // seams: each edge open or tight
+                float2 e = min(f, 1.0 - f) * TS;
+                bool ex = e.x < e.y;
+                float edgeI = ex ? cf.x + (f.x > 0.5 ? 1.0 : 0.0) : cf.y + (f.y > 0.5 ? 1.0 : 0.0);
+                float4 he = FRDetailH8(uint3(FRDetailWrap(edgeI, 320.0), FRDetailWrap(ex ? cf.y : cf.x, 320.0), ex ? 5u : 6u), 42u);
+                float open = he.x * he.x;
+                albedo *= 1.0h - (half)(FRDetailLine(min(e.x, e.y), 0.0008 + 0.0014 * open, px) * (0.2 + 0.5 * open) * _DetailA.w);
+                // a corner lifted 2-3 mm (one tile in forty): it catches the light
+                float4 hc = FRDetailH8(uint3(c, 2u), 43u);
+                float2 corner = float2(hc.y < 0.5 ? 0.0 : 1.0, frac(hc.y * 2.0) < 0.5 ? 0.0 : 1.0);
+                float lift = (hc.x < 0.025 ? 1.0 : 0.0) * (1.0 - smoothstep(0.02, 0.09, length(f - corner) * TS));
+                nTS.xy += (half2)(normalize(corner - f + 1e-4) * 0.035 * lift);
+                albedo *= 1.0h + (half)(0.03 * lift);
+                // a stain from the atlas (quadrant 0 or 1), turned by quarter turns
+                float4 hs = FRDetailH8(uint3(c, 3u), 44u);
+                UNITY_BRANCH
+                if (hs.x < _DetailB.z)
+                {
+                    float2 g = f - 0.5;
+                    if (hs.y > 0.5) g = float2(-g.y, g.x);
+                    if (frac(hs.y * 2.0) > 0.5) g = -g;
+                    float2 auv = (g + 0.5) * 0.5 + float2(hs.z < 0.5 ? 0.0 : 0.5, 0.0);
+                    half4 st = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, auv, FRDetailLod(px, TS / 512.0));
+                    half body = st.r * (half)_DetailB.w;
+                    albedo = lerp(albedo, albedo * half3(0.62h, 0.50h, 0.38h), body);
+                    albedo *= 1.0h - 0.22h * st.g * (half)_DetailB.w;
+                }
+            }
+
+            // ---- 3: lay-in ceiling (Office_Ceiling: 0.6 m mineral-fibre panels on a 24 mm T-bar grid; the map holds 2 x 2). Each
+            // panel lies on the grid by itself: its own age; a sag (the middle drops 1-5 mm, more where it is damp); a small tilt;
+            // one in fourteen replaced (whiter, cleaner); one in fifty pushed up at one edge (the plenum's dark shows along it); its
+            // edges soiled by the air that leaks round them; now and then a water stain that stops short of its edges (the atlas's
+            // quadrants 2-3). The grid's flange bows between hangers, so its sheen wanders along it.
+            // A: age tone, replaced share, sag mm, tilt deg   B: edge soil, lifted share, stain share, stain strength
+            // C: flange bow deg, replaced lift (0 = 0.035), unused, unused
+            void FRDetailCeiling(float3 p, float2 m, float px, half damp, inout half3 albedo, inout half3 nTS)
+            {
+                const float TS = 0.6, HALF_TBAR = 0.0119;
+                float2 cf = floor(m / TS);
+                uint2 c = uint2(FRDetailWrap(cf.x, 320.0), FRDetailWrap(cf.y, 320.0));
+                float2 g = m / TS - cf - 0.5;
+                float2 e = (0.5 - abs(g)) * TS;
+                float de = min(e.x, e.y);
+                float tile = smoothstep(HALF_TBAR - 0.5 * px, HALF_TBAR + 0.5 * px, de);
+                float4 h = FRDetailH8(uint3(c, 0u), 51u);
+                float4 h2 = FRDetailH8(uint3(c, 1u), 52u);
+                half fresh = h.y < _DetailA.y ? 1.0h : 0.0h;
+                half age = (half)(h.x * 2.0 - 1.0) * (1.0h - fresh);
+                half3 tone = half3(1.0h + (half)_DetailA.x * age, 1.0h + (half)_DetailA.x * age, 1.0h + (half)_DetailA.x * age * 1.7h);
+                half newLift = (half)(_DetailC.y > 0.0 ? _DetailC.y : 0.035);
+                tone = lerp(tone, half3(1.0h + newLift, 1.0h + newLift, 1.0h + 1.4h * newLift), fresh);
+                albedo *= lerp(half3(1.0h, 1.0h, 1.0h), tone, (half)tile);
+                // sag toward the room: h = s (1 - 4 gx^2)(1 - 4 gy^2); the normal tilts out from the middle; and a small tilt
+                float sag = _DetailA.z * 0.001 * (0.2 + 0.45 * h.z + 0.6 * damp) * (1.0 - 0.6 * fresh);
+                float ax = 1.0 - 4.0 * g.x * g.x, ay = 1.0 - 4.0 * g.y * g.y;
+                float2 grad = sag * float2(-8.0 * g.x * ay, -8.0 * g.y * ax) / TS;
+                float2 tl = (h2.xy * 2.0 - 1.0) * tan(radians(_DetailA.w));
+                nTS.xy += (half2)((tl - grad) * tile);
+                // pushed up at one edge: tilted up toward it, the plenum's dark along it
+                float4 h3 = FRDetailH8(uint3(c, 2u), 53u);
+                if (h3.x < _DetailB.y)
+                {
+                    float sideI = floor(h3.y * 4.0);
+                    float2 dir = sideI < 1.0 ? float2(1.0, 0.0) : sideI < 2.0 ? float2(-1.0, 0.0) : sideI < 3.0 ? float2(0.0, 1.0) : float2(0.0, -1.0);
+                    float lift = 0.004 + 0.006 * h3.z;
+                    nTS.xy += (half2)(dir * (lift / TS) * tile);
+                    float dEdge = (0.5 - dot(g, dir)) * TS - HALF_TBAR;
+                    float gapW = lift * 0.7;
+                    albedo *= 1.0h - (half)(0.8 * FRDetailLine(dEdge - 0.5 * gapW, gapW, px) * tile);
+                }
+                // the edges soiled by the air leaking round them
+                float soil = (1.0 - smoothstep(HALF_TBAR, HALF_TBAR + 0.02 + 0.025 * h2.z, de)) * tile * (0.3 + 0.7 * h2.w) * _DetailB.x;
+                albedo *= 1.0h - 0.12h * (half)soil;
+                // a water stain, more often where it is damp
+                float4 hs = FRDetailH8(uint3(c, 3u), 54u);
+                UNITY_BRANCH
+                if (hs.x < _DetailB.z * (0.5 + damp))
+                {
+                    float2 q = g;
+                    if (hs.y > 0.5) q = float2(-q.y, q.x);
+                    if (frac(hs.y * 2.0) > 0.5) q = -q;
+                    float2 auv = (q + 0.5) * 0.5 + float2(hs.z < 0.5 ? 0.0 : 0.5, 0.5);
+                    half4 st = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, auv, FRDetailLod(px, TS / 512.0));
+                    half k = (half)(_DetailB.w * tile);
+                    albedo = lerp(albedo, albedo * half3(0.93h, 0.86h, 0.70h), st.r * k);
+                    albedo = lerp(albedo, albedo * half3(0.70h, 0.58h, 0.42h), st.g * k);
+                }
+                // the flange bows between the hangers: a tilt across the bar that wanders along it
+                float onBar = 1.0 - tile;
+                bool barAlongV = e.x < e.y;
+                float wob = (FRDetailNoise1((barAlongV ? m.y : m.x) * 1.6, FRDetailWrap(barAlongV ? cf.x : cf.y, 320.0) + 61u) - 0.5) * 2.0;
+                float wt = tan(radians(_DetailC.x)) * wob * onBar;
+                nTS.xy += (half2)(barAlongV ? float2(wt, 0.0) : float2(0.0, wt));
+            }
+
+            // ---- 4: panel fabric (Prop_FabricCubicle, Office_Fabric): every panel its own lot (bought in different years, faded
+            // differently); the bottom kicked and vacuumed darker; the cloth's sheen at grazing angles (FRDetailPBR, o.sheen).
+            // A: sheen, unused, lot tone, lot hue   B: bottom soil, its height m, unused, unused
+            void FRDetailFabric(float3 p, inout half3 albedo, inout FRDetailOut o)
+            {
+                float4 h = FRDetailObjectHash(71u);
+                half lot = (half)(_DetailA.z * (h.x * 2.0 - 1.0));
+                half hue = (half)(_DetailA.w * (h.y * 2.0 - 1.0));
+                albedo *= half3(1.0h + lot - hue, 1.0h + lot, 1.0h + lot + hue);
+                albedo *= 1.0h - (half)(_DetailB.x * (1.0 - smoothstep(0.04, max(_DetailB.y, 0.05), p.y)));
+                half luma = dot(albedo, half3(0.2126h, 0.7152h, 0.0722h));
+                o.sheen = (half)_DetailA.x;
+                o.sheenColor = lerp(albedo, half3(luma, luma, luma), 0.4h) * 1.8h + 0.015h;
+            }
+
+            // ---- 5: laminate worksurface (Prop_LaminateBeige: HPL in a suede finish, ~10 GU at 60 deg): the suede in the detail map;
+            // on the top (faces up) a desk's life from _WearMap (1 m, from its own place per desk): scratches where things slide,
+            // burnished patches where forearms rest, a dust film where nothing moves, cup rings; each desk its own lot.
+            // A: unused, scratches, burnish, dust   B: wear map span m, cup rings, lot tone, unused
+            void FRDetailLaminate(float3 nGeo, float2 m, float px, inout half3 albedo, inout half smoothness)
+            {
+                float4 h = FRDetailObjectHash(81u);
+                albedo *= 1.0h + (half)(_DetailB.z * (h.x * 2.0 - 1.0));
+                half top = (half)saturate((nGeo.y - 0.6) / 0.3);
+                UNITY_BRANCH
+                if (top > 0.0h)
+                {
+                    float span = max(_DetailB.x, 0.1);
+                    half4 w = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, (m + h.yz * span) / span, FRDetailLod(px, span / 1024.0));
+                    half scr = w.r * (half)_DetailA.y * top;
+                    smoothness -= 0.10h * scr;
+                    albedo *= 1.0h + 0.05h * scr;
+                    smoothness += (half)_DetailA.z * w.g * top;
+                    half dust = w.b * (half)_DetailA.w * top;
+                    smoothness -= dust;
+                    albedo = lerp(albedo, half3(0.56h, 0.54h, 0.50h), dust * 0.5h);
+                    half ring = w.a * (half)_DetailB.y * top;
+                    smoothness -= 0.08h * ring;
+                    albedo *= 1.0h - 0.07h * ring;
+                }
+            }
+
+            // ---- 6: painted steel (Prop_SteelPutty: pedestals, panel trims and posts, filing cabinets): each piece its own lot; the
+            // desk wear map (1 m, from its own place) for scratches into the paint (darker), hands' burnish and dust; kicks at the foot.
+            // A: wear map span m, scratches, burnish, dust   B: lot tone, kick height m, kick strength, unused
+            void FRDetailSteel(float3 p, float2 m, float px, inout half3 albedo, inout half smoothness)
+            {
+                float4 h = FRDetailObjectHash(82u);
+                albedo *= 1.0h + (half)(_DetailB.x * (h.x * 2.0 - 1.0));
+                float span = max(_DetailA.x, 0.1);
+                half4 w = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, (m + h.yz * span) / span, FRDetailLod(px, span / 1024.0));
+                half scr = w.r * (half)_DetailA.y;
+                smoothness -= 0.12h * scr;
+                albedo *= 1.0h - 0.10h * scr;
+                smoothness += (half)_DetailA.z * w.g;
+                half dust = w.b * (half)_DetailA.w;
+                smoothness -= dust;
+                albedo = lerp(albedo, half3(0.55h, 0.53h, 0.50h), dust * 0.35h);
+                half kick = (half)((1.0 - smoothstep(0.03, max(_DetailB.y, 0.05), p.y)) * _DetailB.z);
+                albedo *= 1.0h - 0.25h * kick * (half)(0.5 + 0.5 * FRDetailNoise1(m.x * 23.0 + h.w * 17.0, 83u));
+                smoothness -= 0.1h * kick;
+            }
+
+            // ---- 7: vinyl cove base (Cove_Base: the map's 0.10 m box, 6 mm proud) drawn as what it is, 4 in x 1/8 in vinyl with a
+            // 1/2 in toe: the toe curving out onto the floor at the bottom (it catches the overhead light; a contact line under it),
+            // the thin top edge rounding back to the wall (a highlight line), 4 ft lengths butted (a hairline), the satin sheen
+            // wandering with the adhesive under it and the strip's own wave, shoes' and the vacuum's marks (the wall's foot strip,
+            // so they run on across the top), dust on its top.
+            // A: unused, unused, unused, top m   B: marks, top dust, sheen variety, wave deg
+            void FRDetailCove(float3 p, float3 nGeo, float2 m, float px, inout half3 albedo, inout half smoothness, inout half cavity, inout half3 nTS)
+            {
+                half front = (half)(1.0 - saturate(abs(nGeo.y) * 2.0));
+                half topF = (half)saturate((nGeo.y - 0.5) * 2.0);
+                float y = p.y;
+                uint wall = FRDetailWallId(p, nGeo);
+                float4 hw = FRDetailH8(uint3(wall, 0u, 0u), 91u);
+                // the toe (bottom 12.7 mm) turns out onto the floor, up to 60 degrees; the top 2.5 mm rounds back to the wall
+                const float TOE = 0.0127;
+                float tz = saturate(1.0 - y / TOE);
+                float topY = max(_DetailA.w, 0.02);
+                float tt = saturate((y - (topY - 0.0025)) / 0.0025) * saturate(0.0025 / px);
+                float ang = (1.05 * tz * tz + 1.2 * tt) * front;
+                half ca = (half)cos(ang), sa = (half)sin(ang);
+                nTS = half3(nTS.x, nTS.y * ca + nTS.z * sa, -nTS.y * sa + nTS.z * ca);
+                float cl = 1.0 - smoothstep(0.0, 0.0025 + px, y);
+                albedo *= 1.0h - 0.5h * (half)cl * front;
+                cavity *= 1.0h - 0.4h * (half)cl * front;
+                // 4 ft lengths butted: a hairline, one end a hair proud
+                float u = m.x + hw.x * 1.2;
+                float sIdx = floor(u / 1.2);
+                float fu = u - sIdx * 1.2;
+                float4 hs = FRDetailH8(uint3(wall, FRDetailWrap(sIdx, 160.0), 1u), 92u);
+                albedo *= 1.0h - (half)(0.6 * FRDetailLine(min(fu, 1.2 - fu), 0.0004 + 0.0008 * hs.x, px)) * front;
+                albedo *= 1.0h + (half)((hs.y - 0.5) * 0.04 * (1.0 - smoothstep(0.0, 0.05, fu))) * front;
+                // the satin sheen wanders with the adhesive under it; the strip waves a little (seen in the sheen at grazing)
+                smoothness += (half)(_DetailB.z * (FRDetailNoise1(u * 3.7 + hw.y * 11.0, wall + 3u) - 0.5) * 2.0) * front;
+                nTS.x += (half)(tan(radians(_DetailB.w)) * (FRDetailNoise1(u * 5.3 + hw.z * 7.0, wall + 4u) - 0.5) * 2.0) * front;
+                // marks: black rubber (darker, glossier), grey abrasion (the vinyl roughened: lighter, dull)
+                half4 w = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, float2(m.x / 4.8, y / 0.6), FRDetailLod(px, 4.8 / 2048.0));
+                half black = saturate(w.r * (half)_DetailB.x) * front;
+                half grey = saturate(w.g * (half)_DetailB.x) * front;
+                albedo = lerp(albedo, half3(0.022h, 0.020h, 0.018h), black * 0.8h);
+                smoothness += 0.08h * black;
+                albedo = lerp(albedo, albedo * 1.9h + 0.03h, grey * 0.7h);
+                smoothness -= 0.15h * grey;
+                // dust on the top
+                albedo = lerp(albedo, half3(0.30h, 0.29h, 0.27h), (half)_DetailB.y * topF);
+                smoothness -= 0.2h * topF;
+            }
+
+            // ---- 8: broadloom carpet (L0_Carpet: a level-loop pile in 12 ft rolls, glued down; the map holds 1 m of pile). The rolls
+            // run along the floor's v (world -z), 192 / 52 m wide (12 ft 1 in: 52 rolls in the 192 m the title stream rebases by, so
+            // nothing jumps at a rebase), cut into pieces 9.6 m long where the rooms needed them. Every piece is its own dye lot and
+            // lies its own way (a few were turned end for end: the shading step at a seam, lighter on one side looking one way and
+            // darker the other); the seams peak a little over the hot-melt tape; pieces that were never stretched tight buckle into
+            // long soft ridges; old spills and water marks (_WearMap = Office_Stains_W: coffee in quadrants 0-1, a tide-ringed water
+            // mark in quadrant 2) in some 1.6 m cells; where the floor is dirtiest (the macro field) the loops are crushed flat.
+            // A: lot tone, lot hue, lay sheen, seams   B: ripple share, ripple height mm, stain share, stain strength
+            // C: turned share, crush, lay wander rad, unused
+
+            // smooth 2-D value noise (0..1) on the integer lattice of x
+            float FRDetailNoise2(float2 x, uint seed)
+            {
+                float2 i = floor(x), f = x - i;
+                f = f * f * (3.0 - 2.0 * f);
+                uint2 k = (uint2)(int2)i;
+                float a = (FRDetailHashU(uint3(k, seed), 5u) & 0xffffu) / 65535.0;
+                float b = (FRDetailHashU(uint3(k + uint2(1u, 0u), seed), 5u) & 0xffffu) / 65535.0;
+                float c = (FRDetailHashU(uint3(k + uint2(0u, 1u), seed), 5u) & 0xffffu) / 65535.0;
+                float d = (FRDetailHashU(uint3(k + uint2(1u, 1u), seed), 5u) & 0xffffu) / 65535.0;
+                return lerp(lerp(a, b, f.x), lerp(c, d, f.x), f.y);
+            }
+
+            void FRDetailBroadloom(float3 p, float2 m, float px, float3 t, float3 b, half4 m1, half4 m2,
+                                   inout half3 albedo, inout half smoothness, inout half cavity, inout half3 nTS)
+            {
+                const float RW = 192.0 / 52.0, PL = 9.6;
+                // the roll and the piece of it this point lies on
+                float rx = m.x + 1.37;
+                float ri = floor(rx / RW);
+                float fx = rx - ri * RW;
+                uint roll = FRDetailWrap(ri, 52.0);
+                float4 hr = FRDetailH8(uint3(roll, 0u, 0u), 101u);
+                float ry = m.y + hr.x * PL;
+                float pj = floor(ry / PL);
+                float fy = ry - pj * PL;
+                uint piece = FRDetailWrap(pj, 20.0);
+                float4 hp = FRDetailH8(uint3(roll, piece, 1u), 102u);
+                float4 hp2 = FRDetailH8(uint3(roll, piece, 2u), 103u);
+                // the dye lot
+                half lot = (half)(_DetailA.x * (hp.x * 2.0 - 1.0));
+                half hue = (half)(_DetailA.y * (hp.y * 2.0 - 1.0));
+                albedo *= half3(1.0h + lot + hue, 1.0h + lot, 1.0h + lot - 1.5h * hue);
+                // the lay: along +v, or turned end for end, a few degrees off, and wandering inside the piece (walked, vacuumed and
+                // crushed one way here and another there: soft patches a metre or two across); lighter looking along it, darker against
+                float2 pq = float2(fx, fy);
+                float wander = FRDetailNoise2(pq * 0.55 + hp.xy * 31.0, roll * 13u + piece) * 2.0 - 1.0;
+                float ang = (hp.z < _DetailC.x ? -1.5707963 : 1.5707963) + (hp.w - 0.5) * 0.10 + wander * _DetailC.z;
+                float2 lay = float2(cos(ang), sin(ang));
+                float3 V = GetWorldSpaceNormalizeViewDir(p);
+                float2 v2 = float2(dot(V, t), dot(V, b));
+                float vl = length(v2);
+                half along = vl > 1e-4 ? (half)dot(-v2 / vl, lay) : 0.0h;
+                albedo *= 1.0h + (half)_DetailA.z * along * (half)saturate(vl * 1.4);
+                // the seams: a hairline over the tape, both edges peaking about 1 mm in a soft ridge 2-3 cm wide
+                float ds = min(fx, RW - fx);
+                float de = min(fy, PL - fy);
+                float sideS = fx < 0.5 * RW ? 1.0 : -1.0;
+                float sideE = fy < 0.5 * PL ? 1.0 : -1.0;
+                half gap = (half)max(FRDetailLine(ds, 0.0025, px), FRDetailLine(de, 0.0025, px));
+                albedo *= 1.0h - (half)_DetailA.w * 0.45h * gap;
+                cavity *= 1.0h - (half)_DetailA.w * 0.3h * gap;
+                const float W0 = 0.022;
+                float pk = 0.0012 * _DetailA.w * saturate(0.06 / px - 0.5);
+                float gS = pk * (-2.0 * ds / (W0 * W0)) * exp(-(ds * ds) / (W0 * W0));
+                float gE = pk * (-2.0 * de / (W0 * W0)) * exp(-(de * de) / (W0 * W0));
+                nTS.xy -= (half2)float2(gS * sideS, gE * sideE);
+                // buckles: up to two long soft ridges in a piece that let go, mostly across the roll, stopping short of the seams
+                UNITY_BRANCH
+                if (hp2.x < _DetailB.x)
+                {
+                    float2 q = float2(fx, fy);
+                    float edge = smoothstep(0.0, 0.35, min(ds, de));
+                    float2 grad = float2(0.0, 0.0);
+                    float lift = 0.0;
+                    for (uint k = 0u; k < 2u; k++)
+                    {
+                        float4 hk = FRDetailH8(uint3(roll, piece, 3u + k), 104u + k);
+                        float on = (k == 0u || hp2.y < 0.45) ? 1.0 : 0.0;
+                        float2 c = float2(RW * (0.15 + 0.7 * hk.x), PL * (0.12 + 0.76 * hk.y));
+                        float a = (hk.z - 0.5) * 0.9;
+                        float2 dir = float2(cos(a), sin(a));
+                        float2 nrm = float2(-dir.y, dir.x);
+                        float halfLen = 0.6 + 1.2 * hk.w;
+                        float w = 0.08 + 0.12 * frac(hk.x * 7.31);
+                        float hgt = _DetailB.y * 0.001 * (0.5 + 0.5 * frac(hk.y * 5.17)) * on;
+                        float s = dot(q - c, dir);
+                        float d = dot(q - c, nrm) + 0.10 * (FRDetailNoise1(s * 1.1 + hk.z * 17.0, roll * 31u + piece + k * 7u) - 0.5);
+                        float env = (1.0 - smoothstep(halfLen - 0.5, halfLen, abs(s))) * edge;
+                        float hh = hgt * env * exp(-(d * d) / (w * w));
+                        grad += (-2.0 * d / (w * w)) * hh * nrm;
+                        lift += hh;
+                    }
+                    nTS.xy -= (half2)(grad * saturate(0.3 / px - 0.5));
+                    // the crest's loops open up a little (lighter), as stretched pile does
+                    albedo *= 1.0h + (half)(3.5 * lift);
+                }
+                // spills and water marks: some 1.6 m cells (120 in 192 m) hold one, the atlas square 0.45-1.0 m, turned
+                const float SC = 1.6;
+                float2 sc = floor(m / SC);
+                uint3 sid = uint3(FRDetailWrap(sc.x, 120.0), FRDetailWrap(sc.y, 120.0), 4u);
+                float4 hs = FRDetailH8(sid, 106u);
+                UNITY_BRANCH
+                if (hs.x < _DetailB.z)
+                {
+                    float4 hs2 = FRDetailH8(sid, 107u);
+                    float S = 0.45 + 0.55 * hs2.x;
+                    float2 c = (sc + 0.5) * SC + (hs2.yz - 0.5) * (SC - S);
+                    float2 g = (m - c) / S;
+                    if (max(abs(g.x), abs(g.y)) < 0.5)
+                    {
+                        if (hs.y > 0.5) g = float2(-g.y, g.x);
+                        if (frac(hs.y * 2.0) > 0.5) g = -g;
+                        bool water = hs.w < 0.35;
+                        float2 auv = (g + 0.5) * 0.5 + (water ? float2(0.0, 0.5) : float2(hs.z < 0.5 ? 0.0 : 0.5, 0.0));
+                        half4 st = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, auv, FRDetailLod(px, S / 512.0));
+                        half k = (half)_DetailB.w;
+                        if (water)
+                        {
+                            albedo = lerp(albedo, albedo * half3(0.88h, 0.82h, 0.70h), st.r * k);
+                            albedo = lerp(albedo, albedo * half3(0.64h, 0.54h, 0.42h), st.g * k);
+                        }
+                        else
+                        {
+                            albedo = lerp(albedo, albedo * half3(0.62h, 0.50h, 0.38h), st.r * k);
+                            albedo *= 1.0h - 0.22h * st.g * k;
+                        }
+                        smoothness += 0.02h * st.g * k;
+                    }
+                }
+                // crushed where the floor is dirtiest and where people walked most (patches inside the piece): the loops flattened (less
+                // relief, less cavity), darker and a little glossier
+                half walked = (half)smoothstep(0.58, 0.85, FRDetailNoise2(pq * 0.32 + hp.zw * 17.0, roll * 7u + piece + 3u));
+                half cr = (half)_DetailC.y * saturate((half)smoothstep(0.55, 0.95, m1.g * 0.6 + m2.g * 0.4) + walked);
+                albedo *= 1.0h - 0.07h * cr;
+                nTS.xy *= 1.0h - 0.6h * cr;
+                smoothness += 0.03h * cr;
+                cavity = lerp(cavity, 1.0h, 0.4h * cr);
+            }
+
+            // ---- 9: painted concrete block (RunB_BlockUpper / Lower, Stair_Block, Stair_Band: 16 x 8 in units laid in running bond with
+            // 3/8 in tooled joints; the map holds 0.4 x 0.4 m, two courses, the odd course's joints at 0.2 m). Every block was cast and
+            // laid by itself and took the paint its own way: its face a hair proud or shy and tilted (it catches the lamps at its own
+            // angle), bowed a little, denser or more open (the sheen and the tone a touch off its neighbours); the mortar takes the
+            // paint flatter; the concave joints shade under the overhead lamps (the lower lip lit, the upper in shadow); touch-ups
+            // rolled over a few blocks at a time and cut to the joints, from another can; pinholes in the face (the detail map);
+            // shoes, carts and the mop at the foot (_WearMap: the wall's foot strip, Office_WallBase_W). The lamps are overhead, so
+            // the faces' set and bow and the map's own relief go into the tone as well, faded in with distance.
+            // A: block gloss variety, block tone variety, face tilt deg, face bow mm
+            // B: joint gloss drop, joint shade, touch-up share, touch-up gloss      C: foot marks, relief in the tone, unused, unused
+            void FRDetailBlock(float3 p, float3 nGeo, float2 m, float px, half3 nMap,
+                               inout half3 albedo, inout half smoothness, inout half cavity, inout half3 nTS)
+            {
+                const float BL = 0.4, BH = 0.2, JW = 0.0095;
+                uint wall = FRDetailWallId(p, nGeo);
+                float y = m.y;
+                float ci = floor(y / BH);
+                float fy = y - ci * BH;
+                float off = FRDetailWrap(ci, 2.0) == 1u ? 0.5 * BL : 0.0;
+                float u = m.x - off;
+                float bi = floor(u / BL);
+                float fx = u - bi * BL;
+                uint3 bid = uint3(wall, FRDetailWrap(ci, 1024.0), FRDetailWrap(bi, 480.0));
+                float4 h = FRDetailH8(bid, 111u);
+                float4 h2 = FRDetailH8(bid, 112u);
+                // the joints, filtered by the pixel's footprint: vertical between the blocks, horizontal between the courses
+                float dxj = min(fx, BL - fx);
+                float dyj = min(fy, BH - fy);
+                half jv = (half)FRDetailLine(dxj, JW, px);
+                half jh = (half)FRDetailLine(dyj, JW, px);
+                half joint = max(jv, jh);
+                half face = 1.0h - joint;
+                // the block's own take of the paint, its set and its bow (mostly proud, one in five shy)
+                smoothness += (half)(_DetailA.x * (h.x * 2.0 - 1.0)) * face;
+                albedo *= 1.0h + (half)(_DetailA.y * (h.y * 2.0 - 1.0)) * face;
+                float2 tl = (h.zw * 2.0 - 1.0) * tan(radians(_DetailA.z));
+                float bow = _DetailA.w * 0.001 * (0.35 + 0.65 * h2.x) * (h2.y < 0.8 ? 1.0 : -0.6);
+                float gx = fx / BL - 0.5, gy = fy / BH - 0.5;
+                float2 grad = bow * float2(-8.0 * gx * (1.0 - 4.0 * gy * gy) / BL, -8.0 * gy * (1.0 - 4.0 * gx * gx) / BH);
+                float2 sl = (tl - grad) * face;
+                nTS.xy += (half2)sl;
+                // the mortar takes the paint flatter; a concave joint's upper half faces down (in the lamps' shadow), its lower half up
+                smoothness -= (half)_DetailB.x * joint;
+                albedo *= 1.0h - (half)_DetailB.y * jh * (fy < 0.5 * BH ? 1.0h : -0.4h);
+                albedo *= 1.0h - (half)_DetailB.y * 0.3h * jv;
+                cavity *= 1.0h - 0.15h * joint;
+                // touch-ups: rolled over a patch of blocks and cut to the joints, from another can (patch cells of 5 blocks x 6 courses)
+                float pcx = floor(bi / 5.0), pcy = floor(ci / 6.0);
+                uint3 pid = uint3(wall, FRDetailWrap(pcx, 96.0), FRDetailWrap(pcy, 256.0) + 9u);
+                float4 ht = FRDetailH8(pid, 113u);
+                if (ht.x < _DetailB.z)
+                {
+                    float lx = bi - pcx * 5.0, ly = ci - pcy * 6.0;
+                    float x0 = floor(ht.y * 3.0), x1 = x0 + 1.0 + floor(ht.z * 2.5);
+                    float y0 = floor(ht.w * 3.0), y1 = y0 + 1.0 + floor(frac(ht.y * 7.0) * 3.0);
+                    if (lx >= x0 && lx <= x1 && ly >= y0 && ly <= y1)
+                    {
+                        float4 ht2 = FRDetailH8(pid, 114u);
+                        smoothness += (half)_DetailB.w * (ht2.x < 0.65 ? 1.0h : -0.8h);
+                        albedo *= 1.0h + (half)((ht2.y - 0.5) * 0.05);
+                    }
+                }
+                // the foot: black rubber from shoes, cart wheels and the mop bucket, grey scuffs (the foot strip, v 0 at the floor)
+                UNITY_BRANCH
+                if (y < 0.62 && _DetailC.x > 0.0)
+                {
+                    half4 w = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, float2(m.x / 4.8, y / 0.6), FRDetailLod(px, 4.8 / 2048.0));
+                    half black = saturate(w.r * (half)_DetailC.x);
+                    half grey = saturate(w.g * (half)_DetailC.x);
+                    albedo = lerp(albedo, albedo * 0.18h + 0.02h, black * 0.85h);
+                    smoothness += 0.06h * black - 0.08h * grey;
+                    albedo *= 1.0h + 0.06h * grey;
+                }
+                // the relief in the tone (the lamps are overhead: what faces up is lighter), faded in with distance: the face's set and
+                // bow, and half of the map's own relief (the joints' arrises, the face's texture)
+                half fadeT = (half)saturate(px / 0.003);
+                albedo *= 1.0h + (half)_DetailC.y * fadeT * ((half)sl.y + 0.5h * nMap.y);
+            }
+
+            // the hard floor's fine relief: the buffer's (or the trowel's) swirl in the detail map at _DetailKind.y metres (1024 px), at
+            // _DetailC.z (negative: the arcs burnished glossier, as a power trowel leaves them). The slopes fade under a pixel; the
+            // sheen does not: its mips average the scratches into the haze they make far off. (_DetailKind.z stays 0 on this kind,
+            // so FRDetailSurface's generic fine pass never reads this map as well.)
+            void FRDetailSwirl(float2 m, float px, inout half smoothness, inout half3 nTS)
+            {
+                float span = max(_DetailKind.y, 0.1);
+                float texel = span / 1024.0;
+                half4 d = SAMPLE_TEXTURE2D_LOD(_DetailMap, sampler_DetailMap, m / span, FRDetailLod(px, texel) + max(_DetailC.w, 0.0));
+                half fade = (half)saturate(1.5 - px / texel / 3.0) * (half)(_DetailC.w > 0.5 ? 0.0 : 1.0);
+                half k = (half)_DetailC.z;
+                nTS.xy += (d.rg - 0.5h) * (half)(1.0 / FR_DETAIL_K) * k * fade;
+                smoothness += (d.b - 0.5h) * 0.4h * k;
+            }
+
+            // ---- 10: hard floor under a wax or sealer coat (vinyl composition tile in 12 in squares: RunB_Floor / Wax / Lane / Accent,
+            // Station_Floor, Station_FloorBorder; sealed concrete without tiles: Stair_Fill). The slab under it is not flat (a slow wave
+            // over metres) and each tile sits on it at its own small angle, so a lamp's long reflection wavers and breaks at the
+            // joints; each tile its own batch (tone) and its own take of the wax (gloss); the joints hold old wax and dirt (a dark
+            // grid); the buffer's pad left arcs of fine scratches (FRDetailSwirl); heels, wheels and the mop bucket left black marks
+            // and grey scuffs (_WearMap = Rooms_FloorMarks_W: four 0.6 m fields, one in some 0.6 m cells, turned); the wax is worn dull
+            // where people walk (the lane) and built up yellow where the buffer never reached (the perimeter): per material.
+            // _DetailKind: kind, swirl span m, 0 (no generic fine pass), micro-shadowing
+            // A: tile gloss variety, tile tone variety, tile tilt deg, slab wave deg   B: joint dirt, marks share, marks strength, wear
+            // C: tile size m (0 = no tiles), build-up, swirl strength (0 = no fetch; negative = burnished), swirl mip bias (broad arcs)
+            void FRDetailHardFloor(float3 p, float2 m, float px, inout half3 albedo, inout half smoothness, inout half cavity, inout half3 nTS)
+            {
+                // the slab's slow wave: a slope field from four 1-D waves across each other, a metre or two long
+                float wv = tan(radians(_DetailA.w));
+                float2 wave = float2(FRDetailNoise1(dot(m, float2(0.8, 0.6)) * 0.55, 201u) + FRDetailNoise1(dot(m, float2(-0.28, 0.96)) * 0.9, 202u) - 1.0,
+                                     FRDetailNoise1(dot(m, float2(0.6, -0.8)) * 0.6, 203u) + FRDetailNoise1(dot(m, float2(0.96, 0.28)) * 1.1, 204u) - 1.0);
+                nTS.xy += (half2)(wave * wv);
+                float TS = _DetailC.x;
+                UNITY_BRANCH
+                if (TS > 0.01)
+                {
+                    float2 cf = floor(m / TS);
+                    float2 f = m / TS - cf;
+                    uint2 c = uint2(FRDetailWrap(cf.x, 640.0), FRDetailWrap(cf.y, 640.0));
+                    float4 h = FRDetailH8(uint3(c, 0u), 121u);
+                    float4 h2 = FRDetailH8(uint3(c, 1u), 122u);
+                    // the tile's batch and its take of the wax; its own set on the slab
+                    smoothness += (half)(_DetailA.x * (h.x * 2.0 - 1.0));
+                    albedo *= 1.0h + (half)(_DetailA.y * (h.y * 2.0 - 1.0));
+                    nTS.xy += (half2)((h.zw * 2.0 - 1.0) * tan(radians(_DetailA.z)));
+                    // the joints: old wax and dirt in them (a dark line 1-2 mm), the edges a hair duller
+                    float2 e = min(f, 1.0 - f) * TS;
+                    float de = min(e.x, e.y);
+                    half jl = (half)FRDetailLine(de, 0.0011 + 0.0012 * h2.x, px);
+                    albedo *= 1.0h - (half)_DetailB.x * 0.55h * jl;
+                    smoothness -= (half)_DetailB.x * 0.25h * jl;
+                    cavity *= 1.0h - 0.4h * jl;
+                }
+                // the buffer's swirl (the full tier only)
+                UNITY_BRANCH
+                if (abs(_DetailC.z) > 0.0 && _FR_Detail.y < 0.5)
+                    FRDetailSwirl(m, px, smoothness, nTS);
+                // worn dull where people walk (more in some stretches than others), built up yellow where the buffer never reached
+                half wear = (half)_DetailB.w * (half)(0.7 + 0.6 * (FRDetailNoise1(m.x * 0.35 + m.y * 0.21, 205u) - 0.5));
+                smoothness -= wear;
+                half bu = (half)_DetailC.y;
+                albedo *= lerp(half3(1.0h, 1.0h, 1.0h), half3(0.97h, 0.93h, 0.80h), bu);
+                smoothness += 0.05h * bu;
+                // heel and wheel marks, grey scuffs: one of the atlas's four 0.6 m fields in some 0.6 m cells, turned and mirrored
+                const float MC = 0.6;
+                float2 mc = floor(m / MC);
+                float4 hm = FRDetailH8(uint3(FRDetailWrap(mc.x, 320.0), FRDetailWrap(mc.y, 320.0), 7u), 123u);
+                UNITY_BRANCH
+                if (hm.x < _DetailB.y)
+                {
+                    float2 g = m / MC - mc - 0.5;
+                    if (hm.y > 0.5) g = float2(-g.y, g.x);
+                    if (frac(hm.y * 2.0) > 0.5) g = -g;
+                    if (hm.w > 0.5) g.x = -g.x;
+                    float2 auv = (g + 0.5) * 0.5 + float2(hm.z < 0.5 ? 0.0 : 0.5, frac(hm.z * 2.0) < 0.5 ? 0.0 : 0.5);
+                    half4 w = SAMPLE_TEXTURE2D_LOD(_WearMap, sampler_DetailMap, auv, FRDetailLod(px, MC / 512.0));
+                    half black = saturate(w.r * (half)_DetailB.z);
+                    half grey = saturate(w.g * (half)_DetailB.z);
+                    albedo = lerp(albedo, albedo * 0.16h + 0.015h, black * 0.85h);
+                    smoothness -= 0.10h * black + 0.18h * grey;
+                    albedo *= 1.0h + 0.10h * grey;
+                }
+            }
+
+            // One entry for every kind. m = the material's metres (world-planar or mesh), nMap = the map's own tangent normal (before
+            // any of this). px, the metres one pixel spans here, comes from the camera (the frustum's height over the screen's, at
+            // this distance, stretched by the view's slant), not from derivatives (FRDetailLod).
+            void FRDetailSurface(float3 p, float3 nGeo, float2 m, float3 t, float3 b, half4 m1, half4 m2,
+                                 inout half3 albedo, inout half smoothness, inout half cavity, inout half3 nTS, inout FRDetailOut o)
+            {
+                float3 toCam = _WorldSpaceCameraPos.xyz - p;
+                float dist = max(length(toCam), 1e-4);
+                float ndv = max(abs(dot(nGeo, toCam / dist)), 0.2);
+                float px = max(dist * 2.0 / (max(abs(UNITY_MATRIX_P._m11), 1e-3) * max(_ScreenParams.y, 1.0)) / ndv, 1e-5);
+                half3 nMap = nTS;
+                float kind = _DetailKind.x;
+                o.micro = _FR_Detail.y > 0.5 ? 0.0h : (half)_DetailKind.w;
+                UNITY_BRANCH
+                if (_DetailKind.z > 0.0 && _FR_Detail.y < 0.5)
+                    FRDetailFine(m, px, albedo, smoothness, nTS);
+                UNITY_BRANCH
+                if (kind < 1.5)
+                    FRDetailBoard(p, nGeo, m, px, nMap, albedo, smoothness, nTS);
+                else if (kind < 2.5)
+                    FRDetailCarpet(p, m, px, t, b, albedo, nTS);
+                else if (kind < 3.5)
+                    FRDetailCeiling(p, m, px, (half)smoothstep(0.35, 0.85, m1.b * 0.7 + m2.b * 0.5), albedo, nTS);
+                else if (kind < 4.5)
+                    FRDetailFabric(p, albedo, o);
+                else if (kind < 5.5)
+                    FRDetailLaminate(nGeo, m, px, albedo, smoothness);
+                else if (kind < 6.5)
+                    FRDetailSteel(p, m, px, albedo, smoothness);
+                else if (kind < 7.5)
+                    FRDetailCove(p, nGeo, m, px, albedo, smoothness, cavity, nTS);
+                else if (kind < 8.5)
+                    FRDetailBroadloom(p, m, px, t, b, m1, m2, albedo, smoothness, cavity, nTS);
+                else if (kind < 9.5)
+                    FRDetailBlock(p, nGeo, m, px, nMap, albedo, smoothness, cavity, nTS);
+                else if (kind < 10.5)
+                    FRDetailHardFloor(p, m, px, albedo, smoothness, cavity, nTS);
+                // a kind this text does not know adds no term (fail-safe for a material that lands before its kind)
+                albedo = max(albedo, 0.0h);
+            }
+
+            // micro-shadowing from the cavity (Brinck-Maximov, The Technical Art of Uncharted 4; CoD WWII's cone): a recess darkens
+            // under a grazing lamp and opens under a frontal one; k 0 = off
+            half FRDetailMicroShadow(half NdotL, half ao, half k)
+            {
+                half a = lerp(1.0h, ao, k);
+                return saturate(NdotL + 2.0h * a * a - 1.0h);
+            }
+
+            // UniversalFragmentPBR (URP 17.6 Lighting.hlsl) for the detail kinds: micro-shadowing on every light, and the cloth's sheen
+            // (a soft rim at grazing view, from every light and the ambient). These kinds are matte to satin (0.08-0.6): no specular
+            // AA here (it would need the normal's derivatives, see FRDetailLod).
+            half4 FRDetailPBR(InputData inputData, SurfaceData surfaceData, FRDetailOut o)
+            {
+                bool specularHighlightsOff = false;
+                BRDFData brdfData;
+                InitializeBRDFData(surfaceData, brdfData);
+            #if defined(DEBUG_DISPLAY)
+                half4 debugColor;
+                if (CanDebugOverrideOutputColor(inputData, surfaceData, brdfData, debugColor))
+                    return debugColor;
+            #endif
+                BRDFData brdfDataClearCoat = CreateClearCoatBRDFData(surfaceData, brdfData);
+                half4 shadowMask = CalculateShadowMask(inputData);
+                AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
+                uint meshRenderingLayers = GetMeshRenderingLayer();
+                Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+                MixRealtimeAndBakedGI(mainLight, inputData.normalWS, inputData.bakedGI);
+                LightingData lightingData = CreateLightingData(inputData, surfaceData);
+                lightingData.giColor = GlobalIllumination(brdfData, brdfDataClearCoat, surfaceData.clearCoatMask,
+                                                          inputData.bakedGI, aoFactor.indirectAmbientOcclusion, inputData.positionWS,
+                                                          inputData.normalWS, inputData.viewDirectionWS, inputData.normalizedScreenSpaceUV);
+                half ao = surfaceData.occlusion;
+                half nv = 1.0h - saturate(dot(inputData.normalWS, inputData.viewDirectionWS));
+                half3 sheenK = o.sheenColor * (o.sheen * nv * nv * nv);
+                half3 sheen = sheenK * inputData.bakedGI * aoFactor.indirectAmbientOcclusion * 0.6h;
+                half NdotL = 0.0h;
+            #ifdef _LIGHT_LAYERS
+                if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
+            #endif
+                {
+                    NdotL = saturate(dot(inputData.normalWS, mainLight.direction));
+                    lightingData.mainLightColor = LightingPhysicallyBased(brdfData, brdfDataClearCoat, mainLight,
+                                                                          inputData.normalWS, inputData.viewDirectionWS,
+                                                                          surfaceData.clearCoatMask, specularHighlightsOff)
+                                                * FRDetailMicroShadow(NdotL, ao, o.micro);
+                    sheen += sheenK * mainLight.color * (mainLight.distanceAttenuation * mainLight.shadowAttenuation * NdotL);
+                }
+            #if defined(_ADDITIONAL_LIGHTS)
+                uint pixelLightCount = GetAdditionalLightsCount();
+            #if USE_CLUSTER_LIGHT_LOOP
+                [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                {
+                    CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                    {
+                        NdotL = saturate(dot(inputData.normalWS, light.direction));
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff)
+                                                            * FRDetailMicroShadow(NdotL, ao, o.micro);
+                        sheen += sheenK * light.color * (light.distanceAttenuation * light.shadowAttenuation * NdotL);
+                    }
+                }
+            #endif
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                    {
+                        NdotL = saturate(dot(inputData.normalWS, light.direction));
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff)
+                                                            * FRDetailMicroShadow(NdotL, ao, o.micro);
+                        sheen += sheenK * light.color * (light.distanceAttenuation * light.shadowAttenuation * NdotL);
+                    }
+                LIGHT_LOOP_END
+            #endif
+            #if defined(_ADDITIONAL_LIGHTS_VERTEX)
+                lightingData.vertexLightingColor += inputData.vertexLighting * brdfData.diffuse;
+            #endif
+                lightingData.additionalLightsColor += sheen;
+            #if REAL_IS_HALF
+                return min(CalculateFinalColor(lightingData, surfaceData.alpha), HALF_MAX);
+            #else
+                return CalculateFinalColor(lightingData, surfaceData.alpha);
+            #endif
+            }
+
+            // the lighting for this pixel: the detail kinds' while the switch is on, URP's own otherwise (today, bit for bit)
+            half4 FRDetailLit(InputData inputData, SurfaceData surfaceData, FRDetailOut o)
+            {
+                UNITY_BRANCH
+                if (_FR_Detail.x < 0.5)
+                    return FRDetailPBR(inputData, surfaceData, o);
+                return UniversalFragmentPBR(inputData, surfaceData);
+            }
+            #define FR_DETAIL_LIT(i, s, d) FRDetailLit(i, s, d)
+        #else
+            #define FR_DETAIL_LIT(i, s, d) UniversalFragmentPBR(i, s)
+        #endif
 
         #if defined(_FR_PRINT)
             // ---------------------------------------------------------------- print layer
@@ -976,6 +2426,89 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if FR_DETAIL && defined(_FR_OWN_LIGHTS)
+            // FROwnLightsPBR with the detail kinds' micro-shadowing on every light it keeps (surface_detail stage Rooms: the Run! rooms'
+            // gated twins, FrontRoomsRunGate, and the stairwell's Stair_* materials). Today (_FR_Detail.x 1): FROwnLightsPBR itself.
+            half4 FRDetailOwnPBR(InputData inputData, SurfaceData surfaceData, FRDetailOut o)
+            {
+                bool specularHighlightsOff = false;
+                BRDFData brdfData;
+                InitializeBRDFData(surfaceData, brdfData);
+            #if defined(DEBUG_DISPLAY)
+                half4 debugColor;
+                if (CanDebugOverrideOutputColor(inputData, surfaceData, brdfData, debugColor))
+                    return debugColor;
+            #endif
+                BRDFData brdfDataClearCoat = CreateClearCoatBRDFData(surfaceData, brdfData);
+                half4 shadowMask = CalculateShadowMask(inputData);
+                AmbientOcclusionFactor aoFactor = CreateAmbientOcclusionFactor(inputData, surfaceData);
+                uint meshRenderingLayers = GetMeshRenderingLayer();
+                Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+                MixRealtimeAndBakedGI(mainLight, inputData.normalWS, inputData.bakedGI);
+                LightingData lightingData = CreateLightingData(inputData, surfaceData);
+                lightingData.giColor = GlobalIllumination(brdfData, brdfDataClearCoat, surfaceData.clearCoatMask,
+                                                          inputData.bakedGI, aoFactor.indirectAmbientOcclusion, inputData.positionWS,
+                                                          inputData.normalWS, inputData.viewDirectionWS, inputData.normalizedScreenSpaceUV);
+                half ao = surfaceData.occlusion;
+            #ifdef _LIGHT_LAYERS
+                if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
+            #endif
+                    lightingData.mainLightColor = LightingPhysicallyBased(brdfData, brdfDataClearCoat, mainLight,
+                                                                          inputData.normalWS, inputData.viewDirectionWS,
+                                                                          surfaceData.clearCoatMask, specularHighlightsOff)
+                                                * FRDetailMicroShadow(saturate(dot(inputData.normalWS, mainLight.direction)), ao, o.micro);
+            #if defined(_ADDITIONAL_LIGHTS)
+                uint pixelLightCount = GetAdditionalLightsCount();
+            #if USE_CLUSTER_LIGHT_LOOP
+                [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                {
+                    CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                      inputData.normalWS, inputData.viewDirectionWS,
+                                                                                      surfaceData.clearCoatMask, specularHighlightsOff)
+                                                            * FRDetailMicroShadow(saturate(dot(inputData.normalWS, light.direction)), ao, o.micro);
+                }
+            #endif
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    if (FROwnLight(lightIndex, inputData.positionWS))
+                    {
+                        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                            lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                          inputData.normalWS, inputData.viewDirectionWS,
+                                                                                          surfaceData.clearCoatMask, specularHighlightsOff)
+                                                                * FRDetailMicroShadow(saturate(dot(inputData.normalWS, light.direction)), ao, o.micro);
+                    }
+                LIGHT_LOOP_END
+            #endif
+            #if defined(_ADDITIONAL_LIGHTS_VERTEX)
+                lightingData.vertexLightingColor += inputData.vertexLighting * brdfData.diffuse;
+            #endif
+            #if REAL_IS_HALF
+                return min(CalculateFinalColor(lightingData, surfaceData.alpha), HALF_MAX);
+            #else
+                return CalculateFinalColor(lightingData, surfaceData.alpha);
+            #endif
+            }
+
+            half4 FRDetailOwnLit(InputData inputData, SurfaceData surfaceData, FRDetailOut o)
+            {
+                UNITY_BRANCH
+                if (_FR_Detail.x < 0.5)
+                    return FRDetailOwnPBR(inputData, surfaceData, o);
+                return FROwnLightsPBR(inputData, surfaceData);
+            }
+            #define FR_DETAIL_OWN_LIT(i, s, d) FRDetailOwnLit(i, s, d)
+        #else
+            #define FR_DETAIL_OWN_LIT(i, s, d) FROwnLightsPBR(i, s)
+        #endif
+
         #if defined(_FR_SHEEN)
             // The light this point receives (a white, rough, non-metal copy through URP's own loop: every light, its
             // shadow and the ambient), brightened at grazing view angles: twill catching light along its silhouette.
@@ -1040,11 +2573,20 @@ Shader "FrontRooms/Surface"
                 // relief also goes into the tone: the top of each thread or grain lighter, the underside darker.
                 albedo.rgb *= 1.0h + _EmbossShade * nTS.y;
             #elif defined(_FR_TILE)
-                // Pool tile: data maps, the material's colours, per-tile shade and set (FRTileSurface).
+                // Pool tile: data maps, the material's colours, per-tile shade and set (FRTileSurface); the real look while
+                // _FR_TileLook.x is on (FRTileSurfaceReal: FrontRoomsPoolTile.SetLook; off = today, bit-identical).
                 half4 albedo, mask;
                 half3 nTS;
                 half tilePorous;
-                FRTileSurface(uv, nGeo, albedo, mask, nTS, tilePorous);
+            #if FR_TILE_REAL
+                half tileLobes = 0.0h;
+                float tileLostVar = 0.0;
+                UNITY_BRANCH
+                if (_FR_TileLook.x > 0.5)
+                    FRTileSurfaceReal(uv, nGeo, input.positionWS, albedo, mask, nTS, tilePorous, tileLobes, tileLostVar);
+                else
+            #endif
+                    FRTileSurface(uv, nGeo, albedo, mask, nTS, tilePorous);
             #else
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
                 half4 mask = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
@@ -1071,6 +2613,14 @@ Shader "FrontRooms/Surface"
 
                 half smoothness = mask.r * _Smoothness;
                 half cavity = lerp(1.0h, mask.g, _OcclusionStrength);
+
+            #if FR_DETAIL
+                // Surface detail (FRDetailSurface); off (FrontRoomsSurfaceDetail.Today: _FR_Detail.x 1) every term keeps today's value.
+                FRDetailOut detail = (FRDetailOut)0;
+                UNITY_BRANCH
+                if (_FR_Detail.x < 0.5)
+                    FRDetailSurface(input.positionWS, nGeo, metres, t, b, m1, m2, albedo.rgb, smoothness, cavity, nTS, detail);
+            #endif
 
                 // Damp carpet: darker, flatter, glossier.
                 half wet = smoothstep(0.35h, 0.85h, m1.b * 0.7h + m2.b * 0.5h) * _WetStrength;
@@ -1181,6 +2731,12 @@ Shader "FrontRooms/Surface"
                 }
             #endif
                 inputData.tangentToWorld = tbn;
+            #if FR_TILE_REAL
+                // the real look's specular AA: the mapped normal's change per pixel (taken here, in uniform control flow)
+                float3 tileNdx = ddx(inputData.normalWS);
+                float3 tileNdy = ddy(inputData.normalWS);
+                float tileAddVar = 2.0 * _FR_TileAA.x * (dot(tileNdx, tileNdx) + dot(tileNdy, tileNdy)) + tileLostVar;
+            #endif
                 inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
             #if defined(MAIN_LIGHT_CALCULATE_SHADOWS)
                 inputData.shadowCoord = TransformWorldToShadowCoord(input.positionWS);
@@ -1227,7 +2783,7 @@ Shader "FrontRooms/Surface"
                 else
                     color = half4(FRHeightFog(MixFog(UniversalFragmentPBR(inputData, s).rgb, inputData.fogCoord), input.positionWS), 1);
             #elif defined(_FR_OWN_LIGHTS)
-                half4 color = FROwnLightsPBR(inputData, s);
+                half4 color = FR_DETAIL_OWN_LIT(inputData, s, detail);
                 color.rgb = MixFog(color.rgb, inputData.fogCoord);
                 color.rgb = FRHeightFog(color.rgb, input.positionWS);
             #else
@@ -1237,8 +2793,12 @@ Shader "FrontRooms/Surface"
                 UNITY_BRANCH
                 if (sub.under)
                     color = half4(FRSubmergedPBR(inputData, s, sub), 1.0h);
+            #if FR_TILE_REAL
+                else if (_FR_TileLook.x > 0.5)
+                    color = FRTilePBR(inputData, s, tileLobes, tileAddVar);
+            #endif
                 else
-                    color = UniversalFragmentPBR(inputData, s);
+                    color = FR_DETAIL_LIT(inputData, s, detail);
             #if defined(_FR_SHEEN)
                 if (!sub.under)
                     color.rgb += FRSheen(inputData, s, mask.a);

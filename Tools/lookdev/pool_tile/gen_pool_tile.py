@@ -18,6 +18,8 @@ For every set S, into <out>/Textures/ (all maps seamless along U; the square set
   PoolTile_<S>_S.png   mask, linear. R smoothness, G cavity, B dirt potential (grout, crazing lines, edges; shown only as
                        far as _TileWear), A chips (glaze knocked off to the body; shown only as far as _TileWear).
   ..._Phone.png        the same maps at half size (the phone tier: handheld and WebGL, FrontRoomsTrofferKit.PhoneTier).
+  PoolTile_Face_F.png  the real look's face map (70 section 13, make_face): the glaze's waviness and the grout's grain as slopes,
+                       no tile structure (each tile reads its own window of it); every material's _TileFaceMap.
 Each PNG gets a .meta (an existing .meta keeps its GUID). Materials Prop_PoolTile_<M>.mat and _Phone.mat go to <out>
 (same rule for GUIDs). <out>/Textures/pool_tile_manifest.json lists every file with size, sha1 and GUID.
 
@@ -515,6 +517,91 @@ def make_nosing(name="Nosing", wd=2048, seed=50):
 SETS = dict(Field=make_field, Mosaic=make_mosaic, Deck=make_deck, Cap=make_cap, Coping=make_coping, Nosing=make_nosing)
 
 
+# ------------------------------------------------------------------------------------------------ the real look's face map
+# 70_look_build.md section 13 (the tile's real look, Red 2026-11-04: "...我需要你参考Pools游戏 优化瓷砖，以及光打在瓷砖上的表现",
+# and "...重点在于法线贴图让瓷砖表现出一种不规则的感觉，中间凹四角突"). In the real look FrontRooms/Surface draws each tile's shape
+# itself (the dish, its corners, twist, tilt, a bowed edge, the cushion edge, the struck grout, lippage: analytic, from a hash
+# of the tile's cell, so no 8-bit steps and no repeat), and reads only the glaze's waviness from this map, through a window
+# of the map that each tile takes at random (so the waviness never repeats either and stops at the tile's edge, as each tile
+# is its own glaze). No tile structure in the map: R, G the glaze's slope (dh/du, dh/dv, radians) as 0.5 + slope * FACE_K
+# (+-2 degrees over the byte: a step is 0.016 degrees, 28 x finer than a normal map's 0.45), B, A the grout's grain slope as
+# 0.5 + slope * GRAIN_K (+-31 degrees), linear, wrapping, FACE_SPAN_MM square (the shader's FR_TILE_FACE_SPAN).
+# The waviness is GZ-C's (research/level_space/73_pool_glaze.md section 3.1, Red's pick of 16:4x): orange peel on 5.0 mm at
+# 3.0 um and a swell on 14 mm at 6 um (about 0.2 degrees rms per axis), band noise as noise().
+FACE_SPAN_MM = 600.0
+FACE_K = 0.5 / 0.035
+GRAIN_K = 0.5 / 0.6
+FACE_PEEL = (5.0, 0.0030)      # wavelength mm, std mm
+FACE_SWELL = (14.0, 0.0060)
+FACE_GRAIN = ((1.6, 0.030), (0.8, 0.012))
+
+
+def _slopes(h, mm):
+    du = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) / (2.0 * mm)
+    dv = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) / (2.0 * mm)
+    return du.astype(np.float32), dv.astype(np.float32)
+
+
+def make_face(out_tex, preview_dir, manifest, name="Face", wd=1024, seed=1500):
+    """The real look's face map (see above): desktop wd x wd, phone half; returns the GUIDs {"F": .., "F_Phone": ..}."""
+    sh = Sheet(name, wd, wd, FACE_SPAN_MM, FACE_SPAN_MM)
+    H, W = sh.H, sh.W
+    h = noise(H, W, sh.px(FACE_PEEL[0]), seed + 1) * FACE_PEEL[1] + noise(H, W, sh.px(FACE_SWELL[0]), seed + 2) * FACE_SWELL[1]
+    g = sum(noise(H, W, sh.px(lam), seed + 3 + i) * a for i, (lam, a) in enumerate(FACE_GRAIN))
+    hu, hv = _slopes(h, sh.mm_u)
+    gu, gv = _slopes(g, sh.mm_u)
+    rms_deg = float(np.degrees(np.sqrt(0.5 * (hu.var() + hv.var()))))
+    var_true = float(hu.var() + hv.var())
+    out = {}
+    stats = dict(rms_deg_per_axis=round(rms_deg, 4), var_rad2_true=var_true, span_mm=FACE_SPAN_MM, face_k=FACE_K, grain_k=GRAIN_K,
+                 peel=list(FACE_PEEL), swell=list(FACE_SWELL), grain=[list(x) for x in FACE_GRAIN])
+    for tier, k in (("", SS), ("_Phone", SS * 2)):
+        su, sv, tu, tv = down(hu, k), down(hv, k), down(gu, k), down(gv, k)
+        img = np.stack([0.5 + su * FACE_K, 0.5 + sv * FACE_K, 0.5 + tu * GRAIN_K, 0.5 + tv * GRAIN_K], axis=-1)
+        clip = float(np.mean((img < 0.0) | (img > 1.0)))
+        # the slope variance each mip of this map still holds (box mips, as the importer's), for the shader's roughness
+        lost = []
+        a_u, a_v = su.copy(), sv.copy()
+        while True:
+            lost.append(round(var_true - float(a_u.var() + a_v.var()), 9))
+            if a_u.shape[0] < 2:
+                break
+            a_u, a_v = down(a_u, 2), down(a_v, 2)
+        stats["lost_var_by_mip" + tier] = lost
+        stats["clipped_share" + tier] = clip
+        fn = "PoolTile_%s_F%s.png" % (name, tier)
+        path = os.path.join(out_tex, fn)
+        Image.fromarray(np.ascontiguousarray(to8(np.clip(img, 0.0, 1.0))[::-1]), "RGBA").save(path, optimize=False, compress_level=9)
+        guid = write_face_meta(path, img.shape[0])
+        manifest["textures"][fn] = dict(size=[img.shape[1], img.shape[0]], sha1=sha1(path), guid=guid, bytes=os.path.getsize(path),
+                                        linear=True, normal=False, alpha=True, wrapV="repeat", face=True)
+        out["F" + tier] = guid
+        if preview_dir and tier == "":
+            os.makedirs(preview_dir, exist_ok=True)
+            vis = np.clip(0.5 + (img[..., :2] - 0.5) * 6.0, 0, 1)
+            Image.fromarray(to8(np.concatenate([vis, np.full(vis.shape[:2] + (1,), 0.5, np.float32)], -1))[::-1], "RGB").save(
+                os.path.join(preview_dir, "preview_%s_slopes.png" % name))
+    manifest["sets"][name] = stats
+    print("face %s: glaze slope rms %.3f deg per axis, true variance %.3g rad2; lost by mip (desktop) %s" % (
+        name, rms_deg, var_true, stats["lost_var_by_mip"][:7]), flush=True)
+    return out
+
+
+def write_face_meta(png, size):
+    """The face map is data (linear, not a normal map: the shader decodes it). Standalone BC7, iOS ASTC 4x4 (both keep the
+    smooth slopes); WebGL never samples it (the real look is compiled out there), so its WebGL copy is 32 px."""
+    meta = png + ".meta"
+    guid = existing_guid(meta)
+    fmt = dict(DefaultTexturePlatform=(-1, 2, 0, size), Standalone=(25, 1, 1, size), Android=(-1, 1, 0, size),
+               VisionOS=(-1, 1, 0, size), WebGL=(-1, 1, 1, 32), iOS=(48, 1, 1, size))
+    plats = ""
+    for t in ("DefaultTexturePlatform", "Standalone", "Android", "VisionOS", "WebGL", "iOS"):
+        f, comp, over, sz = fmt[t]
+        plats += PLATFORM_OVR.format(target=t, size=(4096 if t == "DefaultTexturePlatform" else max(sz, 32)), fmt=f, comp=comp, over=over)
+    write_text(meta, META_TEX.format(guid=guid, size=max(size, 32), wrapv=0, alpha=1, ttype=0, platforms=plats))
+    return guid
+
+
 # ------------------------------------------------------------------------------------------------ output
 META_TEX = """fileFormatVersion: 2
 guid: {guid}
@@ -624,6 +711,21 @@ PLATFORM = """  - serializedVersion: 4
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+"""
+
+PLATFORM_OVR = """  - serializedVersion: 4
+    buildTarget: {target}
+    maxTextureSize: {size}
+    resizeAlgorithm: 0
+    textureFormat: {fmt}
+    textureCompression: {comp}
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: {over}
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 1
 """
 
 
@@ -769,6 +871,10 @@ Material:
         m_Texture: {{fileID: 2800000, guid: {s}, type: 3}}
         m_Scale: {{x: 1, y: 1}}
         m_Offset: {{x: 0, y: 0}}
+    - _TileFaceMap:
+        m_Texture: {{fileID: 2800000, guid: {f}, type: 3}}
+        m_Scale: {{x: 1, y: 1}}
+        m_Offset: {{x: 0, y: 0}}
     m_Ints: []
     m_Floats:
 {floats}    m_Colors:
@@ -815,10 +921,36 @@ MATERIALS = [
     ("Riser", "Field", True, WHITE, WHITE_EDGE, 0.0, (1.2, 1.2), (8, 8), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
     ("Nosing", "Nosing", True, NAVY, NAVY_EDGE, 0.0, (1.2, 0.075), (8, 1), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.0),
     ("Coping", "Coping", True, WHITE, WHITE_EDGE, 1.0, (1.2, 0.34), (4, 1), (0.08, 0.08), (0.05, 0.08, 1.0, 0.75), (0.6, 0.012, 0.004, 0.0), 0.0),
+    # mesh-UV twins of the field and the course (UVs in metres, joints running on across corners and arches): the structures
+    # scene's tile and band (FrontRoomsPoolMaterials.Tile / Band; contract W/apply/pool_tile_real_contract)
+    ("FieldMesh", "Field", True, WHITE, WHITE_EDGE, 0.0, (1.2, 1.2), (8, 8), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
+    ("CourseMesh", "Field", True, AQUA, AQUA_EDGE, 0.0, (1.2, 1.2), (8, 8), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
 ]
 
+# The real look's per-kind values (70_look_build.md section 13; read only while FrontRoomsPoolTile.Look is not Today):
+#   _TileForm  (shape scale: the dish, its corners, twist, tilt, a bowed edge; joint jitter mm: each tile's offset in its joint;
+#               two-lobe glaze 1 / one lobe 0 (unglazed); gloss variety: each tile's glaze gloss +-)
+#   _TileForm2 (peel variety: each tile's waviness strength +-; the face's smoothness in the mask (the glaze lobes' 1.0);
+#               lippage sd mm against the neighbours, on the cushion; face source 1 = the analytic cushion and grout with the
+#               face map's waviness, 0 = the set's own normal map, its trims and ribs kept)
+#   _TileEdge  (joint mm, cushion radius mm, face corner radius mm, grout depth at the cushion's foot mm): the set's geometry as
+#               the maps draw it (make_field etc.), so the analytic cushion meets the maps' tone and gloss bands
+FIELD_REAL = ((1.0, 0.5, 1.0, 0.03), (0.4, 0.935, 0.12, 1.0), (3.0, 1.8, 1.2, 0.7))
+MOSAIC_REAL = ((0.25, 0.3, 0.0, 0.04), (0.0, 0.47, 0.05, 0.0), (2.0, 1.0, 1.0, 0.6))
+DECK_REAL = ((0.5, 0.6, 0.0, 0.03), (0.0, 0.31, 0.15, 0.0), (4.0, 1.4, 1.5, 1.0))
+REAL = dict(
+    Field=FIELD_REAL, FieldClub=FIELD_REAL, Course=FIELD_REAL, CourseClub=FIELD_REAL, Riser=FIELD_REAL, FieldMesh=FIELD_REAL,
+    CourseMesh=FIELD_REAL,
+    Cap=((0.6, 0.5, 1.0, 0.03), (0.0, 0.935, 0.08, 0.0), (3.0, 1.8, 1.2, 0.7)),
+    Mosaic=MOSAIC_REAL, MosaicClub=MOSAIC_REAL, Lane=MOSAIC_REAL,
+    Deck=DECK_REAL, Tread=DECK_REAL,
+    # profiles (mesh UV across the unrolled profile): no shape, no jitter (they would bend the ribs and the nose), glazed
+    Nosing=((0.0, 0.0, 1.0, 0.02), (0.0, 0.90, 0.0, 0.0), (3.0, 1.6, 0.0, 0.7)),
+    Coping=((0.0, 0.0, 1.0, 0.02), (0.0, 0.92, 0.0, 0.0), (3.0, 2.0, 0.0, 0.8)),
+)
 
-def write_materials(out_dir, guids, manifest):
+
+def write_materials(out_dir, guids, face, manifest):
     for (name, setname, mesh_uv, base, edge, wear, size, grid, macro, wet, wline, shade) in MATERIALS:
         for tier in ("", "_Phone"):
             mname = "Prop_PoolTile_%s%s" % (name, tier)
@@ -831,17 +963,18 @@ def write_materials(out_dir, guids, manifest):
             colors = [("_BaseColor", base + (1,)), ("_EmissionColor", (0, 0, 0, 1)), ("_StainColor", (0.42, 0.31, 0.16, 1)),
                       ("_TileSize", (size[0], size[1], 0, 0)), ("_TileGrid", (grid[0], grid[1], 0.18, 0.010 if wear > 0.5 else 0.004)),
                       ("_GroutColor", GROUT + (1,)), ("_EdgeColor", edge + (1,)), ("_DirtColor", DIRT + (1,)),
-                      ("_TileLot", (0.025 if wear > 0.5 else 0.0, 0.035, 0, 0)), ("_WetBand", wet), ("_WaterLine", wline)]
+                      ("_TileLot", (0.025 if wear > 0.5 else 0.0, 0.035, 0, 0)), ("_WetBand", wet), ("_WaterLine", wline),
+                      ("_TileForm", REAL[name][0]), ("_TileForm2", REAL[name][1]), ("_TileEdge", REAL[name][2])]
             fl = "".join("    - %s: %s\n" % (k, ("%g" % v)) for k, v in floats)
             co = "".join("    - %s: {r: %g, g: %g, b: %g, a: %g}\n" % ((k,) + tuple(v)) for k, v in colors)
             g = guids[setname]
             path = os.path.join(out_dir, mname + ".mat")
             write_text(path, MAT.format(name=mname, shader=SHADER_GUID, keywords=kw, d=g["D" + tier], n=g["N" + tier],
-                                        s=g["S" + tier], macro=MACRO_GUID, floats=fl, colors=co))
+                                        s=g["S" + tier], f=face["F" + tier], macro=MACRO_GUID, floats=fl, colors=co))
             mg = existing_guid(path + ".meta")
             write_text(path + ".meta", META_MAT.format(guid=mg))
             manifest["materials"][mname] = dict(guid=mg, set=setname, tier=tier or "desktop", mesh_uv=mesh_uv, wear=wear,
-                                                base=base, edge=edge, tile_size=size, grid=grid, sha1=sha1(path))
+                                                base=base, edge=edge, tile_size=size, grid=grid, real=REAL[name], sha1=sha1(path))
 
 
 def folder_meta(path):
@@ -856,7 +989,7 @@ def main():
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.abspath(os.path.join(here, "..", "..", ".."))
     ap.add_argument("--out", default=os.path.join(root, "Assets", "Resources", "Surfaces", "Pool"))
-    ap.add_argument("--sets", default=",".join(SETS.keys()))
+    ap.add_argument("--sets", default=",".join(list(SETS.keys()) + ["Face"]))
     ap.add_argument("--preview", default="")
     ap.add_argument("--no-materials", action="store_true")
     a = ap.parse_args()
@@ -872,7 +1005,11 @@ def main():
         for k in manifest:
             manifest[k].update(old.get(k, {}))
     guids = {}
+    face = None
     for name in a.sets.split(","):
+        if name == "Face":
+            face = make_face(out_tex, a.preview, manifest)
+            continue
         sh = SETS[name]()
         guids[name] = finish(sh, out_tex, a.preview, manifest)
         print("set %-7s %dx%d desktop, %dx%d phone" % (name, sh.wd, sh.hd, sh.wd // 2, sh.hd // 2), flush=True)
@@ -888,11 +1025,20 @@ def main():
                         gs[key + tier] = e["guid"]
             if len(gs) == 6:
                 guids[name] = gs
+    if face is None:
+        # the face map not regenerated this run keeps its GUIDs from the manifest
+        face = {}
+        for tier in ("", "_Phone"):
+            e = manifest["textures"].get("PoolTile_Face_F%s.png" % tier)
+            if e:
+                face["F" + tier] = e["guid"]
     if not a.no_materials:
         missing = [m[1] for m in MATERIALS if m[1] not in guids]
         if missing:
             raise SystemExit("cannot write materials, sets missing: %s" % sorted(set(missing)))
-        write_materials(a.out, guids, manifest)
+        if len(face) != 2:
+            raise SystemExit("cannot write materials, the face map is missing (run with --sets Face)")
+        write_materials(a.out, guids, face, manifest)
     write_text(man_path, json.dumps(manifest, indent=1, sort_keys=True) + "\n")
     folder_meta(os.path.join(a.out))
     print("done: %d textures, %d materials -> %s" % (len(manifest["textures"]), len(manifest["materials"]), a.out))

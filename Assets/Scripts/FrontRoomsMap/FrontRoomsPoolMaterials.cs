@@ -89,14 +89,23 @@ public static class FrontRoomsPoolMaterials
     // ---------------------------------------------------------------- the tile
 
     /// <summary>
-    /// The pool tile: a new material on Prop_CeramicGlaze's shader (FrontRooms/Surface) with the LS_PoolTile150 set,
-    /// _BaseColor (0.93, 0.95, 0.96), smoothness 0.85, a 1.5 m sheet, mesh UVs in metres (_MeshUV, keyword _FR_MESH_UV):
-    /// every mesh drawn with it carries UVs in metres, so joints run on across corners and round arches.
+    /// The pool tile: the game's tile, 游戏视觉's Prop_PoolTile_FieldMesh (FrontRooms/Surface with _FR_TILE, mesh UVs in metres,
+    /// porcelain white (0.93, 0.95, 0.96), 150 mm with 3 mm grey-green joints; research/bathroom_rooms/70_look_build.md
+    /// sections 4 and 13), so the structures scene and the map draw one tile (research/level_space/73_pool_glaze.md section 7).
+    /// Its look (Today, GZ-C, the dish) is FrontRoomsPoolTile.SetLook's, a global switch: no rebuild. Without that material (a
+    /// build before pool_tile_real) the runtime clone of Prop_CeramicGlaze on the LS_PoolTile150 set stands in, as before.
     /// </summary>
-    public static Material Tile => TileVariant("tile", TileColor, TileSmoothness);
+    public static Material Tile { get { var m = FrontRoomsPoolTile.Get("FieldMesh"); return m != null ? m : LsTile; } }
 
-    /// <summary>The aqua course (a tile of the same set in the band colour; DESIGN section 6, palette F1).</summary>
-    public static Material Band => TileVariant("band", new Color(.40f, .76f, .77f), TileSmoothness);
+    /// <summary>The aqua course: Prop_PoolTile_CourseMesh (the same tile in the course's aqua .40/.76/.77, Red's D8 T1), or the
+    /// LS set's band as before.</summary>
+    public static Material Band { get { var m = FrontRoomsPoolTile.Get("CourseMesh"); return m != null ? m : LsBand; } }
+
+    /// <summary>The structures scene's own tile on the LS_PoolTile150 set (what Tile was before pool_tile_real).</summary>
+    public static Material LsTile => TileVariant("tile", TileColor, TileSmoothness);
+
+    /// <summary>The LS set's aqua course (DESIGN section 6, palette F1).</summary>
+    public static Material LsBand => TileVariant("band", new Color(.40f, .76f, .77f), TileSmoothness);
 
     static Material TileVariant(string key, Color color, float smoothness)
     {

@@ -86,6 +86,7 @@ public sealed class FrontRoomsStructures : MonoBehaviour
 
         FrontRoomsPoolMaterials.SetTileSet(tileBase, tileNormal, tileMask);
         Glaze();
+        // The pool tile opens on the game's default (FrontRoomsPoolTile.DefaultLook / DefaultDishTone: Red's DishDeep at 1.5, 11-05).
         look = FrontRoomsStructuresLook.Create(transform);
         CreateDistricts();
         hub = districts[0];
@@ -96,14 +97,43 @@ public sealed class FrontRoomsStructures : MonoBehaviour
     }
 
     /// <summary>
-    /// GZ-A's material (73 section 3.2) on the shared pool tile and aqua band, in place, right after SetTileSet and before any
-    /// district builds: every renderer built later takes these very materials (a later SetTileSet would remake them under the
-    /// built renderers, which is why the option sheet's rig set its values in place too). In this scene every pool tile
-    /// shares them, the pool route's (P) as well; the game never hands in the LS set, so its pool keeps today's values.
+    /// GZ-A's material (73 section 3.2) on the LS set's tile and aqua band (the structures scene's own runtime copies), in place,
+    /// right after SetTileSet and before any district builds. Since pool_tile_real (11-05 04:23) FrontRoomsPoolMaterials.Tile and
+    /// .Band hand out 游戏视觉's Prop_PoolTile_FieldMesh / CourseMesh, which are Resources assets carrying Red's GZ-C glaze:
+    /// they are never written here (a value set on an asset material in the Editor is saved into its .mat), so GZ-A's values
+    /// reach only the LS fallback, LsTile / LsBand.
     /// </summary>
+    /// <summary>DishTone's steps on - / =: 游戏视觉's 0 / 0.5 / 1 / 1.5, then 2 and 3 beyond their tuned range, to try.</summary>
+    static readonly float[] ToneSteps = { 0f, .5f, 1f, 1.5f, 2f, 3f };
+
+    /// <summary>The dish tone's step on the flash.</summary>
+    static string ToneName(float tone)
+    {
+        if (tone < .25f) return "0（只靠灯影，没有明暗）";
+        if (tone < .75f) return "0.5（很淡）";
+        if (tone < 1.25f) return "1（默认，近看轻轻的凹）";
+        if (tone < 1.75f) return "1.5（近看明显的凹）";
+        if (tone < 2.5f) return "2（超出游戏视觉调好的范围，只供尝试）";
+        return "3（超出游戏视觉调好的范围，只供尝试）";
+    }
+
+    /// <summary>The pool tile look's name on the flash (Chinese, as Red reads it).</summary>
+    static string TileLookName(FrontRoomsPoolTile.PoolTileLook look)
+    {
+        switch (look)
+        {
+            case FrontRoomsPoolTile.PoolTileLook.Today: return "今天的砖（换釉面之前）";
+            case FrontRoomsPoolTile.PoolTileLook.GZC: return "GZ-C：你选的釉面，砖面按选项图";
+            case FrontRoomsPoolTile.PoolTileLook.DishShallow: return "浅凹";
+            case FrontRoomsPoolTile.PoolTileLook.DishMedium: return "中凹（默认：中间凹四角突）";
+            case FrontRoomsPoolTile.PoolTileLook.DishDeep: return "深凹";
+        }
+        return look.ToString();
+    }
+
     static void Glaze()
     {
-        foreach (var m in new[] { FrontRoomsPoolMaterials.Tile, FrontRoomsPoolMaterials.Band })
+        foreach (var m in new[] { FrontRoomsPoolMaterials.LsTile, FrontRoomsPoolMaterials.LsBand })
         {
             if (m == null) continue;
             if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", GlazeSmoothness);
@@ -339,6 +369,40 @@ public sealed class FrontRoomsStructures : MonoBehaviour
             look.SetZoneLook(!look.ZoneLookOn);
             Flash(look.ZoneFlash(current));
         }
+        // ` (Shift+` back): 游戏视觉's pool tile looks (pool_tile_real, 11-05 04:22; Red picked GZ-C on 11-04 and asked them for
+        // "中间凹四角突"): Today, GZ-C as given, dish shallow / medium (their default) / deep. The current district's probes are
+        // rendered again so the glaze reflects the room in the new look.
+        if (k.backquoteKey.wasPressedThisFrame)
+        {
+            var tile = FrontRoomsPoolTile.Look;
+            var back = k.leftShiftKey.isPressed || k.rightShiftKey.isPressed;
+            FrontRoomsPoolTile.SetLook(back ? (FrontRoomsPoolTile.PoolTileLook)(((int)tile + 4) % 5) : FrontRoomsPoolTile.NextLook(tile));
+            if (current != null && current.Root != null) look.RerenderProbes(current.Root);
+            Flash("泳池瓷砖（`）：" + TileLookName(FrontRoomsPoolTile.Look) + "  ·  凹凸明暗 " + ToneName(FrontRoomsPoolTile.DishTone));
+        }
+        // - / =: how strongly the dish also shows in the tile's own shading (游戏视觉's DishTone, pool_tile_tone 11-05 08:04; a
+        // global, no material is edited): 0 (the dish in the normal only), 0.5, 1 (their recommended default), 1.5, and 2 / 3,
+        // beyond their tuned range, only for Red to try (Red 11-05: "把每一种都做到那个structure scene里我自己尝试").
+        if (k.minusKey.wasPressedThisFrame || k.equalsKey.wasPressedThisFrame)
+        {
+            var steps = ToneSteps;
+            var at = 0;
+            for (var i = 0; i < steps.Length; i++) if (Mathf.Abs(steps[i] - FrontRoomsPoolTile.DishTone) < Mathf.Abs(steps[at] - FrontRoomsPoolTile.DishTone)) at = i;
+            at = Mathf.Clamp(at + (k.equalsKey.wasPressedThisFrame ? 1 : -1), 0, steps.Length - 1);
+            FrontRoomsPoolTile.DishTone = steps[at];
+            if (current != null && current.Root != null) look.RerenderProbes(current.Root);
+            Flash("瓷砖凹凸明暗（- =）：" + ToneName(FrontRoomsPoolTile.DishTone) + "  ·  " + TileLookName(FrontRoomsPoolTile.Look));
+        }
+        // \ : 游戏视觉's surface detail (office_surface_detail and the Level 0, Run!, station and stair packages, 11-05 04:22, the
+        // default since) or today's surfaces, bit for bit (FrontRoomsSurfaceDetail.Today, a global: every _FR_DETAIL material at
+        // once). Red 11-05 ~13:3x asked for a key to compare the office's new carpet tiles, walls and ceiling with the old ("加一个").
+        if (k.backslashKey.wasPressedThisFrame)
+        {
+            FrontRoomsSurfaceDetail.Today = !FrontRoomsSurfaceDetail.Today;
+            Flash(FrontRoomsSurfaceDetail.Today
+                ? "表面（\\）：旧的（11 月 5 日以前）  ·  办公室、Level 0、Run!、候车区、楼梯一起换"
+                : "表面（\\）：新的（游戏视觉 11 月 5 日做的，游戏里的默认）");
+        }
         Key[] districtKeys = { Key.L, Key.N, Key.T, Key.F, Key.V, Key.B, Key.Y, Key.O, Key.H };
         foreach (var key in districtKeys)
         {
@@ -389,6 +453,10 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         }
         FrontRoomsStructuresSigns.Pads.Clear();
         FrontRoomsPoolMaterials.Release();
+        // The look keys write globals that would stay in the Editor after Play: back to the game's defaults.
+        if (FrontRoomsSurfaceDetail.Today) FrontRoomsSurfaceDetail.Today = false;
+        FrontRoomsPoolTile.SetLook(FrontRoomsPoolTile.DefaultLook);
+        FrontRoomsPoolTile.DishTone = FrontRoomsPoolTile.DefaultDishTone;
         if (profileCopy != null) Destroy(profileCopy);
         if (Cursor.lockState == CursorLockMode.Locked) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
     }
@@ -431,7 +499,7 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         if (flash != null && Time.time < flashUntil) Text(new Rect(cx - 380f, cy + 112f, 760f, 48f), flash, centreStyle, Accent);
 
         Text(new Rect(24f, Screen.height - 30f, 1800f, 20f),
-            "点击：看  ·  WASD 走  ·  左 Ctrl 跑  ·  Shift 慢走  ·  E 使用  ·  1-6 区域  ·  7 泳池路线  ·  8 模组件  ·  9 SP7  ·  0 大厅  ·  R 回到站点  ·  [ ] 换站点  ·  L 灯  ·  Q 泳池外观  ·  V 变体  ·  C Relay 体型  ·  M 尺寸  ·  G 说明  ·  Esc 鼠标",
+            "点击：看  ·  WASD 走  ·  左 Ctrl 跑  ·  Shift 慢走  ·  E 使用  ·  1-6 区域  ·  7 泳池路线  ·  8 模组件  ·  9 SP7  ·  0 大厅  ·  R 回到站点  ·  [ ] 换站点  ·  L 灯  ·  Q 泳池外观  ·  ` 瓷砖  ·  - = 凹凸明暗  ·  \\ 表面新旧  ·  V 变体  ·  C Relay 体型  ·  M 尺寸  ·  G 说明  ·  Esc 鼠标",
             smallStyle, Muted);
 
         if (!guide) return;

@@ -1,0 +1,26 @@
+L0_E_today.jpg | TODAY EYE 1.62 M | label 294 px + data 374 px in cell 1916 px | FITS
+L0_E_new.jpg | NEW REC EYE 1.62 M | label 334 px + data 374 px in cell 1916 px | FITS
+L0_F_today.jpg | TODAY CARPET EYE | label 288 px + data 408 px in cell 1916 px | FITS
+L0_F_new.jpg | NEW REC CARPET EYE | label 328 px + data 408 px in cell 1916 px | FITS
+L0_FG_today.jpg | TODAY CARPET GRAZING | label 361 px + data 391 px in cell 1916 px | FITS
+L0_FG_new.jpg | NEW REC CARPET GRAZING | label 401 px + data 391 px in cell 1916 px | FITS
+L0_FH_today.jpg | TODAY CARPET 0.5 M | label 330 px + data 68 px in cell 1916 px | FITS
+L0_FH_new.jpg | NEW REC CARPET 0.5 M | label 370 px + data 68 px in cell 1916 px | FITS
+L0_C_today.jpg | TODAY CEILING EYE | label 285 px + data 374 px in cell 1916 px | FITS
+L0_C_new.jpg | NEW REC CEILING EYE | label 325 px + data 374 px in cell 1916 px | FITS
+L0_CH_today.jpg | TODAY CEILING 0.55 M | label 353 px + data 357 px in cell 1916 px | FITS
+L0_CH_new.jpg | NEW REC CEILING 0.55 M | label 393 px + data 357 px in cell 1916 px | FITS
+L0_J_today.jpg | TODAY WALL FOOT | label 276 px + data 357 px in cell 1916 px | FITS
+L0_J_new.jpg | NEW REC WALL FOOT | label 316 px + data 357 px in cell 1916 px | FITS
+Tall_E_today.jpg | TODAY TALL HALL EYE | label 328 px + data 391 px in cell 1916 px | FITS
+Tall_E_new.jpg | NEW REC TALL HALL EYE | label 368 px + data 391 px in cell 1916 px | FITS
+Low_E_today.jpg | TODAY LOW ROOM EYE | label 333 px + data 408 px in cell 1916 px | FITS
+Low_E_new.jpg | NEW REC LOW ROOM EYE | label 373 px + data 408 px in cell 1916 px | FITS
+L0_P_today.jpg | TODAY PHONE EYE | label 271 px + data 357 px in cell 1916 px | FITS
+L0_P_new.jpg | NEW REC PHONE EYE | label 311 px + data 357 px in cell 1916 px | FITS
+L0_PF_today.jpg | TODAY PHONE CARPET | label 333 px + data 357 px in cell 1916 px | FITS
+L0_PF_new.jpg | NEW REC PHONE CARPET | label 373 px + data 357 px in cell 1916 px | FITS
+image | TODAY COST | label 184 px + data 289 px in cell 1916 px | FITS
+image | NEW REC COST | label 224 px + data 289 px in cell 1916 px | FITS
+sheet sheets/rs_level0.jpg 3840x13828
+ALL LABELS FIT
