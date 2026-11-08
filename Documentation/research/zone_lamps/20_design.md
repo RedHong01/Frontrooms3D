@@ -23,8 +23,8 @@ harness, kits L06 / L07 / L09 and its trim sheet are reused, not redone). Level 
 | Zone | Recommended | Why in one line | Main cost | Renders |
 |---|---|---|---|---|
 | **Office bullpen** | **O-A · parabolic louver 2'×2', 9 cells, U-tubes** (lamp study L07) | GSA's 1991 "standard fixture" for computer floors (O12), sits in the Office's 2'×2' print with no half-tile fault, and the change of fixture is the refit cue between Level 0 and the Office | a ceiling hole per lamp (关卡设计's ceiling mesh), lamp state reads only within about one cell | `renders/office/L07/` |
-| **Pool hall, overhead** | **P1-A · indirect metal-halide wall boxes** (new kit `ZL_HIDUP`) | the period device that makes the Poolrooms' "light from nowhere" with real 1990 hardware (PL18, PL19): the ceiling is the lamp, the water carries no fixture images | a pool rig (8 boxes, 16 lights), a bright-ceiling patch on each box's lens renderer | `renders/pool/P1A/` (STAND-IN ROOM) |
-| **Pool, water side** | **P2-A · wet-niche 300 W at 3 m centres** (new kit `ZL_NICHE`) + **caustics** | the 1975 school guide's exact rule (PL08), one lamp per map cell on each long wall; caustics on the basin floor (from the overheads) and on the ceiling (from the underwater lamps) | 12 lights on the basin's own rendering layer, 2 additive caustic materials, 0 extra lights for caustics | `renders/pool/P2A/` |
+| **Pool hall, overhead** | **P1-A · indirect metal-halide wall boxes** (new kit `ZL_HIDUP`) | the period device that makes the Poolrooms' "light from nowhere" with real 1990 hardware (PL18, PL19): the ceiling is the lamp, the water carries no fixture images | a pool rig (8 boxes, 16 lights), a bright-ceiling patch on each box's lens renderer | sheet `sheets/zone_lamps_pool_overhead.jpg` (renders quarantined 11-07) |
+| **Pool, water side** | **P2-A · wet-niche 300 W at 3 m centres** (new kit `ZL_NICHE`) + **caustics** | the 1975 school guide's exact rule (PL08), one lamp per map cell on each long wall; caustics on the basin floor (from the overheads) and on the ceiling (from the underwater lamps) | 12 lights on the basin's own rendering layer, 2 additive caustic materials, 0 extra lights for caustics | sheet `sheets/zone_lamps_pool_water.jpg` (renders quarantined 11-07) |
 | **Run! armed** | **R-A · keep the landed wrap, revised** (R1 emission variants + R2 face 1.8) | the Run! B kit is already period-right (R01, R02); what was off was the too-clean map and a face dimmer than L03 | 4 small materials + 4 emission maps (2.7 MiB), one constant | `renders/run/RA/` |
 | **Run! tripped** | **T-A · keep the landed twin-heads** | dated 1984/1986 (R04, R05), decided by Red 10-21; T-C is the period answer kept for sanctuaries | none | `renders/run/TA/` |
 | **Tall hall (5.4 m)** | **T-A · recessed metal-halide downlight**, 10 in specular cone, coated lamp (new kit `ZL_MHDL`) | HID above 16 ft is GSA 1991 practice (Z01); recessed MH downlights with specular cones are in 1981 and 1988 catalogs (Z03, Z04); the hall reads as dark holes over bright floor | a round hole per lamp, an HID mode map (no stutter; a dip puts it out) | `renders/tall/MHDL/` |
@@ -94,7 +94,7 @@ It is a rectangle on the grid, tiled, with water, and copies no creator's compos
 genre side (water crossing doorways, tile everywhere) the real L8 takes is still Red's D1 / D8 (bathroom_rooms
 20_for_red).
 
-### 3.1 Overhead (renders `renders/pool/P1A|P1B|P1C/`, water layer fixed at P2-A)
+### 3.1 Overhead (sheet `sheets/zone_lamps_pool_overhead.jpg`, water layer fixed at P2-A; renders quarantined 11-07)
 
 | | P1-A · Indirect MH wall boxes ★ (`ZL_HIDUP`) | P1-B · Enclosed MH low-bays (`ZL_MHLB`) | P1-C · Sealed 8 ft fluorescent rows (`ZL_VT8`) |
 |---|---|---|---|
@@ -111,7 +111,7 @@ genre side (water crossing doorways, tile everywhere) the real L8 takes is still
 whole ceiling out for a long restrike while the battery twin-heads carry the hall (10_pool §7, PL11, PL16). It is the
 one real 1990 device that makes the genre's sourceless light, and its ageing (dark bays) is a free variation.
 
-### 3.2 Water side: underwater lamps and caustics (renders `renders/pool/P2A|P2B|P2C/`, overheads at P1-A)
+### 3.2 Water side: underwater lamps and caustics (sheet `sheets/zone_lamps_pool_water.jpg`, overheads at P1-A; renders quarantined 11-07)
 
 | | P2-A · Wet niche 300 W, 3 m centres ★ (`ZL_NICHE`) | P2-B · Wet niche 500 W, 6 m + deep end + steps | P2-C · Dry-niche ports (`ZL_PORT`) |
 |---|---|---|---|
@@ -203,16 +203,17 @@ rows showed: a flat black pod and a flat cream disc.
   because the game's basin walls have no niche hole.
 - LampKit gains Family.WallBox and Family.Niche, plus BuildWallBox, which fits the patch to 2.4 times the throw; the
   patch peaks 0.3 of the way out.
-- Renders: `renders/pool/{P1A,P1W,P2A,P2N}_1106`, the 10-31 options and the production kits in the same room, cameras and
-  lights.
-- Sheet: `sheets/zone_lamps_pool_production.jpg` (PARTIAL).
+- Renders: the 10-31 options and the production kits in the same room, cameras and lights (`renders/pool/*_1106`), moved to the
+  consolidation quarantine 11-07 at Red's word ("未来图2泳池组不在推进和细化，开始删除并且节省空间"). Kept: one 0.35 m frame per kit in
+  `renders/pool_kits/` (wallbox, niche, niche_small) and Red's image 2, `renders/pool/P1A_1106/p1_eye.jpg`.
+- Sheet: `sheets/zone_lamps_pool_production.jpg` (PARTIAL): the side-by-side comparison of the options and the kits.
 - Next: the contracts above, then scene-4 captures against light_design/10_research.md "Checks per step".
 - **12:43, map contract:** `zone_lamps_pool_contract` LANDED by 总控 for 关卡设计 (MapWorld.Pool.cs b8c71557):
   - wall boxes one per clear bay;
   - niches on the basin walls, registered with the water.
 - **12:46, `zone_lamps_pool_kits2` (LampKit 0ef785ae, inert):**
   - Props/Lamps/NicheSmall: ZL_NICHE_S, the 6.5 in niche (ring 165 mm, tris 180 / 2064 · 538 · 72 / 84), asked for by the
-    game visual line's structures P10. Check render: `renders/pool/P2S_1106`.
+    game visual line's structures P10. Check render: `renders/pool_kits/niche_small_hero_035m.jpg`.
   - The metal-halide drive (s.6).
 - **12:51, `zone_lamps_pool_hid_contract` LANDED by 总控 (MapWorld.cs 8a1612df, MapWorld.Pool.cs 24dd1f7a):**
   - the wall boxes become metal-halide lamps in the map's tick;

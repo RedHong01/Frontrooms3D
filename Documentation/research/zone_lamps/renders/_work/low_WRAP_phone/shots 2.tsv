@@ -1,3 +1,0 @@
-zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
-low	WRAP	phone	p1_eye_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	289.500,1.650,-10.500	0.000,90.000,0.000	91	low WRAP | eye 1.62 level, 14 zone lamps in view, depth 19.420
-low	WRAP	phone	p3_three_quarter_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	291.400,1.650,-11.300	348.432,225.000,0.000	91	low WRAP | phone tier, three-quarter

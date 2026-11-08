@@ -98,3 +98,22 @@ replace the primitives without changing encounter design.
 - [The Backrooms Wiki — collaborative fiction overview](https://backrooms-wiki.wikidot.com/)
 - [Associated Press review of the Backrooms film and its 2019 source image](https://apnews.com/article/c7481eab3d0f46436730e88a6ccb9b89)
 - [PC Gamer discussion of Backrooms and liminal architecture](https://www.pcgamer.com/movies-tv/backrooms-and-exit-8-make-the-perfect-double-feature-for-videogame-adjacent-horror-movies/)
+
+## Merged from <作业根>/Documentation/LEVELS_AND_ENTITIES.md (2026-11-07)
+
+That older copy (10-01 13:54) held this section, which this file never had. Its other differences (room sequence numbers 0-4, "three room roots") are superseded by this file.
+
+### Visual implementation pass: Office and Run
+
+The room pass follows the public Backrooms references while keeping the prototype's geometry original and WebGL-friendly. The Backrooms Wiki describes Level 4 as an almost empty office building with blacked-out windows, sparse entities, water coolers, vending machines and Almond Water supplies. The generated Office therefore uses a low-density 90s office language: three desk islands with CRT silhouettes, paper stacks, low modular partitions, one filing cabinet and one water cooler. The centre lane remains clear for the threshold read and the Relay encounter. One partition and the right desk are offset by a few centimetres as the room's readable 20% wrongness.
+
+The Run profile is an original FrontRooms transition inspired by the Wiki's Level 2 utility tunnels. That reference emphasizes tight concrete or brick corridors, chalky wall surfaces, arbitrary machinery, pipes, trolleys, boxes, scraps, exposed wiring and fluorescent lights that can fail in a series. Run now keeps a neutral stained wall and dirty floor as the base, then adds side-lane utility cabinets, a service cart, an overhead cable tray and red emergency markers near the next door. The main fixture stays warm-neutral; red is a localized warning source so the player can still read the room geometry and choose to keep moving.
+
+The implementation uses only Unity primitives, small procedural materials and the existing pooled room roots. No film frame, character model or texture is copied. The source of truth is `FrontRooms3DGame.BuildWorld` for the serialized Editor preview and `FrontRoomsRoomStream.BuildProfileProps` for recycled title/gameplay rooms. Recycled rooms toggle the complete profile variant and rebind the wall/floor/ceiling materials, so Office and Run remain consistent after the infinite stream wraps.
+
+Research references:
+
+- [The Backrooms Wiki — Level 4, “Abandoned Office”](https://backrooms-wiki.wikidot.com/level-4)
+- [The Backrooms Wiki — Level 2, maintenance tunnels and lighting failures](https://backrooms-wiki.wikidot.com/level-2)
+- [Associated Press review of the Backrooms film](https://apnews.com/article/c7481eab3d0f46436730e88a6ccb9b89)
+- [SURFACE — A24 Backrooms production design](https://www.surfacemag.com/articles/a24-backrooms-production-design/)

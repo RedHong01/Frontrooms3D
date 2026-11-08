@@ -1,6 +1,0 @@
-zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
-tall	HIDUP	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	220.500,1.650,-37.500	0.000,90.000,0.000	91	tall HIDUP | eye 1.62 level, 35 zone lamps in view, depth 25.420
-tall	HIDUP	desktop	p2_under.jpg	1920x1080	High/High | handheld False | fov 40.000	220.500,1.650,-37.200	270.000,270.000,0.000	91	tall HIDUP | under lamp (73, -77), straight up
-tall	HIDUP	desktop	p3_three_quarter.jpg	1920x1080	High/High | handheld False | fov 50.000	222.100,1.650,-35.720	321.459,206.565,0.000	91	tall HIDUP | an uplight and its ceiling patch from 4.075 m
-tall	HIDUP	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	220.660,3.300,-38.500	317.069,209.746,0.000	91	tall HIDUP | about 0.5 m from an uplight, LOD0
-tall	HIDUP	desktop	p5_off.jpg	1920x1080	High/High | handheld False | fov 50.000	222.100,1.650,-35.720	321.459,206.565,0.000	91	tall HIDUP | (the uplight's own lamp state is not driven by the map in this study: static)

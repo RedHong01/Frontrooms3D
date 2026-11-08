@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
-/// The handheld URP pair (FrontRooms_URP_Handheld + FrontRooms_URP_Handheld_Renderer) is the desktop pair with three SSAO
-/// values of its own (source Depth, After Opaque, Medium samples), its own renderer list (no water mirror renderer: phones
+/// The handheld URP pair (FrontRooms_URP_Handheld + FrontRooms_URP_Handheld_Renderer) is the desktop pair with five SSAO
+/// values of its own (source Depth, After Opaque, Medium samples, intensity 0.8 and radius 0.12 m: option C of the phone SSAO contract, Red 2026-11-07, so recesses such as the louvre of a back-of-house door are not crushed), its own renderer list (no water mirror renderer: phones
 /// use the probe), the opaque copy at half resolution (the desktop's full-resolution copy serves its water refraction) and
 /// STP as its upscaler, which is there so the iPhone build keeps STP's compute shaders (tech_art 20_ranked_changes 3.13; FrontRoomsQuality picks the pair on iPhone and iPad
 /// and writes Auto at full resolution). Sync copies every other value from the desktop pair, so a change to the desktop
@@ -25,7 +25,7 @@ public static class FrontRoomsHandheldPipeline
     static readonly string[] KeepPipeline = { "m_Name", "m_RendererDataList", "m_RendererData", "m_OpaqueDownsampling", "m_UpscalingFilter" };
     static readonly string[] KeepRenderer = { "m_Name", "m_RendererFeatures", "m_RendererFeatureMap" };
     static readonly string[] KeepFeature = { "m_Name" };
-    static readonly string[] KeepSsao = { "m_Settings.Source", "m_Settings.AfterOpaque", "m_Settings.Samples" };
+    static readonly string[] KeepSsao = { "m_Settings.Source", "m_Settings.AfterOpaque", "m_Settings.Samples", "m_Settings.Intensity", "m_Settings.Radius" };
 
     [MenuItem("FrontRooms/Rendering/Sync handheld URP asset")]
     public static void SyncMenu()
@@ -69,7 +69,7 @@ public static class FrontRoomsHandheldPipeline
             QualitySettings.renderPipeline = handheld;
         }
         QualitySettings.SetQualityLevel(active, false);
-        Debug.Log("[FrontRoomsHandheldPipeline] " + PipelinePath + " follows " + DesktopPath + " (SSAO source, After Opaque, samples, renderers, opaque copy size and the STP upscaler kept).");
+        Debug.Log("[FrontRoomsHandheldPipeline] " + PipelinePath + " follows " + DesktopPath + " (SSAO source, After Opaque, samples, intensity, radius, renderers, opaque copy size and the STP upscaler kept).");
     }
 
     // Copies each serialized value of `from` into `to`, except the paths in `keep` (a nested path such as m_Settings.Source

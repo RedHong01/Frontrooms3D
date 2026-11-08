@@ -1,6 +1,0 @@
-zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
-tall	MHDL	desktop	p1_eye.jpg	1920x1080	High/High | handheld False | fov 76.000	220.500,1.650,-37.500	0.000,90.000,0.000	91	tall MHDL | eye 1.62 level, 35 zone lamps in view, depth 25.420
-tall	MHDL	desktop	p2_under.jpg	1920x1080	High/High | handheld False | fov 40.000	220.500,1.650,-37.200	270.000,270.000,0.000	91	tall MHDL | under lamp (73, -77), straight up
-tall	MHDL	desktop	p3_three_quarter.jpg	1920x1080	High/High | handheld False | fov 30.000	223.100,1.650,-39.800	315.211,315.000,0.000	91	tall MHDL | lamp (73, -77) from 5.252 m
-tall	MHDL	desktop	p4_hero_035m.jpg	1920x1080	High/High | handheld False | fov 60.000	220.665,5.173,-37.689	315.811,318.813,0.000	91	tall MHDL | 0.35 m from the fixture, LOD0
-tall	MHDL	desktop	p5_off.jpg	1920x1080	High/High | handheld False | fov 30.000	223.100,1.650,-39.800	315.211,315.000,0.000	90	tall MHDL | lamp (73, -77) Off (ModuleLamp.Off)

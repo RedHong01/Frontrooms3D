@@ -1,2 +1,0 @@
-zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
-run	TC	phone	p1_eye_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	-3000.000,1.620,3000.700	0.286,0.000,0.000	3	run TC (tripped) | entrance, eye 1.62, down the corridor

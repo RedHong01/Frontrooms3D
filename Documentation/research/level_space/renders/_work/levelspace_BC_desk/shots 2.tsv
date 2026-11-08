@@ -1,5 +1,0 @@
-zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
-levelspace	BC	desktop	b1_corridor_to_tall.jpg	1920x1080	High/High | handheld False | fov 76.000	6202.600,1.620,-5989.800	341.302,195.351,0.000	20	Level 0: from inside, the 2.2 m doorway you came through sits at the foot of a wall 14.5 m high, the same paper all the way up
-levelspace	BC	desktop	b2_tall_looking_up.jpg	1920x1080	High/High | handheld False | fov 75.000	6196.400,1.620,-5997.200	313.242,37.926,0.000	20	Level 0: inside, the grid ceiling and its troffers sit five storeys up
-levelspace	BC	desktop	c1_well_approach.jpg	1920x1080	High/High | handheld False | fov 76.000	6400.000,1.620,-6005.300	67.496,0.000,0.000	107	The well: a 9 x 9 m void through every floor; turquoise light from the pool at the bottom, 30 m down
-levelspace	BC	desktop	c2_well_down.jpg	1920x1080	High/High | handheld False | fov 74.000	6400.000,1.620,-6004.200	81.900,0.634,0.640	107	The well from the Level 0 rail: six floors below, then the pool

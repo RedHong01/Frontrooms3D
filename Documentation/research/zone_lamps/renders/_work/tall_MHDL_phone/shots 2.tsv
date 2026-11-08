@@ -1,3 +1,0 @@
-zone	option	tier	file	res	quality	cam_pos	cam_euler	lights_30m	note
-tall	MHDL	phone	p1_eye_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	220.500,1.650,-34.500	0.000,90.000,0.000	91	tall MHDL | eye 1.62 level, 37 zone lamps in view, depth 25.485
-tall	MHDL	phone	p3_three_quarter_phone.jpg	2622x1206	Medium/Medium | handheld True | fov 92.341	223.100,1.650,-36.800	316.006,315.000,0.000	91	tall MHDL | phone tier, three-quarter
