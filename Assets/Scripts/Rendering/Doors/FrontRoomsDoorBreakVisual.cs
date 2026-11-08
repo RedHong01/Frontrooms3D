@@ -60,7 +60,11 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
     public const string FamilyName = "Kit_DoorLeafBreak_Veneer_DA";
     /// <summary>The break families, each a base kit whose sidecar lists the intact leaves it hangs on (hangsOn). P3 adds
     /// Kit_DoorLeafBreak_Steel_DA (Steel_DA, SteelLite_DA); a family whose kit is missing is skipped.</summary>
-    public static readonly string[] FamilyNames = { FamilyName, "Kit_DoorLeafBreak_Steel_DA", "Kit_DoorLeafBreak_SteelLite_DA", "Kit_DoorLeafBreak_Ward_DA", "Kit_DoorLeafBreak_SteelRun_DA" };
+    /// The zone doors' Map stage (2026-11-06, research/double_doors/30_build.md Part M) appends the bases of the map members' new
+    /// leaves: the back-of-house louvre leaves and the pool's FRP leaves, each the intact leaf minus the steel window, sharing the
+    /// steel family's cassettes (Tools/Blender/frontrooms_kit/door_break_map_bases.py).
+    public static readonly string[] FamilyNames = { FamilyName, "Kit_DoorLeafBreak_Steel_DA", "Kit_DoorLeafBreak_SteelLite_DA", "Kit_DoorLeafBreak_Ward_DA", "Kit_DoorLeafBreak_SteelRun_DA",
+        "Kit_DoorLeafBreak_SteelLouvre_DA", "Kit_DoorLeafBreak_FRP_DA" };
     /// <summary>P4: the frames' strike-zone families (sidecar hangsOn = the intact frame kits).</summary>
     public static readonly string[] FrameFamilyNames = { "Kit_DoorFrameBreak_Wood_DA", "Kit_DoorFrameBreak_Steel_DA" };
     public enum FinalPose { A, B }
@@ -150,7 +154,9 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
     [Serializable] public sealed class MotifInfo { public int index; public int seed; public string model; public string debris; public float[] ys; public float[] zs; public StageInfo[] stageInfo; public DebrisRest[] debrisRest; public float bowY, bowZ, dishY, dishZ, crushPk; public float[] peel; }
     [Serializable] public sealed class Palette { public string name; public float[] linear; }
     [Serializable] public sealed class Window { public float[] z; public float[] y; }
-    [Serializable] public sealed class Family { public string name; public string material; public string[] hangsOn; public Anchor[] anchors; public MotifInfo[] motifs; public string[] throws; public Palette[] palettes; public Window window; }
+    // slotSwaps (Map stage, 2026-11-06): a family's own surfaces in its break parts and the VFX's core solid (the FRP leaves' foam core
+    // for the steel cassettes' kraft honeycomb); absent on every landed family (JsonUtility leaves it null).
+    [Serializable] public sealed class Family { public string name; public string material; public string[] hangsOn; public Anchor[] anchors; public MotifInfo[] motifs; public string[] throws; public Palette[] palettes; public Window window; public SlotSwap[] slotSwaps; }
     [Serializable] public sealed class FrameStage { public string name; public int from; }
     [Serializable] public sealed class SlotSwap { public string kit; public string from; public string to; }
     [Serializable] public sealed class FrameFamily { public string name; public string material; public string[] hangsOn; public FrameStage[] stages; public SlotSwap[] slotSwaps; }
@@ -304,10 +310,12 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         if (hasRec) { BurstSign = rec.burst < 0 ? -1f : 1f; BlowsTaken = (rec.flags >> 8) & 15; }
         var row = rig.Acting == DoorActing.Double ? FrontRoomsInteractableKit.DoorRowFor(rig.Member, rig.LockedModel) : null;
         frameKitName = row != null ? row.frame : null;
+        rowFrameFrom = row != null ? row.frameFrom : null;
+        rowFrameTo = row != null ? row.frameTo : null;
         frameFam = FrameFamilyFor(frameKitName);
         woodFrame = frameKitName != null && frameKitName.IndexOf("Wood", StringComparison.Ordinal) >= 0;
     }
-    string frameKitName;
+    string frameKitName, rowFrameFrom, rowFrameTo;
     FrameFamily frameFam;
     bool woodFrame = true;
 
@@ -358,14 +366,24 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
                 if (m == null) continue;
                 var n = m.name;
                 if (n.StartsWith("Door_Veneer", StringComparison.Ordinal) || n.StartsWith("Prop_Wood", StringComparison.Ordinal)
-                    || n.StartsWith("Door_Enamel", StringComparison.Ordinal) || n.StartsWith("Painted_Metal", StringComparison.Ordinal)) { if (faceMat == null) faceMat = m; }
+                    || n.StartsWith("Door_Enamel", StringComparison.Ordinal) || n.StartsWith("Painted_Metal", StringComparison.Ordinal)
+                    || IsMapMemberFace(n)) { if (faceMat == null) faceMat = m; }
                 else if (n.Contains("Stainless") || n.Contains("Aluminium")) { if (plateMat == null) plateMat = m; }
                 else if (n.Contains("Brass") || n.Contains("Chrome")) { if (hardwareMat == null) hardwareMat = m; }
             }
         if (faceMat == null) faceMat = FrontRoomsSurfaces.TryGet(Steel ? "Door_Enamel" : "Door_Veneer");
         // the Ward leaf is the wood leaf with stainless plates; a steel leaf's kick plates are its own (body) parts
         Ward = !Steel && plateMat != null;
+        // Map stage: a steel-family leaf whose hardware is all stainless (the pool's FRP leaves, 630) gives its cassettes' chrome
+        // parts the stainless too; every landed steel leaf has satin chrome, so this never runs for them
+        if (hardwareMat == null && Steel && plateMat != null) hardwareMat = plateMat;
     }
+
+    /// <summary>The Map stage's leaf faces (zone doors, 2026-11-06): the back-of-house grey, the pool's gel coats, the stair putty
+    /// (the Office faces start with Door_Veneer / Door_Enamel already).</summary>
+    static bool IsMapMemberFace(string n) =>
+        n.StartsWith("Door_BackOfHouse", StringComparison.Ordinal) || n.StartsWith("Door_PoolGelcoat", StringComparison.Ordinal)
+        || n.StartsWith("Stair_DoorSteel", StringComparison.Ordinal);
 
     static Material StageMaterial(Material face, int stage)
     {
@@ -388,10 +406,20 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
                 if (n == "Door_Veneer" || n == "Door_Enamel") want = stage >= 0 ? StageMaterial(faceMat, stage) : faceMat;
                 else if ((n == "Prop_Brass" || n == "Prop_Chrome") && hardwareMat != null) want = hardwareMat;
                 else if (n == "Prop_Aluminium" && plateMat != null) want = plateMat;
+                else if (fam != null && fam.slotSwaps != null) want = FamilySwap(n);
                 if (want != null && want != mats[i]) { mats[i] = want; changed = true; }
             }
             if (changed) r.sharedMaterials = mats;
         }
+    }
+
+    /// <summary>The family's own surface for a break part's slot (Map stage: the FRP family's Door_CoreSteel -> Door_CoreFoam), or null.</summary>
+    Material FamilySwap(string slot)
+    {
+        if (fam == null || fam.slotSwaps == null) return null;
+        foreach (var sw in fam.slotSwaps)
+            if (sw != null && sw.from == slot && (string.IsNullOrEmpty(sw.kit) || sw.kit == "*" || sw.kit == LeafKit)) return FrontRoomsSurfaces.TryGet(sw.to);
+        return null;
     }
 
     static int CasStage(string part)
@@ -507,6 +535,9 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         var seed = FrontRoomsDoorBreakRecords.Hash(door.edge, 3) ^ (uint)(map != null ? map.Seed : 0);
         vfx = new FrontRoomsDoorBreakVfx(Rig.Frame, BurstSign, seed, Phone ? FrontRoomsDoorBreakVfx.Tier.Phone : FrontRoomsDoorBreakVfx.Tier.Desktop, hardFloor,
             faceMat, motif.ys, motif.zs, PaletteArray(), throwData, Steel, woodFrame);
+        // Map stage: a family's own core (the FRP leaves' foam) in the VFX's core solids too
+        var core = FamilySwap(Steel ? "Door_CoreSteel" : "Door_CoreWood");
+        if (core != null) vfx.OverrideSolid(FrontRoomsDoorBreakVfx.MatCore, core);
         if (Steel)
         {
             vfx.SteelContact = new Vector3(-.022f, motif.dishY > 0f ? motif.dishY : 1.08f, motif.dishZ > 0f ? motif.dishZ : .745f);
@@ -527,6 +558,10 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
         {
             float[] src = null;
             if (fam != null && fam.palettes != null) foreach (var p in fam.palettes) if (p != null && p.name == order[k]) src = p.linear;
+            // Map stage: a palette named after the intact face's material wins the face slot (the back-of-house grey over its grey
+            // primer, the pool's aqua gel coat); no landed family carries one
+            if (k == 2 && faceMat != null && fam != null && fam.palettes != null)
+                foreach (var p in fam.palettes) if (p != null && p.name == faceMat.name) src = p.linear;
             if (src == null && order[k] == "steelframe" && fam != null && fam.palettes != null) foreach (var p in fam.palettes) if (p != null && p.name == "frame") src = p.linear;
             for (var i = 0; i < 24; i++) outp[k * 24 + i] = src != null && i < src.Length ? src[i] : .3f;
         }
@@ -1431,12 +1466,19 @@ public sealed class FrontRoomsDoorBreakVisual : MonoBehaviour
     // aluminium variant's sleeve
     void FrameSurfaces(Renderer r)
     {
-        if (frameFam.slotSwaps == null) return;
+        if (frameFam.slotSwaps == null && rowFrameTo == null) return;
         var mats = r.sharedMaterials;
         var changed = false;
         for (var i = 0; i < mats.Length; i++)
         {
             if (mats[i] == null) continue;
+            // Map stage: the row's frame finish (the stair row's #5F5A50 on the steel sleeve), as DressDoor gave the intact frame
+            if (rowFrameTo != null && mats[i].name == rowFrameFrom)
+            {
+                var rm = FrontRoomsSurfaces.TryGet(rowFrameTo);
+                if (rm != null) { mats[i] = rm; changed = true; continue; }
+            }
+            if (frameFam.slotSwaps == null) continue;
             foreach (var sw in frameFam.slotSwaps)
             {
                 if (sw == null || mats[i].name != sw.from) continue;

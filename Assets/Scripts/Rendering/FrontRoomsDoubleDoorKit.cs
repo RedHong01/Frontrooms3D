@@ -26,7 +26,7 @@ using UnityEngine;
 /// (the stream's doorway colliders), the 10-29 pulls' and kick plates' collider boxes, kept collider-only (the plates
 /// themselves have none).
 /// </summary>
-public static class FrontRoomsDoubleDoorKit
+public static partial class FrontRoomsDoubleDoorKit
 {
     public const float Width = 2.4f;
     /// <summary>The head lining's soffit (FrontRoomsRoomStream: RoomHeight 2.9 - its 0.24 m header).</summary>

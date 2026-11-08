@@ -97,3 +97,19 @@ def build(kit):
     kit.no_collider()
     kit.tag("interactable", "door", "closer", "office")
     dc.lod_meta(kit, sys.modules[__name__])
+
+
+def lod2_proxy(kit):
+    """LOD2 (5-20 m): the shoe as one box on its plate; 12 tris."""
+    import interact_door_common as dcx
+    dcx.obox(kit, PAINT, lo=(-0.015, -0.02, -0.02), hi=(0.015, 0.02, 0.011), name="shoe lod2")
+
+
+# Stairwell doors (2026-11-06): the LOD2 add-on wraps make_lod1 after this module's own wrappers (lod1_keep_all), so it is
+# registered after the original build() has run.
+_build_lod01 = build
+
+
+def build(kit):
+    _build_lod01(kit)
+    __import__("door_stair_common").add_lod2(kit, lod2_proxy, "LOD0 / LOD1 as before; LOD2 hand-built (stairwell doors 2026-11-06, door_stair_common.add_lod2: P-1); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76")

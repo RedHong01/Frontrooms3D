@@ -1,0 +1,23 @@
+structures_today.jpg 1919x2909, 21 tiles, 3 columns
+HUB_s00 | HUB · SPAWN | L0 surfaces, L03 kit x40; signs outside fiction
+SP1_s00 | SP1 · ARRIVAL | flume: runtime Lit sweep; cube lamps
+SP1_s02 | SP1 · CATCH POOL | plain copings, Lit nosing; no caustics
+SP2_s00 | SP2 · ARRIVAL F3 | L0 plate; glass = Glass_Window copy
+SP2_s06 | SP2 · B4-L SPIRAL | faceted treads, Lit nosing
+SP2_s08 | SP2 · UP THE WELL | rims are flat section boxes
+SP3_s00 | SP3 · ARRIVAL | the game's L0 build, L03 kit
+SP3_s01 | SP3 · V1 CUT | Lit lining; box rails
+SP4_s00 | SP4 · ARRIVAL | L03 cool for O-C; glow-quad laylight
+SP4_s01 | SP4 · PIT | 1.35 / 2.16 m panels greybox; no desks
+SP5_s00 | SP5 · ARRIVAL | R-B strip kit; box services, bumper
+SP5_s03 | SP5 · DOCK | 16 stand-in boxes; Lit concrete
+SP6_s00 | SP6 · ARRIVAL | 26 of 30 materials runtime; 0 kits
+SP6_s03 | SP6 · WEIRS | falls = flat transparent quads
+SP6_s07 | SP6 · DOME HALL | dome A (L: B); glow-disc oculus
+KIT_s00 | KIT · LEVEL 0 | guards, caps, sections greybox
+KIT_s04 | KIT · TILE | Lit nosing; wall-box stand-ins
+SP7_s00 | SP7 · ARRIVAL | L0 vestibule; the game's tell
+SP7_s06 | SP7 · HEAD 4 M | dress from kits; head machine greybox
+P_s01 | P · FRONT DESK | map pool stand-in kits (24 kinds)
+P_s14 | P · DARK ZONE | temporary caustic web
+ALL LABELS FIT

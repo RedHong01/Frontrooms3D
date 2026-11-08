@@ -137,6 +137,100 @@ Locker rooms and showers: sealed 4 ft fluorescent over aisles + vapour-tight gua
 Entry and towel desk: L03 as Level 0 (P4-A), so there is no seam at the club door. Pump and chlorine rooms: guarded
 globes on EMT (P5-A). These wait for the L8 layout (D1–D4, D8).
 
+### 3.4 Production fixtures (Red picked P1-A + P2-A; written 2026-11-06)
+
+Red's words: 11-04 13:10, "全部按推荐" on the pool look in 游戏视觉's chat (transcript 3cf43b8a line 822, which includes P1-A,
+P2-A and the caustics), and 11-06 11:08, "全部按推荐" on the light plan in 光影水反's chat (519175fc line 1986, where LW1 lists
+these lamps). The option kits HIDUP and NICHE were mock-ups. Production rebuilds them from period evidence (sources at
+the end), keeps what the option text Red read promised (dark bronze boxes 3.4 m up every 6 m, a lit ceiling, no lamp
+image in the water; stainless rings 0.7 m under the water whose warm light turns cyan), and fixes what the 0.35 m hero
+rows showed: a flat black pod and a flat cream disc.
+
+**WallBox (P1-A; kit ZL_WALLBOX, was HIDUP).**
+- Form, from the 1977-80 indirect-HID patents: a horizontal box about 760 × 300 × 170 mm on a rear plate over the wall
+  outlet box. The 400 W metal-halide lamp lies horizontal in the middle chamber, in a stepped specular reflector; ballast
+  and capacitor sit in the two end compartments. The mock-up's ballast box hanging under the pod is wrong for the period.
+  The top opening is flat clear tempered glass in a hinged, gasketed frame, sloping down toward the front, and no light
+  leaves below horizontal.
+- Finish: dark bronze satin powder coat on cast aluminium (the option text's "深铜色"), with captive stainless screws and
+  a black rubber gasket bead. Chlorinated air has aged it: chalky top edges, a white mineral line along the bottom, a
+  little rust bloom at the screw heads. The trim sheet has no bronze, so the housing gets its own small atlas.
+- From the floor the player sees only the sides and underside. From above (a gallery, the slide), the reflector facets
+  and the arc tube show through the glass; that is the lens renderer the lamp logic drives.
+- Light: a spot thrown 30° off the wall into the room, 110° / 70°, colour (0.90, 0.97, 1.0), scene 4's tuning from its
+  reviews (SP1-F8, SP2-F17, KIT-F1), which agrees with the patents' forward throw. It leaves a dim scallop on the wall
+  above and its brightest fan 3-5 m out; fans from the two walls meet mid-hall; beam faces turned toward a unit are lit
+  and the far faces stay dark. The lit ceiling patch is the second renderer ("<lens> glow", FrontRooms/LampGlow, its own
+  renderer so GlassRT never traces it). LampKit places it on the ceiling over the box and sizes it to the throw: about
+  2.4d along the wall and 2.2d out, centred 0.7d out, where d is the ceiling height over the box. The map's down-spot
+  bounce stays; LW1 / LW2 tint it later.
+- Variety: each unit's colour shifts up to ±300 K by a per-lamp hash (some greener, one pinkish), the way metal-halide
+  lamps drift. A dead unit leaves its bay dark. A failing unit cycles: out for minutes, then a slow bluish warm-up (lamp
+  logic, in the contract).
+- Budget target, not measured: tris about 60 for the glass and reflector / housing 1,600 · 500 · 120 / phone 120.
+
+**Niche (P2-A; kit ZL_NICHE).**
+- Form, from period wet-niche lights. The 3 m spacing matches the 1975 Ontario school pool guide: "Underwater lights of
+  300 watts should be spaced at 10' (3 m) centres."
+  - A stainless face ring, Ø257 outside and Ø191 inside, slightly domed and brushed.
+  - One pilot screw at 12 o'clock with a rubber washer, and a hook tab at 6 o'clock.
+  - A Ø213 prismatic tempered glass lens with concentric prisms.
+  - Behind it, the 300 W flood lamp's frosted face (Ø127) glows warm (2800 K), broken into glitter by the prisms and
+    ringed by the shell's dull stainless.
+  - The tile is cut to the lip and the ring covers the joint.
+- Lens emission: the core disc clips; the ring around it sits at a fifth to a quarter of that; the prisms carry the
+  sparkle. The option sheet's flat cream disc came from a near-uniform emission map driven past clipping.
+- Ageing variants: a chrome-brass ring, darker, with a black powder stain on the tile around it; one lens with water
+  inside (a failed gasket shows as a water line inside the glass).
+- Light: as the option (warm, into the pool), plus `FrontRoomsWaterSubmerged.RegisterNiche(light, base)`. Its light then
+  comes back out of the basin with the ripple's caustics and dims or dies with the lamp: the per-lamp caustics the
+  option sheet lacked. As the option text said, the niches follow the mains at once, are never on emergency power, and
+  a ground-fault trip kills a whole wall. Phones: a baked light patch plus 2-3 real lights.
+
+**Where they go (contracts).** Nothing in the game builds a pool room yet: `poolFamily` is set only in scene 4.
+- 关卡设计's MapWorld.Pool.cs:
+  - Rig (PC_Hall) builds 8 WallBoxes at the bay centres, z 4.52 / 9.02 / 14.98 / 20.98 on both long walls at 3.4 m,
+    instead of 6 stand-in brackets on the beam lines.
+  - PoolNiches puts Niches on the basin walls, 0.7 m under the water, one per 3 m cell, instead of on the outer walls
+    under the deck, and registers each with RegisterNiche. The dark zone's niches do the same.
+- Scene 4: FrontRoomsStructuresKit.WallBox and Underwater build the kits in place of their stand-in boxes and keep their
+  light logic (level-space line).
+- 游戏视觉's FrontRoomsZoneLook.Lamps presets drive colours and gains.
+
+**As built (11-06 12:28, `W/apply/zone_lamps_pool_kits`, inert until the contracts).**
+- Props/Lamps/WallBox (ZL_WALLBOX): tris lens 132 / housing 600 · 134 · 40 / phone 66, glow 2; 1024 atlas, about 7 MiB.
+- Props/Lamps/Niche (ZL_NICHE): 336 / 2736 · 714 · 96 / 112; about 3.5 MiB. Its glass sits 1.2 mm proud of the tile,
+  because the game's basin walls have no niche hole.
+- LampKit gains Family.WallBox and Family.Niche, plus BuildWallBox, which fits the patch to 2.4 times the throw; the
+  patch peaks 0.3 of the way out.
+- Renders: `renders/pool/{P1A,P1W,P2A,P2N}_1106`, the 10-31 options and the production kits in the same room, cameras and
+  lights.
+- Sheet: `sheets/zone_lamps_pool_production.jpg` (PARTIAL).
+- Next: the contracts above, then scene-4 captures against light_design/10_research.md "Checks per step".
+- **12:43, map contract:** `zone_lamps_pool_contract` LANDED by 总控 for 关卡设计 (MapWorld.Pool.cs b8c71557):
+  - wall boxes one per clear bay;
+  - niches on the basin walls, registered with the water.
+- **12:46, `zone_lamps_pool_kits2` (LampKit 0ef785ae, inert):**
+  - Props/Lamps/NicheSmall: ZL_NICHE_S, the 6.5 in niche (ring 165 mm, tris 180 / 2064 · 538 · 72 / 84), asked for by the
+    game visual line's structures P10. Check render: `renders/pool/P2S_1106`.
+  - The metal-halide drive (s.6).
+- **12:51, `zone_lamps_pool_hid_contract` LANDED by 总控 (MapWorld.cs 8a1612df, MapWorld.Pool.cs 24dd1f7a):**
+  - the wall boxes become metal-halide lamps in the map's tick;
+  - the entry stair cells take the small niche.
+
+Sources (read 11-06; no period photo shows both fixtures, so the patent drawings are the best period images):
+- patents.google.com/patent/US4349866A (Guth, filed 1980): box 762 × 298 × 127 mm, end-compartment ballast, stepped
+  reflector.
+- patents.google.com/patent/US4237528 (GE, filed 1977): forward-sloping top opening, rear plate over the outlet box, no
+  light below horizontal.
+- patents.google.com/patent/USD308261S (1987 wall indirect unit); US4866584A (hot spots).
+- archive.org/stream/ERIC_ED109770/ERIC_ED109770_djvu.txt (1975 Ontario school pool guide): 3 m centres, sealed fixtures
+  lamped from the deck, white finishes, 4.5-6.1 m ceilings.
+- The Amerlite page on pentair.com and its manual: ring, lens, shell, the 12 o'clock screw, the 10 s dry limit.
+- inyopools.com: ring sizes; stains from brass rings.
+- constructionspecifier.com and retrofitmagazine.com: metal-halide decay, dead units, darkened ceilings.
+- en.wikipedia.org/wiki/Metal-halide_lamp: warm-up, restrike, tint spread.
+
 ---
 
 ## 4. Run! (Run! B corridor rig, `RunRigLayout.Corridor1x9`, built standalone at (-3000, 0, 3000))
@@ -226,6 +320,18 @@ Low room to read tighter.
 
 Photosafety: HID restrike and cycling are slow; only caustics move fast (Reduce Motion stills them). "Darkness is never
 cover": an HID space that goes out on a W1 burst must keep the standby lamp or the twin-heads at or above Dim.
+
+**The metal-halide column as code (11-06, asked by the game visual line's structures P10).** `FrontRoomsLampKit.HidTick(ref
+HidLamp, mains, dt, out tint, out auxiliary)` keeps one lamp's state and returns its output (0..1) for the caller's Light, lens
+and glow. The drive is the kit's; the events are 系统设计's.
+- **Drop-out:** the arc goes out at once when the line falls under `HidDropOut` (0.80).
+- **Restrike:** after `HidCool` (8 s, for real 5-15 min), then a warm-up over `HidWarm` (24 s) from 5 % in blue-green
+  (0.62, 0.90, 1.0) to full white.
+- **Shallow dips:** above the drop-out the output follows the line squared (it dims but stays lit).
+- **Auxiliary quartz lamp:** at full while the arc is out, fading off between 60 % and 75 % of the warm-up.
+- **Drift:** per lamp, -1 greener to 1 pinker.
+- **Failing:** the lamp drops out every `HidCycle` x 0.7-1.3 (45 s) and restrikes.
+- **Status:** inert until a caller wires it (the map's TickFixtures for the pool rooms; scene 4's look).
 
 ---
 

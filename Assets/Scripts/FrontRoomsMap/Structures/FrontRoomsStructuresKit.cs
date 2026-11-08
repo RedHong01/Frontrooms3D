@@ -81,7 +81,8 @@ public sealed class FrontRoomsStructuresKit
         District = district;
         Root = district.Root;
         world = Root != null ? Root.position : Vector3.zero;
-        Mesh = new FrontRoomsStructuresMesh(Root);
+        isNew = FrontRoomsStructuresAssets.NewFor(district.Key);
+        Mesh = new FrontRoomsStructuresMesh(Root) { Bevels = isNew };
         partName = district.Code;
     }
 
@@ -92,7 +93,7 @@ public sealed class FrontRoomsStructuresKit
         var go = new GameObject(name);
         go.transform.SetParent(Root, false);
         partRoot = go.transform;
-        Mesh = new FrontRoomsStructuresMesh(partRoot) { Ceiling = 2.9f };
+        Mesh = new FrontRoomsStructuresMesh(partRoot) { Ceiling = 2.9f, Bevels = isNew };
         partName = name;
         return partRoot;
     }
@@ -102,7 +103,7 @@ public sealed class FrontRoomsStructuresKit
     {
         Finish();
         partRoot = null;
-        Mesh = new FrontRoomsStructuresMesh(Root);
+        Mesh = new FrontRoomsStructuresMesh(Root) { Bevels = isNew };
         partName = District.Code;
     }
 
@@ -113,7 +114,7 @@ public sealed class FrontRoomsStructuresKit
         var grime = Mesh.FloorGrimeOff;
         var shadows = Mesh.CastShadows;
         Mesh.Finish(partName, District.Meshes);
-        Mesh = new FrontRoomsStructuresMesh(partRoot != null ? partRoot : Root) { Ceiling = ceiling, FloorGrimeOff = grime, CastShadows = shadows };
+        Mesh = new FrontRoomsStructuresMesh(partRoot != null ? partRoot : Root) { Ceiling = ceiling, FloorGrimeOff = grime, CastShadows = shadows, Bevels = isNew };
     }
 
     /// <summary>Run one piece of a build; a failure logs once and the rest of the district goes on.</summary>
@@ -203,6 +204,13 @@ public sealed class FrontRoomsStructuresKit
         var h = s * (thick * .5f);
         var u0 = Vector3.Dot(W(a), t);
         var up = Vector3.up;
+        if (isNew)
+        {
+            // NEW: one recorded box, bevelled at Finish where nothing touches it (its faces keep these UVs); the collider as before
+            if (m != null) Mesh.PrismBox((a + b) * .5f + up * ((y0 + y1) * .5f), new Vector3(thick, y1 - y0, len), Quaternion.LookRotation(t, up), m, WallLot(t, Vector3.Dot(W(a), s)), y0);
+            if (solid) Mesh.Collider((a + b) * .5f + up * ((y0 + y1) * .5f), new Vector3(thick, y1 - y0, len), Quaternion.LookRotation(t, up));
+            return;
+        }
         if (m != null)
         {
             // Two long faces.
@@ -290,7 +298,7 @@ public sealed class FrontRoomsStructuresKit
                 runTo = xb;
                 continue;
             }
-            if (runFrom >= 0f) { Prism(a + t * runFrom, a + t * runTo, y0, y1, thick, m, solid); runFrom = -1f; }
+            if (runFrom >= 0f) { RunPiece(a, t, runFrom, runTo, y0, y1, thick, m, solid, ops, headTop); runFrom = -1f; }
             ivs.Sort((p, q) => p.x.CompareTo(q.x));
             var at = y0;
             foreach (var iv in ivs)
@@ -300,9 +308,47 @@ public sealed class FrontRoomsStructuresKit
             }
             if (at < y1 - 1e-3f) Prism(a + t * xa, a + t * xb, at, y1, thick, m, solid);
         }
-        if (runFrom >= 0f) Prism(a + t * runFrom, a + t * runTo, y0, y1, thick, m, solid);
+        if (runFrom >= 0f) RunPiece(a, t, runFrom, runTo, y0, y1, thick, m, solid, ops, headTop);
         for (var k = 0; k < ops.Count; k++)
             if (ops[k].round) RoundHead(a, t, thick, ops[k].from, ops[k].to, ops[k].top, headTop[k], m, solid);
+        // NEW: a round head's spandrel is quads: it counts as touching, so the pier's edge beside it stays square
+        if (isNew)
+            for (var k = 0; k < ops.Count; k++)
+            {
+                if (!ops[k].round || headTop[k] <= ops[k].top + 1e-3f) continue;
+                var mid = a + t * ((ops[k].from + ops[k].to) * .5f);
+                Mesh.Occluder(mid + Vector3.up * ((ops[k].top + headTop[k]) * .5f), new Vector3(thick, headTop[k] - ops[k].top, ops[k].to - ops[k].from), Quaternion.LookRotation(t, Vector3.up));
+            }
+    }
+
+    // A full-height run of a wall (no opening over it). TODAY: one prism. NEW: the same, split at the sill and head heights of the
+    // openings it borders, so each jamb is one whole exposed edge for the bevels (a lintel or a sill against the rest keeps the
+    // joint flush); one collider for the whole run, as before.
+    void RunPiece(Vector3 a, Vector3 t, float from, float to, float y0, float y1, float thick, Material m, bool solid, List<Opening> ops, float[] headTop)
+    {
+        if (!isNew) { Prism(a + t * from, a + t * to, y0, y1, thick, m, solid); return; }
+        var cuts = new List<float> { y0, y1 };
+        for (var k = 0; k < ops.Count; k++)
+        {
+            var o = ops[k];
+            var touches = Mathf.Abs(o.from - to) < 1e-3f || Mathf.Abs(o.to - from) < 1e-3f;
+            if (!touches) continue;
+            if (o.sill > y0 + 1e-3f && o.sill < y1 - 1e-3f) cuts.Add(o.sill);
+            var head = o.round ? o.top : o.top;
+            if (head > y0 + 1e-3f && head < y1 - 1e-3f) cuts.Add(head);
+        }
+        cuts.Sort();
+        for (var i = 0; i + 1 < cuts.Count; i++)
+            if (cuts[i + 1] - cuts[i] > 1e-3f) Prism(a + t * from, a + t * to, cuts[i], cuts[i + 1], thick, m, false);
+        if (solid)
+        {
+            var pa = a + t * from;
+            var pb = a + t * to;
+            pa.y = pb.y = 0f;
+            var len = Vector3.Distance(pa, pb);
+            if (len >= 1e-4f && y1 - y0 >= 1e-4f && thick >= 1e-4f)
+                Mesh.Collider((pa + pb) * .5f + Vector3.up * ((y0 + y1) * .5f), new Vector3(thick, y1 - y0, len), Quaternion.LookRotation((pb - pa) / len, Vector3.up));
+        }
     }
 
     void RoundHead(Vector3 a, Vector3 t, float thick, float from, float to, float spring, float top, Material m, bool solid)
@@ -668,6 +714,9 @@ public sealed class FrontRoomsStructuresKit
         var side = new Vector3(dir.z, 0f, -dir.x);
         var up = Vector3.up;
         var hw = width * .5f;
+        if (isNew) FlightNew(foot, dir, side, width, n, riser, tread, treadMat, nosing, solidBase);
+        else
+        {
         for (var k = 1; k <= n - 1; k++)
         {
             var top = foot.y + k * riser;
@@ -691,6 +740,7 @@ public sealed class FrontRoomsStructuresKit
             var e = foot + dir * ((n - 1) * tread);
             e.y = 0f;
             Prism(e + dir * .001f, e + dir * .021f, foot.y + (n - 1) * riser, foot.y + n * riser - .002f, width, treadMat, false);
+        }
         }
         if (!collide) return;
         // The ramp: its top runs through the nosings, from one tread before the first riser (on the foot's floor).
@@ -767,6 +817,7 @@ public sealed class FrontRoomsStructuresKit
     public void RakingGuard(Vector3 a, Vector3 b, float bottomA, float bottomB, GuardStyle style, Material wall = null, Material cap = null, float height = GuardHeight)
     {
         if (style == GuardStyle.None) return;
+        if (isNew && RakingGuardNew(a, b, bottomA, bottomB, style, wall, cap, height)) return;
         switch (style)
         {
             case GuardStyle.HalfWall:
@@ -993,6 +1044,7 @@ public sealed class FrontRoomsStructuresKit
         if (len < .02f) return;
         var t = (b - a) / len;
         var top = floorY + height;
+        if (isNew && GuardNew(a, b, t, len, floorY, top, height, style, wall, cap)) return;
         switch (style)
         {
             case GuardStyle.HalfWall:
@@ -1314,6 +1366,7 @@ public sealed class FrontRoomsStructuresKit
         go.transform.localScale = size;
         var r = go.GetComponent<MeshRenderer>();
         r.sharedMaterial = m != null ? m : FrontRoomsPoolMaterials.Lit("stand-in grey", new Color(.5f, .5f, .5f));
+        if (isNew) r.sharedMaterial = FrontRoomsStructuresAssets.Real(r.sharedMaterial);
         if (!collide) UnityEngine.Object.Destroy(go.GetComponent<Collider>());
         return go;
     }
@@ -1406,6 +1459,776 @@ public sealed class FrontRoomsStructuresKit
     public void ShowMarks(bool on)
     {
         foreach (var m in marks) if (m != null) m.SetActive(on);
+    }
+
+    // ================================================================ NEW: production pieces (contract K1)
+    //
+    // 游戏视觉's structures_assets (research/structures_assets/30_plan.md rows X-01..X-03, K-01, K-02; 20_research.md Part B F1-F8):
+    // with FrontRoomsStructuresAssets.NewFor(this district) every box and prism is bevelled by material where nothing touches it
+    // (FrontRoomsStructuresMesh.Bevels), and the guards, stairs and level edges are built as the period built them, from the
+    // profiles in FrontRoomsStructureProfiles and 游戏视觉's kits where they are in the build. Render only: every collider below
+    // is today's, call for call, so the walk test sees the same scene. TODAY (NEW off) never reaches this region.
+
+    readonly bool isNew;
+
+    /// <summary>NEW for this district's build (scene 4's TODAY / NEW key; SP7 and the pool route stay TODAY).</summary>
+    public bool New => isNew;
+
+    readonly List<Vector3> sweepV = new List<Vector3>(), sweepN = new List<Vector3>();
+    readonly List<Vector2> sweepUV = new List<Vector2>();
+    readonly List<int> sweepT = new List<int>();
+    // 24 and 20 segments: a facet's sagitta 0.18 and 0.21 mm, under a pixel at the 0.35 m hero (12 and 10 showed facets on the
+    // silhouettes; G1 review FIX 4). Builder meshes have no LOD: a few tens of triangles a run.
+    static readonly FrontRoomsStructureProfiles.Section RailTube = FrontRoomsStructureProfiles.Tube(.0211f, 24);
+    static readonly FrontRoomsStructureProfiles.Section PipeTube = FrontRoomsStructureProfiles.Tube(.0167f, 20);
+    static readonly FrontRoomsStructureProfiles.Section Shoe = FrontRoomsStructureProfiles.GlassShoe();
+    static readonly FrontRoomsStructureProfiles.Section ShoeGasketL = FrontRoomsStructureProfiles.ShoeGasket(-1f);
+    static readonly FrontRoomsStructureProfiles.Section ShoeGasketR = FrontRoomsStructureProfiles.ShoeGasket(1f);
+    static readonly FrontRoomsStructureProfiles.Section CapRailSection = FrontRoomsStructureProfiles.CapRail();
+    static readonly FrontRoomsStructureProfiles.Section ChannelSection = FrontRoomsStructureProfiles.Channel();
+    /// <summary>Guard and handrail tube (1 1/4 in NPS, 42.2 mm OD) and the 1 in pipe (33.4 mm): G1-b's rail kits take these.</summary>
+    public const float RailR = .0211f, PipeR = .0167f;
+
+    enum Family { Level0, Office, Pool, Run }
+
+    // A piece's family from its finish, else from the district (pool halls SP1, SP2, SP6; the Office SP4; Run! SP5).
+    Family FamilyOf(Material m)
+    {
+        var n = m != null && m.name != null ? m.name : "";
+        if (n.StartsWith("Prop_PoolTile_", StringComparison.Ordinal) || n.StartsWith("Structures / tile", StringComparison.Ordinal) || (m != null && m.IsKeywordEnabled("_FR_TILE"))) return Family.Pool;
+        if (n.StartsWith("Office_", StringComparison.Ordinal)) return Family.Office;
+        if (n.StartsWith("RunB_", StringComparison.Ordinal) || n.StartsWith("Run_", StringComparison.Ordinal) || n.StartsWith("Stair_Block", StringComparison.Ordinal)) return Family.Run;
+        if (n.StartsWith("L0_", StringComparison.Ordinal) || n.StartsWith("Exit_", StringComparison.Ordinal)) return Family.Level0;
+        switch (District.Key)
+        {
+            case 1: case 2: case 6: return Family.Pool;
+            case 4: return Family.Office;
+            case 5: return Family.Run;
+            default: return Family.Level0;
+        }
+    }
+
+    static Material Surf(string name, Material fallback)
+    {
+        var m = FrontRoomsSurfaces.TryGet(name);
+        return m != null ? m : fallback;
+    }
+
+    // Rail metal by family (G1-b's kit variants): stainless in the pool, putty steel in the Office, painted steel elsewhere.
+    Material RailMetal(Family f)
+    {
+        switch (f)
+        {
+            case Family.Pool: return FrontRoomsPoolMaterials.Steel;
+            case Family.Office: return BandMaterial();
+            default: return RailPaint();
+        }
+    }
+
+    static Material railPaint;
+
+    // Painted steel at the hand's scale (G1 review FIX 4): Prop_RailEnamel (P3: Painted_Metal's own maps at 0.30 m a tile, an
+    // enamel gloss; the painted rail kits wear it too) where it is in the build, else the scene's Painted_Metal as before.
+    static Material RailPaint()
+    {
+        if (railPaint != null) return railPaint;
+        railPaint = FrontRoomsSurfaces.TryGet("Prop_RailEnamel");
+        return railPaint != null ? railPaint : PostMaterial();
+    }
+
+    static string KitName(string baseName, Family f)
+    {
+        return f == Family.Pool ? baseName : f == Family.Office ? baseName + "_Putty" : baseName + "_Painted";
+    }
+
+    // The structures trim sheet (P3): one material, metal per texel; until it lands the band steel stands in.
+    static Material Trim()
+    {
+        var m = FrontRoomsStructuresAssets.TrimSheet();
+        return m != null ? m : BandMaterial();
+    }
+
+    // A cap's own edge: a 6 mm round on timber, the tile's bullnose on tile, else by material.
+    static FrontRoomsStructureBevels.Spec? CapEdge(Material cap)
+    {
+        var n = cap != null && cap.name != null ? cap.name : "";
+        if (n.StartsWith("Prop_Wood", StringComparison.Ordinal)) return new FrontRoomsStructureBevels.Spec(.006f, 2, false);
+        if (cap != null && (cap.IsKeywordEnabled("_FR_TILE") || n.StartsWith("Prop_PoolTile_", StringComparison.Ordinal))) return FrontRoomsStructureBevels.Tile;
+        return null;
+    }
+
+    // Red's ask 4: a wall's lot, from its line (its direction and its offset), the same for every piece of one wall.
+    static float WallLot(Vector3 t, float offset)
+    {
+        var h = Mathf.RoundToInt(Mathf.Abs(t.x) * 64f) * 73856093 ^ Mathf.RoundToInt(Mathf.Abs(t.z) * 64f) * 19349663 ^ Mathf.RoundToInt(offset * 20f) * 83492791;
+        h = (h ^ (h >> 13)) * 1274126177;
+        return .001f + ((h >> 8) & 0xFFFF) / 65536f * .998f;
+    }
+
+    void SweepTo(Material m, IList<Vector3> path, FrontRoomsStructureProfiles.Section s, FrontRoomsStructureProfiles.SweepOptions o)
+    {
+        SweepTo(m, path, s, o, Vector3.up);
+    }
+
+    // up: the frame hint; a path in a vertical plane passes its plane's normal, so every joint stays a true mitre
+    void SweepTo(Material m, IList<Vector3> path, FrontRoomsStructureProfiles.Section s, FrontRoomsStructureProfiles.SweepOptions o, Vector3 up)
+    {
+        if (m == null || path == null || path.Count < 2) return;
+        sweepV.Clear(); sweepN.Clear(); sweepUV.Clear(); sweepT.Clear();
+        FrontRoomsStructureProfiles.Sweep(sweepV, sweepN, sweepUV, sweepT, path, up, s, o);
+        Mesh.Append(sweepV, sweepN, sweepUV, sweepT, m, false);
+    }
+
+    void Tube(Vector3 from, Vector3 to, FrontRoomsStructureProfiles.Section tube, Material m, bool caps)
+    {
+        if ((to - from).sqrMagnitude < 1e-6f) return;
+        var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+        o.capStart = o.capEnd = caps;
+        o.u0 = FrontRoomsStructureProfiles.WorldU(W(from), to - from);
+        SweepTo(m, new[] { from, to }, tube, o);
+    }
+
+    // A straight run of a plumb section (shoes, cap rails, nosings) from a to b, u along from world 0.
+    void Lay(Vector3 a, Vector3 b, FrontRoomsStructureProfiles.Section s, Material m, Vector2 strip, bool caps = true)
+    {
+        if ((b - a).sqrMagnitude < 1e-6f) return;
+        var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+        o.plumb = true;
+        o.capStart = o.capEnd = caps;
+        o.vRange = strip;
+        o.u0 = FrontRoomsStructureProfiles.WorldU(W(a), b - a) * (strip.sqrMagnitude > 0f ? 1f / FrontRoomsStructureProfiles.TrimMetres : 1f);
+        if (strip.sqrMagnitude > 0f) o.uScale = 1f / FrontRoomsStructureProfiles.TrimMetres;
+        SweepTo(m, new[] { a, b }, s, o);
+    }
+
+    // One of 游戏视觉's kits (render only) with its local x along xAxis and y up; nothing when it is not in this build.
+    GameObject Fitting(string name, Vector3 at, Vector3 xAxis)
+    {
+        if (string.IsNullOrEmpty(name) || !FrontRoomsKitLibrary.Has(name)) return null;
+        xAxis.y = 0f;
+        if (xAxis.sqrMagnitude < 1e-8f) xAxis = Vector3.right;
+        xAxis.Normalize();
+        var rot = Quaternion.LookRotation(Vector3.Cross(xAxis, Vector3.up), Vector3.up);
+        try { return FrontRoomsKitLibrary.Spawn(name, PartRoot, at, rot, null, false, null, false); }
+        catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("fitting " + name, "fitting " + name + " failed: " + e.Message); return null; }
+    }
+
+    // Kit.Box's collider alone, exactly as Box makes it.
+    void BoxCollider(Vector3 min, Vector3 max)
+    {
+        var lo = Vector3.Min(min, max);
+        var hi = Vector3.Max(min, max);
+        var size = hi - lo;
+        if (size.x <= 1e-4f || size.y <= 1e-4f || size.z <= 1e-4f) return;
+        Mesh.Collider((lo + hi) * .5f, hi - lo);
+    }
+
+    // ---------------------------------------------------------------- NEW guards (Part B F6-F8; 1988 UBC; ask 3)
+
+    bool GuardNew(Vector3 a, Vector3 b, Vector3 t, float len, float floorY, float top, float height, GuardStyle style, Material wall, Material cap)
+    {
+        var fam = FamilyOf(wall);
+        switch (style)
+        {
+            case GuardStyle.HalfWall:
+            {
+                // today's wall and cap, bevelled; the cap's own round (6 mm on oak) on its top, underside and returned ends
+                Prism(a, b, floorY, top - .04f, .16f, wall != null ? wall : FrontRoomsPoolMaterials.Lit("guard wall", new Color(.7f, .68f, .6f)), true);
+                var keep = Mesh.EdgeOverride;
+                var c = cap != null ? cap : CapMaterial();
+                Mesh.EdgeOverride = CapEdge(c);
+                Prism(a - t * .02f, b + t * .02f, top - .04f, top, .2f, c, false);
+                Mesh.EdgeOverride = keep;
+                return true;
+            }
+            case GuardStyle.TileWall:
+                // today's prism: the bevels give its top and its free ends the tile's bullnose (the trim a tiler sets there)
+                return false;
+            case GuardStyle.Glass:
+                GlassGuard(a, b, t, len, floorY, top, height, cap, fam);
+                return true;
+            case GuardStyle.Rail:
+                RailGuard(a, b, t, len, floorY, top, height, fam);
+                return true;
+            case GuardStyle.Mesh:
+                MeshGuard(a, b, t, len, floorY, top, height, fam);
+                return true;
+        }
+        return false;
+    }
+
+    // Pipe rail on flanged posts at today's places (Red, 19:5x via the owners: rail positions as built): a 42.2 mm top rail on
+    // post-top saddles, and on public floors (ask 3 REC B) a 33.4 mm bottom rail with 1/2 in square pickets at 140 mm (a 6 in
+    // sphere does not pass, the period rule); in service zones and on ask 3 A the two-line rail made real (a 33.4 mm mid rail).
+    void RailGuard(Vector3 a, Vector3 b, Vector3 t, float len, float floorY, float top, float height, Family fam)
+    {
+        var metal = RailMetal(fam);
+        var railY = top - RailR;
+        var count = Mathf.Max(1, Mathf.CeilToInt(len / 1.2f));
+        var saddle = KitName("Kit_RailBracket_PostTop", fam);
+        var hasSaddle = FrontRoomsKitLibrary.Has(saddle);
+        var postTop = hasSaddle ? railY - .040f : railY;
+        for (var k = 0; k <= count; k++)
+        {
+            var q = a + t * (len * k / count);
+            q.y = 0f;
+            Tube(new Vector3(q.x, floorY, q.z), new Vector3(q.x, postTop, q.z), RailTube, metal, false);
+            Fitting(KitName("Kit_RailPost_BaseFlange", fam), new Vector3(q.x, floorY, q.z), t);
+            if (hasSaddle) Fitting(saddle, new Vector3(q.x, postTop, q.z), t);
+        }
+        Tube(a + Vector3.up * railY, b + Vector3.up * railY, RailTube, metal, true);
+        Fitting(KitName("Kit_RailEnd_Cap", fam), a + Vector3.up * railY, -t);
+        Fitting(KitName("Kit_RailEnd_Cap", fam), b + Vector3.up * railY, t);
+        var pickets = FrontRoomsStructuresAssets.Rails == FrontRoomsStructuresAssets.PublicRail.Pickets && fam != Family.Run && District.Key != 5;
+        if (pickets)
+        {
+            var by = floorY + .10f;
+            BayRail(a + Vector3.up * by, b + Vector3.up * by, count, metal);
+            // the rails are sweeps: they count as touching, so a picket's ends inside them stay square (28 triangles, not 44)
+            Mesh.Occluder((a + b) * .5f + Vector3.up * railY, new Vector3(RailR * 1.4f, RailR * 1.4f, len), Quaternion.LookRotation(t));
+            Mesh.Occluder((a + b) * .5f + Vector3.up * by, new Vector3(PipeR * 1.4f, PipeR * 1.4f, len), Quaternion.LookRotation(t));
+            Pickets(a, b, t, len, by, railY, count, metal);
+        }
+        else BayRail(a + Vector3.up * (floorY + .53f), b + Vector3.up * (floorY + .53f), count, metal);
+        Mesh.Collider((a + b) * .5f + Vector3.up * (floorY + top) * .5f, new Vector3(.05f, height, len), Quaternion.LookRotation(t));
+    }
+
+    readonly List<Vector3> weldV = new List<Vector3>(), weldN = new List<Vector3>();
+    readonly List<Vector2> weldUV = new List<Vector2>();
+    readonly List<int> weldT = new List<int>();
+
+    // A 33.4 mm rail (the bottom rail, or the two-line rail's mid rail) bay by bay between its posts, as a fabricator builds it
+    // (G1 review FIX 4: it used to run through every post): a..b on the posts' axes at the rail's height (level or raked), 'bays'
+    // the bays between count + 1 posts. Each bay's pipe is coped to its posts: it ends just inside the post where its whole end
+    // lies within the post, so the joint seen is the true saddle curve of the two tubes; a fillet weld runs round that curve.
+    void BayRail(Vector3 a, Vector3 b, int bays, Material metal)
+    {
+        if (bays < 1 || (b - a).sqrMagnitude < 1e-6f) return;
+        for (var k = 0; k < bays; k++)
+        {
+            var p0 = Vector3.Lerp(a, b, k / (float)bays);
+            var p1 = Vector3.Lerp(a, b, (k + 1) / (float)bays);
+            var dir = (p1 - p0).normalized;
+            var inset = CopeDepth(dir) - .0005f;
+            if (Vector3.Distance(p0, p1) <= 2f * inset + .01f) continue;
+            Tube(p0 + dir * inset, p1 - dir * inset, PipeTube, metal, false);
+            Weld(p0, dir, metal);
+            Weld(p1, -dir, metal);
+        }
+    }
+
+    // The pipe's frame on a vertical post: dir along the pipe (away from the post), u its upper side square to dir in the
+    // vertical plane, n horizontal across; c the cosine of its slope.
+    static void PipeFrame(Vector3 dir, out Vector3 u, out Vector3 n, out float c)
+    {
+        var h = new Vector3(dir.x, 0f, dir.z);
+        c = Mathf.Max(h.magnitude, .2f);
+        n = Vector3.Cross(Vector3.up, h.normalized).normalized;
+        u = Vector3.Cross(dir, n).normalized;
+        if (u.y < 0f) u = -u;
+    }
+
+    // How far along the pipe from the post's axis the pipe's surface at angle th meets the post's face (radius RailR).
+    static float CopeAt(Vector3 dir, Vector3 u, float c, float th)
+    {
+        var uh = Vector3.Dot(new Vector3(u.x, 0f, u.z), new Vector3(dir.x, 0f, dir.z).normalized);
+        var s = Mathf.Sin(th);
+        return (Mathf.Sqrt(Mathf.Max(RailR * RailR - PipeR * PipeR * s * s, 0f)) - PipeR * Mathf.Cos(th) * uh) / c;
+    }
+
+    // The deepest the pipe's end may sit and still lie wholly inside the post (the least of CopeAt round the pipe).
+    static float CopeDepth(Vector3 dir)
+    {
+        PipeFrame(dir, out var u, out var n, out var c);
+        var m = float.MaxValue;
+        for (var i = 0; i < 32; i++) m = Mathf.Min(m, CopeAt(dir, u, c, Mathf.PI * 2f * i / 32f));
+        return m;
+    }
+
+    // A fillet weld round the saddle curve where the pipe (axis through 'post', the post's axis point at the pipe's height, running
+    // along dir away from it) meets the post's face: a bead of 3 mm legs, one on each tube, crowned between them; 96 triangles.
+    void Weld(Vector3 post, Vector3 dir, Material metal)
+    {
+        const int N = 24;
+        const float Leg = .003f, Lift = .0003f;
+        PipeFrame(dir, out var u, out var n, out var c);
+        weldV.Clear(); weldN.Clear(); weldUV.Clear(); weldT.Clear();
+        var perim = 2f * Mathf.PI * PipeR;
+        for (var i = 0; i <= N; i++)
+        {
+            var th = Mathf.PI * 2f * i / N;
+            var np = Mathf.Cos(th) * u + Mathf.Sin(th) * n;
+            var j = post + dir * CopeAt(dir, u, c, th) + np * PipeR;
+            var nq = new Vector3(j.x - post.x, 0f, j.z - post.z).normalized;
+            var wt = (np - Vector3.Dot(np, nq) * nq).normalized;
+            var crown = (np + nq).normalized;
+            var uu = perim * i / N;
+            weldV.Add(j + dir * Leg + np * Lift); weldN.Add(np); weldUV.Add(new Vector2(uu, 0f));
+            weldV.Add(j + crown * (Leg * .42f)); weldN.Add(crown); weldUV.Add(new Vector2(uu, Leg * .6f));
+            weldV.Add(j + wt * Leg + nq * Lift); weldN.Add(nq); weldUV.Add(new Vector2(uu, Leg * 1.2f));
+        }
+        for (var i = 0; i < N; i++)
+            for (var r = 0; r < 2; r++)
+            {
+                int qa = i * 3 + r, qb = (i + 1) * 3 + r, qc = (i + 1) * 3 + r + 1, qd = i * 3 + r + 1;
+                var face = weldN[qa] + weldN[qb] + weldN[qc] + weldN[qd];
+                // Unity's front face: Cross(b - a, d - a) along the outward normal
+                if (Vector3.Dot(Vector3.Cross(weldV[qb] - weldV[qa], weldV[qd] - weldV[qa]), face) < 0f) { var sw = qb; qb = qd; qd = sw; }
+                weldT.Add(qa); weldT.Add(qb); weldT.Add(qc);
+                weldT.Add(qa); weldT.Add(qc); weldT.Add(qd);
+            }
+        Mesh.Append(weldV, weldN, weldUV, weldT, metal, false);
+    }
+
+    // 1/2 in square pickets every ~140 mm between two rails (y0 bottom rail axis, y1 top rail axis), none on a post.
+    void Pickets(Vector3 a, Vector3 b, Vector3 t, float len, float y0, float y1, int posts, Material metal)
+    {
+        const float Bar = .0127f, Pitch = .14f;
+        var n = Mathf.Max(1, Mathf.RoundToInt(len / Pitch));
+        var rot = Quaternion.LookRotation(t);
+        for (var k = 0; k < n; k++)
+        {
+            var f = (k + .5f) / n;
+            var nearest = Mathf.Round(f * posts) / posts;
+            if (Mathf.Abs(f - nearest) * len < .045f) continue;
+            var q = a + t * (len * f);
+            Mesh.Box(new Vector3(q.x, (y0 + y1) * .5f, q.z), new Vector3(Bar, y1 - y0, Bar), rot, metal, false);
+        }
+    }
+
+    // 1988 UBC structural glass: 12 mm panes (<= 1.52 m, 6 mm gaps, polished edges) in a continuous aluminium base shoe with its
+    // gaskets, an aluminium cap rail over them (or the half-wall's own timber cap where one is given), no posts.
+    void GlassGuard(Vector3 a, Vector3 b, Vector3 t, float len, float floorY, float top, float height, Material cap, Family fam)
+    {
+        var trim = Trim();
+        var strip = FrontRoomsStructureProfiles.StripV(fam == Family.Pool ? FrontRoomsStructureProfiles.Strip.StainlessBrushed : FrontRoomsStructureProfiles.Strip.ShoeAluminium);
+        var fa = new Vector3(a.x, floorY, a.z);
+        var fb = new Vector3(b.x, floorY, b.z);
+        Lay(fa, fb, Shoe, trim, strip);
+        var rubber = Surf("Prop_Rubber", null);
+        if (rubber != null) { Lay(fa, fb, ShoeGasketL, rubber, Vector2.zero); Lay(fa, fb, ShoeGasketR, rubber, Vector2.zero); }
+        var timber = cap != null && cap != FrontRoomsPoolMaterials.Tile;
+        var glassTop = timber ? top - .05f : top - .038f + .018f;
+        var panes = Mathf.Max(1, Mathf.CeilToInt(len / 1.52f));
+        var pane = (len - (panes - 1) * .006f) / panes;
+        for (var i = 0; i < panes; i++)
+        {
+            var s0 = i * (pane + .006f);
+            var p0 = a + t * s0;
+            var p1 = a + t * (s0 + pane);
+            // the game's own pane (one scaled cube on Glass_Window: its edges and grime read); the old merged prism only without it
+            if (GlassPane(p0, p1, floorY + .025f, floorY + .025f, glassTop - floorY - .025f, floorY))
+                Mesh.Occluder((p0 + p1) * .5f + Vector3.up * ((floorY + .025f + glassTop) * .5f), new Vector3(.012f, glassTop - floorY - .025f, pane), Quaternion.LookRotation(t, Vector3.up));
+            else Prism(p0, p1, floorY + .025f, glassTop, .012f, GlassMaterial(), false);
+        }
+        if (timber)
+        {
+            var keep = Mesh.EdgeOverride;
+            Mesh.EdgeOverride = CapEdge(cap);
+            Prism(a - t * .01f, b + t * .01f, top - .05f, top, .2f, cap, false);
+            Mesh.EdgeOverride = keep;
+        }
+        else Lay(a + Vector3.up * (top - .038f), b + Vector3.up * (top - .038f), CapRailSection, trim, strip);
+        Fitting(fam == Family.Pool ? "Kit_GlassShoe_EndCap_Stainless" : "Kit_GlassShoe_EndCap", fa, -t);
+        Fitting(fam == Family.Pool ? "Kit_GlassShoe_EndCap_Stainless" : "Kit_GlassShoe_EndCap", fb, t);
+        Mesh.Collider((a + b) * .5f + Vector3.up * (floorY + top) * .5f, new Vector3(.06f, height, len), Quaternion.LookRotation(t));
+    }
+
+    static Mesh paneCube;
+    MaterialPropertyBlock paneBlock;
+    static readonly int PaneFloorYId = Shader.PropertyToID("_FloorY");
+    static readonly int PaneAlphaId = Shader.PropertyToID("_AlphaFace");
+    static readonly int PaneDustId = Shader.PropertyToID("_DustFilm");
+    /// <summary>A 12 mm guard pane against Glass_Window's 6 mm window: face-on alpha 0.15 (T 0.85, a 12 mm clear float pane's
+    /// visible transmittance; the window's 0.11 is a 6 mm pane's T 0.89), and the even dust film a public guard carries (the
+    /// window's is 0). Up to about 8 m the pane reads by its edges, its grime and this haze. Further out, face on against an evenly
+    /// lit bright wall, clear glass shows only by its cap rail, shoe and joints, as real glass does without a reflection (the G1
+    /// fix measured these two values at SP1 s02's upper guard, 15 m: 1.4 levels in 255); the traced reflection (GlassRT) carries
+    /// it there. A pane dark enough to read there unaided would be tinted glass.</summary>
+    const float GuardPaneAlpha = .15f, GuardPaneDust = .08f;
+
+    // One guard pane built as the game builds its window panes (FrontRoomsGlassPane): a unit cube scaled to the pane on the shared
+    // Glass_Window, so FrontRooms/Glass takes the pane frame from the object (the thinnest scaled axis is the normal, v up): the
+    // four 12 mm polished edges draw as the green float-glass edge, and the grime lays out on each pane (dust above the shoe,
+    // smears and prints at hand height under the cap rail, the lit haze that makes clear glass read in an evenly lit room). A
+    // merged shell has no pane frame (TODAY's GlassMaterial copy turns edge and grime off), so its frameless pane was invisible
+    // without RT (G1 review FIX 1). a, b: the pane's ends on plan; yA, yB: its bottom at a and at b (a raked pane rises between
+    // them: a parallelogram, made by a parent's scale and turn and the cube's own turn, A = R(phi) S R(theta)); height: plumb.
+    // Render only: no collider (the guard keeps its one), no shadow. False when Glass_Window is not in this build.
+    bool GlassPane(Vector3 a, Vector3 b, float yA, float yB, float height, float floorY)
+    {
+        var window = FrontRoomsSurfaces.TryGet("Glass_Window");
+        if (window == null) return false;
+        a.y = 0f;
+        b.y = 0f;
+        var d = b - a;
+        var len = d.magnitude;
+        if (len < 1e-3f || height < 1e-3f) return true;
+        var t = d / len;
+        const float Thick = .012f;
+        if (paneCube == null)
+        {
+            var tmp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            paneCube = tmp.GetComponent<MeshFilter>().sharedMesh;
+            UnityEngine.Object.DestroyImmediate(tmp);
+        }
+        var go = new GameObject("Glass pane");
+        go.transform.SetParent(PartRoot, false);
+        go.transform.localPosition = (a + b) * .5f + Vector3.up * ((yA + yB) * .5f + height * .5f);
+        // the pane's own frame: x along the run, y up, z across (LookRotation's right = Cross(up, forward) = t)
+        var frame = Quaternion.LookRotation(new Vector3(-t.z, 0f, t.x), Vector3.up);
+        var cube = go;
+        var rise = yB - yA;
+        if (Mathf.Abs(rise) < 1e-4f)
+        {
+            go.transform.localRotation = frame;
+            go.transform.localScale = new Vector3(len, height, Thick);
+        }
+        else
+        {
+            // the shear [[len, 0], [rise, height]] as R(phi) diag(sx, sy) R(theta) (closed-form 2 x 2 SVD; Rz(a) turns x toward y)
+            float e = (len + height) * .5f, f = (len - height) * .5f, g = rise * .5f, h = rise * .5f;
+            float q = Mathf.Sqrt(e * e + h * h), r = Mathf.Sqrt(f * f + g * g);
+            float a1 = Mathf.Atan2(g, f), a2 = Mathf.Atan2(h, e);
+            go.transform.localRotation = frame * Quaternion.Euler(0f, 0f, (a2 + a1) * .5f * Mathf.Rad2Deg);
+            go.transform.localScale = new Vector3(q + r, Mathf.Max(q - r, 1e-4f), Thick);
+            cube = new GameObject("Glass pane (sheared)");
+            cube.transform.SetParent(go.transform, false);
+            cube.transform.localRotation = Quaternion.Euler(0f, 0f, (a2 - a1) * .5f * Mathf.Rad2Deg);
+        }
+        cube.AddComponent<MeshFilter>().sharedMesh = paneCube;
+        var rend = cube.AddComponent<MeshRenderer>();
+        rend.sharedMaterial = window;
+        rend.shadowCastingMode = ShadowCastingMode.Off;
+        // the smear and print bands sit at hand height over this guard's floor (the material's _FloorY is world 0)
+        if (paneBlock == null) paneBlock = new MaterialPropertyBlock();
+        paneBlock.Clear();
+        paneBlock.SetFloat(PaneFloorYId, W(Vector3.up * floorY).y);
+        paneBlock.SetFloat(PaneAlphaId, GuardPaneAlpha);
+        paneBlock.SetFloat(PaneDustId, GuardPaneDust);
+        rend.SetPropertyBlock(paneBlock);
+        return true;
+    }
+
+    // A raking glass guard's panes along a..b (b the upper end, both on the nosing line): <= 1.52 m on plan with 6 mm joints, each
+    // a parallelogram from 25 mm over the line (in the shoe) to 'height' above that. False when Glass_Window is not in this build.
+    bool RakedPanes(Vector3 a, Vector3 b, float height)
+    {
+        if (FrontRoomsSurfaces.TryGet("Glass_Window") == null) return false;
+        var flat = new Vector3(b.x - a.x, 0f, b.z - a.z);
+        var run = flat.magnitude;
+        if (run < .02f) return true;
+        var panes = Mathf.Max(1, Mathf.CeilToInt(run / 1.52f));
+        var pane = (run - (panes - 1) * .006f) / panes;
+        for (var i = 0; i < panes; i++)
+        {
+            var f0 = i * (pane + .006f) / run;
+            var f1 = (i * (pane + .006f) + pane) / run;
+            var p0 = Vector3.Lerp(a, b, f0);
+            var p1 = Vector3.Lerp(a, b, f1);
+            GlassPane(p0, p1, p0.y + .025f, p1.y + .025f, height, (p0.y + p1.y) * .5f);
+        }
+        return true;
+    }
+
+    // Framed woven wire (Part B F8 (d)): 2 in square posts where they stand today, a channel frame round each bay 75 mm clear of
+    // the floor, the woven wire in it (Prop_WireMesh, cut out), a 42.2 mm top rail.
+    void MeshGuard(Vector3 a, Vector3 b, Vector3 t, float len, float floorY, float top, float height, Family fam)
+    {
+        var metal = RailMetal(fam);
+        var wire = Surf("Prop_WireMesh", MeshMaterial());
+        var count = Mathf.Max(1, Mathf.CeilToInt(len / 1.5f));
+        var rot = Quaternion.LookRotation(t);
+        const float Post = .0508f;
+        for (var k = 0; k <= count; k++)
+        {
+            var q = a + t * (len * k / count);
+            Mesh.Box(new Vector3(q.x, (floorY + top - .04f) * .5f, q.z), new Vector3(Post, top - .04f - floorY, Post), rot, metal, false);
+        }
+        Tube(a + Vector3.up * (top - RailR), b + Vector3.up * (top - RailR), RailTube, metal, true);
+        var y0 = floorY + .075f;
+        var y1 = top - .06f;
+        for (var k = 0; k < count; k++)
+        {
+            var p0 = a + t * (len * k / count + Post * .5f + .012f);
+            var p1 = a + t * (len * (k + 1) / count - Post * .5f - .012f);
+            if ((p1 - p0).sqrMagnitude < .01f) continue;
+            // the frame starts mid-bottom (its two ends meet there) and sweeps with the bay's plane normal as up, so all four
+            // members keep the 25.4 x 12.7 mm channel, open toward the wire (with Vector3.up the posts' members turned or pinched)
+            var pm = (p0 + p1) * .5f;
+            var path = new[] { pm + Vector3.up * y0, p1 + Vector3.up * y0, p1 + Vector3.up * y1, p0 + Vector3.up * y1, p0 + Vector3.up * y0, pm + Vector3.up * y0 };
+            var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+            o.creaseDeg = 10f;
+            SweepTo(metal, path, ChannelSection, o, new Vector3(-t.z, 0f, t.x));
+            var n = new Vector3(t.z, 0f, -t.x);
+            var u0 = Vector3.Dot(W(p0), t);
+            var u1 = u0 + Vector3.Distance(p0, p1);
+            Quad(p0 + Vector3.up * y0, p1 + Vector3.up * y0, p1 + Vector3.up * y1, p0 + Vector3.up * y1, n,
+                new Vector2(u0, y0), new Vector2(u1, y0), new Vector2(u1, y1), new Vector2(u0, y1), wire);
+        }
+        Mesh.Collider((a + b) * .5f + Vector3.up * (floorY + top) * .5f, new Vector3(.05f, height, len), Quaternion.LookRotation(t));
+    }
+
+    bool RakingGuardNew(Vector3 a, Vector3 b, float bottomA, float bottomB, GuardStyle style, Material wall, Material cap, float height)
+    {
+        var fam = FamilyOf(wall);
+        switch (style)
+        {
+            case GuardStyle.HalfWall:
+                RakeWall(a, b, height - .04f, bottomA, bottomB, .16f, wall != null ? wall : FrontRoomsPoolMaterials.Lit("guard wall", new Color(.7f, .68f, .6f)), true);
+                RakingCap(a, b, height, .2f, .04f, cap != null ? cap : CapMaterial());
+                return true;
+            case GuardStyle.TileWall:
+                RakeWall(a, b, height, bottomA, bottomB, .2f, wall != null ? wall : FrontRoomsPoolMaterials.Tile, true);
+                // the rake's top in a course of bullnose cap tile
+                RakingCap(a, b, height + .012f, .2f, .012f, wall != null ? wall : FrontRoomsPoolMaterials.Tile);
+                return true;
+            case GuardStyle.Rail:
+            {
+                var metal = RailMetal(fam);
+                var flat = new Vector3(b.x - a.x, 0f, b.z - a.z);
+                var count = Mathf.Max(1, Mathf.CeilToInt(flat.magnitude / 1.2f));
+                var t = flat.normalized;
+                var saddle = KitName("Kit_RailBracket_PostTop", fam);
+                var hasSaddle = FrontRoomsKitLibrary.Has(saddle);
+                for (var k = 0; k <= count; k++)
+                {
+                    var q = Vector3.Lerp(a, b, k / (float)count);
+                    var postTop = q.y + height - RailR - (hasSaddle ? .040f : 0f);
+                    Tube(q, new Vector3(q.x, postTop, q.z), RailTube, metal, false);
+                    Fitting(KitName("Kit_RailPost_BaseFlange", fam), q, t);
+                    if (hasSaddle) Fitting(saddle, new Vector3(q.x, postTop, q.z), t);
+                }
+                Tube(a + Vector3.up * (height - RailR), b + Vector3.up * (height - RailR), RailTube, metal, true);
+                var pickets = FrontRoomsStructuresAssets.Rails == FrontRoomsStructuresAssets.PublicRail.Pickets && fam != Family.Run && District.Key != 5;
+                if (pickets)
+                {
+                    BayRail(a + Vector3.up * .10f, b + Vector3.up * .10f, count, metal);
+                    var slope = (b - a).normalized;
+                    var nrm = Vector3.Cross(slope, new Vector3(t.z, 0f, -t.x));
+                    if (nrm.y < 0f) nrm = -nrm;
+                    Mesh.Occluder((a + b) * .5f + Vector3.up * (height - RailR), new Vector3(RailR * 1.4f, RailR * 1.4f, Vector3.Distance(a, b)), Quaternion.LookRotation(slope, nrm));
+                    Mesh.Occluder((a + b) * .5f + Vector3.up * .10f, new Vector3(PipeR * 1.4f, PipeR * 1.4f, Vector3.Distance(a, b)), Quaternion.LookRotation(slope, nrm));
+                    var n = Mathf.Max(1, Mathf.RoundToInt(flat.magnitude / .14f));
+                    for (var k = 0; k < n; k++)
+                    {
+                        var f = (k + .5f) / n;
+                        var nearest = Mathf.Round(f * count) / count;
+                        if (Mathf.Abs(f - nearest) * flat.magnitude < .045f) continue;
+                        var q = Vector3.Lerp(a, b, f);
+                        var y0 = q.y + .10f;
+                        var y1 = q.y + height - RailR;
+                        Mesh.Box(new Vector3(q.x, (y0 + y1) * .5f, q.z), new Vector3(.0127f, y1 - y0, .0127f), Quaternion.LookRotation(t), metal, false);
+                    }
+                }
+                else BayRail(a + Vector3.up * .53f, b + Vector3.up * .53f, count, metal);
+                RakeWall(a, b, height, a.y, b.y, .05f, null, true);
+                return true;
+            }
+            case GuardStyle.Glass:
+            {
+                var trim = Trim();
+                var strip = FrontRoomsStructureProfiles.StripV(fam == Family.Pool ? FrontRoomsStructureProfiles.Strip.StainlessBrushed : FrontRoomsStructureProfiles.Strip.ShoeAluminium);
+                Lay(a, b, Shoe, trim, strip);
+                // raked panes (parallelograms, <= 1.52 m on plan, 6 mm joints) as the game's panes; the merged rake only without them
+                if (!RakedPanes(a, b, height - .045f))
+                    RakeWall(a, b, height - .02f, a.y + .025f, b.y + .025f, .012f, GlassMaterial(), false);
+                if (cap != null && cap != FrontRoomsPoolMaterials.Tile) RakingCap(a, b, height, .2f, .05f, cap);
+                else Lay(a + Vector3.up * (height - .038f), b + Vector3.up * (height - .038f), CapRailSection, trim, strip);
+                RakeWall(a, b, height, a.y, b.y, .06f, null, true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A cap along a rake (an oriented box, its top 'above' over the nosing line a..b), with the cap's own edge.
+    void RakingCap(Vector3 a, Vector3 b, float above, float width, float thick, Material m)
+    {
+        var d = b - a;
+        if (d.sqrMagnitude < 1e-6f || m == null) return;
+        var slope = d.normalized;
+        var side = new Vector3(slope.z, 0f, -slope.x).normalized;
+        var normal = Vector3.Cross(slope, side);
+        if (normal.y < 0f) normal = -normal;
+        var keep = Mesh.EdgeOverride;
+        Mesh.EdgeOverride = CapEdge(m);
+        Mesh.Box((a + b) * .5f + Vector3.up * above - normal * (thick * .5f), new Vector3(width, thick, d.magnitude + .02f), Quaternion.LookRotation(slope, normal), m, false);
+        Mesh.EdgeOverride = keep;
+    }
+
+    // ---------------------------------------------------------------- NEW stairs (Part B F3-F5)
+
+    enum NosingKind { None, Pool, Carpet, Abrasive, Given }
+
+    static NosingKind NosingKindOf(Material nosing, Material tread)
+    {
+        if (nosing != null)
+        {
+            var n = nosing.name ?? "";
+            if (n == "Structures / nosing" || n.StartsWith("Prop_PoolTile_Nosing", StringComparison.Ordinal)) return NosingKind.Pool;
+            if (n.StartsWith("RunB_", StringComparison.Ordinal)) return NosingKind.Given;
+            return NosingKind.Abrasive;
+        }
+        if (tread != null && tread.name != null && tread.name.IndexOf("Carpet", StringComparison.Ordinal) >= 0) return NosingKind.Carpet;
+        return NosingKind.None;
+    }
+
+    // A flight as the period built it: on a solid base, today's steps; on a waist (a flight in the air), one riser-high block per
+    // step on a 150 mm sloped waist slab (a soffit and a straight string line instead of the sawtooth), and a real nosing per
+    // step: the pool's nosing L (Red's dark nosing, Prop_PoolTile_Nosing), an aluminium carpet bar in carpeted rooms, a cast
+    // abrasive nosing elsewhere (Run!'s vinyl in its own material). The ramp collider is today's (the caller's).
+    void FlightNew(Vector3 foot, Vector3 dir, Vector3 side, float width, int n, float riser, float tread, Material treadMat, Material nosing, bool solidBase)
+    {
+        var hw = width * .5f;
+        var kind = NosingKindOf(nosing, treadMat);
+        for (var k = 1; k <= n - 1; k++)
+        {
+            var top = foot.y + k * riser;
+            var bottom = solidBase ? foot.y : top - riser;
+            var a = foot + dir * ((k - 1) * tread);
+            var b = foot + dir * (k * tread);
+            a.y = b.y = 0f;
+            Prism(a, b, bottom, top, width, treadMat, false);
+            NosingPiece(a, dir, side, hw, top, kind, nosing);
+        }
+        var e = foot + dir * ((n - 1) * tread);
+        e.y = 0f;
+        NosingPiece(e, dir, side, hw, foot.y + n * riser, kind, nosing);
+        Prism(e + dir * .001f, e + dir * .021f, foot.y + (n - 1) * riser, foot.y + n * riser - .002f, width, treadMat, false);
+        if (solidBase || n < 2) return;
+        // the waist: its top on the line through every step's front foot, 150 mm deep, under the whole flight
+        const float Waist = .15f;
+        var s0 = foot;
+        var s1 = foot + dir * ((n - 1) * tread) + Vector3.up * ((n - 1) * riser);
+        var slope = (s1 - s0).normalized;
+        var normal = Vector3.Cross(slope, side);
+        if (normal.y < 0f) normal = -normal;
+        var soffit = FamilyOf(treadMat) == Family.Pool ? treadMat : Surf("Stair_Slab", treadMat);
+        Mesh.Box((s0 + s1) * .5f - normal * (Waist * .5f), new Vector3(width, Waist, Vector3.Distance(s0, s1)), Quaternion.LookRotation(slope, normal), soffit, false);
+    }
+
+    // One nosing along a step's front edge (edge: the riser line at the step's centre, y 0; top: the tread's height).
+    void NosingPiece(Vector3 edge, Vector3 dir, Vector3 side, float hw, float top, NosingKind kind, Material given)
+    {
+        if (kind == NosingKind.None) return;
+        var p0 = edge - side * (hw + .001f) + Vector3.up * top;
+        var p1 = edge + side * (hw + .001f) + Vector3.up * top;
+        // the plumb frame's +x (cross(up, along)) must point out over the edge (-dir)
+        if (Vector3.Dot(Vector3.Cross(Vector3.up, (p1 - p0).normalized), -dir) < 0f) { var sw = p0; p0 = p1; p1 = sw; }
+        switch (kind)
+        {
+            case NosingKind.Pool:
+            {
+                // the nosing's own copy whose tile specular AA may spread a far round's highlight (G1 review FIX 5: the r 8 nose's
+                // 1 px highlight rasterised into a string of bright dots at 8-15 m); up close nothing changes
+                var m = FrontRoomsStructuresAssets.FarAA(FrontRoomsPoolTile.Get("Nosing"), NosingFarAA);
+                Lay(p0, p1, FrontRoomsStructureProfiles.PoolNosing(), m != null ? m : given, Vector2.zero, false);
+                break;
+            }
+            case NosingKind.Carpet:
+                Lay(p0, p1, FrontRoomsStructureProfiles.CarpetBar(), Trim(), FrontRoomsStructureProfiles.StripV(FrontRoomsStructureProfiles.Strip.CarpetBar), false);
+                break;
+            case NosingKind.Given:
+                Lay(p0, p1, FrontRoomsStructureProfiles.AbrasiveNosing(), given, Vector2.zero, false);
+                break;
+            default:
+                Lay(p0, p1, FrontRoomsStructureProfiles.AbrasiveNosing(), Trim(), FrontRoomsStructureProfiles.StripV(FrontRoomsStructureProfiles.Strip.AbrasiveNosing), false);
+                break;
+        }
+    }
+
+    // ---------------------------------------------------------------- NEW level edges (Part B F2, F9)
+
+    // A ledge face (a level edge inside a room): today's box, its collider as before; where the floor is not the face's finish,
+    // the floor runs to the arris (a strip of it on the face's top) and, on carpet, an aluminium carpet bar finishes the edge.
+    void LedgeNew(Vector3 min, Vector3 max, Material ledge, Material floor, float floorThick, Vector3 q0, Vector3 q1, Vector3 intoLow)
+    {
+        BoxCollider(min, max);
+        var lo = Vector3.Min(min, max);
+        var hi = Vector3.Max(min, max);
+        // under a carpet bar the face is the ledge's own finish: carpet is only its pile and pad (12 mm), behind the bar's 19 mm
+        // face leg (G1 review FIX 7: the 50 mm floor strip showed 31 mm of carpet down the face under the bar)
+        var carpet = floor != null && floor.name != null && floor.name.IndexOf("Carpet", StringComparison.Ordinal) >= 0;
+        var strip = carpet ? Mathf.Min(floorThick, CarpetPile) : floorThick;
+        if (floor != null && floor != ledge && hi.y - lo.y > strip + .02f)
+        {
+            Box(lo, new Vector3(hi.x, hi.y - strip, hi.z), ledge, false);
+            Box(new Vector3(lo.x, hi.y - strip, lo.z), hi, floor, false);
+        }
+        else Box(lo, hi, ledge, false);
+        if (carpet) EdgeBar(q0 + intoLow * .1f, q1 + intoLow * .1f, hi.y, intoLow);
+    }
+
+    /// <summary>Carpet with its pad at a nosing or an edge bar (m): what the bar's face leg covers.</summary>
+    const float CarpetPile = .012f;
+    /// <summary>The pool nosing's far specular AA ceiling (roughness; FrontRoomsStructuresAssets.FarAA).</summary>
+    const float NosingFarAA = .55f;
+
+    // A slab's void face under a carpet bar shows the slab: a skin of the section's material 1.5 mm proud of the floor's own box
+    // face (a..b on the edge line, 'out' toward the void), from the floor box's foot up to the pile (G1 review FIX 7: ~30 mm of
+    // carpet ran down the void face under the bar before the section began).
+    void SectionFace(Vector3 a, Vector3 b, Vector3 outward, float y0, float y1, Material m)
+    {
+        if (m == null || y1 - y0 < .002f) return;
+        a.y = b.y = 0f;
+        var o = outward.normalized * .0015f;
+        QuadPlanar(a + o + Vector3.up * y0, b + o + Vector3.up * y0, b + o + Vector3.up * y1, a + o + Vector3.up * y1, outward, m);
+    }
+
+    /// <summary>
+    /// NEW: a tile cove base along walls' feet (K-02; G1 review FIX 9): Prop_PoolTile_Cove's r 50 cove with its 50 mm flats on
+    /// the floor and the wall (the map's V), laid 2 mm proud of both with 4 mm skirts that close its edges (the cove tile's own
+    /// edge), along a path at the walls' faces on the floor whose plumb frame's +x (Cross(up, along)) points into the room;
+    /// mitred where the path turns (internal corners). Render only; nothing in TODAY.
+    /// </summary>
+    public void CoveBase(IList<Vector3> path, Material m)
+    {
+        if (!isNew || m == null || path == null || path.Count < 2) return;
+        const float Lift = .002f, Skirt = .004f;
+        var c = FrontRoomsStructureProfiles.Cove(.05f, .05f, 6);
+        var n = c.P.Length;
+        var p = new Vector2[n + 2];
+        var v = new float[n + 2];
+        var hard = new bool[n + 2];
+        p[0] = new Vector2(c.P[0].x + Lift, Lift - Skirt);
+        v[0] = c.V[0];
+        for (var i = 0; i < n; i++) { p[i + 1] = c.P[i] + new Vector2(Lift, Lift); v[i + 1] = c.V[i]; }
+        p[n + 1] = new Vector2(Lift - Skirt, c.P[n - 1].y + Lift);
+        v[n + 1] = c.V[n - 1];
+        hard[0] = hard[1] = hard[n] = hard[n + 1] = true;
+        var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+        o.plumb = true;
+        o.creaseDeg = 10f;
+        o.u0 = FrontRoomsStructureProfiles.WorldU(W(path[0]), path[1] - path[0]);
+        SweepTo(m, path, new FrontRoomsStructureProfiles.Section("cove base r 50", p, hard, false, v), o);
+    }
+
+    /// <summary>
+    /// NEW: a movement joint (TCNA EJ171; G1 review FIX 9): a 10 mm grey polyurethane bead, tooled 0.4 mm concave, on the
+    /// structures trim sheet's sealant strip, along a path laid on finished surfaces (0.6 mm over them); 'normalHint' points
+    /// out of the surfaces (the sweep's frame: the bead's width stays square to the path). Render only; nothing in TODAY.
+    /// </summary>
+    public void SealantJoint(IList<Vector3> path, Vector3 normalHint)
+    {
+        if (!isNew || path == null || path.Count < 2) return;
+        var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+        o.vRange = FrontRoomsStructureProfiles.StripV(FrontRoomsStructureProfiles.Strip.Sealant);
+        o.uScale = 1f / FrontRoomsStructureProfiles.TrimMetres;
+        o.u0 = FrontRoomsStructureProfiles.WorldU(W(path[0]), path[1] - path[0]) / FrontRoomsStructureProfiles.TrimMetres;
+        o.creaseDeg = 40f;
+        sweepV.Clear(); sweepN.Clear(); sweepUV.Clear(); sweepT.Clear();
+        FrontRoomsStructureProfiles.Sweep(sweepV, sweepN, sweepUV, sweepT, path, normalHint, FrontRoomsStructureProfiles.Sealant(.010f, .0004f), o);
+        Mesh.Append(sweepV, sweepN, sweepUV, sweepT, Trim(), false);
+    }
+
+    // The carpet bar along an edge at height y, its nose out toward 'outward' (horizontal).
+    void EdgeBar(Vector3 a, Vector3 b, float y, Vector3 outward)
+    {
+        a.y = b.y = y;
+        if ((b - a).sqrMagnitude < 1e-4f) return;
+        if (Vector3.Dot(Vector3.Cross(Vector3.up, (b - a).normalized), outward) < 0f) { var sw = a; a = b; b = sw; }
+        Lay(a, b, FrontRoomsStructureProfiles.CarpetBar(), Trim(), FrontRoomsStructureProfiles.StripV(FrontRoomsStructureProfiles.Strip.CarpetBar), false);
     }
 
     // ---------------------------------------------------------------- the cell plate
@@ -1728,6 +2551,12 @@ public sealed class FrontRoomsStructuresKit
                 var inward = floorSideA ? -toB : toB;
                 var style = guards.TryGetValue(key, out var gs) ? gs : VoidGuard;
                 GuardSpans(kit, p0, p1, inward, fy, style, cross, s0);
+                if (kit.isNew && FloorMat != null && FloorMat.name != null && FloorMat.name.IndexOf("Carpet", StringComparison.Ordinal) >= 0)
+                {
+                    kit.EdgeBar(p0, p1, fy, -inward);
+                    // under the bar the slab, not carpet (the floor's box is its finish only on top)
+                    kit.SectionFace(p0, p1, -inward, fy - FloorThick, fy - CarpetPile, SectionMat != null ? SectionMat : Surf("Stair_Slab", null));
+                }
                 if (SectionMat != null && SectionDepth > FloorThick + .01f)
                 {
                     var a0 = p0 + inward * .1f;
@@ -1754,7 +2583,8 @@ public sealed class FrontRoomsStructuresKit
                         var q0 = p0 + dirEdge * sp.x;
                         var q1 = p0 + dirEdge * sp.y;
                         var f0 = q0 + intoLow * .1f;
-                        kit.Box(Vector3.Min(f0, q1) + Vector3.up * lo, Vector3.Max(f0, q1) + Vector3.up * hi, LedgeMat, true);
+                        if (kit.isNew) kit.LedgeNew(Vector3.Min(f0, q1) + Vector3.up * lo, Vector3.Max(f0, q1) + Vector3.up * hi, LedgeMat, FloorMat, FloorThick, q0, q1, intoLow);
+                        else kit.Box(Vector3.Min(f0, q1) + Vector3.up * lo, Vector3.Max(f0, q1) + Vector3.up * hi, LedgeMat, true);
                     }
                 }
                 var drop = hi - lo;

@@ -1,0 +1,14 @@
+PORTHOLE 0.40 M, FIRST BUILD | bump 1.0: the ring foot sparkles | label fits, data fits
+PORTHOLE 0.40 M, BUILT | leaves 0.6, ring 0.35: a clean moulded ring | label fits, data fits
+PORTHOLE OBLIQUE | lip on the pane, crown 6.35 mm proud | label fits, data fits
+HEAD CORNER, +3 EV, X6 | outer corner r 12.7, inner square | label fits, data fits
+BAND INTO THE FRAME | title pool room: the stop at 1.2628 | label fits, data fits
+LOW LEAF 0.36 M | kick plate, 630 barrels, fluted saddle | label fits, data fits
+OPEN, MEETING EDGE | r 3 mm arrises, the parting seam | label fits, data fits
+PUSH PLATES 0.36 M | HW-DA1 630 on the gel coat | label fits, data fits
+HINGE JAMB 0.35 M | aqua FRP frame, the 12 mm step | label fits, data fits
+PD-A AT 3 M (LAB) | two troffer spots, not the game light | label fits, data fits
+PD-B LITE 0.5 M | Part A F1 kit in aluminium | label fits, data fits
+PD-C PORTHOLE 0.40 M | PD-A ring in the aqua epoxy | label fits, data fits
+TITLE Zone doors Build B: the pool door lab | fits
+ALL LABELS FIT

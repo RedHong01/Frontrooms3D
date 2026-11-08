@@ -1,0 +1,28 @@
+Preview · eye 1.62 m at 3 m · TODAY | Tour door 3 -Z, from Level 0 room 3 | label fits, data fits
+Preview · eye 1.62 m at 3 m · NEW | C-1 REC: almond hollow metal, F5 lite | label fits, data fits
+Phone tier · same camera · TODAY | Handheld, small kits LOD1 | label fits, data fits
+Phone tier · same camera · NEW | Handheld, the F5 kits at LOD1 | label fits, data fits
+3/4 at 3 m · TODAY | oblique 40 deg from the left | label fits, data fits
+3/4 at 3 m · NEW | oblique 40 deg from the left | label fits, data fits
+Hero 0.35 m · lite + plate · TODAY | square on: F4b bead, 630 plate · +2 EV | label fits, data fits
+Hero 0.35 m · lite + plate · NEW | square on: F5 kit, feathered edge, 6 screws · +2 EV | label fits, data fits
+Hero · hinge jamb · TODAY | oblique: brushed barrels, walnut casing · +2 EV | label fits, data fits
+Hero · hinge jamb · NEW | oblique: 630 barrels, bronze band, seam · +2 EV | label fits, data fits
+Hero · meeting stile, cart band · TODAY | oblique: walnut edge · +2 EV | label fits, data fits
+Hero · meeting stile, cart band · NEW | oblique: stile seam, primer chips, rubber · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · TODAY | Handheld · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · NEW | Handheld: its SSAO dims the lite recess · +2 EV | label fits, data fits
+Phone hero · SSAO as desktop (contract B) · TODAY | Handheld, SSAO mode of the desktop · +2 EV | label fits, data fits
+Phone hero · SSAO as desktop (contract B) · NEW | what option B gives · +2 EV | label fits, data fits
+Phone hero · SSAO softened (contract C) · TODAY | Handheld, radius 0.12, intensity 0.8 · +2 EV | label fits, data fits
+Phone hero · SSAO softened (contract C) · NEW | what option C gives · +2 EV | label fits, data fits
+Lights off · relay dark · TODAY | room 3 lamps dead, ambient only | label fits, data fits
+Lights off · relay dark · NEW | room 3 lamps dead, ambient only | label fits, data fits
+Inside · entry door +Z face · TODAY | Tour door 3 from the Run! room | label fits, data fits
+Inside · entry door +Z face · NEW | the same door from the Run! side | label fits, data fits
+Inside · the goal pair, door 4 · TODAY | Tour door 4 -Z, the Run! room's exit | label fits, data fits
+Inside · the goal pair, door 4 · NEW | C-1 on both doors of Run! | label fits, data fits
+Cost · today | per pair | label fits, data fits
+Cost · new C-1 | per pair, measured | label fits, data fits
+TITLE Zone doors: the Run! pair (C-1) | fits
+ALL LABELS FIT

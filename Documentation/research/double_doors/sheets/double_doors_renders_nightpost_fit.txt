@@ -1,0 +1,22 @@
+Preview · eye 1.62 m at 3 m · TODAY | Tour door 5 -Z, from Level 0 room 5 | label fits, data fits
+Preview · eye 1.62 m at 3 m · NEW | S-2 REC: walnut in the bronze F4 frame | label fits, data fits
+Phone tier · same camera · TODAY | Handheld, small kits LOD1 | label fits, data fits
+Phone tier · same camera · NEW | Handheld, small kits LOD1 | label fits, data fits
+3/4 at 3 m · TODAY | oblique 40 deg from the left | label fits, data fits
+3/4 at 3 m · NEW | oblique 40 deg from the left | label fits, data fits
+Inside · entry door +Z face · TODAY | Tour door 5 from the night post | label fits, data fits
+Inside · entry door +Z face · NEW | guards on the night post's face | label fits, data fits
+Inside · exit door 6 · TODAY | Tour door 6 -Z, the night post's exit | label fits, data fits
+Inside · exit door 6 · NEW | guards on its night post face | label fits, data fits
+Hero 0.35 m · casing guard · TODAY | square on: walnut casing, door 6 · +2 EV | label fits, data fits
+Hero 0.35 m · casing guard · NEW | square on: 51 mm guard to 1.32 m · +2 EV | label fits, data fits
+Hero · hinge jamb, Level 0 side · TODAY | oblique: brushed barrels · +2 EV | label fits, data fits
+Hero · hinge jamb, Level 0 side · NEW | oblique: 630 barrels, no guard this side · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · TODAY | Handheld · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · NEW | Handheld, the guard at LOD1 · +2 EV | label fits, data fits
+Lights off · relay dark · TODAY | room 5 lamps dead, ambient only | label fits, data fits
+Lights off · relay dark · NEW | room 5 lamps dead, ambient only | label fits, data fits
+Cost · today | per pair | label fits, data fits
+Cost · new S-2 | per pair, measured | label fits, data fits
+TITLE Zone doors: the night post pair (S-2) | fits
+ALL LABELS FIT

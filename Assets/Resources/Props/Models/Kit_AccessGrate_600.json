@@ -1,0 +1,54 @@
+{
+ "name": "Kit_AccessGrate_600",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p9",
+  "grating",
+  "pool"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  45.0
+ ],
+ "lodBudget": [
+  800,
+  280,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.30559998750686646,
+  -0.03799999877810478,
+  -0.30559998750686646
+ ],
+ "boundsMax": [
+  0.30559998750686646,
+  0.0,
+  0.30559998750686646
+ ],
+ "triangles": 408,
+ "slots": [
+  "Prop_FRPGrating"
+ ],
+ "trianglesLod1": 204,
+ "trianglesLod2": 36,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.6111999750137329,
+  0.6111999750137329
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

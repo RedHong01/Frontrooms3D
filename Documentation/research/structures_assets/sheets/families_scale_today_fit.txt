@@ -1,0 +1,15 @@
+families_scale_today.jpg 1919x1751, 12 tiles, 3 columns
+title | STRUCTURES SCENE · FAMILIES AT SCALE · TODAY | 778/1576 FIT
+SP3_s00_raw.png | SP3 · SPINE FROM THE ARRIVAL | floor Y .23-.29 at 6-14 m, .12 at 17-20 m | label 254/617 data 328/351 FIT
+SP3_s00_band.png | SP3 · 16-20 M, 1:1 | lenses at full; floor and walls unlit | label 175/617 data 296/430 FIT
+SP3_s04_raw.png | SP3 · V4, 14.6 M | RCR 13.5: wall tops lit, floor dim, lid dark | label 152/617 data 352/453 FIT
+SP3_s04_lid.png | V4 · LID FROM 13 M, 1:1 | T-bar about 1.3 px; lid black between lenses | label 210/617 data 352/395 FIT
+SP4_s00_raw.png | SP4 · ATRIUM ARRIVAL | L03 cool where Red picked O-C; flat laylight | label 184/617 data 352/421 FIT
+SP4_s12_raw.png | SP4 · DOWN FROM F2 | hard X shadows from two laylight spots | label 178/617 data 304/427 FIT
+SP1_s00_lid.png | SP1 · POOL HALL LID | down-fill squares: lamps where P1-A has none | label 170/617 data 352/435 FIT
+KIT_s04_raw.png | KIT · TILE HALL | P1-A's lit lid, but cube wall boxes | label 124/617 data 280/481 FIT
+SP6_s07_raw.png | SP6 · DOME HALL DECK | cube step lamps; no caustics | label 187/617 data 224/418 FIT
+SP5_s03_raw.png | SP5 · DOCK PLATFORM | box door, square bollards and stanchions | label 183/617 data 320/422 FIT
+SP3_s06_raw.png | SP3 · COMPUTER ROOM | grey cabinet boxes; papered floor riser | label 188/617 data 312/417 FIT
+SP3_s13_raw.png | SP3 · FILE MEZZANINE | grey shelving rows; box rails and slab | label 178/617 data 304/427 FIT
+ALL LABELS FIT

@@ -1,0 +1,28 @@
+Eye 1.62 m at 3 m · OF-F · TODAY | walnut G, dark-bronze F4, chrome · +1.5 EV both | label fits, data fits
+Eye 1.62 m at 3 m · OF-F · NEW REC | walnut G + Office wear, 630 kick plates · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · OF-F · TODAY | the Office room's pendant light · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · OF-F · NEW REC | kick plates both faces, 10 in · +1.5 EV both | label fits, data fits
+At 8 m · OF-F · TODAY | down the Office room · +1.5 EV both | label fits, data fits
+At 8 m · OF-F · NEW REC | down the Office room · +1.5 EV both | label fits, data fits
+Hero 0.4 m · lever, latch stile · TODAY | satin chrome lever, plain walnut · +2.5 EV both | label fits, data fits
+Hero 0.4 m · lever, latch stile · NEW REC | hand halo, burnished edge · +2.5 EV both | label fits, data fits
+Hero 0.5 m · the foot of the leaf · TODAY | no kick plate · +2.5 EV both | label fits, data fits
+Hero 0.5 m · the foot of the leaf · NEW REC | 630 kick plate, cart nicks over it · +2.5 EV both | label fits, data fits
+Eye 3 m · OF-K (locked) · TODAY | L0-K's almond key door · +1.5 EV both | label fits, data fits
+Eye 3 m · OF-K (locked) · NEW REC | the key door in the Office wear · +1.5 EV both | label fits, data fits
+Phone · eye 3 m · OF-F · TODAY | Handheld · +1.5 EV both | label fits, data fits
+Phone · eye 3 m · OF-F · NEW REC | Handheld · +1.5 EV both | label fits, data fits
+Phone · hero 0.4 m · lever · TODAY | Handheld · +2.5 EV both | label fits, data fits
+Phone · hero 0.4 m · lever · NEW REC | Handheld · +2.5 EV both | label fits, data fits
+TODAY break · M | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · D2 | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · FINAL | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · REST | T1, 3 m · +1 EV | label fits, data fits
+NEW break · M | T1, 3 m · +1 EV | label fits, data fits
+NEW break · D2 | T1, 3 m · +1 EV | label fits, data fits
+NEW break · FINAL | T1, 3 m · +1 EV | label fits, data fits
+NEW break · REST | T1, 3 m · +1 EV | label fits, data fits
+Cost · TODAY | the run's census, the dressed door at LOD0 | label fits, data fits
+Cost · NEW REC | the same census; T6 in the Office light | label fits, data fits
+TITLE Map doors · the Office rows (OF-F, OF-K) | fits
+ALL LABELS FIT

@@ -1,0 +1,68 @@
+{
+ "name": "Kit_DoorGuard_Casing38",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "arris",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "guard",
+  "station",
+  "zone_pair"
+ ],
+ "guardFace": 0.038,
+ "guardY": [
+  0.1,
+  1.32
+ ],
+ "barrelClearance": 0.001,
+ "origin": "the casing's inner arris (x 1.212, z 0.0331) at mid-height y 0.71; +x jamb, +Z face",
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  8.0,
+  30.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.0015000002458691597,
+  -0.6100000143051147,
+  -0.008150000125169754
+ ],
+ "boundsMax": [
+  0.03500000014901161,
+  0.6100000143051147,
+  0.0015000002458691597
+ ],
+ "triangles": 324,
+ "slots": [
+  "Station_StainlessGuard"
+ ],
+ "trianglesLod1": 28,
+ "trianglesLod2": 4,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.016749999951571226,
+  -0.003324999939650297
+ ],
+ "footprintSize": [
+  0.03650000039488077,
+  0.009650000371038914
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.66
+}

@@ -482,3 +482,50 @@ Frame time of every option (rule 25), the iOS and WebGL shader compiles (the clo
 - 视频（缩小到 2560 宽、带水印，放在文档旁边）：`research/level_space/video/glaze_options_film_dolly.mp4`、`glaze_options_film_strafe.mp4`
 - 视频：`W/level_space/renders/glaze/glaze2/film_grid_dolly.mp4`、`film_grid_strafe.mp4`、`film_pair_dolly.mp4`、`film_pair_strafe.mp4`（和每列单独的视频）；区域外观那一套在 `glaze1/`
 - 所有截图原图：`W/level_space/renders/glaze/glaze2/`（主图）和 `glaze1/`（区域外观）
+
+---
+
+## 12. The title stream's pool rooms (title_renovation, 2026-11-05)
+
+Red, 2026-11-05, in this line's chat after walking scene 4 (plain turns): 13:1x "我看了一下，这个瓷砖非常work，因此我需要你在无限流房间里
+利用这个瓷砖来做新无限流房间的纹理材质和水光。水色需要最深"; 13:3x "我需要你翻新无限流房间然后直接合并到主项目里".
+
+GZ-C now also stands in the title stream's pool rooms (`FrontRoomsTitleVignettes.Pool`: Tour's pool level, Descent's pool level and
+dark pool), built from scene 4's parts. Section 3.6 of `Documentation/TITLE_SEQUENCE.md` describes the whole renovation. Six things
+differ from scene 4. The first five were decided on frames in the design (`W/level_space/title_pool/design.txt`); the sixth came from
+the build's films (`W/level_space/title_renovation_build_log.txt`):
+
+1. **Copies at gain 8, not 30** (`FrontRoomsTitlePoolGlaze.ProxyGain`). The room hangs twelve L03 lenses of about 0.63 m2; scene 4's
+   30 is set for compact 0.17 m2 lenses. At 30 the side walls washed out (x2.4) and the ceiling more (x3.6-5). At 12 the ceiling's
+   grout turned into lines of light. At 8 each tile holds a white lamp core and the grout stays dark.
+2. **One capture per attach, behind a shut door.** The probe renders the first frame its room is drawn behind its still shut door,
+   with the slot's live lamps forced on for the probe's own faces only. Its brightness then follows the room's lamps (0.25 s), so
+   the glaze is dark until the strike. Scene 4 captures on arrival with the district's lamps on.
+3. **The copies use the L03 lens's own material**, made flat (no tint, a white emission map, no gloss). URP Unlit's opaque variant
+   is used by no material in the build, so a player might lack it; the lens material's variant ships.
+4. **Probe anchors and box.** The tile, the band, the sills and the room's shell faces take the probe through `probeAnchor` at
+   the room's centre: the end walls' bounds sit on the door lines, outside the box, and the URP assets select probes per object.
+   The walnut doors of both door lines are anchored off the axis and keep today's cube. Unity gives a renderer every probe whose
+   box its bounds touch, and the neighbouring rooms' carpet and ceiling reach 2 cm past the door lines. So the box stops 3 cm
+   short of the end faces; on the faces, the next Level 0 room's carpet took the probe in the second loop.
+5. **The water.** 游戏视觉's water light is Recommended only while a title pool water is on, and Today when none is and when the
+   title ends. The caustic nets come from two L03 at radius 0.25 m. `absorbScale` is 12 (scene 4's key K 9 at ankle depth). The
+   water's room reaches the walls past the sills, as scene 4's bodies do (without it the side walls showed a seam at the sill line).
+   The lamp share stays 1: the room has its own twelve L03, and 3 lifted the far wall by 82 %.
+6. **The strike.** Each lamp of the pool rooms strikes with at most one flick (`FrontRoomsRoomStream.StrikeCapped`; the waiting
+   room too). Under the water light the white basin, the sills and the walls follow every flick, and with up to five flicks a lamp
+   the reveal measured 3.0-3.5 flashes in its worst second (the limit is 3; main's pool reveal measured 4.0).
+
+The dark pool takes no probe. A probe there only added two hard blue patches on the ceiling, and Refl_PoolDead holds its niches.
+Its niches are wet niches while its water is on. Phones and iPads keep Refl_PoolLevel, because realtime probes are off at Medium
+and Handheld.
+
+**Result** (the build's own look at its frames: `W/level_space/sheets/title_renovation.jpg`, NOW | NEW in 20 rows, and the
+side-by-side film `W/level_space/renders/title_renovation/title_renovation_sbs.mp4`). The room's own troffers lie in the pool's
+walls under the ceiling line, a white core per tile with soft tails, broken tile by tile by the dish; 2 m from the far wall one
+troffer's image spans about six tiles. The tile below the band keeps its porcelain white (saturation 0.15-0.25, as before); the
+ceiling and the upper walls take the water's cyan (the ceiling's sRGB value 0.36 to 0.64, saturation 0.27 to 0.46). The water
+is the deepest turquoise and the mosaic reads through it. In calm ankle water the water light on the walls and the ceiling is a
+steady wash: the water and the basin's net move, the mirror's sheen stays under the film grain, as in scene 4. Flash (limit 3):
+the pool reveal 2.5 on desktop and on the phone tier, where main measured 4.0; the whole Tour 2.5 desktop and 3.0 phone (Run! B's
+door, not the pool), Descent 3.0 desktop (the Office strike in R9) and 2.0 phone.

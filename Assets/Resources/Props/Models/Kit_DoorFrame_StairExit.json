@@ -1,0 +1,119 @@
+{
+ "name": "Kit_DoorFrame_StairExit",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "stop_latch",
+   "pos": [
+    -0.027000000000000003,
+    1.0,
+    0.99155
+   ]
+  },
+  {
+   "name": "silencer_1",
+   "pos": [
+    -0.024800000000000003,
+    0.35,
+    0.99155
+   ]
+  },
+  {
+   "name": "silencer_2",
+   "pos": [
+    -0.024800000000000003,
+    1.3,
+    0.99155
+   ]
+  },
+  {
+   "name": "silencer_3",
+   "pos": [
+    -0.024800000000000003,
+    1.9,
+    0.99155
+   ]
+  },
+  {
+   "name": "hinge_axis",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "head_soffit",
+   "pos": [
+    0.0,
+    2.1,
+    0.5
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "door_frame",
+  "frame_steel",
+  "stair",
+  "exit"
+ ],
+ "frameEnvelope": {
+  "faceX": 0.0911,
+  "face": 0.0508,
+  "stopH": 0.0159,
+  "stopX": [
+   -0.0514,
+   -0.027000000000000003
+  ]
+ },
+ "opening": [
+  1.0,
+  2.1
+ ],
+ "doorSpace": "the kits' door root: origin the opening's hinge-jamb edge on the leaf's centre plane at the floor, +Z along the opening, +X the pull face S; FrontRoomsStairwellDresser spawns it under a root scaled (-push, 1, 1)",
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
+ "boundsMin": [
+  -0.09109999984502792,
+  0.0,
+  -0.0502999983727932
+ ],
+ "boundsMax": [
+  0.09109999984502792,
+  2.1503000259399414,
+  1.0503000020980835
+ ],
+ "triangles": 1018,
+ "slots": [
+  "Stair_DoorFrame",
+  "Stair_DoorFrameInside",
+  "Prop_Rubber",
+  "Stair_Hinge"
+ ],
+ "trianglesLod1": 216,
+ "trianglesLod2": 120,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.5000000018626451
+ ],
+ "footprintSize": [
+  0.18219999969005585,
+  1.1006000004708767
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.2
+}

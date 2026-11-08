@@ -1,0 +1,8 @@
+structures_g1_sp6.jpg 1920x1948, 5 tiles, 2 columns
+title | STRUCTURES G1 SP6 POOL TERRAIN TODAY VS NEW | 785/1544 FIT
+SP6_s00_raw.png | SP6 S00 TODAY | arrival, the tile corridor | label 128/938 data 208/798 FIT
+SP6_s00_newsteady_raw.png | SP6 S00 NEW REC | tile bullnose 9.5 mm on the arrises | label 150/938 data 280/776 FIT
+SP6_s04_raw.png | SP6 S04 TODAY | weir terraces | label 128/938 data 104/798 FIT
+SP6_s04_newsteady_raw.png | SP6 S04 NEW REC | pool nosing L, far AA on its round | label 150/938 data 272/776 FIT
+cost_SP6.png | COST SP6 | harness inventories of both runs | label 78/938 data 256/848 FIT
+ALL LABELS FIT

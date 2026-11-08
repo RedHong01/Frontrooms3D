@@ -1,0 +1,94 @@
+{
+ "name": "Kit_DoorFrame_FRPPair_DA",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "opening_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "head_soffit",
+   "pos": [
+    0.0,
+    2.66,
+    0.0
+   ]
+  },
+  {
+   "name": "casing_outer_r",
+   "pos": [
+    1.2628,
+    1.0,
+    0.0331
+   ]
+  },
+  {
+   "name": "casing_top",
+   "pos": [
+    0.0,
+    2.7228000000000003,
+    0.0331
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "door_frame",
+  "frame_frp",
+  "double_acting",
+  "zone_pair",
+  "pool"
+ ],
+ "casingOuter": 1.2628,
+ "casingTop": 2.7228000000000003,
+ "faceZ": 0.0331,
+ "wall": 0.004,
+ "headCornerRadius": 0.0127,
+ "doorSpace": "the title / station pair's door space (FrontRoomsDoubleDoorKit): origin the opening's centre on the floor, x across, y up, z through, +Z the stream's swing face; spawn at identity under 'double door frame'",
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
+ "boundsMin": [
+  -1.2627999782562256,
+  0.0,
+  -0.07599999755620956
+ ],
+ "boundsMax": [
+  1.2627999782562256,
+  2.7228000164031982,
+  0.07599999755620956
+ ],
+ "triangles": 1550,
+ "slots": [
+  "Door_PoolGelcoat_Frame",
+  "Prop_Stainless630"
+ ],
+ "trianglesLod1": 444,
+ "trianglesLod2": 196,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  2.525599956512451,
+  0.15199999511241913
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.773
+}

@@ -1,0 +1,55 @@
+{
+ "name": "Kit_AccessFloorPanel_600",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p9",
+  "access_floor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  400,
+  120,
+  24
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.2985000014305115,
+  -0.03309999778866768,
+  -0.2985000014305115
+ ],
+ "boundsMax": [
+  0.2985000014305115,
+  0.0,
+  0.2985000014305115
+ ],
+ "triangles": 756,
+ "slots": [
+  "Prop_AccessFloor",
+  "Prop_PlasticBlack",
+  "RunB_GalvSteel"
+ ],
+ "trianglesLod1": 132,
+ "trianglesLod2": 24,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.597000002861023,
+  0.597000002861023
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

@@ -989,6 +989,16 @@ static partial class FrontRoomsGlassRTSystem
                 }
                 else r.texEmission = (uint)Slot(m, "_EmissionMap", Native.TexWhite);
             }
+            // The pool tile (_FR_TILE): its base map holds tile data (tone, glaze thickness, grout), not a colour. Until the hit
+            // shader carries the tile (surface_rt_parity), a traced reflection takes the glaze's colour with the grout's share
+            // mixed in and the map off; mask and normal stay (structures_assets P2; research/surface_detail/60_build.md section 1,
+            // follow-up 1). Today's tile look keeps today's record (FrontRoomsPoolTile.Publish describes the tiles again on a change).
+            if (m.IsKeywordEnabled("_FR_TILE") && FrontRoomsPoolTile.Look != FrontRoomsPoolTile.PoolTileLook.Today)
+            {
+                r.texBase = Native.TexWhite;
+                r.baseColor = Vector4.Lerp(Lin(m, "_GroutColor", new Color(.66f, .70f, .67f)), Lin(m, "_BaseColor", Color.white), .95f);
+                r.baseColor.w = 1f;
+            }
             return r;
         }
         if (IsGlassMaterial(m))

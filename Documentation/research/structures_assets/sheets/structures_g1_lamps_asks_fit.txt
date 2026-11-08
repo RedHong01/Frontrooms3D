@@ -1,0 +1,21 @@
+structures_g1_lamps_asks.jpg 1920x5380, 18 tiles, 2 columns
+title | STRUCTURES G1 ASKS ON KEYS AND LAMPS OFF | 728/1544 FIT
+HUB_s00_new_raw.png | HUB S00 ASK 5 B REC | the game's tier-1 lamp modes | label 178/938 data 224/748 FIT
+HUB_s00_newsteady_raw.png | HUB S00 ASK 5 A | every lamp steady ('.' key) | label 141/938 data 216/785 FIT
+SP3_s00_new_raw.png | SP3 S00 ASK 5 B REC | the game's tier-1 lamp modes | label 181/938 data 224/745 FIT
+SP3_s00_newsteady_raw.png | SP3 S00 ASK 5 A | every lamp steady ('.' key) | label 144/938 data 216/782 FIT
+KIT_s00_new_raw.png | KIT S00 ASK 5 B REC | the game's tier-1 lamp modes | label 172/938 data 224/754 FIT
+KIT_s00_newsteady_raw.png | KIT S00 ASK 5 A | every lamp steady ('.' key) | label 135/938 data 216/791 FIT
+SP3_s01_new_raw.png | SP3 S01 ASK 3 B REC | pickets at 140 mm, public floors | label 181/938 data 256/745 FIT
+SP3_s01_new_ask3a_raw.png | SP3 S01 ASK 3 A | the two-line rail made real (',' key) | label 144/938 data 296/782 FIT
+KIT_s01_new_raw.png | KIT S01 ASK 3 B REC | pickets at 140 mm, public floors | label 172/938 data 256/754 FIT
+KIT_s01_new_ask3a_raw.png | KIT S01 ASK 3 A | the two-line rail made real (',' key) | label 135/938 data 296/791 FIT
+SP3_s01_new_raw.png | SP3 S01 NEW LAMPS ON | as built | label 196/938 data 64/730 FIT
+SP3_s01_new_off_raw.png | SP3 S01 NEW OFF | every lamp at 0, lenses dark | label 148/938 data 224/778 FIT
+SP4_s00_new_raw.png | SP4 S00 NEW LAMPS ON | as built | label 196/938 data 64/730 FIT
+SP4_s00_new_off_raw.png | SP4 S00 NEW OFF | every lamp at 0, lenses dark | label 148/938 data 224/778 FIT
+KIT_s00_new_raw.png | KIT S00 NEW LAMPS ON | as built | label 187/938 data 64/739 FIT
+KIT_s00_new_off_raw.png | KIT S00 NEW OFF | every lamp at 0, lenses dark | label 139/938 data 224/787 FIT
+note_flash.png | FLASH CHECK | renders/g1x_k1/flash_summary.txt | label 102/938 data 256/824 FIT
+cost_lamps_asks.png | COST LAMPS | modes, lens drive, pools, off | label 95/938 data 232/831 FIT
+ALL LABELS FIT

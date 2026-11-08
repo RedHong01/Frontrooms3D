@@ -114,6 +114,11 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         // with the leaf when it turns on the other face's barrels.
         public Transform leftLeaf, rightLeaf, doorFrame, leftHingeBody, rightHingeBody;
         public int hingeSide;
+        // Zone doors (FrontRoomsDoubleDoorKit.Zones; research/double_doors/20_design.md A2-A3): the far door as the kit's pair
+        // (the transforms above are filled from it) and the look it wears (Level0 at build; TitleRooms.DressSlotDoor).
+        public FrontRoomsDoubleDoorKit.Pair door;
+        public FrontRoomsDoubleDoorKit.Zone doorZone;
+        public int doorFamilySide;
         // The analytical mover normally avoids physics queries. Keep the
         // doorway colliders explicitly so a player cannot step into a swung
         // leaf or the thin wall returns and then see their internal faces.
@@ -376,6 +381,8 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
 
         // Title rooms: the programme and its bank of family vignettes (nothing with Today, the default).
         BeginTitleRooms(false);
+        // Zone doors (D-3): this stream's terminal door takes station D's face when the run starts (OnMapRunStartedStationFace).
+        stationFaceStream = this;
 
         var cameraZ = streamCamera == null ? 0f : streamCamera.transform.position.z;
         centerX = streamCamera == null ? 0f : streamCamera.transform.position.x;
@@ -1377,11 +1384,19 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         var frame = new GameObject("double door frame").transform;
         frame.SetParent(room.root.transform, false);
         frame.localPosition = new Vector3(0f, 0f, RoomLength);
-        FrontRoomsDoubleDoorKit.BuildFrame(frame, kit, FrontRoomsDoubleDoorKit.Faces.Both);
+        // Zone doors: the same frame and leaves, built in the same order (BuildFrame, then the left and the right leaf), gathered
+        // into the kit's pair so a title family can dress it (TitleRooms.DressSlotDoor); today's look until then.
+        room.door = FrontRoomsDoubleDoorKit.BuildPair(room.root.transform, frame, kit, FrontRoomsDoubleDoorKit.Faces.Both, true);
+        room.doorZone = FrontRoomsDoubleDoorKit.Zone.Level0;
+        room.doorFamilySide = 0;
         room.doorFrame = frame;
-        GameObject left, right;
-        room.leftDoor = FrontRoomsDoubleDoorKit.BuildLeaf(room.root.transform, frame, -1, kit, FrontRoomsDoubleDoorKit.Faces.Both, true, out room.leftLeaf, out room.leftHingeBody, out left);
-        room.rightDoor = FrontRoomsDoubleDoorKit.BuildLeaf(room.root.transform, frame, 1, kit, FrontRoomsDoubleDoorKit.Faces.Both, true, out room.rightLeaf, out room.rightHingeBody, out right);
+        room.leftDoor = room.door.Pivot(-1);
+        room.leftLeaf = room.door.Carrier(-1);
+        room.leftHingeBody = room.door.HingeBody(-1);
+        room.rightDoor = room.door.Pivot(1);
+        room.rightLeaf = room.door.Carrier(1);
+        room.rightHingeBody = room.door.HingeBody(1);
+        GameObject left = room.door.Slab(-1), right = room.door.Slab(1);
         // Door vision (T-L1): the title pair's lites stay DARK until the room behind is connected or the door starts to open.
         var liteRoom = room;
         System.Func<bool> liteReady = () => LiteReady(liteRoom);
@@ -1412,6 +1427,9 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         room.doorAudio = audio;
         room.doorProgress = 0f; room.doorOpening = false; room.doorOpen = false; room.doorSoundPlayed = false;
         ApplyDoorPose(room);
+        // Zone doors: every look this programme's families need, built once under the same pivots and switched off (TitleRooms;
+        // nothing with Today, the Today programme or WebGL), so a recycle only switches parts.
+        PrepareDoorZones(room);
     }
 
     // The leaves turn on the knuckle axis of the face they swing toward:
@@ -1424,6 +1442,44 @@ public sealed partial class FrontRoomsRoomStream : MonoBehaviour
         FrontRoomsDoubleDoorKit.PlaceLeaf(room.doorFrame, room.leftDoor, room.leftLeaf, room.leftHingeBody, -1, side);
         FrontRoomsDoubleDoorKit.PlaceLeaf(room.doorFrame, room.rightDoor, room.rightLeaf, room.rightHingeBody, 1, side);
         room.hingeSide = side;
+    }
+
+    // ------------------------------------------------------------------ zone doors (research/double_doors/20_design.md A3.5, A8)
+    // D-3 (Red 2026-11-05 21:15:15 "按默认做"): station D is the start door seen from the station, so the stream's terminal pair
+    // takes the station's face on its +Z side when the run starts: at MapRunStarted the stream has ended (EndStreamAt) and the
+    // door is shut and held (StartRunInPlace), its +Z face on the map side, unseen. Only with the map's station (floor 1's start
+    // group carved); FrontRoomsStationDress gives the static entrance the same face. FrontRooms3DGame.cs is not touched: its
+    // static event is listened to, as FrontRoomsStationDress does.
+    static FrontRoomsRoomStream stationFaceStream;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void HookStationFace()
+    {
+        stationFaceStream = null;
+        FrontRooms3DGame.MapRunStarted -= OnMapRunStartedStationFace;
+        FrontRooms3DGame.MapRunStarted += OnMapRunStartedStationFace;
+    }
+
+    static void OnMapRunStartedStationFace(FrontRoomsMapWorld map, FrontRoomsMapHunter relay)
+    {
+        var stream = stationFaceStream;
+        if (stream == null || !stream.frozen || map == null || !map.HasStation || FrontRoomsDoubleDoorKit.Today) return;
+        var terminal = stream.FindSequence(stream.terminalSequence);
+        if (terminal?.door != null) FrontRoomsDoubleDoorKit.SetStationFace(terminal.door, true);
+    }
+
+    /// <summary>The look of the stream door whose pivot this is ("double door left / right hinge"), Level0 for any other
+    /// transform: the hook for 声音设计's option (b) in W/zone_doors/contracts/sound.md (inert: nothing calls it until Red picks
+    /// it; FrontRoomsDoubleDoorKit.SoundOf gives the leaf's material class).</summary>
+    public FrontRoomsDoubleDoorKit.Zone DoorZoneOfHinge(Transform hinge)
+    {
+        if (hinge == null) return FrontRoomsDoubleDoorKit.Zone.Level0;
+        for (var i = 0; i < MaxRooms; i++)
+        {
+            var room = pool[i];
+            if (room != null && (room.leftDoor == hinge || room.rightDoor == hinge)) return room.doorZone;
+        }
+        return FrontRoomsDoubleDoorKit.Zone.Level0;
     }
 
     void ResolveDoorwayOverlap(RoomSlot room, bool doorPassable, ref Vector3 candidate)

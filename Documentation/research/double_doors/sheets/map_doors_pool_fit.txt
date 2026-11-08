@@ -1,0 +1,28 @@
+Eye 3 m · PL-F (stand-in door) · TODAY | a Level 0 door: L0-F walnut · +1.5 EV both | label fits, data fits
+Eye 3 m · PL-F (stand-in door) · NEW REC | moulded FRP, A1 porthole, aqua frame · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · PL-F · TODAY | walnut, wood frame, brass · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · PL-F · NEW REC | gel coat, r 3 mm arrises, 630 trim · +1.5 EV both | label fits, data fits
+Hero 0.6 m · the porthole · TODAY | the walnut F1 lite · +1.5 EV both | label fits, data fits
+Hero 0.6 m · the porthole · NEW REC | the A1 ring, 1/4 in tempered glass · +1.5 EV both | label fits, data fits
+Hero 0.4 m · lever, latch stile · TODAY | brass lever on walnut · +2 EV both | label fits, data fits
+Hero 0.4 m · lever, latch stile · NEW REC | 630 lever, wet-palm dulling · +2 EV both | label fits, data fits
+Eye 3 m · PL-K (locked) · TODAY | L0-K almond · +1.5 EV both | label fits, data fits
+Eye 3 m · PL-K (locked) · NEW REC | the aqua leaf: T6 turned · +1.5 EV both | label fits, data fits
+Eye 3 m · ST-F (stair door) · TODAY | a Level 0 door: L0-F walnut · +1.5 EV both | label fits, data fits
+Eye 3 m · ST-F (stair door) · NEW REC | stairwell A: putty leaf, #5F5A50 frame · +1.5 EV both | label fits, data fits
+Phone · eye 3 m · PL-F · TODAY | Handheld · +1.5 EV both | label fits, data fits
+Phone · eye 3 m · PL-F · NEW REC | Handheld · +1.5 EV both | label fits, data fits
+Phone · porthole 0.6 m · TODAY | Handheld · +1.5 EV both | label fits, data fits
+Phone · porthole 0.6 m · NEW REC | Handheld: the ring at LOD0 · +1.5 EV both | label fits, data fits
+TODAY break · M | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · D2 | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · FINAL | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · REST | T1, 3 m · +1 EV | label fits, data fits
+NEW break · M | T1, 3 m · +1 EV | label fits, data fits
+NEW break · D2 | T1, 3 m · +1 EV | label fits, data fits
+NEW break · FINAL | T1, 3 m · +1 EV | label fits, data fits
+NEW break · REST | T1, 3 m · +1 EV | label fits, data fits
+Cost · TODAY | the run's census, the dressed door at LOD0 | label fits, data fits
+Cost · NEW REC | T6 here in Level 0's yellow light, not a pool's | label fits, data fits
+TITLE Map doors · the Pool member (PL-F, PL-K) and the stair row | fits
+ALL LABELS FIT

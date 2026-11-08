@@ -1,0 +1,8 @@
+structures_g1_sp2.jpg 1920x1948, 5 tiles, 2 columns
+title | STRUCTURES G1 SP2 WELL TODAY VS NEW | 651/1544 FIT
+SP2_s00_raw.png | SP2 S00 TODAY | f3 arrival behind the guard | label 128/938 data 216/798 FIT
+SP2_s00_newsteady_raw.png | SP2 S00 NEW REC | glass panes in a shoe, cap rail | label 150/938 data 248/776 FIT
+SP2_s08_raw.png | SP2 S08 TODAY | f0 pool edge, up the well | label 128/938 data 200/798 FIT
+SP2_s08_newsteady_raw.png | SP2 S08 NEW REC | slab edges, rounds; well pieces are G2 | label 150/938 data 304/776 FIT
+cost_SP2.png | COST SP2 | harness inventories of both runs | label 78/938 data 256/848 FIT
+ALL LABELS FIT

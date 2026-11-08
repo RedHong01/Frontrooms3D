@@ -1,0 +1,14 @@
+pool_construction_today.jpg 1919x2039, 12 tiles, 3 columns
+SP1_s02_740_600_1460_1080.png | SP1_s02 crop 740,600 720x480 | SP1 · CATCH POOL | knife coping; no gutter, cove, drain | FIT
+SP1_s00_0_560_660_1000.png | SP1_s00 crop 0,560 660x440 | SP1 · FLUME | zero-thickness skin; no flange or pad | FIT
+SP1_s04_510_280_1410_880.png | SP1_s04 crop 510,280 900x600 | SP1 · TOWER DOOR | stepped arch head; tile bent round | FIT
+SP1_s00_660_250_1470_790.png | SP1_s00 crop 660,250 810x540 | SP1 · ARCADE | knife reveals; 80 mm facets | FIT
+SP6_s04_300_420_1250_1053.png | SP6_s04 crop 300,420 950x633 | SP6 · WEIRS | flat glowing quads; no lip | FIT
+SP6_s04_990_560_1560_940.png | SP6_s04 crop 990,560 570x380 | SP6 · STEP RUNS | box steps; no nosing L, no cove | FIT
+SP6_s07_760_0_1500_493.png | SP6_s07 crop 760,0 740x493 | SP6 · DOME | 12 x 64 quads; tiles converge | FIT
+SP6_s07_120_400_900_920.png | SP6_s07 crop 120,400 780x520 | SP6 · B2 AND CHEEK | cheek top a knife box; no cap | FIT
+SP6_s07_1100_560_1880_1080.png | SP6_s07 crop 1100,560 780x520 | SP6 · BASIN | niches are discs; flush box coping | FIT
+SP6_s02_700_380_1420_860.png | SP6_s02 crop 700,380 720x480 | SP6 · SIGHT ARCH | reveal and sill knife-edged | FIT
+P_s03_480_380_1480_1047.png | P_s03 crop 480,380 1000x667 | P · CLUB BASIN | stand-in ladder, slot gutter, drain | FIT
+P_s03_620_0_1500_587.png | P_s03 crop 620,0 880x587 | P · CEILING | temporary caustic cell web | FIT
+ALL LABELS FIT

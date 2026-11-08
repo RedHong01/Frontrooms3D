@@ -1,0 +1,17 @@
+TODAY LAB, MAIN CALLS | stream pair, +Z, Today on | label fits, data fits
+TODAY LAB, BUILD B CALLS | Prepare every zone, pool too | label fits, data fits
+DIFF X8 | 0 px over 2, max 0; dumps identical | label fits, data fits
+LEVEL 0 ROOM 7, TODAY | door 7 ahead, walnut | label fits, data fits
+LEVEL 0 ROOM 7, POOL LIVE | door 7 ahead, PD-A | label fits, data fits
+DIFF X8 | only inside the door: in x 651-1268 y 206-848 | label fits, data fits
+OFFICE DOOR, FIX A | Part A as landed | label fits, data fits
+OFFICE DOOR, BUILD B | pool built and live | label fits, data fits
+DIFF X8 | 0 px over 2, max 0 | label fits, data fits
+POOL DOOR, TODAY | walnut, Today on | label fits, data fits
+POOL DOOR, PACKAGE DEFAULT | PoolDoorsLive false, zone looks on | label fits, data fits
+DIFF X8 | 0 px over 2, max 0 | label fits, data fits
+DOOR 8 WALK, TODAY | walnut, 2.5 flashes in a second | label fits, data fits
+DOOR 8 WALK, PD-A | white leaves, 3.5: OVER THE LIMIT | label fits, data fits
+DOOR 8 WALK, PD-C | aqua leaves, 3.0: at the limit | label fits, data fits
+TITLE Zone doors Build B: proofs and the door 8 flash | fits
+ALL LABELS FIT

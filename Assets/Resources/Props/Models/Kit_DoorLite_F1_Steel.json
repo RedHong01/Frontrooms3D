@@ -1,0 +1,81 @@
+{
+ "name": "Kit_DoorLite_F1_Steel",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "lite_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "lite",
+  "vision_lite",
+  "zone_pair"
+ ],
+ "liteForm": "F1",
+ "liteRect": [
+  -0.127,
+  0.127,
+  -0.381,
+  0.381
+ ],
+ "cutRect": [
+  -0.1365,
+  0.1365,
+  -0.3905,
+  0.3905
+ ],
+ "liteCentreOnLeaf": [
+  0.0,
+  1.524
+ ],
+ "liteAreaSqIn": 300.0,
+ "liteScrews": 6,
+ "origin": "the lite's centre on the leaf's centre plane; x across, y up, z through (+Z the leaf's +Z face); screws on -Z",
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  8.0,
+  40.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.1459999978542328,
+  -0.4000000059604645,
+  -0.02560960128903389
+ ],
+ "boundsMax": [
+  0.1459999978542328,
+  0.4000000059604645,
+  0.024800000712275505
+ ],
+ "triangles": 536,
+ "slots": [
+  "Painted_Metal"
+ ],
+ "trianglesLod1": 112,
+ "trianglesLod2": 16,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.00040480028837919235
+ ],
+ "footprintSize": [
+  0.2919999957084656,
+  0.050409602001309395
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.45
+}

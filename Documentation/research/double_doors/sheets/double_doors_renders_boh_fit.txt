@@ -1,0 +1,38 @@
+Preview · eye 1.62 m at 3 m · TODAY | Descent door 3 -Z, from the Run! room | label fits, data fits
+Preview · eye 1.62 m at 3 m · NEW | B-2 REC: warm grey hollow metal, F1, louvre | label fits, data fits
+Phone tier · same camera · TODAY | Handheld, small kits LOD1 | label fits, data fits
+Phone tier · same camera · NEW | Handheld: its SSAO blackens the louvre | label fits, data fits
+Phone · SSAO as desktop (contract B) · TODAY | Handheld, SSAO mode of the desktop | label fits, data fits
+Phone · SSAO as desktop (contract B) · NEW | the louvre as on desktop | label fits, data fits
+Phone · SSAO softened (contract C) · TODAY | Handheld, radius 0.12, intensity 0.8 | label fits, data fits
+Phone · SSAO softened (contract C) · NEW | standing: as desktop, 0.07 stop | label fits, data fits
+3/4 at 3 m · from LOW · TODAY | the +Z face (the Run! side is 2.8 m wide) | label fits, data fits
+3/4 at 3 m · from LOW · NEW | oblique 40 deg, the LOW room's side | label fits, data fits
+Hero 0.35 m · louvre · TODAY | square on: walnut, kick plate · +2 EV | label fits, data fits
+Hero 0.35 m · louvre · NEW | square on: F12 louvre, primer chips · +2 EV | label fits, data fits
+Hero 0.35 m · lite · TODAY | square on: F4b bead · +2 EV | label fits, data fits
+Hero 0.35 m · lite · NEW | square on: F1 pressed steel, 6 screws · +2 EV | label fits, data fits
+The louvre from 1.2 m, standing · TODAY | eye 1.62 m, 1.2 m off the door | label fits, data fits
+The louvre from 1.2 m, standing · NEW | blades and lips read as lines | label fits, data fits
+Hero · hinge jamb · TODAY | oblique: brushed barrels · +2 EV | label fits, data fits
+Hero · hinge jamb · NEW | oblique: 630 barrels, bronze band, seam · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · TODAY | Handheld · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · NEW | Handheld: the louvre black (SSAO) · +2 EV | label fits, data fits
+Phone hero · SSAO as desktop (contract B) · TODAY | Handheld, SSAO mode of the desktop · +2 EV | label fits, data fits
+Phone hero · SSAO as desktop (contract B) · NEW | blades lit as on desktop · +2 EV | label fits, data fits
+Phone hero · SSAO softened (contract C) · TODAY | Handheld, radius 0.12, intensity 0.8 · +2 EV | label fits, data fits
+Phone hero · SSAO softened (contract C) · NEW | crouched: 1.2 stops darker · +2 EV | label fits, data fits
+Lights off · relay dark · TODAY | Run! room lamps dead, ambient only | label fits, data fits
+Lights off · relay dark · NEW | LOW beyond unlit until the door opens | label fits, data fits
+Inside LOW · entry door +Z · TODAY | Descent door 3 from the LOW room | label fits, data fits
+Inside LOW · entry door +Z · NEW | B-2 on its LOW face | label fits, data fits
+Inside LOW · its exit door 4 · TODAY | Descent door 4: opens into the night post | label fits, data fits
+Inside LOW · its exit door 4 · NEW | wears S-2 (the room it opens into) | label fits, data fits
+Cost · today | per pair | label fits, data fits
+Cost · new B-2 | per pair, measured | label fits, data fits
+B-2a warm grey · REC | built: ~140 135 124 | label fits, data fits
+B-2b cool grey | ~128 133 135 | label fits, data fits
+B-2c green-grey | ~124 133 118 | label fits, data fits
+Build A value · bug | fixed: Y .08 not .24 | label fits, data fits
+TITLE Zone doors: the back-of-house LOW pair (B-2) | fits
+ALL LABELS FIT

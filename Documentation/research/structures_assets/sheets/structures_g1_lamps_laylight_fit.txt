@@ -1,0 +1,26 @@
+structures_g1_lamps_laylight.jpg 1919x3355, 23 tiles, 3 columns
+title | STRUCTURES G1 · LAYLIGHT, LAMPS, FAR POOLS | 743/1544 FIT
+SP4_s00_laylight.png | TODAY · SP4 LAYLIGHT | a glow quad and runtime T-bars | label 181/617 data 240/424 FIT
+laylight_lit_raw.png | P6 · LAYLIGHT AT 0.9 · REC | rows, panel age, one dead row | label 233/617 data 232/372 FIT
+laylight_lit115_raw.png | P6 · AT DRIVE 1.15 | on the shoulder: rows faint | label 166/617 data 216/439 FIT
+laylight_lit17_raw.png | P6 · AT TODAY'S DRIVE 1.7 | clips white: rows and panels lost | label 221/617 data 264/384 FIT
+laylight_deadbay_raw.png | P6 · ONE BAY DEAD | its light out, its panels dark | label 155/617 data 240/450 FIT
+laylight_off_raw.png | P6 · OFF (BLACKOUT) | the panels' own albedo | label 173/617 data 176/432 FIT
+laylight_hero_raw.png | HERO 0.35 M · PANEL, T-BAR | 24 mm face; prisms in the detail | label 235/617 data 256/370 FIT
+laylight_phone_raw.png | P6 · PHONE TIER | LOD2 on the _Phone diffuser | label 137/617 data 216/468 FIT
+well_lit_raw.png | P6 · LIGHT WELL, LIT | D 1.20 diffuser at the shaft top | label 171/617 data 256/434 FIT
+SP6_s00_flush.png | TODAY · SP6 LAMP CUBES | box fixtures, a glow quad lens | label 206/617 data 240/399 FIT
+lamps_lit_raw.png | P7 · ZL F5 + ZL F7, LIT | flush 2 x 2 lens; globes ceiling, wall | label 195/617 data 304/410 FIT
+lamps_off_raw.png | P7 · THE SAME, DEAD | lens drive 0, lights off | label 170/617 data 192/435 FIT
+lamps_hero_flush_raw.png | HERO 0.35 M · ZL_FLUSH AT 0.9 · REC | U-lamps, prisms, insects read | label 325/617 data 232/280 FIT
+lamps_hero_flush_115_raw.png | ZL_FLUSH AT 1.15 | prisms faint at the edges only | label 151/617 data 240/454 FIT
+lamps_hero_flush_160_raw.png | ZL_FLUSH AT G1-B'S 1.6 | pressed flat against the white | label 199/617 data 240/406 FIT
+lamps_hero_globe_raw.png | HERO 0.35 M · ZL_GLOBE | cast body, jar, four-bar guard | label 210/617 data 240/395 FIT
+lamps_phone_raw.png | P7 · PHONE TIER | lens meshes only, 1 draw each | label 137/617 data 232/468 FIT
+pools_today_raw.png | TODAY · BUDGET, NO POOLS | lamps out past 16-19 m, lenses lit | label 215/617 data 272/390 FIT
+pools_new_raw.png | P7 · FAR POOLS · REC | each far lamp keeps its floor pool | label 187/617 data 272/418 FIT
+pools_ref_raw.png | REFERENCE · EVERY LAMP LIT | what the pools stand in for | label 235/617 data 216/370 FIT
+pools_numbers.png | FAR POOLS · FLOOR Y | centre line, linear, by distance | label 173/617 data 256/432 FIT
+note_ask5.png | NOTE · ASK 5, BUILT REC | FrontRoomsStructuresLampModes | label 200/617 data 232/405 FIT
+cost_lamps.png | COST · P6 + P7 | measured; frame time not measured | label 132/617 data 264/473 FIT
+ALL LABELS FIT

@@ -1,0 +1,55 @@
+{
+ "name": "Kit_AccessFloor_EdgeTrim_3m",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p9",
+  "access_floor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  6.0,
+  18.0,
+  70.0
+ ],
+ "lodBudget": [
+  900,
+  120,
+  36
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -1.5,
+  -0.2979999780654907,
+  -0.04200000315904617
+ ],
+ "boundsMax": [
+  1.5,
+  0.003599999938160181,
+  0.0030000004917383194
+ ],
+ "triangles": 2340,
+ "slots": [
+  "Trans_AluminiumSatin",
+  "Prop_PlasticBlack",
+  "Painted_Metal"
+ ],
+ "trianglesLod1": 220,
+ "trianglesLod2": 60,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.019500001333653927
+ ],
+ "footprintSize": [
+  3.0,
+  0.04500000365078449
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

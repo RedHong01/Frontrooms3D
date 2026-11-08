@@ -1,0 +1,8 @@
+structures_g1_p.jpg 1920x1888, 5 tiles, 2 columns
+title | STRUCTURES G1 P POOL ROUTE TODAY VS NEW | 711/1544 FIT
+P_s00_raw.png | P S00 TODAY | entrance corridor | label 105/938 data 136/821 FIT
+P_s00_new_raw.png | P S00 NEW (SAME) | unchanged in G1 (the map's own route) | label 151/938 data 296/775 FIT
+P_s03_raw.png | P S03 TODAY | pool hall, south-west | label 105/938 data 168/821 FIT
+P_s03_new_raw.png | P S03 NEW (SAME) | unchanged in G1 (K2m is G2) | label 151/938 data 216/775 FIT
+cost_P.png | COST P | harness inventories of both runs | label 55/938 data 256/871 FIT
+ALL LABELS FIT

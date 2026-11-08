@@ -1,0 +1,6 @@
+structures_g1_hub.jpg 1920x1371, 3 tiles, 2 columns
+title | STRUCTURES G1 HUB TODAY VS NEW | 556/1544 FIT
+HUB_s00_raw.png | HUB S00 TODAY | hub arrival | label 125/938 data 88/801 FIT
+HUB_s00_newsteady_raw.png | HUB S00 NEW REC | 196 tris of rounds; lamps steady here | label 147/938 data 296/779 FIT
+cost_HUB.png | COST HUB | harness inventories of both runs | label 75/938 data 256/851 FIT
+ALL LABELS FIT

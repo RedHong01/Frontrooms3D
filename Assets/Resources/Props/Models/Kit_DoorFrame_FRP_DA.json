@@ -1,0 +1,176 @@
+{
+ "name": "Kit_DoorFrame_FRP_DA",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "pivot_axis",
+   "pos": [
+    0.0,
+    0.0,
+    0.036
+   ]
+  },
+  {
+   "name": "pivot_axis_dir",
+   "pos": [
+    0.0,
+    0.1,
+    0.036
+   ]
+  },
+  {
+   "name": "map_hinge",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "strike",
+   "pos": [
+    0.0,
+    0.968,
+    0.998
+   ]
+  },
+  {
+   "name": "strike_bored",
+   "pos": [
+    0.0,
+    1.0,
+    0.998
+   ]
+  },
+  {
+   "name": "head_dust_a",
+   "pos": [
+    0.0,
+    2.098,
+    0.05
+   ]
+  },
+  {
+   "name": "head_dust_b",
+   "pos": [
+    0.0,
+    2.098,
+    0.95
+   ]
+  },
+  {
+   "name": "threshold",
+   "pos": [
+    0.0,
+    0.012,
+    0.5
+   ]
+  },
+  {
+   "name": "exit_sign_p",
+   "pos": [
+    -0.08,
+    2.18,
+    0.5
+   ]
+  }
+ ],
+ "tags": [
+  "interactable",
+  "door",
+  "door_frame",
+  "pool",
+  "frame_frp",
+  "double_acting",
+  "map_member"
+ ],
+ "visualPivotZ": 0.036,
+ "acting": "double",
+ "doorRoot": "D: origin = pivot axis (hinge-jamb edge, wall centre plane, floor); +Z along opening; +X = face S; no handing mirror (DA)",
+ "seals": {
+  "hingeSeal": [
+   [
+    -0.004,
+    0.012,
+    0.002
+   ],
+   [
+    0.004,
+    2.098,
+    0.0059999999999999975
+   ]
+  ],
+  "latchFin": [
+   [
+    -0.004,
+    0.011,
+    0.994
+   ],
+   [
+    0.004,
+    2.098,
+    0.998
+   ]
+  ],
+  "headFin": [
+   [
+    -0.004,
+    2.093,
+    0.0
+   ],
+   [
+    0.004,
+    2.098,
+    0.998
+   ]
+  ],
+  "slot": "Prop_PlasticBlack",
+  "note": "brush seals on the centre plane; the A12 gap sheet hides this slot for the no-brush frames"
+ },
+ "noCollider": true,
+ "frameType": "frp",
+ "wall": 0.004,
+ "headCornerRadius": 0.0127,
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
+ "boundsMin": [
+  -0.09109999984502792,
+  0.0,
+  -0.04879999905824661
+ ],
+ "boundsMax": [
+  0.09109999984502792,
+  2.1487998962402344,
+  1.048799991607666
+ ],
+ "triangles": 2428,
+ "slots": [
+  "Door_PoolGelcoat_Frame",
+  "Prop_Stainless630",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 880,
+ "trianglesLod2": 320,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.4999999962747097
+ ],
+ "footprintSize": [
+  0.18219999969005585,
+  1.0975999906659126
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.199
+}

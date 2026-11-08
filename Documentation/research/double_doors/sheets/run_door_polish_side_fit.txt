@@ -1,0 +1,32 @@
+In the title · 3/4 at 3 m · TODAY | Steel_DA squeezed x0.92, 10.2 mm proud | label fits, data fits
+In the title · 3/4 at 3 m · NEW REC | one-face F4 frame, 11.1 mm, strips | label fits, data fits
+In the title · grazing, 2 m · TODAY | the bare wall in the gaps | label fits, data fits
+In the title · grazing, 2 m · NEW REC | black strips in the gaps, true section | label fits, data fits
+In the title · hero 0.35 m · latch jamb · TODAY | thin casing, wall paint in the gap · +2 EV both | label fits, data fits
+In the title · hero 0.35 m · latch jamb · NEW REC | the strike's lip in the 9 mm return · +2 EV both | label fits, data fits
+In the title · hero 0.4 m · the foot · TODAY | a lit strip under the leaf · +2 EV both | label fits, data fits
+In the title · hero 0.4 m · the foot · NEW REC | the undercut's black backer · +2 EV both | label fits, data fits
+In the title · hero 0.35 m · the knob · TODAY | clean almond · +2 EV both | label fits, data fits
+In the title · hero 0.35 m · the knob · NEW REC | Run! wear: hand marks, chips · +2 EV both | label fits, data fits
+In the title · off state (room dark) · TODAY | the room's lamps off · +1.5 EV both | label fits, data fits
+In the title · off state (room dark) · NEW REC | the room's lamps off · +1.5 EV both | label fits, data fits
+Lab · square on, 2.7 m · TODAY | ELECTRICAL ROOM, armed | label fits, data fits
+Lab · square on, 2.7 m · NEW REC | the same door, armed | label fits, data fits
+Lab · hero 0.37 m · hinge jamb · TODAY | bare wall in the gap · fill | label fits, data fits
+Lab · hero 0.37 m · hinge jamb · NEW REC | the black strip in the gap · fill | label fits, data fits
+Lab · hero 0.43 m · head corner · TODAY | the squeezed head · fill | label fits, data fits
+Lab · hero 0.43 m · head corner · NEW REC | the mitred head, its strip · fill | label fits, data fits
+Lab · STAFF ONLY at 3 m · TODAY | left wall, z 17 | label fits, data fits
+Lab · STAFF ONLY at 3 m · NEW REC | left wall, z 17 | label fits, data fits
+Lab · NOT AN EXIT at 3 m · TODAY | right wall, z 23 | label fits, data fits
+Lab · NOT AN EXIT at 3 m · NEW REC | right wall, z 23 | label fits, data fits
+Phone · in the title, 3 m · TODAY | Handheld | label fits, data fits
+Phone · in the title, 3 m · NEW REC | Handheld | label fits, data fits
+Phone · lab, 3 m · TODAY | the rig's handheld lights | label fits, data fits
+Phone · lab, 3 m · NEW REC | the rig's handheld lights | label fits, data fits
+Tripped · EMERGENCY POWER, 2 s · TODAY | the strips out, the heads on | label fits, data fits
+Tripped · EMERGENCY POWER, 2 s · NEW REC | the strips out, the heads on | label fits, data fits
+Cost · TODAY | the lab's census, LOD0 | label fits, data fits
+Cost · NEW REC | the same census | label fits, data fits
+TITLE Run! side doors · a frame built for the wall | fits
+ALL LABELS FIT

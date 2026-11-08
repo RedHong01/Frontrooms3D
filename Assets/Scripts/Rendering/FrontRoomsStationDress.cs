@@ -264,14 +264,14 @@ public sealed class FrontRoomsStationDress : MonoBehaviour
         };
         var frame = new GameObject("double door frame").transform;
         frame.SetParent(door, false);
-        FrontRoomsDoubleDoorKit.BuildFrame(frame, kit, FrontRoomsDoubleDoorKit.Faces.Plus);
+        // The same frame and leaves as before, gathered into the kit's pair (zone doors, research/double_doors/20_design.md
+        // A3.5): D-3 (Red 2026-11-05 21:15:15 "按默认做") gives its +Z face, the one this room sees, the station's own language
+        // (pressed-steel casing, stainless guards, 630 barrels), the same parts in the same place as on the stream's terminal
+        // pair, so the swap at ClearStartArea changes nothing. Before the renderer loop, so own and SetMask take the new parts.
+        var pair = FrontRoomsDoubleDoorKit.BuildPair(door, frame, kit, FrontRoomsDoubleDoorKit.Faces.Plus, false);
         for (var hand = -1; hand <= 1; hand += 2)
-        {
-            Transform carrier, hingeBody;
-            GameObject slab;
-            var pivot = FrontRoomsDoubleDoorKit.BuildLeaf(door, frame, hand, kit, FrontRoomsDoubleDoorKit.Faces.Plus, false, out carrier, out hingeBody, out slab);
-            FrontRoomsDoubleDoorKit.PlaceLeaf(frame, pivot, carrier, hingeBody, hand, 1);
-        }
+            FrontRoomsDoubleDoorKit.PlaceLeaf(frame, pair.Pivot(hand), pair.Carrier(hand), pair.HingeBody(hand), hand, 1);
+        FrontRoomsDoubleDoorKit.SetStationFace(pair, true);
         foreach (var r in door.GetComponentsInChildren<Renderer>(true))
         {
             own.Add(r);

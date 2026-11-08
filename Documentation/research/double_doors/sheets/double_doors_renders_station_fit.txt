@@ -1,0 +1,22 @@
+Station face · eye 1.62 m at 3 m · TODAY | start door +Z, the station side | label fits, data fits
+Station face · eye 1.62 m at 3 m · NEW | S-1 REC: steel casing, guards, 630 barrels | label fits, data fits
+Phone tier · same camera · TODAY | Handheld, small kits LOD1 | label fits, data fits
+Phone tier · same camera · NEW | Handheld, the guards at LOD1 | label fits, data fits
+3/4 at 3 m · TODAY | oblique 40 deg from the right | label fits, data fits
+3/4 at 3 m · NEW | oblique 40 deg from the right | label fits, data fits
+Hero 0.35 m · casing guard · TODAY | square on: walnut casing · +2 EV | label fits, data fits
+Hero 0.35 m · casing guard · NEW | square on: guard, steel casing, bronze cap · +2 EV | label fits, data fits
+Hero · the casing's foot · TODAY | oblique: walnut casing, brushed barrels · +2 EV | label fits, data fits
+Hero · the casing's foot · NEW | oblique: 630 barrels, cap, return · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · TODAY | Handheld · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · NEW | Handheld, the guard at LOD1 · +2 EV | label fits, data fits
+Lights off · relay dark · TODAY | map lamps dipped to 0, lights in 12 m off | label fits, data fits
+Lights off · relay dark · NEW | the same | label fits, data fits
+Turned round 5.5 m past it · TODAY | the player's own view (game camera) | label fits, data fits
+Turned round 5.5 m past it · NEW | the player's own view (game camera) | label fits, data fits
+Stream face · unchanged · TODAY | start door -Z before Space (Level 0) | label fits, data fits
+Stream face · unchanged · NEW | the same: D's stream face stays Level 0 | label fits, data fits
+Cost · today | per builder | label fits, data fits
+Cost · new S-1 | per builder, measured | label fits, data fits
+TITLE Zone doors: station D's face (S-1) | fits
+ALL LABELS FIT

@@ -1,0 +1,53 @@
+{
+ "name": "Kit_RailEnd_Cap",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "rail",
+  "p4"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.5,
+  8.0,
+  28.0
+ ],
+ "lodBudget": [
+  240,
+  100,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.0030000009573996067,
+  -0.0210999995470047,
+  -0.0210999995470047
+ ],
+ "boundsMax": [
+  0.006500000134110451,
+  0.0210999995470047,
+  0.0210999995470047
+ ],
+ "triangles": 216,
+ "slots": [
+  "Prop_StainlessSatin"
+ ],
+ "trianglesLod1": 60,
+ "trianglesLod2": 18,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.001749999588355422,
+  -0.0
+ ],
+ "footprintSize": [
+  0.009500001091510057,
+  0.0421999990940094
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

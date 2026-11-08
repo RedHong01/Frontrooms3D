@@ -6,8 +6,12 @@ using UnityEngine;
 /// mode of 10_spec §1 (A2 axis, handing mirror), kept as a rig parameter and never selected by D1.6.</summary>
 public enum DoorActing { Double, Single }
 
-/// <summary>The door family member (10_spec §2.1): which frame, leaf and hardware a door gets.</summary>
-public enum FrontRoomsDoorMember { Lobby, Office, Run, Exit }
+/// <summary>The door family member (10_spec §2.1): which frame, leaf and hardware a door gets. Append-only: the rows are indexed
+/// (int)member * 2 (FrontRoomsInteractableKit.Door.cs). The zone doors' Map stage (2026-11-06, research/double_doors/30_build.md
+/// Part M) appends Pool (rows 8-9, PL-F / PL-K), BackOfHouse (10-11, BH-F / BH-K; the map line's BackOfHouseDoor predicate, as
+/// agreed with the level design line 2026-11-05 21:57) and Stair (12-13, ST-F / ST-K; a door into a fire stair, given only by
+/// the map's own word, contract M8).</summary>
+public enum FrontRoomsDoorMember { Lobby, Office, Run, Exit, Pool, BackOfHouse, Stair }
 
 /// <summary>
 /// The dressed door's moving parts (D1.6, 10_design §4.1), on the empty "Leaf rig" under "Door hinge {a}-{b}". It

@@ -1,0 +1,18 @@
+structures_g1_shared_kits.jpg 1919x2167, 15 tiles, 3 columns
+title | STRUCTURES G1 · SHARED KITS | 496/1544 FIT
+SP3_s13_full.png | TODAY · SP3 FILE MEZZANINE | grey stand-in rows | label 231/617 data 144/374 FIT
+shelving_34_raw.png | P9 · STEEL SHELVING | 0.914 x 0.457 x 2.134, 6 shelves | label 173/617 data 256/432 FIT
+shelving_hero_raw.png | HERO 0.35 M · POST, BOLTS | 1-1/2 in hole pitch, sway straps | label 229/617 data 256/376 FIT
+SP3_s06_full.png | TODAY · SP3 COMPUTER ROOM | papered riser, no panels | label 241/617 data 192/364 FIT
+floor_34_raw.png | P9 · ACCESS FLOOR AT 0.30 | cells, pedestals, trim, ramp nosing | label 234/617 data 280/371 FIT
+floor_hero_raw.png | HERO 0.35 M · EDGE TRIM | alu nosing, fascia, screws | label 213/617 data 208/392 FIT
+SP6_s10_full.png | TODAY · SP6 C8 PANELS | grey greybox panels, box rails | label 197/617 data 240/408 FIT
+grate_34_raw.png | P9 · FRP GRATING OVER THE TANK | 38 mm mesh, one panel out | label 272/617 data 200/333 FIT
+grate_hero_raw.png | HERO 0.35 M · GRATING | gritted bar tops, 1 mm chamfer | label 196/617 data 240/409 FIT
+whips_eye_raw.png | P9 · CABLE WHIPS, FROM THE EYE | a missing tile's plenum | label 269/617 data 184/336 FIT
+whips_hero_raw.png | HERO 0.5 M · FLEX CONDUIT | 3/8 in whips, LV cable, box | label 225/617 data 216/380 FIT
+shelving_lod2_raw.png | P9 · SHELVING AT LOD2 | 240 tris a unit, the phone mesh | label 193/617 data 248/412 FIT
+floor_lod2_raw.png | P9 · ACCESS FLOOR AT LOD2 | the phone meshes, same view | label 233/617 data 216/372 FIT
+note_shared.png | NOTE · ORDER AND PLACEMENT | who wires what, when | label 242/617 data 160/363 FIT
+cost_shared.png | COST · P9 | measured; frame time not measured | label 87/617 data 264/518 FIT
+ALL LABELS FIT

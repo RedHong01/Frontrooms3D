@@ -139,8 +139,10 @@ public sealed partial class FrontRoomsInteractablesShowcase
     FrontRoomsMapCarve museumCarve;
     bool museumPlanOpen, museumStartStopped;
     float museumLoadedAt, museumNextTry, museumTagClock, museumMarkUntil;
-    // 1.7's member: 0 Lobby, 1 Office, 2 Run!, 3 Exit (FrontRoomsDoorMember's order).
+    // 1.7's member: 0 Lobby, 1 Office, 2 Run!, 3 Exit, 4 Pool, 5 Back-of-house, 6 Stair (FrontRoomsDoorMember's order; the visual
+    // line's zone doors appended 4-6, Map stage 2026-11-06). MuseumMemberCount follows the enum, so a later member joins the cycle.
     int museumMember;
+    static readonly int MuseumMemberCount = Enum.GetValues(typeof(FrontRoomsDoorMember)).Length;
     // The station last walked to, and the one whose stop the player stands at now (-1 none).
     int museumMarkRoom = -1, museumMarkSlot = -1, museumNearRoom = -1, museumNearSlot = -1;
     // The museum's door fronts by edge id (room 1's six and 3.5's), and what the kit is told about room 1's (render only).
@@ -2978,7 +2980,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
     {
         long edge;
         if (!MuseumEdgeOf(7, out edge)) return;
-        museumMember = (museumMember + 1) % 4;
+        museumMember = (museumMember + 1) % MuseumMemberCount;
         museumMembers[edge] = (FrontRoomsDoorMember)museumMember;
         // 1.7's floor tag is the member's.
         SyncMuseumPlacardVariants();
@@ -3223,9 +3225,10 @@ public sealed partial class FrontRoomsInteractablesShowcase
         return false;
     }
 
-    static string MemberName(int member) => member == 1 ? "OFFICE" : member == 2 ? "RUN!" : member == 3 ? "EXIT" : "LOBBY";
+    static string MemberName(int member) => member == 1 ? "OFFICE" : member == 2 ? "RUN!" : member == 3 ? "EXIT" : member == 4 ? "POOL"
+        : member == 5 ? "BACK OF HOUSE" : member == 6 ? "STAIR" : "LOBBY";
 
-    string MemberLetter() => ((char)('A' + Mathf.Clamp(museumMember, 0, 3))).ToString();
+    string MemberLetter() => ((char)('A' + Mathf.Clamp(museumMember, 0, MuseumMemberCount - 1))).ToString();
 
     // 4.7's close-up stood at now ("A".."D"), or the row's span before the first 7 again.
     string DevLetter() => museumDev >= 0 && museumDev < DevCount ? ((char)('A' + museumDev)).ToString() : "A-D";
@@ -3283,7 +3286,7 @@ public sealed partial class FrontRoomsInteractablesShowcase
                 case 6:
                     return "The Run! goal door's look (the kit's RUN member, free). Nothing arms here: the corridor is ROOM TYPES R11 and tour 3.";
                 case 7:
-                    return "MEMBER " + MemberLetter() + "  " + MemberName(museumMember) + ". 7 again: the next member (A Lobby, B Office, C Run!, D Exit).";
+                    return "MEMBER " + MemberLetter() + "  " + MemberName(museumMember) + ". 7 again: the next member (A Lobby, B Office, C Run!, D Exit, E Pool, F Back of house, G Stair).";
             }
             return "";
         }

@@ -1,0 +1,16 @@
+L0-F · Level 0 · TODAY | 3 m, +1.5 EV | label fits, data fits
+OF-F · Office · TODAY | 3 m, +1.5 EV | label fits, data fits
+BH-F · service · TODAY | 3 m, +1.5 EV | label fits, data fits
+PL-F · pool · TODAY | 3 m, +1.5 EV | label fits, data fits
+ST-F · stair · TODAY | 3 m, +1.5 EV | label fits, data fits
+L0-F · Level 0 · NEW | 3 m, +1.5 EV | label fits, data fits
+OF-F · Office · NEW | 3 m, +1.5 EV | label fits, data fits
+BH-F · service · NEW | 3 m, +1.5 EV | label fits, data fits
+PL-F · pool · NEW | 3 m, +1.5 EV | label fits, data fits
+ST-F · stair · NEW | 3 m, +1.5 EV | label fits, data fits
+OF-K · NEW locked | 3 m, +1.5 EV | label fits, data fits
+BH-K · NEW locked | 3 m, +1.5 EV | label fits, data fits
+PL-K · NEW locked | 3 m, +1.5 EV | label fits, data fits
+ST-K · NEW locked | 3 m, +1.5 EV | label fits, data fits
+TITLE Map doors · every member at 3 m | fits
+ALL LABELS FIT

@@ -1,0 +1,8 @@
+structures_g1_sp3.jpg 1920x1948, 5 tiles, 2 columns
+title | STRUCTURES G1 SP3 LEVEL 0 FIELD TODAY VS NEW | 792/1544 FIT
+SP3_s00_raw.png | SP3 S00 TODAY | arrival, the main corridor | label 128/938 data 208/798 FIT
+SP3_s00_newsteady_raw.png | SP3 S00 NEW REC | rail at V1 through the door | label 150/938 data 216/776 FIT
+SP3_s01_raw.png | SP3 S01 TODAY | v1 cut, the rail edge | label 128/938 data 168/798 FIT
+SP3_s01_newsteady_raw.png | SP3 S01 NEW REC | pipe rail, pickets (ask 3 B), welds | label 150/938 data 280/776 FIT
+cost_SP3.png | COST SP3 | harness inventories of both runs | label 78/938 data 256/848 FIT
+ALL LABELS FIT

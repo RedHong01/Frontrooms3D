@@ -1,0 +1,122 @@
+Today · eye 3 m | door 7 -Z, Level 0 | label fits, data fits
+PD-A REC · eye 3 m | portholes DARK: a face | label fits, data fits
+PD-B · eye 3 m | anodised alu, F1 (swap) | label fits, data fits
+PD-C · eye 3 m | portholes DARK: a face | label fits, data fits
+Today · preview 11 m | far end of room 7 | label fits, data fits
+PD-A REC · preview 11 m | DARK until door 7 opens | label fits, data fits
+PD-B · preview 11 m | the pool door ahead | label fits, data fits
+PD-C · preview 11 m | DARK until door 7 opens | label fits, data fits
+Today · phone tier | Handheld, plates LOD1 | label fits, data fits
+PD-A REC · phone tier | Handheld, plates LOD1 | label fits, data fits
+PD-B · phone tier | Handheld, plates LOD1 | label fits, data fits
+PD-C · phone tier | Handheld, plates LOD1 | label fits, data fits
+Today · 3/4 at 3 m | oblique 40 deg | label fits, data fits
+PD-A REC · 3/4 at 3 m | oblique 40 deg | label fits, data fits
+PD-B · 3/4 at 3 m | oblique 40 deg | label fits, data fits
+PD-C · 3/4 at 3 m | oblique 40 deg | label fits, data fits
+Today · lite 0.35 m | wired lite, walnut | label fits, data fits
+PD-A REC · lite 0.35 m | ring foot feathered (Fix B) | label fits, data fits
+PD-B · lite 0.35 m | F1 pane in its kit | label fits, data fits
+PD-C · lite 0.35 m | ring foot feathered (Fix B) | label fits, data fits
+Today · phone hero 0.35 m | Handheld, wired lite | label fits, data fits
+PD-A REC · phone hero 0.35 m | LOD0; crease = SSAO | label fits, data fits
+PD-B · phone hero 0.35 m | F1 kit at LOD1 | label fits, data fits
+PD-C · phone hero 0.35 m | LOD0; crease = SSAO | label fits, data fits
+Today · ring section | the lite bead | label fits, data fits
+PD-A REC · ring section | moulded crown, soft foot | label fits, data fits
+PD-B · ring section | the F1 frame | label fits, data fits
+PD-C · ring section | epoxy crown, soft foot | label fits, data fits
+Today · push plates | 630 on walnut | label fits, data fits
+PD-A REC · push plates | 630 on gel coat | label fits, data fits
+PD-B · push plates | 630 on aluminium | label fits, data fits
+PD-C · push plates | 630 on epoxy | label fits, data fits
+Today · kick plate | oak saddle | label fits, data fits
+PD-A REC · kick plate | 630 tread, aqua FRP bevels | label fits, data fits
+PD-B · kick plate | fluted saddle | label fits, data fits
+PD-C · kick plate | fluted saddle | label fits, data fits
+Today · hinge jamb | brushed barrels | label fits, data fits
+PD-A REC · hinge jamb | 630, deeper aqua frame | label fits, data fits
+PD-B · hinge jamb | 630, alu frame | label fits, data fits
+PD-C · hinge jamb | 630, aqua frame | label fits, data fits
+Today · head corner | casing mitre · +2 EV | label fits, data fits
+PD-A REC · head corner | r 12.7 corner · +2 EV | label fits, data fits
+PD-B · head corner | frame mitre · +2 EV | label fits, data fits
+PD-C · head corner | frame mitre · +2 EV | label fits, data fits
+Today · lights off | room 7 lamps off | label fits, data fits
+PD-A REC · lights off | room 7 lamps off | label fits, data fits
+PD-B · lights off | room 7 lamps off | label fits, data fits
+PD-C · lights off | room 7 lamps off | label fits, data fits
+Today · door 7 +Z | from the pool | label fits, data fits
+PD-A REC · door 7 +Z | band meets deeper frame | label fits, data fits
+PD-B · door 7 +Z | band stops at frame | label fits, data fits
+PD-C · door 7 +Z | band stops at frame | label fits, data fits
+Today · lite, pool side | room 7 through it (LIVE) | label fits, data fits
+PD-A REC · lite, pool side | room 7 through it (LIVE) | label fits, data fits
+PD-B · lite, pool side | room 7 through it (LIVE) | label fits, data fits
+PD-C · lite, pool side | room 7 through it (LIVE) | label fits, data fits
+Today · exit door 8 | door 8 -Z in the pool | label fits, data fits
+PD-A REC · exit door 8 | DARK portholes: a face | label fits, data fits
+PD-B · exit door 8 | door 8 -Z in the pool | label fits, data fits
+PD-C · exit door 8 | DARK portholes: a face | label fits, data fits
+Today · door 8 at 10 m | white on white check | label fits, data fits
+PD-A REC · door 8 at 10 m | outline F1; face at 10 m | label fits, data fits
+PD-B · door 8 at 10 m | white on white check | label fits, data fits
+PD-C · door 8 at 10 m | face at 10 m | label fits, data fits
+Today · open 88 deg | over the dry sill | label fits, data fits
+PD-A REC · open 88 deg | over the dry sill | label fits, data fits
+PD-B · open 88 deg | over the dry sill | label fits, data fits
+PD-C · open 88 deg | over the dry sill | label fits, data fits
+Today · dark pool 3 m | the goal, door 7 -Z | label fits, data fits
+PD-A REC · dark pool 3 m | goal by its F1 outline | label fits, data fits
+PD-B · dark pool 3 m | the goal, door 7 -Z | label fits, data fits
+PD-C · dark pool 3 m | the goal, door 7 -Z | label fits, data fits
+Today · dark pool phone | Handheld, plates LOD1 | label fits, data fits
+PD-A REC · dark pool phone | Handheld, plates LOD1 | label fits, data fits
+PD-B · dark pool phone | Handheld, plates LOD1 | label fits, data fits
+PD-C · dark pool phone | Handheld, plates LOD1 | label fits, data fits
+Today · dark pool 3/4 | oblique 40 deg | label fits, data fits
+PD-A REC · dark pool 3/4 | oblique 40 deg | label fits, data fits
+PD-B · dark pool 3/4 | oblique 40 deg | label fits, data fits
+PD-C · dark pool 3/4 | oblique 40 deg | label fits, data fits
+Today · dark pool lite | 0.35 m · +2 EV | label fits, data fits
+PD-A REC · dark pool lite | 0.35 m · +2 EV | label fits, data fits
+PD-B · dark pool lite | 0.35 m · +2 EV | label fits, data fits
+PD-C · dark pool lite | 0.35 m · +2 EV | label fits, data fits
+Today · dark pool door 6 | back to the lit pool | label fits, data fits
+PD-A REC · dark pool door 6 | no line on the saddle | label fits, data fits
+PD-B · dark pool door 6 | line on the alu saddle | label fits, data fits
+PD-C · dark pool door 6 | epoxy saddle | label fits, data fits
+Today · cost | per pair vs today | label fits, data fits
+PD-A REC · cost | per pair vs today | label fits, data fits
+PD-B · cost | per pair vs today | label fits, data fits
+PD-C · cost | per pair vs today | label fits, data fits
+Fix 1 · as built, 3 m | DARK discs -3.9 st: a face | label fits, data fits
+Fix 1 · G4 reflectance | F0 .16, smooth .86: -3.3 st | label fits, data fits
+Fix 1 · G5 film + reflect | scatter .25 x 2.5: -3.1 st | label fits, data fits
+Fix 1 · G5, lamps off | discs glow over the wall | label fits, data fits
+Fix 1 · as built, 10 m | the pool, -4.3 st | label fits, data fits
+Fix 1 · G4 at 10 m | still a face | label fits, data fits
+Fix 1 · G5 at 10 m | still a face, LIVE misted | label fits, data fits
+Fix 1 · verdict | kept, said on the sheet | label fits, data fits
+Fix 2 · Build B frame | course aqua · +2 EV | label fits, data fits
+Fix 2 · F1 built REC | one step deeper · +2 EV | label fits, data fits
+Fix 2 · F2 for Red | two steps deeper · +2 EV | label fits, data fits
+Fix 2 · W2 warm leaf | leaf -0.17 st · +2 EV | label fits, data fits
+Fix 2 · lit pool, Build B | frame vs wall -0.3 st | label fits, data fits
+Fix 2 · lit pool, F1 | frame vs wall -0.9 st | label fits, data fits
+Fix 2 · lit pool, F2 | frame vs wall -1.6 st | label fits, data fits
+Fix 2 · F1 at 9 m | frame -0.6 st · +2 EV | label fits, data fits
+Fix 3 · desktop, Build B | 70 deg foot, dark · +1 EV | label fits, data fits
+Fix 3 · desktop, Fix B | 19 deg feathered foot · +1 EV | label fits, data fits
+Fix 3 · phone, Build B | LOD1 32-gon outline · +1 EV | label fits, data fits
+Fix 3 · phone + SSAO C | Fix B, LOD0 · +1 EV | label fits, data fits
+Fix 4 · door 6, Build B | line on the arris · +2 EV | label fits, data fits
+Fix 4 · door 6, Fix B | bevels in the gel coat · +2 EV | label fits, data fits
+Fix 4 · low view, Build B | 0.55 m high · +1 EV | label fits, data fits
+Fix 4 · low view, Fix B | 0.55 m high · +1 EV | label fits, data fits
+Fix 5 · PD-B, Level 0 room | no local probe: gunmetal | label fits, data fits
+Fix 5 · PD-B, in the pool | box probe: lighter | label fits, data fits
+Fix 5 · PD-B in the lab | under a probe: light satin | label fits, data fits
+Fix 5 · verdict | captioned, not changed | label fits, data fits
+TITLE Zone doors: the pool pair (D-5) | fits
+ALL LABELS FIT

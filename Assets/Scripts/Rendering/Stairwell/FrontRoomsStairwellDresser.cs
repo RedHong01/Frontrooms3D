@@ -39,6 +39,17 @@ using UnityEngine.Rendering.Universal;
 ///   are Stair_*Inside / planar Stair_* materials with _FR_OWN_LIGHTS, so the map's lamps (unshadowed 10-12 m spots
 ///   that light through the stair's walls and dip with W1) never reach the inside: this works with URP light layers
 ///   off (today) and replaces the rendering-layer separation the 10-22 draft planned.
+///
+/// Stairwell doors (zone doors run, 2026-11-06; research/double_doors/30_build.md Part S; inventory rows D1, D3): unless Today,
+/// the three stair doors are hollow-metal kits in the same palette, render-only over the map's boxes as D1.6 does (the boxes keep
+/// their objects and colliders; their renderers are forceRenderingOff, because FrontRoomsStairwell.SetVisible re-enables
+/// 'enabled'): the EXIT leaf Kit_DoorLeaf_Stair on the leaf rig and its frame Kit_DoorFrame_StairExit (an SDI double-rabbet frame
+/// on the map trim's own envelope, no shadow: C23) in the frame dress; the sealed south leaf Kit_DoorLeaf_StairWide and the shell's
+/// south doorway frame Kit_DoorFrame_StairSouth; the north door's leaf Kit_DoorLeaf_StairNorth and Kit_DoorFrame_StairNorth (the
+/// steel stair-door look owed since 10-22). Every A13 and stair anchor stays where it was (the leaves keep the map's 50 mm), the
+/// leaves' stair faces take the own-lights finish (no skin needed), the band stops at the 2 in frame face, the two closers' shoes
+/// move onto the new frame face (11.1 mm proud of the stair wall, as F4, not the boxes' 20 mm). Today = true (WebGL players
+/// always) is today's dress byte for byte.
 /// </summary>
 [DefaultExecutionOrder(1000)]
 public sealed class FrontRoomsStairwellDresser : MonoBehaviour
@@ -46,6 +57,35 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
     public const string LeafDressName = "STAIR A dress (EXIT leaf)", FrameDressName = "STAIR A dress (EXIT frame)";
     public const string ShellDressName = "STAIR A dress (stairwell)", SealedLeafDressName = "STAIR A dress (sealed leaf)";
     public const string FarDoorDressName = "STAIR A dress (far door)", SpotNamePrefix = "Stair A wraparound light ";
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    /// <summary>WebGL players keep today's stair doors (rule 5).</summary>
+    public static bool Today { get { return true; } set { } }
+#else
+    /// <summary>True: today's stair doors byte for byte (the map's boxes in the putty finish, the skins, the box frames). Set
+    /// before a run starts (a dressed EXIT or stairwell keeps the look it was dressed with), as FrontRoomsDoubleDoorKit.Today.</summary>
+    public static bool Today { get; set; }
+#endif
+
+    /// <summary>The stair door kits (Tools/Blender/frontrooms_kit/assets/door_leaf_stair*.py, door_frame_stair_*.py).</summary>
+    public const string LeafKit = "Kit_DoorLeaf_Stair", LeafKitWide = "Kit_DoorLeaf_StairWide", LeafKitNorth = "Kit_DoorLeaf_StairNorth";
+    public const string FrameKit = "Kit_DoorFrame_StairExit", FrameKitSouth = "Kit_DoorFrame_StairSouth", FrameKitNorth = "Kit_DoorFrame_StairNorth";
+    /// <summary>The kits' finishes: the leaves' putty and the frames' brown-grey on PaintedMetal maps with today's mean colours
+    /// (A13's leaf / lock contrast holds), the leaves with the DoorWear_Stair layer; the Inside ones take the stair's own lights.</summary>
+    public const string DoorSteelName = "Stair_DoorSteel", DoorSteelInsideName = "Stair_DoorSteelInside";
+    public const string KitLeafName = "stair leaf (kit)", KitFrameName = "stair frame (kit)";
+    /// <summary>The closers' shoes on the kits' frame face (7/16 in proud of the stair wall: 0.1811 m from the EXIT's wall line,
+    /// 0.0411 from the sealed leaf's hinge plane), with the shoe kit's mount 0.02 behind its origin, as ExitShoeOut / SealedShoeOut.</summary>
+    public const float ExitShoeOutKit = .2011f, SealedShoeOutKit = .0611f;
+    /// <summary>The kit frames' 2 in face: the band and its cut-in line stop there (TrimFace 0.07 under Today).</summary>
+    public const float KitFrameFace = .0508f;
+
+    /// <summary>The stair door kits are dressed: not Today, and every kit is in the library (else today's dress, whole).</summary>
+    public static bool KitsLive => !Today && KitsAvailable;
+
+    public static bool KitsAvailable =>
+        FrontRoomsKitLibrary.Has(LeafKit) && FrontRoomsKitLibrary.Has(LeafKitWide) && FrontRoomsKitLibrary.Has(LeafKitNorth)
+        && FrontRoomsKitLibrary.Has(FrameKit) && FrontRoomsKitLibrary.Has(FrameKitSouth) && FrontRoomsKitLibrary.Has(FrameKitNorth);
 
     /// <summary>Desktop spot intensity (each of two) and range (10_directions 2.4, tuned for the one-cell vestibule).</summary>
     public static float SpotIntensity = 2.2f, SpotRange = 4.2f;
@@ -259,14 +299,19 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         var face = ModuleUnits.DoorLeafThickness * .5f;
 
         // Finishes: the map's cube leaf and its EXIT frame take the steel finishes (their renderers' material only).
+        var kits = KitsLive;
         var leafRenderer = door.leaf != null ? door.leaf.GetComponent<Renderer>() : null;
         if (leafRenderer != null) leafRenderer.sharedMaterial = FrontRoomsStairKit.Leaf;
+        // Stairwell doors: the kits draw the leaf and the frame; the map's cube and trim stay (collider, A13's and this dress's
+        // parents) but are not drawn.
+        if (kits && leafRenderer != null) leafRenderer.forceRenderingOff = true;
         foreach (var r in frame.GetComponentsInChildren<Renderer>(true))
         {
             if (r.transform != frame) continue;   // only the map's own frame mesh, never A13's or this dress's children
             r.sharedMaterial = FrontRoomsStairKit.Frame;
             // C23: the EXIT frame casts no shadow (the map's rule; kept if a rebuild ever forgets it).
             r.shadowCastingMode = ShadowCastingMode.Off;
+            if (kits) r.forceRenderingOff = true;
         }
         var sign = map.ExitSign;
         if (sign != null)
@@ -281,15 +326,19 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         var owner = ld.gameObject.AddComponent<FrontRoomsStairDressOwner>();
         e.leafDress = ld;
         Knuckles(ld, -push);
+        // Stairwell doors: the hollow-metal leaf (its stair face already in the own-lights finish, its F13 cut-out made).
+        if (kits) KitUnder(ld, LeafKit, push, KitLeafName, true);
         // The pull face's skin (the safe zone): the map's cube leaf takes every light, so its stair face would dip with
         // W1 through the walls; a 0.8 mm skin in the stair's own-lights finish covers that face only.
         var cube = door.leaf != null ? door.leaf.transform : null;
         var lited = ExitLiteHole(leaf, cube, out var liteRect, out var liteHole);
-        Skin(ld, leaf, cube, -push, FrontRoomsStairKit.LeafInside, lited ? liteRect : (Vector4?)null);
+        if (!kits) Skin(ld, leaf, cube, -push, FrontRoomsStairKit.LeafInside, lited ? liteRect : (Vector4?)null);
         // Door vision set A (Red 2026-10-30): the rated 4 x 25 in wired slot; the stairwell's steady light shows through it.
         if (lited)
         {
-            var kit = HangExitLite(ld, cube, push, liteHole, FrontRoomsStairKit.Leaf, FrontRoomsStairKit.LeafInside);
+            var kit = kits
+                ? HangExitLite(ld, cube, push, liteHole, FrontRoomsStairKit.Get(DoorSteelName), FrontRoomsStairKit.Get(DoorSteelInsideName), false)
+                : HangExitLite(ld, cube, push, liteHole, FrontRoomsStairKit.Leaf, FrontRoomsStairKit.LeafInside);
             if (kit != null) FrontRoomsDoorLite.AttachMap(kit, door, leaf, liteRect, map);
         }
         // Push face (the maze side): the kick plate and the STAIR A letter plate (SPEC #6).
@@ -304,8 +353,10 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         fd.localPosition = hinge.localPosition;
         fd.localRotation = door.closed;
         e.frameDress = fd;
+        // Stairwell doors: the hollow-metal frame on the trim's envelope; no shadow (C23, as the trim).
+        if (kits) KitUnder(fd, FrameKit, push, KitFrameName, false);
         // The closer: a regular arm on the stair side, its shoe on the stairwell frame head's face.
-        e.closer = BuildCloser(ld, fd, ExitShoeOut, push);
+        e.closer = BuildCloser(ld, fd, kits ? ExitShoeOutKit : ExitShoeOut, push);
 
         exit = e;
         ExitBuildsDressed++;
@@ -373,13 +424,14 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
     /// Hangs the lite kit under a leaf's dressing (its screws on the stair side, face S) and swaps the cube's mesh for the holed
     /// leaf (render-only: the collider is the door's own, so the Relay's sight still stops at the leaf).
     /// </summary>
-    static GameObject HangExitLite(Transform dress, Transform cube, float push, Vector4 hole, Material pushFace, Material stairFace)
+    static GameObject HangExitLite(Transform dress, Transform cube, float push, Vector4 hole, Material pushFace, Material stairFace, bool holeTheCube = true)
     {
         var filter = cube.GetComponent<MeshFilter>();
         if (filter == null) return null;
         var kit = FrontRoomsKitLibrary.Spawn(ExitLiteKit, dress, Vector3.zero, Quaternion.identity, new Vector3(-push * ExitLiteScaleX, 1f, 1f), false, "EXIT lite", false);
         if (kit == null) return null;
-        filter.sharedMesh = FrontRoomsDoorLite.HoledUnitLeaf(hole);
+        // the stair door kits carry their own cut-out (the cube is not drawn then)
+        if (holeTheCube) filter.sharedMesh = FrontRoomsDoorLite.HoledUnitLeaf(hole);
         foreach (var r in kit.GetComponentsInChildren<MeshRenderer>(true))
         {
             var mats = r.sharedMaterials;
@@ -414,6 +466,31 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         }
         var r = Part(parent, "stair face skin", mesh, material, new Vector3(centre.x + x, centre.y, centre.z), Quaternion.identity, ShadowCastingMode.Off);
         r.receiveShadows = true;
+    }
+
+    /// <summary>
+    /// Stairwell doors: a stair door kit under its own root, mirrored as the closer kits are (the kits' +X is the pull face,
+    /// the map hinges' +X the push face, so scale (-push, 1, 1)); render-only, no colliders, no EXAMINE. Shadows off for the
+    /// EXIT frame (C23). Null when the kit is missing.
+    /// </summary>
+    static GameObject KitUnder(Transform parent, string kit, float push, string label, bool shadows)
+    {
+        var root = NewChild(parent, label + " root");
+        root.localScale = new Vector3(-push, 1f, 1f);
+        var go = FrontRoomsKitLibrary.Spawn(kit, root, Vector3.zero, Quaternion.identity, null, false, label, false);
+        if (go != null && !shadows)
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
+        return go;
+    }
+
+    /// <summary>A shell doorway's kit (its frame): under the stair dress at the doorway hinge's shut pose (its door space).</summary>
+    static GameObject KitAtHinge(Transform dressRoot, Transform stairwell, Transform hinge, Quaternion shut, string kit, string label)
+    {
+        if (hinge == null) return null;
+        var at = NewChild(dressRoot, label + " (door space)");
+        at.localPosition = dressRoot.InverseTransformPoint(stairwell.TransformPoint(hinge.localPosition));
+        at.localRotation = Quaternion.Inverse(dressRoot.localRotation) * shut;
+        return KitUnder(at, kit, 1f, label, true);
     }
 
     // Three 4 1/2 in ball-bearing butt hinges on the hinge edge, knuckles on the pull side (the leaf swings into X).
@@ -518,6 +595,7 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         if (block == null) block = new MaterialPropertyBlock();
         var t = sw.transform;
         var s = new ShellDress { sw = sw, k = k };
+        var kits = KitsLive;
         // The shell's own boxes take look A (named as FrontRoomsStairwell.Build and Doorway make them). The north end
         // wall (JoinNextFloor) is the map's paper on the next floor's corridor and is left as it is.
         foreach (Transform c in t)
@@ -529,15 +607,20 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
                 if (n.StartsWith("Wall ")) r.sharedMaterial = FrontRoomsStairKit.Block;
                 else if (n == "Floor") r.sharedMaterial = FrontRoomsStairKit.Fill;
                 else if (n == "Ceiling") r.sharedMaterial = FrontRoomsStairKit.Slab;
-                else if (n.StartsWith("Frame ")) r.sharedMaterial = FrontRoomsStairKit.FrameInside;
+                else if (n.StartsWith("Frame "))
+                {
+                    r.sharedMaterial = FrontRoomsStairKit.FrameInside;
+                    // Stairwell doors: the doorway frame kits fill the same 70 mm holes; the boxes are not drawn
+                    if (kits) r.forceRenderingOff = true;
+                }
             }
             if (n == "Lamp housing") s.housing = c;
             if (n == "Lamp lens") s.lensGo = c;
         }
         // The south leaf (static, shown from the seal on) is seen only from inside; the north leaf is the next floor's
         // start door and is seen from its corridor too, so it takes every light.
-        SetLeaf(t, "Door hinge stairwell south", FrontRoomsStairKit.LeafInside);
-        SetLeaf(t, "Door hinge stairwell north", FrontRoomsStairKit.Leaf);
+        SetLeaf(t, "Door hinge stairwell south", FrontRoomsStairKit.LeafInside, kits);
+        SetLeaf(t, "Door hinge stairwell north", FrontRoomsStairKit.Leaf, kits);
         s.mapLamp = sw.Lamp;
 
         var root = NewChild(t, ShellDressName);
@@ -548,8 +631,10 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         var ceiling = FrontRoomsStairwell.CeilingHeight;
 
         // The band to 1.1 m and its cut-in line, painted over the block (overlays 1.5 / 2 mm off the inner faces).
-        var southGap = FrontRoomsStairwell.SouthOpeningWidth * .5f + ModuleUnits.TrimFace;
-        var northGap = FrontRoomsStairwell.NorthOpeningWidth * .5f + ModuleUnits.TrimFace;
+        // (stairwell doors: the band runs on to the kits' 2 in frame face, over the block infill)
+        var frameFace = kits ? KitFrameFace : ModuleUnits.TrimFace;
+        var southGap = FrontRoomsStairwell.SouthOpeningWidth * .5f + frameFace;
+        var northGap = FrontRoomsStairwell.NorthOpeningWidth * .5f + frameFace;
         var band = new FrontRoomsStairKit.MB();
         var cut = new FrontRoomsStairKit.MB();
         BandWall(band, cut, new Vector3(-inner, 0f, 0f), Vector3.right, Vector3.forward, -inner, inner, 0f);
@@ -583,7 +668,15 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
             var face = ModuleUnits.DoorLeafThickness * .5f;
             // its stair face in the own-lights finish (the corridor face keeps the leaf's: it is seen from the next floor)
             var northLeaf = north.Find("Door leaf");
-            Skin(nd, north, northLeaf, 1f, FrontRoomsStairKit.LeafInside);
+            if (kits)
+            {
+                // Stairwell doors: the steel stair door (its stair face in the own-lights finish, the latch at the lever),
+                // its butts on the corridor side (it is pushed open out of the stair) and the doorway's frame
+                KitUnder(nd, LeafKitNorth, 1f, KitLeafName, true);
+                Knuckles(nd, -1f);
+                KitAtHinge(root, t, north, Quaternion.LookRotation(Vector3.right, Vector3.up), FrameKitNorth, KitFrameName + " north");
+            }
+            else Skin(nd, north, northLeaf, 1f, FrontRoomsStairKit.LeafInside);
             Plate(nd, owner, FrontRoomsStairSigns.Plate.FarDoor, k, new Vector3(face + PlateOut, 1.524f, .5f), Vector3.right);
             Plate(nd, owner, FrontRoomsStairSigns.Plate.NotAnExit, k, new Vector3(-face, 1.524f, .5f), Vector3.left);
             var rose = Spawn("Kit_Lock_Rose", nd, new Vector3(face, .968f, .92f), Quaternion.Euler(0f, 90f, 0f));
@@ -598,19 +691,24 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         {
             var sd = NewChild(south, SealedLeafDressName);
             Knuckles(sd, -1f);
+            // Stairwell doors: the sealed leaf as the EXIT's stair face (a 1.12 m opening's leaf, every face the own lights)
+            if (kits) KitUnder(sd, LeafKitWide, 1f, KitLeafName, true);
             // Door vision set A: the same slot, seen from the stair, dead: dark wired glass (nothing behind it to show).
             var cube = south.Find("Door leaf");
             if (ExitLiteHole(south, cube, out var liteRect, out var liteHole))
             {
-                var kit = HangExitLite(sd, cube, 1f, liteHole, FrontRoomsStairKit.LeafInside, FrontRoomsStairKit.LeafInside);
+                var inside = kits ? FrontRoomsStairKit.Get(DoorSteelInsideName) : FrontRoomsStairKit.LeafInside;
+                var kit = HangExitLite(sd, cube, 1f, liteHole, inside, inside, !kits);
                 if (kit != null) FrontRoomsDoorLite.AttachDead(kit, south, liteRect);
             }
             Plate(sd, owner, FrontRoomsStairSigns.Plate.ExitDoor, k, new Vector3(-ModuleUnits.DoorLeafThickness * .5f, 1.524f, .5f), Vector3.left);
             var lining = NewChild(south, "lining side");
-            s.closer = BuildCloser(sd, lining, SealedShoeOut, 1f);
+            s.closer = BuildCloser(sd, lining, kits ? SealedShoeOutKit : SealedShoeOut, 1f);
             SolveCloser(s.closer, true);
             s.sealedLeaf = sd.gameObject;
             lining.SetParent(sd, true);
+            // the doorway's frame stands from the start (the EXIT door is seen through it until the seal)
+            if (kits) KitAtHinge(root, t, south, south.localRotation, FrameKitSouth, KitFrameName + " south");
         }
 
         // The 4 ft two-lamp wraparound on the slab, across X (it replaces the map's housing and lens).
@@ -727,12 +825,14 @@ public sealed class FrontRoomsStairwellDresser : MonoBehaviour
         Tick(s);
     }
 
-    static void SetLeaf(Transform stairwell, string hinge, Material material)
+    static void SetLeaf(Transform stairwell, string hinge, Material material, bool hide)
     {
         var h = stairwell.Find(hinge);
         var leaf = h != null ? h.Find("Door leaf") : null;
         var lr = leaf != null ? leaf.GetComponent<Renderer>() : null;
         if (lr != null) lr.sharedMaterial = material;
+        // stairwell doors: the leaf kit draws it (render-only; the cube's collider and SetVisible's 'enabled' stay the map's)
+        if (lr != null && hide) lr.forceRenderingOff = true;
     }
 
     static Cubemap fixedCube;

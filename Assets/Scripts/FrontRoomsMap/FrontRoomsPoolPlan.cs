@@ -885,17 +885,46 @@ namespace FrontRooms.Map
             top = OpeningTop(kind, rec, a, b, width);
         }
 
+        // A clear glass wall's pane: between 0.2 m jambs at either end of the edge, up to its head 2.7 m over the higher base.
+        // The pool pass builds the glass wall from these (FrontRoomsMapWorld.Pool.cs, BuildPoolEdge's ClearGlass branch), so
+        // the pane OpeningSpanAt keeps wall lamps clear of is the pane that is built.
+        internal const float GlassJamb = .2f, GlassHead = 2.7f;
+
         /// <summary>
-        /// The opening of the edge between two neighbouring cells at height <paramref name="y"/> (map metres), as metres along
-        /// the edge from its west or south end; false for a wall or at or over the opening's top (a round head narrows above
-        /// its springing). The pool pass keeps its wall lamps clear of it (the valance, FrontRoomsMapWorld.Pool.cs).
+        /// What a wall lamp on the edge between two neighbouring cells keeps clear of at height <paramref name="y"/> (map
+        /// metres), as metres along the edge from its west or south end; false where the wall is solid there. An Arch or Door
+        /// edge's opening under its top (a round head narrows above its springing); a clear glass wall's pane under its head
+        /// (nothing to hang a lamp on); the EXIT door, N to X (not an edge of the plan: X is its Void and the map's exit rule
+        /// builds the door), the map's centred door with its frame as scene 4's sign rule counts a door (ModuleUnits.TrimFace
+        /// and TrimProud a side, 1.18 m), at every height: its head trim (to 2.151) and the EXIT sign over it (2.18 to 2.392)
+        /// stand over a Standard valance's foot, and N is Standard. The pool pass hangs its valances clear of it
+        /// (FrontRoomsMapWorld.PoolValances; the level-space line's p_recheck4, 11-05: PL_Chain (slot n)'s south valance ran in
+        /// front of PL_Court's glass on every variant A plan, PL_Chain (EXIT)'s north one over the EXIT door's head trim on all).
         /// </summary>
         public bool OpeningSpanAt(GridCoord a, GridCoord b, float y, out float from, out float to)
         {
             from = to = 0f;
             if (b.x < a.x || b.y < a.y) { var t = a; a = b; b = t; }
+            var cs = MapGrid.CellSize;
+            if (a == FrontCell && b == ExitCell)
+            {
+                var door = ModuleUnits.DoorWidth * .5f + ModuleUnits.TrimFace + ModuleUnits.TrimProud;
+                from = cs * .5f - door;
+                to = cs * .5f + door;
+                return true;
+            }
             var id = MapGrid.EdgeId(a, b);
-            if (!edges.TryGetValue(id, out var kind) || (kind != EdgeKind.Arch && kind != EdgeKind.Door)) return false;
+            if (!edges.TryGetValue(id, out var kind)) return false;
+            if (kind == EdgeKind.Wall)
+            {
+                if (!records.TryGetValue(id, out var glass) || glass.style != PoolEdgeStyle.ClearGlass) return false;
+                PoolRoom A = RoomAt(a), B = RoomAt(b);
+                if (y >= Math.Max(A != null ? A.BaseY : 0f, B != null ? B.BaseY : 0f) + GlassHead) return false;
+                from = GlassJamb;
+                to = cs - GlassJamb;
+                return true;
+            }
+            if (kind != EdgeKind.Arch && kind != EdgeKind.Door) return false;
             OpeningOf(id, kind, a, b, out var centre, out var half, out var top, out var round);
             if (y >= top) return false;
             var span = half;

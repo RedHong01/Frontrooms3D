@@ -1,0 +1,57 @@
+{
+ "name": "Kit_LightWell_Round",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "ceiling",
+  "structures",
+  "p6",
+  "laylight",
+  "lamp",
+  "pool"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  8.0,
+  24.0,
+  0.0
+ ],
+ "lodBudget": [
+  1600,
+  500,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.6499999761581421,
+  -0.014000000432133675,
+  -0.6499999761581421
+ ],
+ "boundsMax": [
+  0.6499999761581421,
+  0.25,
+  0.6499999761581421
+ ],
+ "triangles": 2612,
+ "slots": [
+  "Prop_LaylightDiffuser",
+  "Painted_Metal"
+ ],
+ "trianglesLod1": 618,
+ "trianglesLod2": 216,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.2999999523162842,
+  1.2999999523162842
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

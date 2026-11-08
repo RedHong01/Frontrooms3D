@@ -83,7 +83,7 @@
   0.34,
   0.051
  ],
- "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "lodNote": "LOD0 / LOD1 as before; LOD2 hand-built (stairwell doors 2026-11-06, door_stair_common.add_lod2: P-1); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76",
  "boundsMin": [
   -0.07019999623298645,
   -0.09000000357627869,
@@ -100,6 +100,7 @@
   "Prop_Chrome"
  ],
  "trianglesLod1": 3588,
+ "trianglesLod2": 68,
  "frontAxis": "+Z",
  "footprintCentre": [
   0.38421301543712616,

@@ -53,7 +53,8 @@ public sealed class FrontRoomsTitleVignette
     public Material wall, floor, ceiling;
     /// <summary>The vignette lays its own floor (the pool's sunken floor): the slot's carpet box is put away.</summary>
     public bool hideShellFloor;
-    /// <summary>The slot's two baseboards are put away (tile rooms).</summary>
+    /// <summary>The slot's two raised rails are put away (tile rooms, the Office with its own base at the floor, Low; a Level 0
+    /// slot puts them away by itself with a programme: TitleRooms.ShowSlotShell).</summary>
     public bool hideBaseboards;
     /// <summary>FrontRoomsLook.ReflectionZone by name for the title camera in this room (a pool zone exists only with the pool look).</summary>
     public string reflectionZone = "Level0";
@@ -64,6 +65,9 @@ public sealed class FrontRoomsTitleVignette
     public int[] slotShadowPicks;
     /// <summary>Components on only while the room can be seen (the pool's water and its mirror cost).</summary>
     public Behaviour[] seenOnly = new Behaviour[0];
+    /// <summary>The lit pool's lamps held in the glaze (title_renovation): its box probe, captured once per attach by the stream
+    /// (TitleRooms.TickTitlePools). Null for every other family, on the phone tier and where it could not be built.</summary>
+    public FrontRoomsTitlePoolGlaze glaze;
     /// <summary>The stream sequence it stands in, -1 while it waits in the bank.</summary>
     public int inSequence = -1;
     public int Count => lights.Length;
@@ -74,7 +78,9 @@ public sealed class FrontRoomsTitleVignette
 /// never a new design of it:
 ///   Office    O-C (Red 10-31 "办公室选择O-C"): twelve lensed-indirect pendants on the map's cell centres (x -3, 0, +3; z 1.5 + 3k,
 ///             the map's 0.3 m troffer offset), the Office finish, the Office kit's planned cubicle farm (four pods of four
-///             stations round its 1.6 m chase lane on the axis, dark CRTs, W2 chairs; OfficeDress), outlets, the Office grade and cube.
+///             stations round its 1.6 m chase lane on the axis, dark CRTs, W2 chairs; OfficeDress), outlets, the Office grade and cube,
+///             and the game's Office base (title_renovation 11-05: the 0.10 m rubber cove at the floor, 6 mm proud, in Cove_Base, as
+///             the map gives Office faces; the slot's raised rails put away).
 ///   Run       Run! B armed (R-B strips with the red tube, Red 11-04 06:22 "加，用更亮档"): a 2.84 m corridor on the axis (faces x +-1.42,
 ///             the map's width; Red 10-31: a corridor stays a corridor), FrontRoomsRunDress over a 4-cell layout (VCT and lane,
 ///             lower tone, cove, bumper rails, sprinkler main, tray, EMT, the fire gear by the entrance, one extinguisher cabinet,
@@ -87,11 +93,16 @@ public sealed class FrontRoomsTitleVignette
 ///             water -0.03, the band at floor + 1.2 .. 1.5, tile everywhere, "瓷白"): dry tiled sills at both doors (the walnut
 ///             pair never stands in water, C11), the slot's L03 with one in three dead. Its materials, grade, zone look and water
 ///             come from the pool look when it is in the project (soft references: nothing here needs its code to compile);
-///             without it, main's stand-ins (FrontRoomsPoolMaterials).
+///             without it, main's stand-ins (FrontRoomsPoolMaterials). title_renovation (11-05, Red 13:1x "我看了一下，这个瓷砖非常work，
+///             因此我需要你在无限流房间里利用这个瓷砖来做新无限流房间的纹理材质和水光。水色需要最深"): scene 4's GZ-C in the room: the
+///             lamps held in the glaze (FrontRoomsTitlePoolGlaze: a box probe captured once per attach, desktop), 游戏视觉's water
+///             light at Recommended while a title pool water is on (TitleRooms), caustic nets from two of the room's lamps, and the
+///             deepest water, absorbScale 12 (scene 4's K 9 ankle value).
 ///   Low       a Low stock room (Red 10-31 "低矮区按推荐"): a 2.4 m soffit stepping up to the door head 1.2 m from each end wall,
-///             eight 4 ft wraps on it, steel-and-ply storage along the walls.
+///             eight 4 ft wraps on it, steel-and-ply storage along the walls; no base (the game's Low rooms are Level 0 theme).
 ///   DarkPool  the pool room with every overhead dead and four wet niches glowing under the water (P2-A is still Red's pick;
-///             these are stand-in niches, a lit face in the tile, no kit).
+///             these are stand-in niches, a lit face in the tile, no kit); absorbScale 12, the niches wet niches of the water while
+///             it is on (their light comes up out of the basin); no probe (its cube Refl_PoolDead holds the niches).
 /// Not built: the club (no locker or bench kits exist: it waits on the pool look's club dress), the stairwell (a 3 m safe zone),
 /// the Tall and pool halls (5.4 m: RoomHeight is a const).
 /// Shadows (技术美术调研 row 4, FrontRoomsRoomStream.FamilyShadows): each family casts only from the lamps over its furniture
@@ -106,10 +117,16 @@ public static class FrontRoomsTitleVignettes
     public const float SideFace = 5.62f;
     /// <summary>The end walls' faces (the 0.04 m door walls on z 0 and z 12).</summary>
     public const float EndFace = .02f;
-    /// <summary>The door opening and its casing, half width (the walnut kit: 1.2 m + lining 0.019 + reveal 0.012 + face 0.038).</summary>
-    public const float DoorCasingHalf = 1.27f;
-    /// <summary>The door's head casing top (2.66 m + 0.069).</summary>
-    public const float DoorCasingTop = 2.73f;
+    /// <summary>Where the end walls' trims stop beside the doors, half width: the zone doors' frame kit's face edge (1.2628,
+    /// Kit_DoorFrame_SteelPair_DA), since every door touching a family room wears it (research/double_doors/20_design.md A3.6);
+    /// under FrontRoomsDoubleDoorKit.Today today's 1.27 (it counted the walnut kit's 19 mm lining twice: the trims stopped 20 mm
+    /// short of the casing's 1.250 edge). Read when the bank is built.</summary>
+    public static float DoorCasingHalf => FrontRoomsDoubleDoorKit.TrimStopHalf;
+    /// <summary>The door's head casing top (the frame kit's 2.7228; today's 2.73 under Today).</summary>
+    public static float DoorCasingTop => FrontRoomsDoubleDoorKit.TrimStopTop;
+    /// <summary>The office furniture keeps this far from the door line's axis (the planner's keep-outs, OfficeDress): today's
+    /// casing number, kept so the seeded layout (OfficeDressSeed) does not move.</summary>
+    const float DoorKeepHalf = 1.27f;
     const float LampDrop = .06f;        // FrontRooms.Map.ModuleUnits.LampDrop
     const float CellOffsetZ = .3f;      // FrontRooms.Map.ModuleUnits.TrofferOffsetZ
     const float Cell = 3f;
@@ -174,6 +191,9 @@ public static class FrontRoomsTitleVignettes
         v.deadChance = .03f;
         v.unstableChance = .06f;
         v.reflectionZone = "Office";
+        // The game's Office base at the floor instead of the slot's raised rails (title_renovation).
+        v.hideBaseboards = true;
+        OfficeBase(t);
         // Twelve pendants on the map's cell centres, the centre column first; which of them cast is row 4's pick (below).
         var columns = new[] { 0f, -Cell, Cell };
         var count = columns.Length * 4;
@@ -230,11 +250,36 @@ public static class FrontRoomsTitleVignettes
             // The lane strip is 0.5 m: the planner reserves 0.25 m round it on its 0.25 m cells, so a wider strip takes the cell
             // under the pods' inner edge (x +-0.80) and every pod is refused (seed search, 11-04: 1 m strips gave 2 pods at best).
             new Rect(-.25f, .35f, .5f, L - .7f),
-            new Rect(-DoorCasingHalf - .03f, .35f, (DoorCasingHalf + .03f) * 2f, 1.2f),
-            new Rect(-DoorCasingHalf - .03f, L - .35f - 1.2f, (DoorCasingHalf + .03f) * 2f, 1.2f),
+            new Rect(-DoorKeepHalf - .03f, .35f, (DoorKeepHalf + .03f) * 2f, 1.2f),
+            new Rect(-DoorKeepHalf - .03f, L - .35f - 1.2f, (DoorKeepHalf + .03f) * 2f, 1.2f),
         };
         FrontRoomsOfficeKit.Dress(dress, area, H, seed, keep, new Rect[0]);
         return dress;
+    }
+
+    /// <summary>The game's Office base (the transition kit's rubber cove: FrontRooms.Map.ModuleUnits.CoveHeight 0.10, CoveProud
+    /// 0.006; MapWorld.AddWallFaces gives it to Office faces only), in Cove_Base, whose surface detail is laid out for a base at
+    /// the floor.</summary>
+    public const float OfficeBaseHeight = .10f, OfficeBaseProud = .006f;
+
+    /// <summary>The Office base on the module's faces (title_renovation): both long walls end face to end face, and both end walls
+    /// from the door casing to the long walls' base; no collider, no shadow.</summary>
+    static void OfficeBase(Transform room)
+    {
+        var cove = FrontRoomsSurfaces.CoveBase;
+        if (cove == null) return;
+        var zLen = L - 2f * EndFace;
+        for (var s = -1; s <= 1; s += 2)
+            Slab(room, s < 0 ? "office cove base left" : "office cove base right", new Vector3(s * (SideFace - OfficeBaseProud * .5f), OfficeBaseHeight * .5f, L * .5f),
+                new Vector3(OfficeBaseProud, OfficeBaseHeight, zLen), cove, false, ShadowCastingMode.Off);
+        var span = SideFace - OfficeBaseProud - DoorCasingHalf;
+        for (var e = 0; e < 2; e++)
+        {
+            var z = e == 0 ? EndFace + OfficeBaseProud * .5f : L - EndFace - OfficeBaseProud * .5f;
+            for (var s = -1; s <= 1; s += 2)
+                Slab(room, "office cove base end " + e + (s < 0 ? " left" : " right"), new Vector3(s * (DoorCasingHalf + span * .5f), OfficeBaseHeight * .5f, z),
+                    new Vector3(span, OfficeBaseHeight, OfficeBaseProud), cove, false, ShadowCastingMode.Off);
+        }
     }
 
     // ---------------------------------------------------------------------------------------------------------- Run! B, armed
@@ -429,6 +474,9 @@ public static class FrontRoomsTitleVignettes
     public const float PoolFloor = -.15f, PoolWater = -.03f, PoolBand0 = 1.2f, PoolBand1 = 1.5f;
     /// <summary>The dry tiled sill in front of each door (the walnut pair never stands in water, C11).</summary>
     public const float PoolSill = .9f;
+    /// <summary>Both pool rooms' water colour (FrontRoomsWaterSurface.absorbScale): 12, the deepest of the water line's set (scene 4's
+    /// key K 9 at ankle depth; the zones' own are PoolLevel 4, PoolDark 3). Red 2026-11-05 13:1x: "水色需要最深".</summary>
+    public const float PoolAbsorbScale = 12f;
 
     static FrontRoomsTitleVignette Pool(Transform bank, bool dark)
     {
@@ -470,16 +518,23 @@ public static class FrontRoomsTitleVignettes
         var b1 = PoolFloor + PoolBand1;
         for (var s = -1; s <= 1; s += 2)
             Slab(t, s < 0 ? "pool band left" : "pool band right", new Vector3(s * (SideFace - .001f), (b0 + b1) * .5f, L * .5f), new Vector3(.002f, b1 - b0, L - 2f * EndFace), course, false, ShadowCastingMode.Off);
+        // the pool's doors wear the pool's look (Part B of the zone doors; today's walnut pair until it is built): its trim stop
+        var poolCasingHalf = FrontRoomsDoubleDoorKit.TrimStopHalfFor(FrontRoomsDoubleDoorKit.Zone.Pool);
         for (var e = 0; e < 2; e++)
         {
             var z = e == 0 ? EndFace + .006f : L - EndFace - .006f;
-            var span = SideFace - DoorCasingHalf;
+            var span = SideFace - poolCasingHalf;
             for (var s = -1; s <= 1; s += 2)
-                Slab(t, "pool band end " + e + (s < 0 ? " left" : " right"), new Vector3(s * (DoorCasingHalf + span * .5f), (b0 + b1) * .5f, z), new Vector3(span, b1 - b0, .002f), course, false, ShadowCastingMode.Off);
+                Slab(t, "pool band end " + e + (s < 0 ? " left" : " right"), new Vector3(s * (poolCasingHalf + span * .5f), (b0 + b1) * .5f, z), new Vector3(span, b1 - b0, .002f), course, false, ShadowCastingMode.Off);
         }
-        // The ankle water over the basin, from sill to sill.
-        var water = Water(t, new Rect(-SideFace, basinZ0, SideFace * 2f, basinZ1 - basinZ0), PoolWater, H - PoolWater);
+        // The ankle water over the basin, from sill to sill, the deepest of the water line's set (title_renovation, Red 13:1x
+        // "水色需要最深": scene 4's key K 9 ankle value). Its room reaches the walls past the sills, as scene 4's bodies' rooms do
+        // (roomMargin): the water light lights the end walls and the sills too, with no seam on the side walls at the sill line.
+        var water = Water(t, new Rect(-SideFace, basinZ0, SideFace * 2f, basinZ1 - basinZ0), PoolWater, H - PoolWater, PoolAbsorbScale, new Vector2(0f, PoolSill));
         if (water != null) v.seenOnly = new[] { water };
+        // The lamps held in the glaze (title_renovation, scene 4's GZ-A): the lit pool's box probe, captured by the stream once per
+        // attach; desktop only (phones keep Refl_PoolLevel). The dark pool keeps Refl_PoolDead: its niches stand under the water.
+        if (!dark && !Phone) v.glaze = FrontRoomsTitlePoolGlaze.Build(t, PoolWater, PoolFloor, SideFace, EndFace);
         // The dark pool: four wet niches in the long walls under the water, the room's only light (P2-A is still Red's pick: a lit
         // face in the tile, no kit), struck as the room is revealed.
         if (dark)
@@ -542,6 +597,8 @@ public static class FrontRoomsTitleVignettes
         v.deadChance = .03f;
         v.unstableChance = .12f;
         v.reflectionZone = "Level0";
+        // The game's Low rooms are Level 0 theme: no base (title_renovation: the slot's raised rails put away).
+        v.hideBaseboards = true;
         var tile = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Ceiling);
         var paper = FrontRoomsSurfaces.Room(RoomRule.Lobby, FrontRoomsSurfaces.Slot.Wall);
         // The dropped soffit (the 2'x2' print, world-projected, so it lines up with the slot's ceiling) and its two bulkhead faces.
@@ -790,8 +847,9 @@ public static class FrontRoomsTitleVignettes
     }
 
     /// <summary>The water over a rectangle (room space) at y: the pool look's FrontRooms/Water and FrontRoomsWaterSurface (an ankle
-    /// body) when present, else main's stand-in water. Returns the component the stream switches with the room's visibility.</summary>
-    static Behaviour Water(Transform parent, Rect area, float y, float roomHeight)
+    /// body at <paramref name="absorbScale"/>, its room the rectangle grown by <paramref name="roomMargin"/>) when present, else
+    /// main's stand-in water. Returns the component the stream switches with the room's visibility.</summary>
+    static Behaviour Water(Transform parent, Rect area, float y, float roomHeight, float absorbScale, Vector2 roomMargin)
     {
         var go = new GameObject("pool water");
         go.SetActive(false);
@@ -817,8 +875,13 @@ public static class FrontRoomsTitleVignettes
         {
             r.sharedMaterial = new Material(shader) { name = "Title pool water (FrontRooms/Water)", renderQueue = (int)RenderQueue.Transparent, hideFlags = HideFlags.DontSave };
             r.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            // On the water layer from the start (the surface puts it there when it first enables): the pool's probe captures the
+            // room before its water is on and leaves the water layer out (title_renovation).
+            go.layer = FrontRoomsWaterPlanar.WaterLayer;
             surface = go.AddComponent(type) as Behaviour;
             SetField(surface, "roomHeight", roomHeight);
+            SetField(surface, "roomMargin", roomMargin);
+            SetField(surface, "absorbScale", absorbScale);
             var kind = type.GetNestedType("Kind");
             if (kind != null) SetField(surface, "kind", Enum.ToObject(kind, 1));     // Ankle
             if (surface != null) surface.enabled = false;

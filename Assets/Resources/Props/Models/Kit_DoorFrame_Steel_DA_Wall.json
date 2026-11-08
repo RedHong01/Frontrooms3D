@@ -1,0 +1,98 @@
+{
+ "name": "Kit_DoorFrame_Steel_DA_Wall",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "map_hinge",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "strike",
+   "pos": [
+    0.0,
+    0.968,
+    0.998
+   ]
+  },
+  {
+   "name": "wall_face",
+   "pos": [
+    0.02,
+    0.0,
+    0.5
+   ]
+  },
+  {
+   "name": "casing_face",
+   "pos": [
+    0.031100000000000003,
+    1.0,
+    0.5
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "door_frame",
+  "frame_steel",
+  "run",
+  "run_side_door",
+  "double_acting",
+  "one_face"
+ ],
+ "wallFace": 0.02,
+ "casing": {
+  "face": 0.0508,
+  "proud": 0.0111,
+  "x": 0.031100000000000003
+ },
+ "doorRoot": "the prop leaf's root (Kit_DoorLeaf_SteelRun_DA): origin the opening's hinge-jamb edge on the leaf's centre plane at the floor, +Z along the opening, +X the corridor face S; the wall face at X 0.020",
+ "acting": "double",
+ "noCollider": true,
+ "frameType": "steel",
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.37,
+  0.08
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods, P-1b); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
+ "boundsMin": [
+  0.01600000075995922,
+  0.0,
+  -0.04879999905824661
+ ],
+ "boundsMax": [
+  0.031099999323487282,
+  2.1487998962402344,
+  1.048799991607666
+ ],
+ "triangles": 204,
+ "slots": [
+  "Prop_SteelBrown",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 140,
+ "trianglesLod2": 108,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.02355000004172325,
+  0.4999999962747097
+ ],
+ "footprintSize": [
+  0.015099998563528061,
+  1.0975999906659126
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.199
+}

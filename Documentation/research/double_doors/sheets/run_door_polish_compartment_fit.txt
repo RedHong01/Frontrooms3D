@@ -1,0 +1,28 @@
+FD1 · eye 1.62 m at 3 m · TODAY | held open on the bare magnets | label fits, data fits
+FD1 · eye 1.62 m at 3 m · NEW REC | the same pose; the hardware faces the walls | label fits, data fits
+FD1 · looking back from 3.3 m · TODAY | the leaves' push faces, clean | label fits, data fits
+FD1 · looking back from 3.3 m · NEW REC | the arms over the tops, the Run! wear | label fits, data fits
+FD1 · along the right wall, 3 m · TODAY | the frame stub hides the wedge | label fits, data fits
+FD1 · along the right wall, 3 m · NEW REC | the same: the closer is in the wedge | label fits, data fits
+FD1 · along the left wall, 3 m · TODAY | the left leaf | label fits, data fits
+FD1 · along the left wall, 3 m · NEW REC | the mirrored hardware, hidden alike | label fits, data fits
+FD1 · under the closer, 0.6 m · TODAY | the bare top rail · +2 EV both | label fits, data fits
+FD1 · under the closer, 0.6 m · NEW REC | the body, the arm, the holder · +2 EV both | label fits, data fits
+Hero 0.4 m · the closer · TODAY | the holder cut into the leaf · fill | label fits, data fits
+Hero 0.4 m · the closer · NEW REC | regular arm, sprayed 630 match · fill | label fits, data fits
+Hero 0.37 m · magnet and armature · TODAY | the leaf through the magnet · fill | label fits, data fits
+Hero 0.37 m · magnet and armature · NEW REC | the swivel disc on the magnet · fill | label fits, data fits
+Hero 0.45 m · the shoe, goal side · TODAY | the bare head casing · fill | label fits, data fits
+Hero 0.45 m · the shoe, goal side · NEW REC | the shoe, the forearm over the leaf · fill | label fits, data fits
+Phone · FD1 at 3 m · TODAY | the rig's handheld lights | label fits, data fits
+Phone · FD1 at 3 m · NEW REC | the rig's handheld lights | label fits, data fits
+Phone · along the right wall · TODAY | the rig's handheld lights | label fits, data fits
+Phone · along the right wall · NEW REC | the rig's handheld lights | label fits, data fits
+Tripped · FD1 at 3 m · TODAY | EMERGENCY POWER, 2 s | label fits, data fits
+Tripped · FD1 at 3 m · NEW REC | EMERGENCY POWER, 2 s | label fits, data fits
+Tripped · along the right wall · TODAY | EMERGENCY POWER, 2 s | label fits, data fits
+Tripped · along the right wall · NEW REC | EMERGENCY POWER, 2 s | label fits, data fits
+Cost · TODAY | the lab's census, LOD0 | label fits, data fits
+Cost · NEW REC | the same census | label fits, data fits
+TITLE Run! compartment pairs · closers and armatures | fits
+ALL LABELS FIT

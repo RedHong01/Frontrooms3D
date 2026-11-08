@@ -1,0 +1,76 @@
+{
+ "name": "Kit_DoorCasing_StationPair",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "opening_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "casing_outer_r",
+   "pos": [
+    1.25,
+    1.0,
+    0.0331
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "door_frame",
+  "frame_steel",
+  "station",
+  "zone_pair"
+ ],
+ "casingOuter": 1.25,
+ "casingTop": 2.71,
+ "faceZ": 0.0331,
+ "capFront": 0.025,
+ "capNote": "the cap fills the lining's +Z end to z 0.025 (1 mm over the map's south liner at 0.024), 0.5 mm into the opening, notched round the barrels at LOD0",
+ "doorSpace": "as Kit_DoorFrame_SteelPair_DA; the +Z face only",
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
+ "boundsMin": [
+  -1.25,
+  0.0,
+  0.019500000402331352
+ ],
+ "boundsMax": [
+  1.25,
+  2.7100000381469727,
+  0.03310000151395798
+ ],
+ "triangles": 516,
+ "slots": [
+  "Prop_SteelBrown"
+ ],
+ "trianglesLod1": 132,
+ "trianglesLod2": 108,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.026300000958144665
+ ],
+ "footprintSize": [
+  2.5,
+  0.013600001111626625
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.76
+}

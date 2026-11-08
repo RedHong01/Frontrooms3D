@@ -1,0 +1,24 @@
+Preview · eye 1.62 m at 3 m · TODAY | Tour door 1 -Z, from Level 0 room 1 | label fits, data fits
+Preview · eye 1.62 m at 3 m · NEW | O-1 REC: bronze F4 frame, walnut G, F1 lite | label fits, data fits
+Phone tier · same camera · TODAY | Handheld, small kits LOD1 | label fits, data fits
+Phone tier · same camera · NEW | Handheld, small kits LOD1 | label fits, data fits
+3/4 at 3 m · TODAY | oblique 40 deg from the left | label fits, data fits
+3/4 at 3 m · NEW | oblique 40 deg from the left | label fits, data fits
+Hero 0.35 m · the lite's top · TODAY | square on: F4b runs on to 2.36 m · +2 EV | label fits, data fits
+Hero 0.35 m · the lite's top · NEW | square on: F1 ends at 1.905 m, walnut bead · +2 EV | label fits, data fits
+Hero 0.35 m · lite foot + plate · TODAY | square on: lite bead, 630 plate · +2 EV | label fits, data fits
+Hero 0.35 m · lite foot + plate · NEW | square on: the same foot (45 in), office wear · +2 EV | label fits, data fits
+Hero · hinge jamb · TODAY | oblique: brushed barrels, walnut casing · +2 EV | label fits, data fits
+Hero · hinge jamb · NEW | oblique: satin chrome barrels, bronze band · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · TODAY | Handheld · +2 EV | label fits, data fits
+Phone tier · hero 0.35 m · NEW | Handheld (the lite is in the slab mesh) · +2 EV | label fits, data fits
+Lights off · relay dark · TODAY | room 1 lamps dead, ambient only | label fits, data fits
+Lights off · relay dark · NEW | room 1 lamps dead, ambient only | label fits, data fits
+Inside · entry door +Z face · TODAY | Tour door 1 from the Office, looking back | label fits, data fits
+Inside · entry door +Z face · NEW | the same door from the Office side | label fits, data fits
+Inside · exit door 2 · TODAY | Tour door 2 -Z, the Office room's exit | label fits, data fits
+Inside · exit door 2 · NEW | O-1 on both doors of the Office | label fits, data fits
+Cost · today | per pair | label fits, data fits
+Cost · new O-1 | per pair, measured | label fits, data fits
+TITLE Zone doors: the Office pair (O-1) | fits
+ALL LABELS FIT

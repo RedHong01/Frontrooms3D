@@ -1,0 +1,15 @@
+/Users/redwang/FrontRoomsVisualWork/zone_doors/to_main/Frontrooms3D/Documentation/research/double_doors/sheets/double_doors_design_b_detail.jpg 2575x1953 u=1.342 tile=640
+JAMB SECTION  TODAY | y 1.20, mm | label 231 + data 110 of 640 px | FIT
+JAMB SECTION  PD-A | y 1.20, mm | label 216 + data 110 of 640 px | FIT
+JAMB SECTION  PD-B | y 1.20, mm | label 217 + data 110 of 640 px | FIT
+JAMB SECTION  PD-C | y 1.20, mm | label 217 + data 110 of 640 px | FIT
+LITE F4B 10 X 48 | walnut bead, wired | label 204 + data 198 of 640 px | FIT
+A1 PORTHOLE  FRP RING | tempered 6 mm | label 258 + data 143 of 640 px | FIT
+LITE F1 10 X 30 | snap-in stops | label 190 + data 143 of 640 px | FIT
+A1 PORTHOLE  PRESSED | tempered 6 mm | label 256 + data 143 of 640 px | FIT
+MAP TODAY  L0-F | the walnut row, 1:25 | label 184 + data 220 of 640 px | FIT
+MAP PL-F  FRP | single DA leaf, 1:25 | label 156 + data 220 of 640 px | FIT
+MAP PL-F  ALUMINIUM | single DA leaf, 1:25 | label 226 + data 220 of 640 px | FIT
+MAP PL-F  EPOXY | single DA leaf, 1:25 | label 180 + data 220 of 640 px | FIT
+TITLE Zone double doors  design B  details | 836 of 2070 px | FIT
+ALL LABELS FIT

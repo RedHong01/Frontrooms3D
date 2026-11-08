@@ -1,0 +1,79 @@
+{
+ "name": "Kit_RunMagnetArmature",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "contact",
+   "pos": [
+    0.03271892336110995,
+    0.0,
+    0.0012678547852220984
+   ]
+  },
+  {
+   "name": "mount",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "run",
+  "run_compartment",
+  "door_hardware",
+  "hold_open"
+ ],
+ "noCollider": true,
+ "tiltDeg": 25.0,
+ "contactCentre": [
+  0.03272,
+  0.0,
+  0.00127
+ ],
+ "partFrame": "origin on the leaf's pull face at the armature's centre; +X out of the face; +Y up; +Z along the leaf toward its latch edge; the disc normal (cos 25, 0, sin 25)",
+ "lodDistances": [
+  2.0,
+  7.0,
+  20.0
+ ],
+ "lodBudget": [
+  900,
+  220,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "runPolish": "zone doors Run! polish, 2026-11-06 (30_build.md Part R); rule 5b: never in today's game",
+ "boundsMin": [
+  -0.00019999999494757503,
+  -0.03200000151991844,
+  -0.029931610450148582
+ ],
+ "boundsMax": [
+  0.04582008719444275,
+  0.03200000151991844,
+  0.029931610450148582
+ ],
+ "triangles": 1092,
+ "slots": [
+  "Prop_Chrome",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 236,
+ "trianglesLod2": 76,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.022810043599747587,
+  -0.0
+ ],
+ "footprintSize": [
+  0.046020087189390324,
+  0.059863220900297165
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.082
+}

@@ -18,6 +18,9 @@ public sealed class FrontRoomsStructuresMesh
         public readonly List<Vector3> n = new List<Vector3>();
         public readonly List<Vector2> uv = new List<Vector2>();
         public readonly List<int> t = new List<int>();
+        // NEW only: UV1, a wall's own value for the paper at the wrong scale (Red's ask 4: x its lot 0..1, 0 = not a wall; y the
+        // wall's foot, metres): read by the Surface's scale terms (structures_scale_terms), zeros elsewhere
+        public readonly List<Vector2> wall = new List<Vector2>();
     }
 
     struct GroupKey
@@ -41,6 +44,18 @@ public sealed class FrontRoomsStructuresMesh
     /// <summary>Triangles made so far (render), for the district's cost line.</summary>
     public int Triangles { get; private set; }
     public int Renderers { get; private set; }
+    /// <summary>
+    /// NEW (scene 4's TODAY / NEW, FrontRoomsStructuresAssets; contract K1 of 游戏视觉's structures_assets): boxes are recorded and
+    /// written at Finish with rounds by material on the edges nothing touches (FrontRoomsStructureBevels, which writes them with the
+    /// map's FrontRoomsBevel), and the lit stand-in materials are swapped for the game's surfaces where one fits
+    /// (FrontRoomsStructuresAssets.Real). Render only: the collision mesh is written as before. False (TODAY): every box is written
+    /// as it comes, bit for bit as before.
+    /// </summary>
+    public bool Bevels;
+    /// <summary>With Bevels: a round for the boxes made from now on instead of their material's (a cap's bigger round; the material's
+    /// rules still apply, FrontRoomsStructureBevels.Shape); null = by material.</summary>
+    public FrontRoomsStructureBevels.Spec? EdgeOverride;
+    readonly FrontRoomsStructureBevels.Set bevelSet = new FrontRoomsStructureBevels.Set();
 
     sealed class KeyCompare : IEqualityComparer<GroupKey>
     {
@@ -56,6 +71,7 @@ public sealed class FrontRoomsStructuresMesh
 
     Part Get(Material m)
     {
+        if (Bevels) m = FrontRoomsStructuresAssets.Real(m);
         var key = new GroupKey { material = m, ceiling = Ceiling, floorGrimeOff = FloorGrimeOff, shadows = CastShadows };
         if (!groups.TryGetValue(key, out var p)) groups[key] = p = new Part();
         return p;
@@ -65,7 +81,11 @@ public sealed class FrontRoomsStructuresMesh
     public void Box(Vector3 center, Vector3 size, Material m, bool solid = true)
     {
         if (size.x <= 1e-4f || size.y <= 1e-4f || size.z <= 1e-4f) return;
-        if (m != null) BoxInto(Get(m), center, size, Quaternion.identity, true);
+        if (m != null)
+        {
+            if (Bevels) Record(center, size, Quaternion.identity, m, FrontRoomsStructureBevels.UvRule.Planar);
+            else BoxInto(Get(m), center, size, Quaternion.identity, true);
+        }
         if (solid) BoxInto(collision, center, size, Quaternion.identity, false);
     }
 
@@ -73,8 +93,55 @@ public sealed class FrontRoomsStructuresMesh
     public void Box(Vector3 center, Vector3 size, Quaternion rotation, Material m, bool solid = true)
     {
         if (size.x <= 1e-4f || size.y <= 1e-4f || size.z <= 1e-4f) return;
-        if (m != null) BoxInto(Get(m), center, size, rotation, true);
+        if (m != null)
+        {
+            if (Bevels) Record(center, size, rotation, m, FrontRoomsStructureBevels.UvRule.Planar);
+            else BoxInto(Get(m), center, size, rotation, true);
+        }
         if (solid) BoxInto(collision, center, size, rotation, false);
+    }
+
+    /// <summary>NEW only: a prism of FrontRoomsStructuresKit (an oriented box whose UVs run along its own line, as Kit.Prism's
+    /// quads), recorded for Finish; its collider is the caller's, as before.</summary>
+    public void PrismBox(Vector3 center, Vector3 size, Quaternion rotation, Material m, float wallLot = 0f, float wallFoot = 0f)
+    {
+        if (m == null || size.x <= 1e-4f || size.y <= 1e-4f || size.z <= 1e-4f) return;
+        var b = Record(center, size, rotation, m, FrontRoomsStructureBevels.UvRule.Prism);
+        b.wallValue = new Vector2(wallLot, wallFoot);
+    }
+
+    /// <summary>NEW only: a volume that is not drawn but counts as touching for the bevels (an arch's spandrel, built of quads,
+    /// keeps the pier's edge beside it square).</summary>
+    public void Occluder(Vector3 center, Vector3 size, Quaternion rotation)
+    {
+        if (!Bevels || size.x <= 1e-4f || size.y <= 1e-4f || size.z <= 1e-4f) return;
+        var b = bevelSet.Add(center, size, rotation, FrontRoomsStructureBevels.None, FrontRoomsStructureBevels.UvRule.Planar, null);
+        b.occluderOnly = true;
+    }
+
+    FrontRoomsStructureBevels.Box Record(Vector3 center, Vector3 size, Quaternion rotation, Material m, FrontRoomsStructureBevels.UvRule uv)
+    {
+        m = FrontRoomsStructuresAssets.Real(m);
+        var key = new GroupKey { material = m, ceiling = Ceiling, floorGrimeOff = FloorGrimeOff, shadows = CastShadows };
+        var spec = EdgeOverride.HasValue ? FrontRoomsStructureBevels.Shape(EdgeOverride.Value, m) : FrontRoomsStructureBevels.For(m);
+        return bevelSet.Add(center, size, rotation, spec, uv, key);
+    }
+
+    // NEW: the recorded boxes solved together, then written into their groups.
+    void FlushBevels()
+    {
+        if (bevelSet.Boxes.Count == 0) return;
+        bevelSet.Solve();
+        foreach (var b in bevelSet.Boxes)
+        {
+            if (b.occluderOnly || !(b.tag is GroupKey)) continue;
+            var key = (GroupKey)b.tag;
+            if (!groups.TryGetValue(key, out var p)) groups[key] = p = new Part();
+            while (p.wall.Count < p.v.Count) p.wall.Add(Vector2.zero);
+            Triangles += FrontRoomsStructureBevels.Emit(b, p.v, p.n, p.uv, p.t, worldOffset);
+            while (p.wall.Count < p.v.Count) p.wall.Add(b.wallValue);
+        }
+        bevelSet.Boxes.Clear();
     }
 
     /// <summary>A box from its min and max corners (axis-aligned).</summary>
@@ -198,6 +265,7 @@ public sealed class FrontRoomsStructuresMesh
     public void Finish(string name, List<Mesh> owned)
     {
         if (root == null) return;
+        if (Bevels) FlushBevels();
         var holder = new GameObject(name + " shell");
         holder.transform.SetParent(root, false);
         foreach (var pair in groups)
@@ -206,6 +274,7 @@ public sealed class FrontRoomsStructuresMesh
             if (p.v.Count == 0 || pair.Key.material == null) continue;
             var go = new GameObject(pair.Key.material.name);
             go.transform.SetParent(holder.transform, false);
+            if (Bevels) while (p.wall.Count < p.v.Count) p.wall.Add(Vector2.zero);
             var mesh = ToMesh(name + " " + pair.Key.material.name, p, true);
             owned?.Add(mesh);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -240,6 +309,7 @@ public sealed class FrontRoomsStructuresMesh
         mesh.SetVertices(p.v);
         mesh.SetNormals(p.n);
         mesh.SetUVs(0, p.uv);
+        if (p.wall.Count == p.v.Count && p.wall.Count > 0) mesh.SetUVs(1, p.wall);
         mesh.SetTriangles(p.t, 0);
         if (tangents) mesh.RecalculateTangents();
         mesh.RecalculateBounds();

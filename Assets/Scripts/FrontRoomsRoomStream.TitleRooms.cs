@@ -26,6 +26,16 @@ using UnityEngine;
 ///     once play starts);
 ///   - the 192 m rebase waits until only a Level 0 room can be seen.
 /// WebGL keeps Today (its own track). Nothing here allocates in Tick but the recycle's re-parenting (no room, no mesh).
+/// The renovation of 2026-11-05 (title_renovation, line level_space; Red 13:1x "我看了一下，这个瓷砖非常work，因此我需要你在无限流房间里
+/// 利用这个瓷砖来做新无限流房间的纹理材质和水光。水色需要最深", 13:3x "我需要你翻新无限流房间然后直接合并到主项目里"), with a programme only:
+///   - the pool rooms as scene 4 shows Red's tile: the lamps held in the glaze (the lit pool's box probe, captured once per
+///     attach while the room is drawn behind its shut door, its brightness following the room's lamps: TickTitlePools), 游戏视觉's
+///     water light at Recommended while a title pool water is on and back to Today when none is and when the title ends, caustic
+///     nets from the two lamps that light the water most, the dark pool's niches as wet niches, the deepest water (absorb 12);
+///   - the pool rooms' and the waiting room's lamps strike with at most one flick each (photosafety, rule 11: main's pool reveal
+///     measured 4.0 flashes in its worst second, the waiting room's 3.0-3.5; StrikeCapped);
+///   - the stream's raised rails go from its Level 0 rooms (the game's Level 0 walls have no base); the Office lays the game's
+///     0.10 m base at the floor and Low has none (FrontRoomsTitleVignettes).
 /// </summary>
 public sealed partial class FrontRoomsRoomStream
 {
@@ -80,6 +90,25 @@ public sealed partial class FrontRoomsRoomStream
     int titleLookSequence = int.MinValue;
     int driftSeedUsed;
     string lastBuildReport = "";
+    // title_renovation: the water light statics are at Recommended because of this stream; the title has ended (start door shut);
+    // the door lines a pool glaze anchors off its probe (this room's far pair and its entry pair).
+    bool titleWaterLight, titlePoolsEnded;
+    readonly Transform[] titleDoorRoots = new Transform[6];
+
+    /// <summary>The caustic nets' source radius for the pool's troffers (m): the L03 lens, the water light's own MirrorLampRadius
+    /// for troffers (scene 4's 0.05 is for its compact lamps).</summary>
+    public const float TitleCausticRadius = .25f;
+
+    /// <summary>The most flicks a lamp strikes with in a room whose reveal measured at or over the photosafety limit (rule 11:
+    /// StrikeCapped, ConfigureVignetteLamps).</summary>
+    public const int CappedStrikeFlicks = 1;
+
+    /// <summary>The families whose reveal strikes with at most CappedStrikeFlicks flick a lamp: the two pool rooms (their white
+    /// basin, sills and walls follow every flick under the water light; main's pool reveal measured 4.0 flashes in its worst
+    /// second) and the waiting room (its light VCT under twelve striking L03: 3.0 in main's desktop film, 3.5 in a phone film of
+    /// this renovation, the limit being 3).</summary>
+    public static bool StrikeCapped(TitleFamily family) =>
+        family == TitleFamily.Pool || family == TitleFamily.DarkPool || family == TitleFamily.Waiting;
 
     /// <summary>The last bank build, family by family (tools: the start-up cost).</summary>
     public string TitleBuildReport => lastBuildReport;
@@ -177,6 +206,10 @@ public sealed partial class FrontRoomsRoomStream
         driftFamilies = null;
         titleLookSequence = int.MinValue;
         driftSeedUsed = 0;
+        // title_renovation: a rebuilt title starts with today's water light and no glaze in flight.
+        titlePoolsEnded = false;
+        SetTitleWaterLight(false);
+        FrontRoomsTitlePoolGlaze.EndAll();
         if (titleBank != null)
         {
             if (Application.isPlaying) Destroy(titleBank.gameObject);
@@ -351,11 +384,17 @@ public sealed partial class FrontRoomsRoomStream
         ReleaseVignette(room);
         room.wakeLit = WakeAt(sequence);
         var family = FamilyForSequence(sequence);
-        if (family == TitleFamily.Level0) return;
-        var v = vignettes[(int)family];
-        // Its one copy is still in a room of the pool: this room stays Level 0 (FamilyMinGap keeps that from happening).
-        if (v == null || v.inSequence >= 0) return;
+        var v = family == TitleFamily.Level0 ? null : vignettes[(int)family];
+        // A Level 0 room, or its family's one copy is still in a room of the pool (FamilyMinGap keeps that from happening): the
+        // slot stays Level 0, its shell as a Level 0 room's (title_renovation: no raised rails).
+        if (v == null || v.inSequence >= 0)
+        {
+            ShowSlotShell(room, null);
+            DressSlotDoor(room);
+            return;
+        }
         AttachVignette(room, v, sequence);
+        DressSlotDoor(room);
     }
 
     void AttachVignette(RoomSlot room, FrontRoomsTitleVignette v, int sequence)
@@ -378,6 +417,10 @@ public sealed partial class FrontRoomsRoomStream
     {
         var v = room?.vignette;
         if (v == null) return;
+        // title_renovation: the glaze leaves with its slot (probe off, every anchor it set cleared), the caustic nets keep no lamp
+        // of a slot they no longer stand in.
+        if (v.glaze != null) v.glaze.Release();
+        SetTitleCaustics(null, v);
         if (v.ownLamps) RestoreSlotLamps(room);
         SetSeenOnly(v, false);
         if (v.root != null)
@@ -405,6 +448,8 @@ public sealed partial class FrontRoomsRoomStream
     void ReleaseTitleLampData()
     {
         if (!TitleRoomsOn) return;
+        // title_renovation: the title has ended: today's water light again (the game's own pool keeps Today until Red picks).
+        EndTitlePools();
         for (var i = 0; i < MaxRooms; i++)
         {
             var v = pool[i]?.vignette;
@@ -460,20 +505,81 @@ public sealed partial class FrontRoomsRoomStream
                 if (room.fixtures[i] != null) room.fixtures[i].gameObject.SetActive(true);
     }
 
-    static void ShowSlotShell(RoomSlot room, FrontRoomsTitleVignette v)
+    /// <summary>The slot's carpet box and its two raised rails (BuildRoom's "left / right baseboard", a 16 cm band 10 cm over the
+    /// floor) for the family standing in it. title_renovation: a Level 0 slot puts the rails away too while a programme plays
+    /// (the game's Level 0 walls have no base: MapWorld.AddWallFaces gives the 0.10 m rubber base to Office faces only); Today,
+    /// WebGL and the legacy playable cycle keep them.</summary>
+    void ShowSlotShell(RoomSlot room, FrontRoomsTitleVignette v)
     {
         if (room.shellFloor != null) room.shellFloor.SetActive(v == null || !v.hideShellFloor);
+        var rails = v != null ? !v.hideBaseboards : !TitleRoomsOn || IsPlayable;
         if (room.shellBaseboards != null)
             for (var i = 0; i < room.shellBaseboards.Length; i++)
-                if (room.shellBaseboards[i] != null) room.shellBaseboards[i].SetActive(v == null || !v.hideBaseboards);
+                if (room.shellBaseboards[i] != null) room.shellBaseboards[i].SetActive(rails);
     }
 
-    /// <summary>The pool's water (and anything else that costs only while seen): on while the room is lit and connected.</summary>
+    /// <summary>The pool's water (and anything else that costs only while seen): on while the room is lit and connected.
+    /// title_renovation: the dark pool's four niches are wet niches of its water while it is on (FrontRoomsWaterSubmerged: their
+    /// light comes back up out of the basin, half of it spread over the water at the Recommended water light); Play only.</summary>
     static void SetSeenOnly(FrontRoomsTitleVignette v, bool on)
     {
         if (v?.seenOnly == null) return;
         for (var i = 0; i < v.seenOnly.Length; i++)
             if (v.seenOnly[i] != null && v.seenOnly[i].enabled != on) v.seenOnly[i].enabled = on;
+        if (v.family != TitleFamily.DarkPool || !Application.isPlaying || v.lights == null) return;
+        for (var i = 0; i < v.lights.Length; i++)
+        {
+            var light = v.lights[i];
+            if (light == null) continue;
+            if (on) FrontRoomsWaterSubmerged.RegisterNiche(light, i < v.baseIntensity.Length ? v.baseIntensity[i] : light.intensity);
+            else FrontRoomsWaterSubmerged.UnregisterNiche(light);
+        }
+    }
+
+    /// <summary>The title pool's water surface (null for any other family or with main's stand-in water).</summary>
+    static FrontRoomsWaterSurface TitleWater(FrontRoomsTitleVignette v)
+    {
+        if (v?.seenOnly == null || (v.family != TitleFamily.Pool && v.family != TitleFamily.DarkPool)) return null;
+        for (var i = 0; i < v.seenOnly.Length; i++)
+        {
+            var w = v.seenOnly[i] as FrontRoomsWaterSurface;
+            if (w != null) return w;
+        }
+        return null;
+    }
+
+    /// <summary>title_renovation: the lit pool's caustic nets (FrontRoomsWaterSurface.causticSourceA / B) from the two live lamps of
+    /// <paramref name="room"/> that light the water's centre most (scene 4's CausticLamps score, intensity x colour x (dy / r) / r2,
+    /// read on the lamps' steady output: at connect they have not struck yet); none for the dark pool (no live lamp above its
+    /// water) and none with <paramref name="room"/> null (the vignette leaves its slot).</summary>
+    void SetTitleCaustics(RoomSlot room, FrontRoomsTitleVignette v)
+    {
+        var water = TitleWater(v);
+        if (water == null) return;
+        Light a = null, b = null;
+        if (room != null && v.family == TitleFamily.Pool && room.roomLights != null && v.root != null)
+        {
+            var c = v.root.transform.TransformPoint(new Vector3(0f, FrontRoomsTitleVignettes.PoolWater, RoomLength * .5f));
+            float sa = 0f, sb = 0f;
+            for (var i = 0; i < room.roomLights.Length; i++)
+            {
+                var l = room.roomLights[i];
+                if (l == null || (room.lampDead != null && i < room.lampDead.Length && room.lampDead[i])) continue;
+                var intensity = room.lightBaseIntensity != null && i < room.lightBaseIntensity.Length ? room.lightBaseIntensity[i] : l.intensity;
+                var d = l.transform.position - c;
+                if (d.y <= .1f) continue;
+                var r2 = d.sqrMagnitude;
+                if (r2 >= l.range * l.range) continue;
+                var score = intensity * Mathf.Max(l.color.maxColorComponent, .01f) * (d.y / Mathf.Sqrt(r2)) / Mathf.Max(r2, .25f);
+                if (score > sa) { b = a; sb = sa; a = l; sa = score; }
+                else if (score > sb) { b = l; sb = score; }
+            }
+        }
+        if (water.causticSourceA == a && water.causticSourceB == b && water.causticSourceRadius == TitleCausticRadius) return;
+        water.causticSourceA = a;
+        water.causticSourceB = b;
+        water.causticSourceRadius = TitleCausticRadius;
+        if (water.isActiveAndEnabled) water.RefreshSubmerged();
     }
 
     /// <summary>After a rebase the water re-registers at its new place (its box is taken in world space when it is enabled).</summary>
@@ -569,11 +675,21 @@ public sealed partial class FrontRoomsRoomStream
 
     /// <summary>The family's lamp odds and, for Run!, the RESET re-strike as the reveal: from the entrance toward the far door,
     /// one cell every 0.15 s from 0.45 s, one flick, then a rise from 0.35 over 0.4 s (FrontRoomsRunRig's resetRiseStart,
-    /// resetCellSeconds, resetRise; Red: "一个一个灯光熄灭，一个一个灯光在亮").</summary>
+    /// resetCellSeconds, resetRise; Red: "一个一个灯光熄灭，一个一个灯光在亮").
+    /// title_renovation: in the pool rooms and the waiting room each lamp strikes with at most CappedStrikeFlicks flick (its own
+    /// delay, period and rise unchanged): StrikeCapped says why (photosafety, rule 11's limit of 3 flashes in any second).</summary>
     static void ConfigureVignetteLamps(RoomSlot room)
     {
         var v = room.vignette;
-        if (v == null || !v.chase) return;
+        if (v == null) return;
+        if (StrikeCapped(v.family))
+        {
+            if (room.lampFlickerCount != null)
+                for (var lamp = 0; lamp < room.lampFlickerCount.Length; lamp++)
+                    if (room.lampFlickerCount[lamp] > CappedStrikeFlicks) room.lampFlickerCount[lamp] = CappedStrikeFlicks;
+            return;
+        }
+        if (!v.chase) return;
         var n = Mathf.Min(v.Count, room.lampState.Length);
         for (var lamp = 0; lamp < n; lamp++)
         {
@@ -620,16 +736,22 @@ public sealed partial class FrontRoomsRoomStream
         if (next.wakeLit && TitleRoomsOn) ActivateRoomLightImmediately(next);
         else ScheduleRoomLight(next);
         if (!TitleRoomsOn) return;
+        // title_renovation: the pool's caustic nets from this slot's lamps, before its water registers.
+        SetTitleCaustics(next, next.vignette);
         SetSeenOnly(next.vignette, true);
         TitleRoomConnected?.Invoke(next.sequence, next.family, new Vector3(centerX, RoomHeight * .42f, next.startZ));
     }
 
     // ------------------------------------------------------------------------------------------------- the handoff (airlock)
     /// <summary>The start door always opens from a Level 0 room: when the first shut door is a family room's, the sealed room past
-    /// it carries the start door (Tour and Drift build it Level 0; Descent's is turned so by EndStreamAt, unseen).</summary>
+    /// it carries the start door (Tour and Drift build it Level 0; Descent's is turned so by EndStreamAt, unseen).
+    /// Zone doors (rule S1, research/double_doors/20_design.md A3.4): the start door is also always a Level 0 DOOR (station D
+    /// keeps walnut leaves, D-3), so a Level 0 room whose far door wears a family's look (the preview) hands over the same way:
+    /// the sealed room past it is the airlock, and its far door is dressed Level 0 by PrepareTitleHandoff, unseen. The walk after
+    /// Space is one room longer in that case only. Today (no zone look) keeps today's rule exactly.</summary>
     int AirlockTerminal(RoomSlot room)
     {
-        if (!TitleRoomsOn || room.family == TitleFamily.Level0) return room.sequence;
+        if (!TitleRoomsOn || (room.family == TitleFamily.Level0 && room.doorZone == FrontRoomsDoubleDoorKit.Zone.Level0)) return room.sequence;
         var next = FindSequence(room.sequence + 1);
         return next != null && !next.connected ? next.sequence : room.sequence;
     }
@@ -646,6 +768,14 @@ public sealed partial class FrontRoomsRoomStream
             ResetRoomLights(terminal);
             RefreshRoomMaterials(terminal);
         }
+        // Zone doors (rule S1): the start door is a Level 0 door. Here the terminal lies past the first shut door (a sealed room)
+        // or is the camera's own Level 0 room whose door is already Level 0, so its far door changes unseen.
+        if (terminal.door != null && terminal.doorZone != FrontRoomsDoubleDoorKit.Zone.Level0 && terminal.sequence > currentSequence)
+        {
+            FrontRoomsDoubleDoorKit.Dress(terminal.door, FrontRoomsDoubleDoorKit.Zone.Level0, 0);
+            terminal.doorZone = terminal.door.Zone;
+            terminal.doorFamilySide = terminal.door.FamilySide;
+        }
         for (var i = 0; i < MaxRooms; i++)
         {
             var room = pool[i];
@@ -655,10 +785,73 @@ public sealed partial class FrontRoomsRoomStream
         }
     }
 
+    // ------------------------------------------------------------------------------------------------- zone doors
+    // research/double_doors/20_design.md A3 (Red 2026-11-05 21:25:37, D-1 = option 2: "整扇门都换成区域的门。* 玩家在 Level 0 房间里
+    // 走向下一扇门时，会先看到办公室的门，算是一点预告。"). Door s stands at the far end of room s, between rooms s and s + 1. It wears
+    // the look of the room it opens into when that room is a family room (the preview from the Level 0 room before it), else the
+    // look of the room it closes (the family room's exit door), else Level 0 (a door between two Level 0 rooms: today's walnut
+    // pair, byte for byte). Decided in AssignTitleFamily, while the slot is sealed two shut doors away; the look-ahead never lies
+    // in the shipped programmes (FamilyForSequence is fixed in advance and FamilyMinGap 5 = MaxRooms 5), and a door in view is
+    // never re-dressed.
+
+    /// <summary>The door look of a title family (Club and the dark pool are the pool's: Part B).</summary>
+    public static FrontRoomsDoubleDoorKit.Zone DoorZoneOf(TitleFamily family)
+    {
+        switch (family)
+        {
+            case TitleFamily.Office: return FrontRoomsDoubleDoorKit.Zone.Office;
+            case TitleFamily.Waiting: return FrontRoomsDoubleDoorKit.Zone.NightPost;
+            case TitleFamily.Low: return FrontRoomsDoubleDoorKit.Zone.BackOfHouse;
+            case TitleFamily.Run: return FrontRoomsDoubleDoorKit.Zone.Run;
+            case TitleFamily.Pool:
+            case TitleFamily.DarkPool:
+            case TitleFamily.Club: return FrontRoomsDoubleDoorKit.Zone.Pool;
+            default: return FrontRoomsDoubleDoorKit.Zone.Level0;
+        }
+    }
+
+    /// <summary>The look of <paramref name="room"/>'s far door; side +1 when the family room is on its +Z side (it opens into it),
+    /// -1 on its -Z side. A family whose look this build does not carry counts as Level 0 (Pool until Build B).</summary>
+    FrontRoomsDoubleDoorKit.Zone DoorZoneFor(RoomSlot room, out int side)
+    {
+        side = 0;
+        if (!TitleRoomsOn || FrontRoomsDoubleDoorKit.Today || room == null) return FrontRoomsDoubleDoorKit.Zone.Level0;
+        var ahead = DoorZoneOf(FamilyForSequence(room.sequence + 1));
+        if (ahead != FrontRoomsDoubleDoorKit.Zone.Level0 && FrontRoomsDoubleDoorKit.ZoneBuilt(ahead)) { side = 1; return ahead; }
+        var own = DoorZoneOf(room.family);
+        if (own != FrontRoomsDoubleDoorKit.Zone.Level0 && FrontRoomsDoubleDoorKit.ZoneBuilt(own)) { side = -1; return own; }
+        return FrontRoomsDoubleDoorKit.Zone.Level0;
+    }
+
+    /// <summary>The slot's far door takes its look (the last step of AssignTitleFamily). Development builds log a re-dress of a
+    /// door the camera may see (the current room's or the next one's).</summary>
+    void DressSlotDoor(RoomSlot room)
+    {
+        if (room?.door == null) return;
+        int side;
+        var zone = DoorZoneFor(room, out side);
+        if (zone == room.doorZone && side == room.doorFamilySide) return;
+        if (initialized && Debug.isDebugBuild && room.sequence <= currentSequence + 1)
+            Debug.LogWarning("[FrontRooms3D] zone doors: R" + room.sequence + "'s door re-dressed while it may be seen (" + room.doorZone + " -> " + zone + ")");
+        FrontRoomsDoubleDoorKit.Dress(room.door, zone, side);
+        room.doorZone = room.door.Zone;
+        room.doorFamilySide = room.door.FamilySide;
+    }
+
+    /// <summary>BuildDoor: every look this programme's families need, built on the slot's pair once and switched off.</summary>
+    void PrepareDoorZones(RoomSlot room)
+    {
+        if (!TitleRoomsOn || FrontRoomsDoubleDoorKit.Today || room?.door == null) return;
+        var families = WantedFamilies(false);
+        for (var i = 0; i < families.Length; i++) FrontRoomsDoubleDoorKit.Prepare(room.door, DoorZoneOf(families[i]));
+    }
+
     // ------------------------------------------------------------------------------------------------- title look and rebase
-    /// <summary>The title camera takes the family's reflection zone as it crosses into a room (before the handoff only).</summary>
+    /// <summary>The title camera takes the family's reflection zone as it crosses into a room (before the handoff only).
+    /// title_renovation: first, in every Play tick (after Space too: the player may walk back), the pool rooms (TickTitlePools).</summary>
     void UpdateTitleLook()
     {
+        TickTitlePools();
         if (!Application.isPlaying || frozen || startRequested) return;
         var room = FindSequence(currentSequence);
         if (room == null || room.sequence == titleLookSequence) return;
@@ -675,6 +868,94 @@ public sealed partial class FrontRoomsRoomStream
         if (!string.IsNullOrEmpty(name) && Enum.TryParse(name, out zone) && Enum.IsDefined(typeof(FrontRoomsLook.ReflectionZone), zone)) return zone;
         // The pool's cubes come with the pool look: until then the dead pool takes the dead-lamp cube, the lit one Level 0's.
         return name == "PoolDead" ? FrontRoomsLook.ReflectionZone.DeadLamp : FrontRoomsLook.ReflectionZone.Level0;
+    }
+
+    // ------------------------------------------------------------------------------------------------- the pool rooms (title_renovation)
+    /// <summary>Every Play tick (UpdateTitleLook, before its early returns): each pool vignette standing in a slot. The lit pool's
+    /// glaze is captured the first tick its room is drawn (door culling, row 1: the room just past the first shut door, so the
+    /// camera is still one room back and the room is dark; a room behind two shut doors is not drawn and never captured) and
+    /// follows the room's lamps from then on. The water light statics are Recommended while any title pool water is on (its
+    /// room connected: the water is the room's visible part), Today when none is and once the title has ended.</summary>
+    void TickTitlePools()
+    {
+        if (!Application.isPlaying || !initialized) return;
+        var dt = Mathf.Min(Time.deltaTime, .1f);
+        var waterOn = false;
+        for (var i = 0; i < MaxRooms; i++)
+        {
+            var room = pool[i];
+            var v = room?.vignette;
+            if (v == null || (v.family != TitleFamily.Pool && v.family != TitleFamily.DarkPool)) continue;
+            var water = TitleWater(v);
+            if (water != null && water.isActiveAndEnabled) waterOn = true;
+            var g = v.glaze;
+            if (g == null) continue;
+            if (!g.Captured && !g.Capturing && !titlePoolsEnded && room.portalDrawn && !room.lightsDimmed && room.root != null
+                && room.root.activeInHierarchy && FrontRoomsTitlePoolGlaze.Supported)
+                CaptureTitleGlaze(room, g);
+            g.Tick(dt, TitleLampLevel(room));
+        }
+        SetTitleWaterLight(waterOn && !titlePoolsEnded);
+    }
+
+    void CaptureTitleGlaze(RoomSlot room, FrontRoomsTitlePoolGlaze g)
+    {
+        // Both door lines keep today's cube: this room's far pair and its entry pair (the previous slot's, swinging into it).
+        var previous = FindSequence(room.sequence - 1);
+        titleDoorRoots[0] = room.leftDoor;
+        titleDoorRoots[1] = room.rightDoor;
+        titleDoorRoots[2] = room.doorFrame;
+        titleDoorRoots[3] = previous?.leftDoor;
+        titleDoorRoots[4] = previous?.rightDoor;
+        titleDoorRoots[5] = previous?.doorFrame;
+        var ok = g.Capture(room.root.transform, room.lightDiffusers, room.roomLights, room.lampDead, room.lightBaseIntensity, titleDoorRoots, streamCamera);
+        for (var i = 0; i < titleDoorRoots.Length; i++) titleDoorRoots[i] = null;
+        if (ok && Debug.isDebugBuild)
+            Debug.Log("[FrontRooms3D] title pool glaze: R" + room.sequence + " probe capture " + g.Captures + " (" + g.ProxyCount + " lamp copies at gain "
+                + FrontRoomsTitlePoolGlaze.ProxyGain + ", " + g.AnchoredCount + " tile renderers on the probe, " + g.OffAxisCount + " walnut renderers off it), "
+                + g.LastCaptureCpuMs.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " ms to ask, connected " + room.connected);
+    }
+
+    /// <summary>The room's light now: the mean output of its live lamps over their steady output (0 dark, about 0.9 every live
+    /// lamp steady: the stream's diffuse scale), what the glaze's brightness follows.</summary>
+    static float TitleLampLevel(RoomSlot room)
+    {
+        if (room?.roomLights == null) return 0f;
+        var sum = 0f;
+        var n = 0;
+        for (var i = 0; i < room.roomLights.Length; i++)
+        {
+            var l = room.roomLights[i];
+            if (l == null || (room.lampDead != null && i < room.lampDead.Length && room.lampDead[i])) continue;
+            var b = room.lightBaseIntensity != null && i < room.lightBaseIntensity.Length ? room.lightBaseIntensity[i] : 0f;
+            n++;
+            if (b > 0f && l.enabled && l.gameObject.activeInHierarchy) sum += Mathf.Clamp01(l.intensity / b);
+        }
+        return n > 0 ? sum / n : 0f;
+    }
+
+    /// <summary>游戏视觉's water light statics (global; nobody else in the game sets them): Recommended while this title wants it,
+    /// Today again when it stops. Only a change this stream made is ever undone.</summary>
+    void SetTitleWaterLight(bool on)
+    {
+        if (on == titleWaterLight) return;
+        titleWaterLight = on;
+        FrontRoomsWaterSubmerged.SetWaterLight(on ? FrontRoomsWaterSubmerged.WaterLightLook.Recommended : FrontRoomsWaterSubmerged.WaterLightLook.Today);
+    }
+
+    /// <summary>The title has ended (the start door shut for good, or the stream goes): Today's water light, no glaze capture in
+    /// flight, no camera hook.</summary>
+    void EndTitlePools()
+    {
+        titlePoolsEnded = true;
+        SetTitleWaterLight(false);
+        FrontRoomsTitlePoolGlaze.EndAll();
+    }
+
+    void OnDestroy()
+    {
+        if (TitleRoomsOn) EndTitlePools();
+        if (stationFaceStream == this) stationFaceStream = null;
     }
 
     /// <summary>The rebase moves every world-projected print by a multiple of 192 m; a family's print may not divide it (a 12 in
@@ -726,6 +1007,10 @@ public sealed partial class FrontRoomsRoomStream
             room.root.transform.localPosition = new Vector3(0f, 0f, room.startZ);
             BuildRoom(room, index);
             AttachVignette(room, v, index);
+            // Zone doors: the family's own door at the far end (its exit door's look).
+            FrontRoomsDoubleDoorKit.Dress(room.door, DoorZoneOf(v.family), -1);
+            room.doorZone = room.door.Zone;
+            room.doorFamilySide = room.door.FamilySide;
             SetSeenOnly(v, true);
             ResetRoomLights(room);
             RefreshRoomMaterials(room);

@@ -1,0 +1,14 @@
+LEVEL 0 (TODAY) | walnut pair, eye 1.62 m, 3 m | label fits, data fits
+O-1 OFFICE | walnut G, F1, bronze F4 frame | label fits, data fits
+S-2 NIGHT POST, +Z FACE | stainless guards on its face | label fits, data fits
+B-2 BACK-OF-HOUSE | grey HM, F1 kit, F12 louvre | label fits, data fits
+C-1 RUN! | almond HM, F5 kit | label fits, data fits
+S-1 D, TERMINAL PAIR | casing, guards | label fits, data fits
+S-1 D, STATIC ENTRANCE | Faces.Plus | label fits, data fits
+F12 LOUVRE FROM 1.2 M | lipped inverted-V blades | label fits, data fits
+F5 KIT AT 0.5 M | pressed steel, painted screws | label fits, data fits
+FRAME FOOT + SADDLE | fluted saddle, satin chrome | label fits, data fits
+D GUARD AT 0.35 M | 1.0 mm off the barrels | label fits, data fits
+F12 LOUVRE AT 0.6 M | blades, lips, frame | label fits, data fits
+TITLE Zone doors Build A: door lab | fits
+ALL LABELS FIT

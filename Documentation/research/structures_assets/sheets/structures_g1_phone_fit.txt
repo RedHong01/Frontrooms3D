@@ -1,0 +1,12 @@
+structures_g1_phone.jpg 1920x2680, 9 tiles, 2 columns
+title | STRUCTURES G1 PHONE TIER TODAY VS NEW | 671/1544 FIT
+KIT_s00_today_phone_raw.png | KIT S00 PHONE TODAY | iPhone 16 Pro profile, Medium | label 174/938 data 232/752 FIT
+KIT_s00_new_phone_raw.png | KIT S00 PHONE NEW REC | lit twin, kits by LOD | label 196/938 data 168/730 FIT
+KIT_s03_today_phone_raw.png | KIT S03 PHONE TODAY | iPhone 16 Pro profile, Medium | label 174/938 data 232/752 FIT
+KIT_s03_new_phone_raw.png | KIT S03 PHONE NEW REC | lit twin, kits by LOD | label 196/938 data 168/730 FIT
+SP6_s04_today_phone_raw.png | SP6 S04 PHONE TODAY | iPhone 16 Pro profile, Medium | label 183/938 data 232/743 FIT
+SP6_s04_new_phone_raw.png | SP6 S04 PHONE NEW REC | lit twin, kits by LOD | label 205/938 data 168/721 FIT
+HUB_s00_today_phone_raw.png | HUB S00 PHONE TODAY | iPhone 16 Pro profile, Medium | label 180/938 data 232/746 FIT
+HUB_s00_new_phone_raw.png | HUB S00 PHONE NEW REC | lit twin, kits by LOD | label 202/938 data 168/724 FIT
+cost_phone.png | COST PHONE | what the phone tier draws | label 94/938 data 200/832 FIT
+ALL LABELS FIT

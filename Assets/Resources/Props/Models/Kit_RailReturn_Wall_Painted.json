@@ -1,0 +1,53 @@
+{
+ "name": "Kit_RailReturn_Wall_Painted",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "rail",
+  "p4"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.5,
+  8.0,
+  28.0
+ ],
+ "lodBudget": [
+  1500,
+  520,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.005000000819563866,
+  -0.03500000014901161,
+  -0.05920000001788139
+ ],
+ "boundsMax": [
+  0.06499999761581421,
+  0.03500000014901161,
+  0.0210999995470047
+ ],
+ "triangles": 1118,
+ "slots": [
+  "Prop_RailEnamel"
+ ],
+ "trianglesLod1": 418,
+ "trianglesLod2": 94,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.02999999839812517,
+  -0.019050000235438347
+ ],
+ "footprintSize": [
+  0.06999999843537807,
+  0.0802999995648861
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

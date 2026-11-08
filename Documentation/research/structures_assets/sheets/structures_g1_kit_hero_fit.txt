@@ -1,0 +1,24 @@
+structures_g1_kit_hero.jpg 1920x6564, 21 tiles, 2 columns
+title | STRUCTURES G1 KIT HEROES AT 0.35 M | 619/1544 FIT
+KIT_hero_coping_035_today_raw.png | COPING 0.35 M TODAY | tile ledge corner, plinth 2 | label 175/938 data 216/751 FIT
+KIT_hero_coping_035_new_raw.png | COPING 0.35 M NEW REC | tile ledge corner, plinth 2 | label 197/938 data 216/729 FIT
+KIT_hero_nosing_035_today_raw.png | NOSING 0.35 M TODAY | pool nosing L, 5th step | label 175/938 data 184/751 FIT
+KIT_hero_nosing_035_new_raw.png | NOSING 0.35 M NEW REC | pool nosing L, 5th step | label 197/938 data 184/729 FIT
+KIT_hero_carpetbar_035_today_raw.png | CARPETBAR 0.35 M TODAY | carpet bar, 5th step | label 208/938 data 160/718 FIT
+KIT_hero_carpetbar_035_new_raw.png | CARPETBAR 0.35 M NEW REC | carpet bar, 5th step | label 230/938 data 160/696 FIT
+KIT_hero_railbracket_035_today_raw.png | RAILBRACKET 0.35 M TODAY | post-top saddle, plinth 4 | label 222/938 data 200/704 FIT
+KIT_hero_railbracket_035_new_raw.png | RAILBRACKET 0.35 M NEW REC | post-top saddle, plinth 4 | label 244/938 data 200/682 FIT
+KIT_hero_baseflange_035_today_raw.png | BASEFLANGE 0.35 M TODAY | post base flange, plinth 4 | label 214/938 data 208/712 FIT
+KIT_hero_baseflange_035_new_raw.png | BASEFLANGE 0.35 M NEW REC | post base flange, plinth 4 | label 236/938 data 208/690 FIT
+KIT_hero_glassshoe_035_today_raw.png | GLASSSHOE 0.35 M TODAY | glass shoe end cap | label 207/938 data 144/719 FIT
+KIT_hero_glassshoe_035_new_raw.png | GLASSSHOE 0.35 M NEW REC | glass shoe end cap | label 229/938 data 144/697 FIT
+KIT_hero_slabedge_035_today_raw.png | SLABEDGE 0.35 M TODAY | void edge: bar, section | label 196/938 data 184/730 FIT
+KIT_hero_slabedge_035_new_raw.png | SLABEDGE 0.35 M NEW REC | void edge: bar, section | label 218/938 data 184/708 FIT
+KIT_hero_joint_035_today_raw.png | JOINT 0.35 M TODAY | sealant joint over the cove | label 164/938 data 216/762 FIT
+KIT_hero_joint_035_new_raw.png | JOINT 0.35 M NEW REC | sealant joint over the cove | label 186/938 data 216/740 FIT
+KIT_hero_glassjoint_035_today_raw.png | GLASSJOINT 0.35 M TODAY | 6 mm pane joint | label 212/938 data 120/714 FIT
+KIT_hero_glassjoint_035_new_raw.png | GLASSJOINT 0.35 M NEW REC | 6 mm pane joint | label 234/938 data 120/692 FIT
+KIT_hero_wovenwire_035_today_raw.png | WOVENWIRE 0.35 M TODAY | woven wire, channel frame | label 212/938 data 200/714 FIT
+KIT_hero_wovenwire_035_new_raw.png | WOVENWIRE 0.35 M NEW REC | woven wire, channel frame | label 234/938 data 200/692 FIT
+cost_heroes_035.png | COST HEROES | per piece, LOD0 / LOD1 / LOD2 | label 104/938 data 232/822 FIT
+ALL LABELS FIT

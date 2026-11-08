@@ -1,0 +1,254 @@
+{
+ "materials": {
+  "Prop_AccessFloor": {
+   "guid": "a91763dcfa134aa1ad0c66a3c895567e",
+   "sha1": "01e278db0b551d2d0a7878c285594f7eece07060"
+  },
+  "Prop_AccessFloor_Phone": {
+   "guid": "d89ada202a684f2eab05b752282f2c59",
+   "sha1": "2267a5bad06881d75470731a1ab1e6bc6eef684c"
+  },
+  "Prop_Fireproofing": {
+   "guid": "03180f4e226d4669acdcb3dc577aba02",
+   "sha1": "8b664591be476a555ed418047c17656977bd02d9"
+  },
+  "Prop_Fireproofing_Phone": {
+   "guid": "ee0c35e6a72e4d56868b5e927230130c",
+   "sha1": "4fe6981f48fe119d38244655b08dc73bdcb11761"
+  },
+  "Prop_RailEnamel": {
+   "guid": "a056da7aea57481182317d2631fb5328",
+   "sha1": "d400be763ee46440efb8dce5248887be4a8c4873"
+  },
+  "Prop_StructTrim": {
+   "guid": "c53f0f0b588640bb8158930b941b9c4e",
+   "sha1": "103188059f8df934813d7c7ae6f40fc5a745f4a6"
+  },
+  "Prop_StructTrim_Phone": {
+   "guid": "f7416d255aa848e0b41e0440043caf49",
+   "sha1": "508d1589dfb2011429c5ef450bd47eb69fc2ff4b"
+  },
+  "Prop_WireMesh": {
+   "guid": "a83a8082025d443fac5081d9f3491af3",
+   "sha1": "60a42fd67c621c64b02b72b0eb012afe4deb3076"
+  }
+ },
+ "strips": [
+  "Sealant",
+  "ShoeAluminium",
+  "PipePaint",
+  "AbrasiveNosing",
+  "WallAngle",
+  "PourStop",
+  "FasciaBand",
+  "CarpetBar",
+  "FasciaCap",
+  "SteelAngleNosing",
+  "BullnoseBlockEnd",
+  "CurbAngle",
+  "Sawcut",
+  "Galvanised",
+  "StainlessBrushed",
+  "TBarWhite"
+ ],
+ "textures": {
+  "AccessFloorPhone_A.png": {
+   "bytes": 180504,
+   "guid": "674463f7be5a4e9393ffb4d75ca36209",
+   "sha1": "6e81e017054fcc7686e35ae37f4a3c00841eee51",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "AccessFloorPhone_N.png": {
+   "bytes": 127134,
+   "guid": "4d302dd3882d47d1806a5560a53af2ec",
+   "sha1": "88575537da2f959ae9579bdc49b15af98302542f",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "AccessFloorPhone_S.png": {
+   "bytes": 123244,
+   "guid": "3e04d6830bd548beb4bc60bec3ba04bb",
+   "sha1": "2b869f14c2a26f8230abe414278b6588acb73978",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "AccessFloor_A.png": {
+   "bytes": 746120,
+   "guid": "51e1fd9b581148b2856b3b66181c389d",
+   "sha1": "aa6beaeddcc7bf7d81a6237026912444f008304c",
+   "size": [
+    1024,
+    1024
+   ]
+  },
+  "AccessFloor_N.png": {
+   "bytes": 484864,
+   "guid": "66175708aaa6414c88feb51cf5aed690",
+   "sha1": "3eaabb987ba444a53a79a0145d29d1f5a5d2aa38",
+   "size": [
+    1024,
+    1024
+   ]
+  },
+  "AccessFloor_S.png": {
+   "bytes": 338766,
+   "guid": "ee1d35a462224100b61d267c02c17e24",
+   "sha1": "25273e10c8854ad9f25f727a215b4e494001f979",
+   "size": [
+    1024,
+    1024
+   ]
+  },
+  "FireproofingPhone_A.png": {
+   "bytes": 285815,
+   "guid": "ca0a1424b36d46a38a73619b8885c0eb",
+   "sha1": "3d7cf12f7300cc7de097f4a0f618ad652521d9d3",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "FireproofingPhone_N.png": {
+   "bytes": 764295,
+   "guid": "038ee8be504048c5ae1f95c165eb42ba",
+   "sha1": "817d7ae5ded0648cd48cff5183508c581f533c14",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "FireproofingPhone_S.png": {
+   "bytes": 384943,
+   "guid": "2739663515fe4a098c57b0c97021d18f",
+   "sha1": "aef6be89bc32586ed310853dc5d14c731834ac75",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "Fireproofing_A.png": {
+   "bytes": 996220,
+   "guid": "15a075486bb8405184715aff1ba2ab0c",
+   "sha1": "7318096cc56dddf6dd2575215351993806097912",
+   "size": [
+    1024,
+    1024
+   ]
+  },
+  "Fireproofing_N.png": {
+   "bytes": 3014033,
+   "guid": "9f286d19847d4d0687cf9a105fe96b56",
+   "sha1": "90b1e8f1ae1a91388b3386720b5670988ed9e9c6",
+   "size": [
+    1024,
+    1024
+   ]
+  },
+  "Fireproofing_S.png": {
+   "bytes": 1214026,
+   "guid": "eec9174d43b34fdba652face1bac3788",
+   "sha1": "c559aff4f099ba609f32c6db4ad3c2b8f2d36886",
+   "size": [
+    1024,
+    1024
+   ]
+  },
+  "StructTrimPhone_A.png": {
+   "bytes": 290487,
+   "guid": "bf3787c83d0545fe876e616a95284480",
+   "sha1": "95cc7ee59d935277db9dfb5417c4f8580a226fdc",
+   "size": [
+    1024,
+    512
+   ]
+  },
+  "StructTrimPhone_N.png": {
+   "bytes": 400202,
+   "guid": "08def313689844a4abe3451f6dd2dea2",
+   "sha1": "9930204d55eae3723548040359f752481ebe27b7",
+   "size": [
+    1024,
+    512
+   ]
+  },
+  "StructTrimPhone_S.png": {
+   "bytes": 309488,
+   "guid": "f6b3409d50214964ab5cbb38847003e8",
+   "sha1": "04c1d3e0cde01e7e7772a58f60e1fb0a3a828d5e",
+   "size": [
+    1024,
+    512
+   ]
+  },
+  "StructTrim_A.png": {
+   "bytes": 946980,
+   "guid": "00a239a31679476985085b167d14d9a7",
+   "sha1": "bd42044fb8bdfee66d15ce4d7a6528c4c9fda674",
+   "size": [
+    2048,
+    1024
+   ]
+  },
+  "StructTrim_N.png": {
+   "bytes": 2142888,
+   "guid": "0e2c3bd639a745eea829c49aa5d27912",
+   "sha1": "12aa10bef67e38d2376d8cd9ffde652f9a30f413",
+   "size": [
+    2048,
+    1024
+   ]
+  },
+  "StructTrim_S.png": {
+   "bytes": 1005635,
+   "guid": "7e9cbea97b694d3182a512cfc78b18eb",
+   "sha1": "5252a15ca059f85ac84dc0807c01b47d49d9f1aa",
+   "size": [
+    2048,
+    1024
+   ]
+  },
+  "WireMeshPhone_A.png": {
+   "bytes": 81900,
+   "guid": "1bef73e300844c508c2d5401d5da2e75",
+   "sha1": "2978241ed362e722363c30243310f99e51d03eb4",
+   "size": [
+    256,
+    256
+   ]
+  },
+  "WireMeshPhone_N.png": {
+   "bytes": 10833,
+   "guid": "e02d5db9f6724c7790a9c6002b2db883",
+   "sha1": "3f26cef69502e8f3173473283a439d38b72c002d",
+   "size": [
+    256,
+    256
+   ]
+  },
+  "WireMesh_A.png": {
+   "bytes": 228563,
+   "guid": "a7fe908c8f06453491f561ad5fd2ca44",
+   "sha1": "f1959d17280eb97e3aff90c5b8a5472fbd214147",
+   "size": [
+    512,
+    512
+   ]
+  },
+  "WireMesh_N.png": {
+   "bytes": 58959,
+   "guid": "dd1c651940054d909df69639b4818f7d",
+   "sha1": "8f39c35b6736b5bb7a727884aadb55990245ce10",
+   "size": [
+    512,
+    512
+   ]
+  }
+ }
+}

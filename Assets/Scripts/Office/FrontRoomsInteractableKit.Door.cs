@@ -78,6 +78,15 @@ public static partial class FrontRoomsInteractableKit
     public static Func<FrontRoomsMapWorld.Door, bool?> DoorLockedOverride { get; set; }
 
     /// <summary>
+    /// The zone doors' Map stage (2026-11-06; research/double_doors/30_build.md Part M): true dresses every map door as before it,
+    /// byte for byte: the member rule without the back-of-house and pool tests, and today's OF-F / OF-K rows (tools, captures, the
+    /// way back). False (shipped) gives the back-of-house member on the map line's BackOfHouseDoor (Red 2026-11-05 21:26, D-2
+    /// option 2), the pool member on a pool zone's doors (D-5, PD-A), and the Office rows' finish (D-4 at its default: Red's
+    /// walnut G kept). WebGL players do not dress map doors (DressOnWebGL), so they never meet it.
+    /// </summary>
+    public static bool DoorRowsToday { get; set; }
+
+    /// <summary>
     /// C16 (V7b) alarm doors, the map's word on the bar's press (contract W/apply/v7b_alarm_door_contract): how far the
     /// player's held push has carried an armed alarm door's bar this frame, signed by the face pushed (+ from the door
     /// root's +X side, - from -X): 0..1 over Red's 10A hold of 0.4 s, a small strain for a push the door refuses, 0 with no
@@ -149,17 +158,30 @@ public static partial class FrontRoomsInteractableKit
     public const string LeafBrassFrom = "Prop_Brass";
 
     /// <summary>The member by the door's Standard (non-Low) sides: Office if one of them is an Office zone, else Lobby.
-    /// Run and Exit come from a later map hook (contract M8, DoorMemberFor).</summary>
+    /// Run and Exit come from a later map hook (contract M8, DoorMemberFor).
+    /// Map stage (zone doors, 2026-11-06; the agreement with the level design line, 2026-11-05 21:57): the map's word first (M8:
+    /// Run, and Stair for a door into a fire stair once the map gives it), then the map line's back-of-house predicate, then the
+    /// Standard side: Office, then a pool zone (Pool), else Lobby. Precedence Run / Exit / Stair > Office / Pool > BackOfHouse >
+    /// Lobby: the predicate is false wherever the Office or the pool test would answer (FrontRoomsMapWorld.BackOfHouse.cs), and a
+    /// pool door keeps Pool whatever zone it opens into. Under DoorRowsToday, today's rule.</summary>
     public static FrontRoomsDoorMember DoorMemberFor(FrontRoomsMapWorld map, FrontRoomsMapWorld.Door door)
     {
         if (map == null || map.Cache == null || door == null) return FrontRoomsDoorMember.Lobby;
         var fromMap = DoorMemberFromMap != null ? DoorMemberFromMap(door) : null;
         if (fromMap.HasValue) return fromMap.Value;
+        if (!DoorRowsToday && map.BackOfHouseDoor(door)) return FrontRoomsDoorMember.BackOfHouse;
         var za = map.ZoneOf(door.a);
         var zb = map.ZoneOf(door.b);
         var office = (za.height != ZoneHeight.Low && za.theme == ZoneTheme.Office) || (zb.height != ZoneHeight.Low && zb.theme == ZoneTheme.Office);
         if (!office && za.height == ZoneHeight.Low && zb.height == ZoneHeight.Low) office = za.theme == ZoneTheme.Office || zb.theme == ZoneTheme.Office;
-        return office ? FrontRoomsDoorMember.Office : FrontRoomsDoorMember.Lobby;
+        if (office) return FrontRoomsDoorMember.Office;
+        if (!DoorRowsToday)
+        {
+            var pool = (za.height != ZoneHeight.Low && PoolRules.IsPool(za.theme)) || (zb.height != ZoneHeight.Low && PoolRules.IsPool(zb.theme));
+            if (!pool && za.height == ZoneHeight.Low && zb.height == ZoneHeight.Low) pool = PoolRules.IsPool(za.theme) || PoolRules.IsPool(zb.theme);
+            if (pool) return FrontRoomsDoorMember.Pool;
+        }
+        return FrontRoomsDoorMember.Lobby;
     }
 
     /// <summary>The parts row of a member and model (10_design §3.2): data, so a variant is a row.</summary>
@@ -190,6 +212,7 @@ public static partial class FrontRoomsInteractableKit
             var sSign = acting == DoorActing.Double ? 1f : -door.swing;
             var frameScale = acting == DoorActing.Double ? Vector3.one : new Vector3(sSign, 1f, 1f);
             frame = DoorParts.Spawn(DoorParts.Kit(row.frame, acting), chunkRoot, door.hinge.localPosition, door.closed, frameScale, DoorFrameLabel);
+            if (row.frameTo != null) DoorParts.SwapSurface(frame, row.frameFrom, row.frameTo);
             rigGo = new GameObject(LeafRigLabel);
             rigGo.transform.SetParent(door.hinge, false);
             var rig = rigGo.AddComponent<FrontRoomsDoorRig>();
@@ -361,6 +384,15 @@ public static partial class FrontRoomsInteractableKit
         public bool plates;
         // Door wood (Red 2026-10-30): the walnut veneer leaf's brass plates in satin chrome (OF-F, EX-F; LeafBrassFrom).
         public bool leafChrome;
+        // Map stage (zone doors, 2026-11-06; research/double_doors/30_build.md Part M), all null / false on today's rows:
+        // faceFrom -> faceTo: the leaf kit's face slot takes the row's finish (the Office's walnut and almond with the Office wear);
+        // frameFrom -> frameTo: the frame kit's finish (the stair row's #5F5A50); trim: the lock parts' satin chrome taken to
+        // this surface (the pool's 630: chrome plate pits in pool air); kick: HW-DA1's 10 in 630 kick plate on both faces
+        // (Kit_DoorKickPlate_Map, _B on face P); louvre / ring: a landed pair kit spawned into the leaf's cut-out (the A2 louvre
+        // Kit_DoorLouvre_F12, the A1 ring Kit_DoorLite_A1_FRP) in partFace; liteRound: the lite is the A1 porthole (sight test
+        // and shadow hole round).
+        public string faceFrom, faceTo, frameFrom, frameTo, trim, louvre, ring, partFace;
+        public bool kick, liteRound;
     }
 
     static class DoorParts
@@ -393,9 +425,38 @@ public static partial class FrontRoomsInteractableKit
 
         static DoorRow ChromeLeaf(DoorRow row) { row.leafChrome = true; return row; }
 
+        static DoorRow Face(DoorRow row, string from, string to) { row.faceFrom = from; row.faceTo = to; return row; }
+        static DoorRow Kick(DoorRow row) { row.kick = true; return row; }
+        static DoorRow Trim(DoorRow row, string to) { row.trim = to; return row; }
+        static DoorRow Louvre(DoorRow row, string face) { row.louvre = LouvreKit; row.partFace = face; return row; }
+        static DoorRow Porthole(DoorRow row, string face) { row.ring = RingKit; row.partFace = face; row.liteRound = true; return row; }
+        static DoorRow FrameFinish(DoorRow row, string from, string to) { row.frameFrom = from; row.frameTo = to; return row; }
+
+        // The Map stage's parts (zone doors, 2026-11-06): HW-DA1's kick plate on the map leaf, and the landed pair kits that fill
+        // the new leaves' cut-outs (built for the pair's 1-3/4 in leaf: a through-scale of LEAF_X / 0.02225 seats their flanges and
+        // the ring's foot 0.1 mm into the 44 mm map face; door_leaf_map_common.py).
+        internal const string KickPlateKit = "Kit_DoorKickPlate_Map", KickPlateKitB = "Kit_DoorKickPlate_Map_B";
+        internal const string LouvreKit = "Kit_DoorLouvre_F12", RingKit = "Kit_DoorLite_A1_FRP";
+        static readonly Vector3 KickS = new Vector3(.0221f, .145f, .500f), LouvreAt = new Vector3(0f, .5334f, .400f), RingAt = new Vector3(0f, 1.397f, .324f);
+        static readonly Vector3 PairKitScale = new Vector3(1f, 1f, .022f / .02225f);
+        static readonly Vector4 LouvreHole = new Vector4(.273f, .527f, .3302f, .7366f);   // the A2 louvre's visible 10 x 16 in (z0, z1, y0, y1)
+        static readonly Quaternion PairKitTurn = Quaternion.Euler(0f, -90f, 0f);   // the pair kit's x along the opening, its -z (the screws) on face S
+        // The kit materials the rows' finishes come from (slot names of the landed kits).
+        internal const string VeneerSlot = "Door_Veneer", EnamelSlot = "Door_Enamel", PaintSlot = "Painted_Metal", SteelBrownSlot = "Prop_SteelBrown";
+
         // [member * 2 + (locked ? 1 : 0)]: L0-F, L0-K, OF-F, OF-K, RN-F, RN-K, EX-F, EX-K (10_design §3.2; Q-EX: no crossbar, Q-RN: lever).
         // Door wood (Red 2026-10-30): OF-F and EX-F hang the walnut veneer leaf (was Kit_DoorLeaf_Veneer_Oak_DA) with chrome plates.
-        static readonly DoorRow[] Rows =
+        // TodayRows: the D1.6 rows as landed (DoorRowsToday). Rows: the Map stage's (zone doors, 2026-11-06, 30_build.md Part M):
+        //   OF-F / OF-K  D-4 at its default (Red's walnut G kept): the Office wear on the walnut and on the key door's almond
+        //                (DoorWear_OfficeMap), HW-DA1's 10 in 630 kick plates on the walnut leaf; frame and satin chrome as today
+        //   PL-F / PL-K  PD-A (D-5 recommended): the moulded FRP frame in the course aqua, the moulded FRP leaf with the A1 porthole
+        //                in tempered glass, 630 trim and kick plates; free white, locked in the aqua (T6 turned for the white zones:
+        //                the locked leaf at least 1 stop darker)
+        //   BH-F / BH-K  D-2 option 2: the painted hollow-metal leaf with the A2 louvre, F1 and its kick plates in the steel frame;
+        //                free in B-2a's warm grey with the service wear, locked in the key door's almond with L0-K's set and sign
+        //   ST-F / ST-K  a door into a fire stair (the pool's PL_FireStair south door, by the map's word): the stairwell A
+        //                language on the D1.6 kits (putty leaf, the #5F5A50 frame), locked as L0-K
+        static readonly DoorRow[] TodayRows =
         {
             Free("L0-F", "Kit_DoorFrame_Wood_DA", "Kit_DoorLeaf_Veneer_DA", true),
             Locked("L0-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", 0),
@@ -407,7 +468,30 @@ public static partial class FrontRoomsInteractableKit
             Locked("EX-K", "Kit_DoorFrame_Steel_Alu_DA", "Kit_DoorLeaf_Steel_DA", -1),
         };
 
-        internal static DoorRow Row(FrontRoomsDoorMember member, bool locked) => Rows[(int)member * 2 + (locked ? 1 : 0)];
+        static readonly DoorRow[] Rows =
+        {
+            TodayRows[0],
+            TodayRows[1],
+            Kick(Face(ChromeLeaf(Free("OF-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Veneer_DA", false)), VeneerSlot, "Door_Veneer_OfficeMap")),
+            Face(Locked("OF-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", 0), EnamelSlot, "Door_Enamel_OfficeMap"),
+            TodayRows[4],
+            TodayRows[5],
+            TodayRows[6],
+            TodayRows[7],
+            Kick(Trim(Porthole(Free("PL-F", "Kit_DoorFrame_FRP_DA", "Kit_DoorLeaf_FRP_DA", false), "Door_PoolGelcoat"), "Prop_Stainless630")),
+            Kick(Trim(Porthole(Locked("PL-K", "Kit_DoorFrame_FRP_DA", "Kit_DoorLeaf_FRPLocked_DA", 0), "Door_PoolGelcoat_Frame"), "Prop_Stainless630")),
+            Louvre(Free("BH-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_SteelLouvre_DA", false), "Door_BackOfHouse"),
+            Louvre(Locked("BH-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_SteelLouvreLocked_DA", 0), EnamelSlot),
+            FrameFinish(Face(Free("ST-F", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_PaintedMetal_DA", false), PaintSlot, "Stair_DoorSteel_Map"), SteelBrownSlot, "Stair_DoorFrame"),
+            FrameFinish(Locked("ST-K", "Kit_DoorFrame_Steel_DA", "Kit_DoorLeaf_Steel_DA", -1), SteelBrownSlot, "Stair_DoorFrame"),
+        };
+
+        internal static DoorRow Row(FrontRoomsDoorMember member, bool locked)
+        {
+            var i = (int)member * 2 + (locked ? 1 : 0);
+            if (!DoorRowsToday) return i >= 0 && i < Rows.Length ? Rows[i] : Rows[locked ? 1 : 0];
+            return i >= 0 && i < TodayRows.Length ? TodayRows[i] : TodayRows[locked ? 1 : 0];
+        }
 
         // The dormant Single mode spawns today's stop kits (main's GUIDs): the same names without "_DA".
         internal static string Kit(string name, DoorActing acting) =>
@@ -524,16 +608,22 @@ public static partial class FrontRoomsInteractableKit
             var leafKit = Kit(row.leaf, acting);
             var leafGo = Spawn(leafKit, t, Vector3.zero, Quaternion.identity, Vector3.one, LeafLabel);
             if (row.leafChrome) SwapSurface(leafGo, LeafBrassFrom, HardwareChromeTo);
+            if (row.faceTo != null) SwapSurface(leafGo, row.faceFrom, row.faceTo);
+            if (row.trim != null) SwapSurface(leafGo, HardwareChromeTo, row.trim);
+            MirrorLeafWear(leafGo);
             var leafInfo = FrontRoomsKitLibrary.GetInfo(leafKit);
-            ShadowProxy(t, cube, leafInfo);
+            ShadowProxy(t, cube, leafInfo, row);
             // Door vision (research/door_vision/30_design.md 2.3, 4.2): the leaf's lite (LIVE / DARK, the player-side sight
             // rule) and the peek's Available on the EXAMINE target the kit's sidecar block attached at spawn.
             if (leafInfo != null && leafInfo.HasLite)
             {
-                var lite = FrontRoomsDoorLite.AttachMap(leafGo, door, t, leafInfo.LiteRect, map);
+                var lite = row.liteRound
+                    ? FrontRoomsDoorLite.AttachMap(leafGo, door, t, leafInfo.LiteRect, map, FrontRoomsDoorLite.Shape.Round)
+                    : FrontRoomsDoorLite.AttachMap(leafGo, door, t, leafInfo.LiteRect, map);
                 var peek = leafGo.GetComponent<FrontRoomsInspectable>();
                 if (peek != null && lite != null) peek.Available = lite.PeekAvailableFunc;
             }
+            BuildZoneParts(t, row);
 
             // Face hardware, S (+X, side 0) then P (-X, side 1). Mirror rule: P parts take scale (-1, 1, 1) so a lever still
             // points at the hinge; the plug is never mirrored (G2 §4.1) and its angle is negated on P (§4.7).
@@ -547,20 +637,26 @@ public static partial class FrontRoomsInteractableKit
                 if (row.locked)
                 {
                     var esc = Anchor(leafInfo, "escutcheon" + s, new Vector3(sign * .022f, .968f, .920f));
-                    Spawn(row.escutcheon, t, esc, rot, mirror, "Lock escutcheon" + faceLabel);
+                    Trimmed(Spawn(row.escutcheon, t, esc, rot, mirror, "Lock escutcheon" + faceLabel), row);
                     var keyhole = esc + rot * Vector3.Scale(mirror, EscKeyhole);
-                    Spawn(row.shell, t, keyhole, rot, mirror, "Lock cylinder" + faceLabel);
+                    Trimmed(Spawn(row.shell, t, keyhole, rot, mirror, "Lock cylinder" + faceLabel), row);
                     var plug = Spawn(row.plug, t, keyhole, rot, Vector3.one, "Lock plug" + faceLabel);
+                    Trimmed(plug, row);
                     rig.SetPlugPart(side, plug.transform, sign);
                     var knob = Spawn(row.knob, t, esc + rot * Vector3.Scale(mirror, EscKnobPivot), rot, mirror, "Lock knob" + faceLabel);
+                    Trimmed(knob, row);
                     rig.SetHandle(side, knob.transform, sign);
                 }
                 else if (!alarmBar)
                 {
                     // C16 alarm doors (alarmBar): the exit-alarm push bar is the handle on both faces, so no lever and rose.
-                    var rose = Anchor(leafInfo, "rose" + s, new Vector3(sign * .022f, 1.000f, .920f));
-                    Spawn(row.rose, t, rose, rot, mirror, "Lock rose" + faceLabel);
+                    // A leaf with no rose anchor (a locked-type steel leaf on a free row: ST-F) takes the lever at its latch's
+                    // height, as a lever trim's spindle and its latch stand level; every landed free row's leaf has the anchor.
+                    var roseY = leafInfo != null && !leafInfo.TryAnchor("rose" + s, out _) && leafInfo.TryAnchor("latchbolt", out var lb) ? lb.y : 1.000f;
+                    var rose = Anchor(leafInfo, "rose" + s, new Vector3(sign * .022f, roseY, .920f));
+                    Trimmed(Spawn(row.rose, t, rose, rot, mirror, "Lock rose" + faceLabel), row);
                     var lever = Spawn(row.lever, t, rose + rot * Vector3.Scale(mirror, RoseSpindle), rot, mirror, "Lock lever" + faceLabel);
+                    Trimmed(lever, row);
                     rig.SetHandle(side, lever.transform, sign);
                 }
                 // The engraved sign is type: hung only once the graphic-visual line has OKed it (ShowKitType).
@@ -587,20 +683,92 @@ public static partial class FrontRoomsInteractableKit
 
             // Bolts on the latch edge (authored along +Z, thrown / extended) and the strike on the frame.
             Transform deadbolt = null;
-            if (row.deadbolt != null) deadbolt = Spawn(row.deadbolt, t, Anchor(leafInfo, "deadbolt", new Vector3(0f, 1.000f, .995f)), Quaternion.identity, Vector3.one, "Lock deadbolt").transform;
+            if (row.deadbolt != null) deadbolt = Trimmed(Spawn(row.deadbolt, t, Anchor(leafInfo, "deadbolt", new Vector3(0f, 1.000f, .995f)), Quaternion.identity, Vector3.one, "Lock deadbolt"), row).transform;
             var latchAt = Anchor(leafInfo, "latchbolt", new Vector3(0f, row.locked ? .9365f : 1.000f, .995f));
-            var latch = Spawn(Kit(row.latch, acting), t, latchAt, Quaternion.identity, Vector3.one, "Lock latch").transform;
+            var latch = Trimmed(Spawn(Kit(row.latch, acting), t, latchAt, Quaternion.identity, Vector3.one, "Lock latch"), row).transform;
             rig.SetBolts(latch, deadbolt);
             var frameInfo = FrontRoomsKitLibrary.GetInfo(Kit(row.frame, acting));
             var strikeAt = Anchor(frameInfo, row.boredStrike ? "strike_bored" : "strike", new Vector3(0f, row.boredStrike ? 1.000f : .968f, .998f));
-            var strike = Spawn(Kit(row.strike, acting), frame, strikeAt, StrikeTurn, Vector3.one, "Lock strike").transform;
+            var strike = Trimmed(Spawn(Kit(row.strike, acting), frame, strikeAt, StrikeTurn, Vector3.one, "Lock strike"), row).transform;
             rig.SetStrike(strike);
+        }
+
+        /// <summary>A lock part in its row's trim (the pool's 630 for the satin chrome); today's rows return it untouched.</summary>
+        static GameObject Trimmed(GameObject part, DoorRow row)
+        {
+            if (row.trim != null) SwapSurface(part, HardwareChromeTo, row.trim);
+            return part;
+        }
+
+        /// <summary>
+        /// The Map stage's parts on the leaf rig (zone doors, 2026-11-06; 30_build.md Part M), render-only and riding the rig (and a
+        /// break's pose) like the lock parts: HW-DA1's 10 in 630 kick plate on both faces (OF-F, PL-F, PL-K: the plate's back 0.1 mm
+        /// off the face at the leaf's kick anchors; face P the _B plate so the two faces never repeat), and the landed pair kit
+        /// that fills the leaf's cut-out: the A2 louvre (BH-F, BH-K) or the A1 porthole's moulded ring (PL-F, PL-K), in the row's
+        /// finish, never culled (the leaf's LOD2 keeps its cut-out at every distance: the part must cover it).
+        /// </summary>
+        static void BuildZoneParts(Transform t, DoorRow row)
+        {
+            if (row.kick && FrontRoomsKitLibrary.Has(KickPlateKit))
+            {
+                Spawn(KickPlateKit, t, KickS, FaceS, Vector3.one, "Kick plate s");
+                if (FrontRoomsKitLibrary.Has(KickPlateKitB)) Spawn(KickPlateKitB, t, new Vector3(-KickS.x, KickS.y, KickS.z), FaceP, Vector3.one, "Kick plate p");
+            }
+            var part = row.louvre ?? row.ring;
+            if (part == null || !FrontRoomsKitLibrary.Has(part)) return;
+            var go = Spawn(part, t, row.louvre != null ? LouvreAt : RingAt, PairKitTurn, PairKitScale, row.louvre != null ? "Leaf louvre" : "Leaf porthole ring");
+            if (row.partFace != null)
+            {
+                var from = row.louvre != null ? PaintSlot : "Door_PoolGelcoat";
+                if (row.partFace != from) SwapSurface(go, from, row.partFace);
+            }
+            NeverCull(go);
+        }
+
+        /// <summary>A part's LODGroup keeps its last level at any distance (no cull: it covers a cut-out the leaf always has).</summary>
+        static void NeverCull(GameObject go)
+        {
+            var g = go != null ? go.GetComponent<LODGroup>() : null;
+            if (g == null) return;
+            var lods = g.GetLODs();
+            if (lods.Length == 0 || lods[lods.Length - 1].screenRelativeTransitionHeight <= 0f) return;
+            lods[lods.Length - 1].screenRelativeTransitionHeight = 0f;
+            g.SetLODs(lods);
+        }
+
+        static readonly System.Collections.Generic.HashSet<Texture> mirroredWear = new System.Collections.Generic.HashSet<Texture>();
+        static readonly int LeafWearMapId = Shader.PropertyToID("_FR_LeafWearMap");
+
+        /// <summary>
+        /// The map members' leaf-wear masks (DoorWear_*Map, Tools/lookdev/gen_door_wear_map.py) sample u = +Z on face S and -Z on
+        /// face P (the kit leaves' metre UVs): their sampler mirrors u, so both faces of a double-acting leaf read the latch edge
+        /// at u 1. Set once per mask texture (the surface importer gives every surface texture Repeat; only these masks are
+        /// mirrored, and only the map members' faces carry them). Today's rows carry no leaf-wear mask: nothing changes for them.
+        /// </summary>
+        internal static void MirrorLeafWear(GameObject go)
+        {
+            if (go == null) return;
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                var mats = r.sharedMaterials;
+                for (var i = 0; i < mats.Length; i++)
+                {
+                    var m = mats[i];
+                    if (m == null || !m.HasProperty(LeafWearMapId) || !m.IsKeywordEnabled("_FR_LEAFWEAR")) continue;
+                    var tex = m.GetTexture(LeafWearMapId);
+                    if (tex == null || mirroredWear.Contains(tex) || !tex.name.StartsWith("DoorWear_", StringComparison.Ordinal) || !tex.name.EndsWith("Map", StringComparison.Ordinal)) continue;
+                    tex.wrapModeU = TextureWrapMode.Mirror;
+                    mirroredWear.Add(tex);
+                }
+            }
         }
 
         // A shadows-only cube in the leaf's slab (SPEC §1.7): no collider at all (the map's own cube mesh, no primitive).
         // Door vision (30_design 1.4): a lited leaf's proxy is the same box with a hole over the visible glass (one shared
         // mesh per form, about 32 triangles), so a shadowed lamp behind the door throws a lit rectangle through the lite.
-        static void ShadowProxy(Transform rig, MeshRenderer cube, FrontRoomsKitLibrary.Info leafInfo)
+        // Map stage (zone doors, 2026-11-06): the porthole's proxy has a round hole (a 32-gon over the clear 16 in), and a louvre
+        // leaf's proxy a second hole over the louvre (light passes its blades, never a view), so the shadows match the leaf.
+        static void ShadowProxy(Transform rig, MeshRenderer cube, FrontRoomsKitLibrary.Info leafInfo, DoorRow row)
         {
             var filter = cube != null ? cube.GetComponent<MeshFilter>() : null;
             if (filter == null || filter.sharedMesh == null) return;
@@ -609,7 +777,10 @@ public static partial class FrontRoomsInteractableKit
             var holed = leafInfo != null && leafInfo.HasLite;
             go.transform.localPosition = holed ? Vector3.zero : ShadowCentre;
             go.transform.localScale = holed ? Vector3.one : ShadowSize;
-            go.AddComponent<MeshFilter>().sharedMesh = holed ? FrontRoomsDoorLite.HoledShadowBox(leafInfo.LiteRect) : filter.sharedMesh;
+            go.AddComponent<MeshFilter>().sharedMesh = !holed ? filter.sharedMesh
+                : row.liteRound ? FrontRoomsDoorLite.HoledShadowBoxRound(leafInfo.LiteRect)
+                : row.louvre != null ? FrontRoomsDoorLite.HoledShadowBox(leafInfo.LiteRect, LouvreHole)
+                : FrontRoomsDoorLite.HoledShadowBox(leafInfo.LiteRect);
             var r = go.AddComponent<MeshRenderer>();
             r.sharedMaterial = cube.sharedMaterial;
             r.shadowCastingMode = ShadowCastingMode.ShadowsOnly;

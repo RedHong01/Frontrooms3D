@@ -117,3 +117,22 @@ def build(kit):
     kit.no_collider()
     kit.tag("interactable", "door", "closer", "office")
     dc.lod_meta(kit, sys.modules[__name__])
+
+
+def lod2_proxy(kit):
+    """LOD2 (5-20 m): the rod as a hexagonal tube on the climbed line, the eye and the shoe-end stud as posts; ~48 tris."""
+    import door_stair_common as sc
+    sc.cyl(kit, (0.0, 0.0, 0.0), (0.0, 0.008, 0.0), 0.0105, 6, PAINT, "eye lod2")
+    sc.cyl(kit, (0.006, 0.008, 0.0), (0.080, ROD_Y, 0.0), 0.006, 6, PAINT, "neck lod2")
+    sc.cyl(kit, (0.080, ROD_Y, 0.0), (B, ROD_Y, 0.0), 0.007, 6, PAINT, "rod lod2")
+    sc.cyl(kit, (B, ROD_Y - 0.008, 0.0), (B, RISE, 0.0), 0.009, 6, PAINT, "stud lod2")
+
+
+# Stairwell doors (2026-11-06): the LOD2 add-on wraps make_lod1 after this module's own wrappers (lod1_keep_all), so it is
+# registered after the original build() has run.
+_build_lod01 = build
+
+
+def build(kit):
+    _build_lod01(kit)
+    __import__("door_stair_common").add_lod2(kit, lod2_proxy, "LOD0 / LOD1 as before; LOD2 hand-built (stairwell doors 2026-11-06, door_stair_common.add_lod2: P-1); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76")

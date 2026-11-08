@@ -1,0 +1,83 @@
+{
+ "name": "Kit_SpiralStair_Steel_Putty",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "column",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "top_floor",
+   "pos": [
+    0.0,
+    2.6999999999999997,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "stair",
+  "p5",
+  "b4s"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  6.0,
+  18.0,
+  70.0
+ ],
+ "lodBudget": [
+  14000,
+  4500,
+  1200
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "spiral": {
+  "treads": 14,
+  "riser": 0.18,
+  "stepDeg": 23.0,
+  "rOut": 1.25,
+  "columnOD": 0.1682,
+  "railHeight": 0.91,
+  "firstRiserAxis": "+X",
+  "rises": "counter-clockwise from +X toward +Z",
+  "place": "localRotation = Euler(0, -startDeg, 0)"
+ },
+ "boundsMin": [
+  -1.2499314546585083,
+  0.0,
+  -1.2498457431793213
+ ],
+ "boundsMax": [
+  1.2518153190612793,
+  3.6730000972747803,
+  1.2499828338623047
+ ],
+ "triangles": 13998,
+ "slots": [
+  "Prop_SteelPutty",
+  "L0_Carpet"
+ ],
+ "trianglesLod1": 4646,
+ "trianglesLod2": 1440,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.000941932201385498,
+  6.854534149169922e-05
+ ],
+ "footprintSize": [
+  2.5017467737197876,
+  2.499828577041626
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

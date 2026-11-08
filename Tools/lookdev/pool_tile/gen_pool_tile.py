@@ -32,6 +32,21 @@ Scale (Red's rule of thumb for walls: 1 px is about 2 mm at 3 m, so relief also 
   Nosing  step nosing L: 50 mm on the tread (3 safety ribs), r 8 mm round, 25 mm down the riser; 150 mm units; unrolled
           profile 0.075 m (mesh UV: flat 42, round 12.57, flat 17 mm)
 Every period divides 192 m (the room stream's origin rebase), so a rebase never moves a joint.
+
+Structures assets (scene 4, research/structures_assets/30_plan.md package P2 structures_tile_trims, 2026-11-06), mesh UV in metres:
+  Field50 glazed 2 in tile (50 mm, 12 to 0.6 m), joint 1.6 mm (1/16 in), cushion r 1.0; map 0.6 m at 1024 px (0.59 mm/px)
+  Bullnose the outside-corner bullnose trim: a 142 mm leg down the face, r 8 round, a 142 mm leg on the top; 150 mm units;
+          unrolled profile 0.30 m (P1 FrontRoomsStructureProfiles.BullnoseCorner: V 0-0.142 face, round, 0.1546-0.2966 top)
+  Cove    the pool's cove r 50 at a basin's floor with 50 mm flats (P1 Cove(0.05, 0.05)): floor flat 0-0.05, round 0.05-0.128,
+          wall flat 0.128-0.178; 150 mm units; unrolled 0.18 m
+  Gutter  the roll-out gutter (P1 GutterSection(RollOut)): deck 0-0.20 (abrasive), the flush porcelain finger grate 0.20-0.40
+          (12 mm fingers, 8 mm slots, dark channel under), the curb's back 0.40-0.45, its bullnosed top 0.45-0.5426, the pool face
+          0.5426-0.6926; 150 mm units; unrolled 0.70 m
+  WeirLip a square porcelain weir lip with a drip groove (P1 WeirLip): underside 0-0.035, the groove 0.035-0.053, the underside
+          to the nose 0.053-0.062, the nose face 0.062-0.122, the top 0.122-0.272 (the water's sheen line at the nose); 150 mm
+          units; unrolled 0.28 m
+and the mesh-UV kinds for tiled curves (Red's ask 2, tile by radius): Field108Mesh and Field75Mesh are the Field set at 109.1 mm
+(11 to 1.2 m) and 75 mm, Field50Mesh the 2 in set, MosaicMesh the 1 in mosaic on mesh UVs.
 """
 import argparse
 import hashlib
@@ -514,7 +529,189 @@ def make_nosing(name="Nosing", wd=2048, seed=50):
     return sh
 
 
-SETS = dict(Field=make_field, Mosaic=make_mosaic, Deck=make_deck, Cap=make_cap, Coping=make_coping, Nosing=make_nosing)
+def make_field50(name="Field50", wd=1024, seed=250):
+    """Glazed porcelain-white 2 in tile (50 mm), 1.6 mm joint, cushion r 1.0: the tile for tight curves (R 0.3-0.6 m)."""
+    rng = np.random.default_rng(seed)
+    sh = Sheet(name, wd, wd, 600.0, 600.0)
+    P, J = 50.0, 1.6
+    g = grid_cells(sh, P, P, J, corner_r=0.8)
+    s = tile_surface(sh, g, rng, edge_r=1.0, g_edge=0.5, g_dip=0.4, lip_sd=0.07, tilt_sd_deg=0.14,
+                     bow_lo=0.02, bow_hi=0.08, saddle_sd=0.02, joint=J)
+    H, W = sh.H, sh.W
+    glaze = 1.0 - s["grout"]
+    peel = noise(H, W, sh.px(2.5), seed + 1) * 0.0045 + noise(H, W, sh.px(12.0), seed + 2) * 0.008
+    grain = noise(H, W, sh.px(0.6), seed + 3)
+    sh.hgt = s["hgt"] + peel * glaze * smoothstep(0.0, 1.0, s["d"]) + grain * 0.04 * s["grout"]
+    n = g["nu"] * g["nv"]
+    lot = rng.normal(0.0, 0.008, n).astype(np.float32)
+    mottle = noise(H, W, sh.px(20.0), seed + 4) * 0.004
+    m_glaze = (1.0 + lot[g["tid"]]) * (1.0 + mottle) * (1.0 - 0.045 * s["shoulder"])
+    m_grout = (1.0 + 0.10 * grain) * (0.95 - 0.12 * s["depth"])
+    sh.tone = np.where(s["grout"] > 0.5, m_grout, m_glaze)
+    sh.thick = np.where(s["grout"] > 0.5, 1.0, 0.45 + 0.55 * smoothstep(0.0, 1.4, s["d"]))
+    sh.grout = s["grout"]
+    sh.smooth = np.where(s["grout"] > 0.5, 0.24 + 0.05 * grain, 0.93 + 0.006 * noise(H, W, sh.px(25.0), seed + 6) - 0.035 * s["shoulder"])
+    sh.cavity = np.where(s["grout"] > 0.5, 0.80 - 0.22 * s["depth"], 1.0 - 0.08 * s["shoulder"])
+    patch = np.clip(0.5 + 0.5 * noise(H, W, sh.px(45.0), seed + 7), 0.0, 1.0)
+    craze = crazing(sh, g, rng, share=0.25, cell_mm=6.0, line_mm=0.30, seed=seed + 8)
+    sh.dirt = np.where(s["grout"] > 0.5, np.clip(0.38 + 0.35 * patch + 0.12 * grain, 0.0, 1.0), np.clip(0.55 * craze + 0.12 * s["shoulder"], 0.0, 1.0))
+    sh.chips = chips_mask(sh, g, rng, count=12, r_lo=0.6, r_hi=1.4)
+    sh.params = dict(kind="square", tiles_u=g["nu"], tiles_v=g["nv"], pitch_mm=P, joint_mm=J, edge_r_mm=1.0,
+                     span_m=[0.6, 0.6], glaze="bright glaze, smoothness 0.93", use="tight curves R 0.3-0.6 (ask 2)")
+    return sh
+
+
+def _profile_glaze(sh, g, rng, seed, s, glazed, sanded=None):
+    """Shared surface of a profile trim: glaze waviness where glazed (V mask), sanded grit where sanded, grout at the joints."""
+    H, W = sh.H, sh.W
+    face = 1.0 - s["grout"]
+    peel = noise(H, W, sh.px(2.5), seed + 1) * 0.0045 + noise(H, W, sh.px(12.0), seed + 2) * 0.008
+    sand = noise(H, W, sh.px(0.55), seed + 3) * 0.016 + noise(H, W, sh.px(1.5), seed + 4) * 0.006
+    grain = noise(H, W, sh.px(0.6), seed + 5)
+    sanded = np.zeros_like(glazed) if sanded is None else sanded
+    hgt = s["hgt"] + face * (peel * glazed + sand * sanded) + grain * 0.05 * s["grout"]
+    return hgt, face, grain
+
+
+def make_bullnose(name="Bullnose", wd=2048, seed=308):
+    """The outside-corner bullnose trim, 150 mm units, mesh UV: V across the unrolled profile, face leg 0-142, round r 8
+    142-154.57, top leg 154.57-296.57 mm (the arris's glaze thins on the round, its top a dust ledge)."""
+    sh, g, rng = _profile_sheet(name, wd, wd // 4, 1200.0, 300.0, 150.0, 3.0, seed)
+    s = tile_surface(sh, g, rng, edge_r=1.8, g_edge=0.7, g_dip=0.5, lip_sd=0.10, tilt_sd_deg=0.0,
+                     bow_lo=0.0, bow_hi=0.02, saddle_sd=0.0, joint=3.0)
+    v = sh.Y
+    rnd = ((v >= 142.0) & (v < 154.57)).astype(np.float32)
+    top = (v >= 154.57).astype(np.float32)
+    endj = np.maximum(1.0 - smoothstep(0.6, 1.8, v), smoothstep(295.0, 296.4, v))
+    hgt, face, grain = _profile_glaze(sh, g, rng, seed, s, glazed=np.ones_like(v))
+    gr = np.maximum(s["grout"], endj)
+    sh.hgt = hgt + endj * (np.minimum(s["hgt"], -1.0) - s["hgt"])
+    n = g["nu"]
+    lot = rng.normal(0.0, 0.006, max(n, 1) * g["nv"]).astype(np.float32)
+    mottle = noise(sh.H, sh.W, sh.px(25.0), seed + 6) * 0.004
+    m_face = (1.0 + lot[g["tid"]]) * (1.0 + mottle) * (1.0 - 0.045 * s["shoulder"])
+    sh.tone = np.where(gr > 0.5, (1.0 + 0.10 * grain) * 0.92, m_face)
+    sh.thick = np.where(gr > 0.5, 1.0, (0.45 + 0.55 * smoothstep(0.0, 2.2, s["d"])) * (1.0 - 0.22 * rnd))
+    sh.grout = gr
+    sh.smooth = np.where(gr > 0.5, 0.24 + 0.05 * grain, 0.935 - 0.03 * s["shoulder"] - 0.05 * rnd)
+    sh.cavity = np.where(gr > 0.5, 0.78, 1.0 - 0.08 * s["shoulder"])
+    patch = np.clip(0.5 + 0.5 * noise(sh.H, sh.W, sh.px(60.0), seed + 7), 0.0, 1.0)
+    sh.dirt = np.where(gr > 0.5, np.clip(0.42 + 0.35 * patch, 0.0, 1.0), np.clip(0.12 * s["shoulder"] + 0.35 * top * patch * smoothstep(200.0, 296.0, v), 0.0, 1.0))
+    sh.chips = chips_mask(sh, g, rng, count=6, r_lo=0.9, r_hi=2.4, trim=True) * rnd
+    sh.params = dict(kind="profile", tiles_u=g["nu"], tiles_v=1, unit_mm=150.0, joint_mm=3.0, span_m=[1.2, 0.3],
+                     profile_mm=dict(face=[0, 142], round=[142, 154.57], top=[154.57, 296.57]), round_r_mm=8.0)
+    return sh
+
+
+def make_cove(name="Cove", wd=2048, seed=309):
+    """The pool's cove r 50 with 50 mm flats, 150 mm units, mesh UV: floor flat 0-50, round 50-128.5, wall flat 128.5-178.5 mm;
+    the floor flat unglazed (the basin floor's mosaic meets it), the round and the wall flat glazed."""
+    sh, g, rng = _profile_sheet(name, wd, wd // 8, 1200.0, 180.0, 150.0, 3.0, seed)
+    s = tile_surface(sh, g, rng, edge_r=1.8, g_edge=0.7, g_dip=0.5, lip_sd=0.10, tilt_sd_deg=0.0,
+                     bow_lo=0.0, bow_hi=0.02, saddle_sd=0.0, joint=3.0)
+    v = sh.Y
+    floor = (v < 50.0).astype(np.float32)
+    rnd = ((v >= 50.0) & (v < 128.5)).astype(np.float32)
+    endj = np.maximum(1.0 - smoothstep(0.6, 1.8, v), smoothstep(177.0, 178.4, v))
+    hgt, face, grain = _profile_glaze(sh, g, rng, seed, s, glazed=1.0 - floor, sanded=floor)
+    gr = np.maximum(s["grout"], endj)
+    sh.hgt = hgt + endj * (np.minimum(s["hgt"], -1.0) - s["hgt"])
+    n = g["nu"]
+    lot = rng.normal(0.0, 0.006, max(n, 1) * g["nv"]).astype(np.float32)
+    m_face = (1.0 + lot[g["tid"]]) * (1.0 - 0.045 * s["shoulder"]) * (1.0 - 0.02 * floor)
+    sh.tone = np.where(gr > 0.5, (1.0 + 0.10 * grain) * 0.92, m_face)
+    sh.thick = np.where(gr > 0.5, 1.0, 0.45 + 0.55 * smoothstep(0.0, 2.2, s["d"]))
+    sh.grout = gr
+    sh.smooth = np.where(gr > 0.5, 0.24 + 0.05 * grain, 0.935 * (1.0 - floor) + 0.47 * floor - 0.03 * s["shoulder"])
+    sh.cavity = np.where(gr > 0.5, 0.78, 1.0 - 0.08 * s["shoulder"] - 0.10 * rnd * (1.0 - smoothstep(60.0, 110.0, v)))
+    patch = np.clip(0.5 + 0.5 * noise(sh.H, sh.W, sh.px(40.0), seed + 7), 0.0, 1.0)
+    # the cove's foot holds the scale and the silt (the basin floor's edge)
+    foot = 1.0 - smoothstep(20.0, 90.0, v)
+    sh.dirt = np.where(gr > 0.5, np.clip(0.45 + 0.35 * patch, 0.0, 1.0), np.clip(0.30 * foot * patch + 0.10 * s["shoulder"], 0.0, 1.0))
+    sh.chips = chips_mask(sh, g, rng, count=3, r_lo=0.9, r_hi=2.0, trim=True) * rnd
+    sh.params = dict(kind="profile", tiles_u=g["nu"], tiles_v=1, unit_mm=150.0, joint_mm=3.0, span_m=[1.2, 0.18],
+                     profile_mm=dict(floor=[0, 50], round=[50, 128.5], wall=[128.5, 178.5]), round_r_mm=50.0)
+    return sh
+
+
+def make_gutter(name="Gutter", wd=2048, seed=310):
+    """The roll-out gutter, 150 mm units, mesh UV across its unrolled section from the deck: abrasive deck 0-200, the flush
+    porcelain finger grate 200-400 (fingers 12 mm, slots 8 mm across V, the dark wet channel under them), the curb's back
+    400-450, its top with the bullnose at the water 450-542.6, the pool face 542.6-692.6 mm."""
+    sh, g, rng = _profile_sheet(name, wd, wd // 2, 1200.0, 700.0, 150.0, 3.0, seed)
+    s = tile_surface(sh, g, rng, edge_r=1.8, g_edge=0.7, g_dip=0.5, lip_sd=0.10, tilt_sd_deg=0.0,
+                     bow_lo=0.0, bow_hi=0.02, saddle_sd=0.0, joint=3.0)
+    v = sh.Y
+    u = sh.X
+    deck = (v < 200.0).astype(np.float32)
+    grate = ((v >= 200.0) & (v < 400.0)).astype(np.float32)
+    curb = ((v >= 400.0) & (v < 542.6)).astype(np.float32)
+    nose = ((v >= 525.0) & (v < 542.6)).astype(np.float32)
+    # the fingers: 12 mm wide every 20 mm along U, each finger rounded on top, the slot dark (the channel 40 mm down)
+    fu = np.mod(u, 20.0)
+    slot = ((fu >= 12.0) & (grate > 0.5)).astype(np.float32)
+    fing = np.clip(1.0 - np.abs(fu - 6.0) / 6.0, 0.0, 1.0) * grate * (1.0 - slot)
+    endj = np.maximum.reduce([1.0 - smoothstep(0.6, 1.8, v), smoothstep(691.0, 692.4, v), grate * (smoothstep(196.0, 199.0, v) * (1.0 - smoothstep(201.0, 204.0, v))),
+                              grate * (smoothstep(396.0, 399.0, v) * (1.0 - smoothstep(401.0, 404.0, v)))])
+    hgt, face, grain = _profile_glaze(sh, g, rng, seed, s, glazed=1.0 - deck - grate, sanded=deck)
+    gr = np.maximum(s["grout"], endj)
+    hgt = hgt - 0.8 * slot + 0.35 * np.sqrt(fing)
+    sh.hgt = hgt + endj * (np.minimum(s["hgt"], -1.0) - s["hgt"])
+    n = g["nu"]
+    lot = rng.normal(0.0, 0.006, max(n, 1) * g["nv"]).astype(np.float32)
+    m_face = (1.0 + lot[g["tid"]]) * (1.0 - 0.045 * s["shoulder"]) * (1.0 - 0.03 * deck)
+    tone = np.where(gr > 0.5, (1.0 + 0.10 * grain) * 0.92, m_face)
+    tone = tone * (1.0 - 0.45 * slot) * (1.0 - 0.04 * grate * (1.0 - fing))
+    sh.tone = tone
+    sh.thick = np.where(gr > 0.5, 1.0, (0.45 + 0.55 * smoothstep(0.0, 2.2, s["d"])) * (1.0 - 0.2 * nose))
+    sh.grout = np.maximum(gr, slot)
+    sh.smooth = np.where(gr > 0.5, 0.24 + 0.05 * grain, 0.31 * deck + 0.55 * grate + 0.93 * curb + 0.93 * (v >= 542.6) - 0.03 * s["shoulder"])
+    sh.cavity = np.where(gr > 0.5, 0.78, 1.0 - 0.08 * s["shoulder"] - 0.55 * slot - 0.12 * grate * (1.0 - fing))
+    patch = np.clip(0.5 + 0.5 * noise(sh.H, sh.W, sh.px(50.0), seed + 7), 0.0, 1.0)
+    wetline = smoothstep(560.0, 580.0, v) * (1.0 - smoothstep(600.0, 640.0, v))
+    sh.dirt = np.where(gr > 0.5, np.clip(0.48 + 0.35 * patch, 0.0, 1.0),
+                       np.clip(0.20 * deck * patch + 0.35 * grate * patch + 0.35 * wetline * patch + 0.10 * s["shoulder"], 0.0, 1.0))
+    sh.chips = chips_mask(sh, g, rng, count=6, r_lo=0.9, r_hi=2.4, trim=True) * nose
+    sh.params = dict(kind="profile", tiles_u=g["nu"], tiles_v=1, unit_mm=150.0, joint_mm=3.0, span_m=[1.2, 0.7],
+                     profile_mm=dict(deck=[0, 200], grate=[200, 400], curb_back=[400, 450], curb_top=[450, 542.6], face=[542.6, 692.6]),
+                     grate=dict(finger_mm=12.0, slot_mm=8.0, pitch_mm=20.0))
+    return sh
+
+
+def make_weirlip(name="WeirLip", wd=2048, seed=311):
+    """The square porcelain weir lip, 150 mm units, mesh UV across its section: the underside 0-35, the drip groove 35-53, the
+    underside to the nose 53-62, the nose face 62-122, the top 122-272 mm (the water's wear at the nose, scale under it)."""
+    sh, g, rng = _profile_sheet(name, wd, wd // 4, 1200.0, 280.0, 150.0, 3.0, seed)
+    s = tile_surface(sh, g, rng, edge_r=1.8, g_edge=0.7, g_dip=0.5, lip_sd=0.10, tilt_sd_deg=0.0,
+                     bow_lo=0.0, bow_hi=0.02, saddle_sd=0.0, joint=3.0)
+    v = sh.Y
+    under = (v < 62.0).astype(np.float32)
+    groove = ((v >= 35.0) & (v < 53.0)).astype(np.float32)
+    nosef = ((v >= 62.0) & (v < 122.0)).astype(np.float32)
+    top = (v >= 122.0).astype(np.float32)
+    endj = np.maximum(1.0 - smoothstep(0.6, 1.8, v), smoothstep(270.0, 271.4, v))
+    hgt, face, grain = _profile_glaze(sh, g, rng, seed, s, glazed=1.0 - under, sanded=under * 0.4)
+    gr = np.maximum(s["grout"], endj)
+    sh.hgt = hgt + endj * (np.minimum(s["hgt"], -1.0) - s["hgt"])
+    n = g["nu"]
+    lot = rng.normal(0.0, 0.006, max(n, 1) * g["nv"]).astype(np.float32)
+    m_face = (1.0 + lot[g["tid"]]) * (1.0 - 0.045 * s["shoulder"]) * (1.0 - 0.10 * groove) * (1.0 - 0.04 * under)
+    sh.tone = np.where(gr > 0.5, (1.0 + 0.10 * grain) * 0.92, m_face)
+    sh.thick = np.where(gr > 0.5, 1.0, (0.45 + 0.55 * smoothstep(0.0, 2.2, s["d"])) * (1.0 - 0.25 * smoothstep(112.0, 126.0, v) * (1.0 - smoothstep(126.0, 140.0, v))))
+    sh.grout = gr
+    sh.smooth = np.where(gr > 0.5, 0.24 + 0.05 * grain, 0.92 * (1.0 - under) + 0.55 * under - 0.03 * s["shoulder"])
+    sh.cavity = np.where(gr > 0.5, 0.78, 1.0 - 0.08 * s["shoulder"] - 0.35 * groove)
+    patch = np.clip(0.5 + 0.5 * noise(sh.H, sh.W, sh.px(40.0), seed + 7), 0.0, 1.0)
+    scale = under * (1.0 - smoothstep(0.0, 30.0, np.abs(v - 44.0))) + nosef * smoothstep(62.0, 80.0, v) * (1.0 - smoothstep(90.0, 122.0, v))
+    sh.dirt = np.where(gr > 0.5, np.clip(0.45 + 0.35 * patch, 0.0, 1.0), np.clip(0.45 * scale * patch + 0.10 * s["shoulder"], 0.0, 1.0))
+    sh.chips = chips_mask(sh, g, rng, count=5, r_lo=0.9, r_hi=2.2, trim=True) * (nosef + top * (1.0 - smoothstep(122.0, 135.0, v)))
+    sh.params = dict(kind="profile", tiles_u=g["nu"], tiles_v=1, unit_mm=150.0, joint_mm=3.0, span_m=[1.2, 0.28],
+                     profile_mm=dict(under=[0, 35], groove=[35, 53], under_nose=[53, 62], nose=[62, 122], top=[122, 272]))
+    return sh
+
+
+SETS = dict(Field=make_field, Mosaic=make_mosaic, Deck=make_deck, Cap=make_cap, Coping=make_coping, Nosing=make_nosing,
+            Field50=make_field50, Bullnose=make_bullnose, Cove=make_cove, Gutter=make_gutter, WeirLip=make_weirlip)
 
 
 # ------------------------------------------------------------------------------------------------ the real look's face map
@@ -925,6 +1122,15 @@ MATERIALS = [
     # scene's tile and band (FrontRoomsPoolMaterials.Tile / Band; contract W/apply/pool_tile_real_contract)
     ("FieldMesh", "Field", True, WHITE, WHITE_EDGE, 0.0, (1.2, 1.2), (8, 8), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
     ("CourseMesh", "Field", True, AQUA, AQUA_EDGE, 0.0, (1.2, 1.2), (8, 8), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
+    # structures assets (scene 4, P2): tiled curves by radius (ask 2) and the four trim pieces, all on mesh UVs in metres
+    ("Field108Mesh", "Field", True, WHITE, WHITE_EDGE, 0.0, (0.872727, 0.872727), (8, 8), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
+    ("Field75Mesh", "Field", True, WHITE, WHITE_EDGE, 0.0, (0.6, 0.6), (8, 8), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
+    ("Field50Mesh", "Field50", True, WHITE, WHITE_EDGE, 0.0, (0.6, 0.6), (12, 12), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.6),
+    ("MosaicMesh", "Mosaic", True, MOSAIC_WHITE, MOSAIC_WHITE, 0.0, (0.6, 0.6), (24, 24), (0.0, 0.0), (0.02, 0.04, 1.0, 0.0), (0.0, 0.010, 0.002, 0.0), 0.3),
+    ("Bullnose", "Bullnose", True, WHITE, WHITE_EDGE, 0.0, (1.2, 0.3), (8, 1), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.0),
+    ("Cove", "Cove", True, WHITE, WHITE_EDGE, 0.0, (1.2, 0.18), (8, 1), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.0),
+    ("Gutter", "Gutter", True, WHITE, WHITE_EDGE, 0.0, (1.2, 0.7), (8, 1), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.0),
+    ("WeirLip", "WeirLip", True, WHITE, WHITE_EDGE, 0.0, (1.2, 0.28), (8, 1), (0.0, 0.0), (0.02, 0.04, 1.0, 0.75), (0.0, 0.010, 0.002, 0.0), 0.0),
 ]
 
 # The real look's per-kind values (70_look_build.md section 13; read only while FrontRoomsPoolTile.Look is not Today):
@@ -947,6 +1153,16 @@ REAL = dict(
     # profiles (mesh UV across the unrolled profile): no shape, no jitter (they would bend the ribs and the nose), glazed
     Nosing=((0.0, 0.0, 1.0, 0.02), (0.0, 0.90, 0.0, 0.0), (3.0, 1.6, 0.0, 0.7)),
     Coping=((0.0, 0.0, 1.0, 0.02), (0.0, 0.92, 0.0, 0.0), (3.0, 2.0, 0.0, 0.8)),
+    # structures assets (P2): the field at 109.1 and 75 mm (its geometry scaled with it: joint, cushion, corner, grout depth),
+    # the 2 in set's own, the mosaic's; the trims as the profiles above (no shape, glazed)
+    Field108Mesh=((0.9, 0.36, 1.0, 0.03), (0.4, 0.935, 0.09, 1.0), (2.182, 1.309, 0.873, 0.509)),
+    Field75Mesh=((0.8, 0.25, 1.0, 0.03), (0.4, 0.935, 0.06, 1.0), (1.5, 0.9, 0.6, 0.35)),
+    Field50Mesh=((0.7, 0.2, 1.0, 0.03), (0.4, 0.93, 0.05, 1.0), (1.6, 1.0, 0.8, 0.45)),
+    MosaicMesh=MOSAIC_REAL,
+    Bullnose=((0.0, 0.0, 1.0, 0.02), (0.0, 0.935, 0.0, 0.0), (3.0, 1.8, 0.0, 0.7)),
+    Cove=((0.0, 0.0, 1.0, 0.02), (0.0, 0.935, 0.0, 0.0), (3.0, 1.8, 0.0, 0.7)),
+    Gutter=((0.0, 0.0, 1.0, 0.02), (0.0, 0.93, 0.0, 0.0), (3.0, 1.8, 0.0, 0.7)),
+    WeirLip=((0.0, 0.0, 1.0, 0.02), (0.0, 0.92, 0.0, 0.0), (3.0, 1.8, 0.0, 0.7)),
 )
 
 

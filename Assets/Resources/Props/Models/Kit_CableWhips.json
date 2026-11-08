@@ -1,0 +1,57 @@
+{
+ "name": "Kit_CableWhips",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "ceiling",
+  "structures",
+  "p9",
+  "ceiling",
+  "plenum"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  2400,
+  700,
+  160
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.26145416498184204,
+  -0.5356917977333069,
+  -0.29009073972702026
+ ],
+ "boundsMax": [
+  0.26231837272644043,
+  0.5699999928474426,
+  0.2705134451389313
+ ],
+ "triangles": 3640,
+ "slots": [
+  "RunB_GalvSteel",
+  "Prop_FlexConduit",
+  "Prop_PlasticGrey"
+ ],
+ "trianglesLod1": 1144,
+ "trianglesLod2": 328,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.00043210387229919434,
+  -0.009788647294044495
+ ],
+ "footprintSize": [
+  0.5237725377082825,
+  0.5606041848659515
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

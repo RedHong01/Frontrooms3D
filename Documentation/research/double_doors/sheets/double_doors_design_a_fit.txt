@@ -1,0 +1,33 @@
+/Users/redwang/FrontRoomsVisualWork/zone_doors/to_main/Frontrooms3D/Documentation/research/double_doors/sheets/double_doors_design_a.jpg 3880x3067 u=2.021 tile=640
+TODAY | walnut pair, 1:25 | label 96 + data 289 of 640 px | FIT
+O-1 OFFICE  REC | inside, 1:25 | label 256 + data 204 of 640 px | FIT
+S-1 STATION D  REC | +Z face, 1:25 | label 305 + data 221 of 640 px | FIT
+S-2 NIGHT POST  REC | inside, 1:25 | label 326 + data 204 of 640 px | FIT
+B-2 BACK-OF-HOUSE  REC | 1:25 | label 394 + data 68 of 640 px | FIT
+C-1 RUN!  REC | inside, 1:25 | label 221 + data 204 of 640 px | FIT
+JAMB SECTION | y 1.20, mm | label 217 + data 170 of 640 px | FIT
+JAMB SECTION | y 1.20, mm | label 217 + data 170 of 640 px | FIT
+JAMB SECTION | y 1.20, mm | label 217 + data 170 of 640 px | FIT
+JAMB SECTION | y 1.20, mm | label 217 + data 170 of 640 px | FIT
+JAMB SECTION | y 1.20, mm | label 217 + data 170 of 640 px | FIT
+JAMB SECTION | y 1.20, mm | label 217 + data 170 of 640 px | FIT
+LITE F4B 10 X 48 | walnut bead | label 293 + data 187 of 640 px | FIT
+LITE F1 10 X 30 | walnut bead | label 273 + data 187 of 640 px | FIT
+GUARD 38 | 1.0 clear | label 164 + data 153 of 640 px | FIT
+GUARD 50.8 | 1.0 clear | label 199 + data 153 of 640 px | FIT
+A2  F1 + LOUVRE | pressed kits | label 268 + data 204 of 640 px | FIT
+LITE F5 15 X 15 | pressed kit | label 273 + data 187 of 640 px | FIT
+FINISHES + WEAR | our surfaces | label 261 + data 204 of 640 px | FIT
+FINISHES + WEAR | our surfaces | label 261 + data 204 of 640 px | FIT
+FINISHES + WEAR | our surfaces | label 261 + data 204 of 640 px | FIT
+FINISHES + WEAR | our surfaces | label 261 + data 204 of 640 px | FIT
+FINISHES + WEAR | our surfaces | label 261 + data 204 of 640 px | FIT
+FINISHES + WEAR | our surfaces | label 261 + data 204 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 238 + data 170 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 238 + data 170 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 238 + data 170 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 238 + data 170 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 238 + data 170 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 238 + data 170 of 640 px | FIT
+TITLE Zone double doors  design A | 970 of 3115 px | FIT
+ALL LABELS FIT

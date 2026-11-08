@@ -1,0 +1,56 @@
+{
+ "name": "Kit_Laylight_Module_DeadRow",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "ceiling",
+  "structures",
+  "p6",
+  "laylight",
+  "lamp"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  10.0,
+  30.0,
+  0.0
+ ],
+ "lodBudget": [
+  1500,
+  700,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -1.5,
+  0.0,
+  -1.5
+ ],
+ "boundsMax": [
+  1.5,
+  0.04099999740719795,
+  1.5
+ ],
+ "triangles": 1018,
+ "slots": [
+  "Prop_LaylightDiffuser",
+  "Painted_Metal"
+ ],
+ "trianglesLod1": 154,
+ "trianglesLod2": 74,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  3.0,
+  3.0
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

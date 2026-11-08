@@ -1,0 +1,8 @@
+structures_g1_sp1.jpg 1920x1978, 5 tiles, 2 columns
+title | STRUCTURES G1 SP1 SLIDE HALL TODAY VS NEW | 740/1544 FIT
+SP1_s00_raw.png | SP1 S00 TODAY | arrival, west platform | label 128/938 data 176/798 FIT
+SP1_s00_newsteady_raw.png | SP1 S00 NEW REC | rounds, nosings; pool pieces are G2 | label 150/938 data 280/776 FIT
+SP1_s02_raw.png | SP1 S02 TODAY | catch pool edge | label 128/938 data 120/798 FIT
+SP1_s02_newsteady_raw.png | SP1 S02 NEW REC | frameless glass panes, shoe, cap rail | label 150/938 data 296/776 FIT
+cost_SP1.png | COST SP1 | harness inventories of both runs | label 78/938 data 256/848 FIT
+ALL LABELS FIT

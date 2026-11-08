@@ -1,0 +1,17 @@
+structures_g1_kit.jpg 1920x4256, 14 tiles, 2 columns
+title | STRUCTURES G1 KIT REFERENCE ROW TODAY VS NEW | 807/1544 FIT
+KIT_s00_raw.png | KIT S00 TODAY | level 0 hall from the west | label 119/938 data 208/807 FIT
+KIT_s00_newsteady_raw.png | KIT S00 NEW REC | carpet bars, the guard row, rounds | label 141/938 data 272/785 FIT
+KIT_s01_raw.png | KIT S01 TODAY | level 0 hall, plinth fronts | label 119/938 data 216/807 FIT
+KIT_s01_newsteady_raw.png | KIT S01 NEW REC | half wall, rail, glass, wire guards | label 141/938 data 280/785 FIT
+KIT_s02_raw.png | KIT S02 TODAY | level 0 hall, the void edge | label 119/938 data 216/807 FIT
+KIT_s02_newsteady_raw.png | KIT S02 NEW REC | rail on flanges, pickets, the section | label 141/938 data 296/785 FIT
+KIT_s03_raw.png | KIT S03 TODAY | tile hall from the west | label 119/938 data 184/807 FIT
+KIT_s03_newsteady_raw.png | KIT S03 NEW REC | cove base, glass, stainless rail | label 141/938 data 256/785 FIT
+KIT_s04_raw.png | KIT S04 TODAY | tile hall, plinth fronts | label 119/938 data 192/807 FIT
+KIT_s04_newsteady_raw.png | KIT S04 NEW REC | pool nosing L, glass in a stainless shoe | label 141/938 data 320/785 FIT
+KIT_s05_raw.png | KIT S05 TODAY | tile hall, the void edge | label 119/938 data 192/807 FIT
+KIT_s05_newsteady_raw.png | KIT S05 NEW REC | glass panes in a shoe under a cap rail | label 141/938 data 304/785 FIT
+cost_KIT.png | COST KIT | harness inventories of both runs | label 69/938 data 256/857 FIT
+note_KIT.png | NOTE KIT | what each plinth carries | label 68/938 data 192/858 FIT
+ALL LABELS FIT

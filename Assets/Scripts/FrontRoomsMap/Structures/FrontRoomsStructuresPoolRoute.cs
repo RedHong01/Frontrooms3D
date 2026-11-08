@@ -731,7 +731,7 @@ public sealed class FrontRoomsStructuresPoolRoute : FrontRoomsStructuresDistrict
     // The room's stand-ins as the pool pass builds them (FrontRoomsMapWorld.Pool's PoolStandIns: the skin's kits but those
     // the plan leaves out, FrontRoomsPoolPlan.KitLeftOut, where an opening of the plan crosses one; FrontRoomsPoolStandIns
     // builds each kit, its box turned by its yaw) and wall lamps (as FrontRoomsMapWorld.Pool's PoolRoomLamps hangs a valance,
-    // a halide bracket, a stair light or a globe; a valance where pool_valance_clear puts it, ValanceSpot below), map metres.
+    // a halide bracket, a stair light or a globe; a valance where FrontRoomsMapWorld.PoolValances hangs it), map metres.
     static List<Bounds> Obstacles(FrontRoomsPoolPlan plan, PoolRoom room)
     {
         var list = new List<Bounds>();
@@ -765,34 +765,16 @@ public sealed class FrontRoomsStructuresPoolRoute : FrontRoomsStructuresDistrict
         {
             case PoolLampKit.Valance:
             {
-                // Along the two longest walls, one meant per 6 m from 3 m, each kept clear of its wall's openings at its foot
-                // (0.78 m under the ceiling; the plan's OpeningSpanAt), as the pool pass hangs it since pool_valance_clear
-                // (11-05): slid within its own 6 m, shortened to 1.8 or 1.2 m, else left out. The box covers the fixture (0.12 m
-                // square, 0.66-0.78 under the ceiling), its glow strip on top and its up light; a valance whose cell lamp is Off
-                // is not built but still counts here.
-                var alongX = w >= d;
-                var run = alongX ? w : d;
-                var cells = alongX ? room.width : room.depth;
-                var foot = ceilingY - .78f;
-                var openings = new List<Vector2>();
-                for (var wall = 0; wall < 2; wall++)
-                {
-                    openings.Clear();
-                    for (var i = 0; i < cells; i++)
-                    {
-                        var inside = alongX ? new GridCoord(room.origin.x + i, wall == 0 ? room.origin.y : room.origin.y + room.depth - 1)
-                            : new GridCoord(wall == 0 ? room.origin.x : room.origin.x + room.width - 1, room.origin.y + i);
-                        var outside = alongX ? new GridCoord(inside.x, inside.y + (wall == 0 ? -1 : 1)) : new GridCoord(inside.x + (wall == 0 ? -1 : 1), inside.y);
-                        if (plan.OpeningSpanAt(inside, outside, foot, out var f0, out var f1)) openings.Add(new Vector2(i * cs + f0, i * cs + f1));
-                    }
-                    for (var p = 3f; p < run; p += 6f)
-                    {
-                        if (!ValanceSpot(openings, p, run, out var spot, out var length)) continue;
-                        var x = alongX ? spot : (wall == 0 ? .3f : w - .3f);
-                        var z = alongX ? (wall == 0 ? .3f : d - .3f) : spot;
-                        list.Add(new Bounds(new Vector3(ox + x, ceilingY - .69f, oz + z), alongX ? new Vector3(length, .22f, .16f) : new Vector3(.16f, .22f, length)));
-                    }
-                }
+                // Where the pool pass hangs them (FrontRoomsMapWorld.PoolValances, pool_valance_flags 11-05): along the two
+                // longest walls one meant per 6 m from 3 m, each clear of what its wall keeps clear at its foot (0.78 m under the
+                // ceiling; the plan's OpeningSpanAt: arch and door openings, a clear glass pane, the EXIT door), slid within its
+                // own 6 m, shortened to 1.8 or 1.2 m, else left out. The box covers the fixture (0.12 m square, 0.66-0.78 under
+                // the ceiling), its glow strip on top and its up light; a valance whose lamp is Off is not built but still counts
+                // here.
+                var valances = new List<FrontRoomsMapWorld.PoolValance>();
+                FrontRoomsMapWorld.PoolValances(plan, room, valances);
+                foreach (var v in valances)
+                    if (v.hung) list.Add(new Bounds(new Vector3(ox + v.x, ceilingY - .69f, oz + v.z), v.alongX ? new Vector3(v.length, .22f, .16f) : new Vector3(.16f, .22f, v.length)));
                 break;
             }
             case PoolLampKit.Rig:
@@ -809,43 +791,6 @@ public sealed class FrontRoomsStructuresPoolRoute : FrontRoomsStructuresDistrict
             for (var k = 0; k < 2; k++)
                 list.Add(new Bounds(new Vector3(ox + w - 1.5f + (k == 0 ? -.6f : .6f), ceilingY - .35f, oz + d - 1.5f), new Vector3(.35f, .35f, .35f)));
         return list;
-    }
-
-    // FrontRoomsMapWorld.Pool's ValanceSpot (pool_valance_clear, 11-05), the same rule: where a valance meant for p (metres along
-    // its wall of length run) stands 0.1 m clear of the wall's openings (along-wall spans at its foot): p itself, else the
-    // nearest place just past an opening, inside p's own 6 m and 0.3 m off the corners; at 2.4 m, else 1.8, else 1.2. False:
-    // none fits (the pool pass leaves it out). The pool pass keeps it private; this copy follows it.
-    const float ValanceClear = .1f;
-
-    static bool ValanceSpot(List<Vector2> openings, float p, float run, out float spot, out float length)
-    {
-        foreach (var l in new[] { 2.4f, 1.8f, 1.2f })
-        {
-            var half = l * .5f;
-            float lo = Mathf.Max(p - 3f + half, half + .3f), hi = Mathf.Min(p + 3f - half, run - half - .3f);
-            bool Free(float c)
-            {
-                if (c < lo - 1e-4f || c > hi + 1e-4f) return false;
-                foreach (var o in openings)
-                    if (c + half + ValanceClear > o.x && c - half - ValanceClear < o.y) return false;
-                return true;
-            }
-            length = l;
-            spot = p;
-            if (Free(p)) return true;
-            var best = float.MaxValue;
-            foreach (var o in openings)
-            {
-                var left = o.x - ValanceClear - half;
-                var right = o.y + ValanceClear + half;
-                if (Free(left) && Mathf.Abs(left - p) < Mathf.Abs(best - p)) best = left;
-                if (Free(right) && Mathf.Abs(right - p) < Mathf.Abs(best - p)) best = right;
-            }
-            if (best < float.MaxValue) { spot = best; return true; }
-        }
-        spot = p;
-        length = 0f;
-        return false;
     }
 
     // A kit's box in its own frame (x its length, y up from its point, z its front), as FrontRoomsPoolStandIns.Build draws it;

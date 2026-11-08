@@ -1,0 +1,28 @@
+Maze side 3 m · locked (A13) · TODAY | map cube + trim, putty · +1.5 EV both | label fits, data fits
+Maze side 3 m · locked (A13) · NEW REC | leaf + frame kits, same putty · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · latch side · TODAY | trim box face · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · latch side · NEW REC | SDI frame: face, rabbet, stop · +1.5 EV both | label fits, data fits
+8.6 m · the A13 ladder pose · TODAY | leaf / lock measured on masks · +1.5 EV both | label fits, data fits
+8.6 m · the A13 ladder pose · NEW REC | leaf / lock measured on masks · +1.5 EV both | label fits, data fits
+Hero 0.35 m · latch jamb, chain · TODAY | trim box under the chain · +2 EV both | label fits, data fits
+Hero 0.35 m · latch jamb, chain · NEW REC | frame face + stop, chain clear · +2 EV both | label fits, data fits
+Hero 0.35 m · head, EXIT sign · TODAY | trim box head · +2 EV both | label fits, data fits
+Hero 0.35 m · head, EXIT sign · NEW REC | mitred face, stop at the head · +2 EV both | label fits, data fits
+Hero 0.35 m · latch jamb foot · TODAY | trim box on the floor · +2 EV both | label fits, data fits
+Hero 0.35 m · latch jamb foot · NEW REC | stop, silencer, leaf undercut · +2 EV both | label fits, data fits
+Hero 0.35 m · hinge jamb · TODAY | trim box, hinge case · +2 EV both | label fits, data fits
+Hero 0.35 m · hinge jamb · NEW REC | stop over the leaf edge · +2 EV both | label fits, data fits
+Unlock cut 0.30 s · key in · TODAY | the game's camera, 1/60 s steps | label fits, data fits
+Unlock cut 0.30 s · key in · NEW REC | the same frame; anchors identical | label fits, data fits
+Unlock cut 0.93 s · the slip · TODAY | the game's camera, 1/60 s steps | label fits, data fits
+Unlock cut 0.93 s · the slip · NEW REC | the same frame; anchors identical | label fits, data fits
+Unlock cut 1.10 s · the run · TODAY | the game's camera, 1/60 s steps | label fits, data fits
+Unlock cut 1.10 s · the run · NEW REC | the same frame; anchors identical | label fits, data fits
+Unlock cut 1.30 s · the fall · TODAY | the game's camera, 1/60 s steps | label fits, data fits
+Unlock cut 1.30 s · the fall · NEW REC | the same frame; anchors identical | label fits, data fits
+Unlock cut 1.80 s · the leaf swings in · TODAY | the game's camera, 1/60 s steps | label fits, data fits
+Unlock cut 1.80 s · the leaf swings in · NEW REC | the same frame; anchors identical | label fits, data fits
+Cost · TODAY | the run's census before the seal; ladder in N's light | label fits, data fits
+Cost · NEW REC | kit sidecars; the same census and ladder | label fits, data fits
+TITLE Stairwell doors · the EXIT from the maze | fits
+ALL LABELS FIT

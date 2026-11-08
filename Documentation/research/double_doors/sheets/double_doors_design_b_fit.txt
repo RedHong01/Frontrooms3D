@@ -1,0 +1,27 @@
+/Users/redwang/FrontRoomsVisualWork/zone_doors/to_main/Frontrooms3D/Documentation/research/double_doors/sheets/double_doors_design_b.jpg 2575x3516 u=1.342 tile=640
+TODAY | walnut pair, 1:25 | label 65 + data 187 of 640 px | FIT
+PD-A MOULDED FRP  REC | pool room, 1:25 | label 261 + data 165 of 640 px | FIT
+PD-B ANODISED ALUMINIUM | pool room, 1:25 | label 279 + data 165 of 640 px | FIT
+PD-C EPOXY STEEL | pool room, 1:25 | label 195 + data 165 of 640 px | FIT
+PREVIEW FROM LEVEL 0 | eye 1.62 m, 11 m | label 254 + data 176 of 640 px | FIT
+PREVIEW FROM LEVEL 0 | eye 1.62 m, 11 m | label 254 + data 176 of 640 px | FIT
+PREVIEW FROM LEVEL 0 | eye 1.62 m, 11 m | label 254 + data 176 of 640 px | FIT
+PREVIEW FROM LEVEL 0 | eye 1.62 m, 11 m | label 254 + data 176 of 640 px | FIT
+DARK POOL | water light, a sketch | label 117 + data 231 of 640 px | FIT
+DARK POOL | water light, a sketch | label 117 + data 231 of 640 px | FIT
+DARK POOL | water light, a sketch | label 117 + data 231 of 640 px | FIT
+DARK POOL | water light, a sketch | label 117 + data 231 of 640 px | FIT
+OPEN OVER THE WATER | side, 1:20 | label 243 + data 110 of 640 px | FIT
+OPEN OVER THE WATER | side, 1:20 | label 243 + data 110 of 640 px | FIT
+OPEN OVER THE WATER | side, 1:20 | label 243 + data 110 of 640 px | FIT
+OPEN OVER THE WATER | side, 1:20 | label 243 + data 110 of 640 px | FIT
+FINISHES + WEAR | level preset | label 180 + data 132 of 640 px | FIT
+FINISHES + WEAR | level preset | label 180 + data 132 of 640 px | FIT
+FINISHES + WEAR | level preset | label 180 + data 132 of 640 px | FIT
+FINISHES + WEAR | level preset | label 180 + data 132 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 165 + data 110 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 165 + data 110 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 165 + data 110 of 640 px | FIT
+COST  PER PAIR | delta, [E] | label 165 + data 110 of 640 px | FIT
+TITLE Zone double doors  design B  the pool | 869 of 2070 px | FIT
+ALL LABELS FIT

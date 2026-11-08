@@ -1,0 +1,8 @@
+structures_g1_sp5.jpg 1920x1918, 5 tiles, 2 columns
+title | STRUCTURES G1 SP5 RUN RAMP TODAY VS NEW | 727/1544 FIT
+SP5_s00_raw.png | SP5 S00 TODAY | arrival, head of the run | label 128/938 data 192/798 FIT
+SP5_s00_newsteady_raw.png | SP5 S00 NEW REC | Run! block 1 in bullnose, woven wire | label 150/938 data 288/776 FIT
+SP5_s03_raw.png | SP5 S03 TODAY | the dock | label 128/938 data 64/798 FIT
+SP5_s03_newsteady_raw.png | SP5 S03 NEW REC | dock floor lit (Stair_Fill scene-lit) | label 150/938 data 296/776 FIT
+cost_SP5.png | COST SP5 | harness inventories of both runs | label 78/938 data 256/848 FIT
+ALL LABELS FIT

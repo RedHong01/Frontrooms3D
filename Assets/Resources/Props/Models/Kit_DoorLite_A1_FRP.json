@@ -1,0 +1,87 @@
+{
+ "name": "Kit_DoorLite_A1_FRP",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "lite_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "lite",
+  "vision_lite",
+  "porthole",
+  "zone_pair",
+  "pool"
+ ],
+ "liteForm": "A1",
+ "liteShape": "round",
+ "liteRect": [
+  -0.2032,
+  0.2032,
+  -0.2032,
+  0.2032
+ ],
+ "cutRect": [
+  -0.2127,
+  0.2127,
+  -0.2127,
+  0.2127
+ ],
+ "clearRadius": 0.2032,
+ "cutRadius": 0.2127,
+ "glassRadius": 0.2117,
+ "outerRadius": 0.2251,
+ "liteCentreOnLeaf": [
+  0.0,
+  1.397
+ ],
+ "liteAreaSqIn": 201.1,
+ "origin": "the lite's centre on the leaf's centre plane; x across, y up, z through (+Z the leaf's +Z face); both faces alike, no screws",
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  8.0,
+  40.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76",
+ "boundsMin": [
+  -0.22509999573230743,
+  -0.22509999573230743,
+  -0.028599999845027924
+ ],
+ "boundsMax": [
+  0.22509999573230743,
+  0.22509999573230743,
+  0.028599999845027924
+ ],
+ "triangles": 2560,
+ "slots": [
+  "Door_PoolGelcoat"
+ ],
+ "trianglesLod1": 768,
+ "trianglesLod2": 192,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.45019999146461487,
+  0.05719999969005585
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.275
+}

@@ -1,0 +1,21 @@
+structures_g1_rails_stairs.jpg 1919x2563, 18 tiles, 3 columns
+title | STRUCTURES G1 · RAILS AND THE B4-S | 612/1544 FIT
+SP3_s01_full.png | TODAY · SP3 V1 RAILS | square bars, no brackets or flanges | label 184/617 data 280/421 FIT
+railspool_34_raw.png | P4 · POOL SET, STAINLESS · REC | flanges, saddles, elbow, cap, returns | label 267/617 data 296/338 FIT
+railsl0_34_raw.png | P4 · LEVEL 0 SET, ENAMEL | _Painted on Prop_RailEnamel (G1 fix) | label 215/617 data 288/390 FIT
+railsoffice_34_raw.png | P4 · OFFICE SET, PUTTY | _Putty variant on Office surfaces | label 191/617 data 264/414 FIT
+railspool_lod2_raw.png | P4 · POOL SET AT LOD2 | the phone meshes, same view | label 193/617 data 216/412 FIT
+railspool_hero_bracket_raw.png | HERO 0.35 M · WALL BRACKET | LOD0 1,448 tris, 38 mm clear | label 247/617 data 224/358 FIT
+railspool_hero_flange_raw.png | HERO 0.35 M · BASE FLANGE | LOD0 1,554: 4 in flange, 4 anchors | label 232/617 data 272/373 FIT
+railspool_hero_elbow_raw.png | HERO · ELBOW AND POST TOP | bend R 63 mm; saddle 40 mm | label 232/617 data 208/373 FIT
+SP3_s07_glass.png | TODAY · GLASS ON A STEEL BAND | pane prism over a 0.10 m band | label 258/617 data 232/347 FIT
+glass_34_raw.png | P4 · GLASS IN A SHOE · REC | 64 x 105 shoe, cap rail, clamps | label 232/617 data 248/373 FIT
+glass_hero_shoe_raw.png | HERO 0.35 M · SHOE END CAP | LOD0 480 tris, 2 screws | label 241/617 data 184/364 FIT
+glass_hero_clamp_raw.png | HERO 0.35 M · GLASS CLAMP | LOD0 550 tris, gaskets | label 236/617 data 176/369 FIT
+SP3_s07_spiral.png | TODAY · B4-S SECTORS | sector treads, a screen ribbon | label 187/617 data 240/418 FIT
+spiral_34_raw.png | P5 · KIT_SPIRALSTAIR_STEEL | LOD0 13,998 / 4,646 / 1,440 tris | label 240/617 data 256/365 FIT
+spiral_under_raw.png | P5 · FROM ITS FOOT | hub sleeves, pans, balusters | label 164/617 data 224/441 FIT
+spiral_hero_raw.png | HERO 0.35 M · NEWEL, RAIL START | 42.2 mm rail at 0.91 m | label 281/617 data 176/324 FIT
+spiral_lod2_raw.png | P5 · B4-S AT LOD2 | 1,440 tris, the phone mesh | label 160/617 data 208/445 FIT
+cost_rails.png | COST · P4 + P5 | measured; frame time not measured | label 132/617 data 264/473 FIT
+ALL LABELS FIT

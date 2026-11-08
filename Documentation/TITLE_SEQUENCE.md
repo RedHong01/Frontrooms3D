@@ -94,6 +94,7 @@ Every flow keeps rooms 0 and 1 as today (the logo with its relay-S, then the T6 
 Each family has one vignette, built once at load into a bank. A vignette is moved into a stream slot while the slot is sealed (two
 shut doors ahead) and keeps the slot's shell, its walnut pair and its door wall. Every vignette is drawn at the stream's own
 module. It is a vignette of its family, not a new design of it. Code: `Scripts/Rendering/Title/FrontRoomsTitleVignettes.cs`.
+Since 2026-11-05 the rooms draw what section 3.6 says (the renovation: the pool rooms, the bases, the rails).
 
 | Family | What the room is | Lamps and shadows |
 |---|---|---|
@@ -154,6 +155,83 @@ The station, its placard and the facade therefore meet a Level 0 wall, exactly a
   (the strip has 20).
 
 The autopilot cannot push the body-door start door, so no play run reached the start-door shut (Today's runs cannot either).
+
+### 3.6 The renovation of 2026-11-05 (`title_renovation`): what each room draws now
+
+Red, 2026-11-05, in the 夸张结构调研与设计 chat after walking scene 4 (plain turns): 13:1x "我看了一下，这个瓷砖非常work，因此我需要你在
+无限流房间里利用这个瓷砖来做新无限流房间的纹理材质和水光。水色需要最深"; 13:3x "我需要你翻新无限流房间然后直接合并到主项目里".
+无限流房间 is the whole stream, as in Red's 11-04 "最开始无限流房间". 游戏视觉 agreed at 13:3x; their notes
+(`W/level_space/title_pool/visual_reply.txt`) set the rules below. Built by the level_space line (workflow `title_pool`: audit,
+design, build), landed on Red's word (no sheet waits for Red). Audit and design: `W/level_space/title_pool/audit.txt`, `design.txt`.
+
+With a programme only. Today, WebGL and the legacy playable cycle are unchanged.
+
+| Room | What it draws now | What changed |
+|---|---|---|
+| LEVEL 0 (R0 logo, R1 TV, every breath, the terminal / airlock room, Descent's WAKE) | L0 paper, carpet and lay-in ceiling, twelve L03, the Level 0 cube | The stream's raised rails are gone (a dark 16 cm band 10 cm over the carpet). The game's Level 0 walls have no base. |
+| OFFICE | As 3.3 | The rails are gone. The game's Office base is laid at the floor: Cove_Base, 0.10 m tall, 6 mm proud, along both long walls and along the end walls from the door casings. |
+| RUN! B | As 3.3 | Nothing: it was current. |
+| WAITING | As 3.3 | Its look was current. Its lamps now strike with at most one flick each (photosafety, below). |
+| LOW | As 3.3 | The rails are gone. The game's Low rooms are Level 0 theme, with no base. |
+| POOL | Red's tile (DishDeep at dish tone 1.5, the game's default since 12:49) | The lamps held in the glaze, 游戏视觉's water light, caustic nets and the deepest water (below). Its lamps strike with at most one flick each. |
+| DARK POOL (Descent) | As 3.3 | The deepest water. The four niches are wet niches while the water is on, and strike with at most one flick. No probe: its cube Refl_PoolDead holds the niches. |
+
+The pool pieces:
+
+- **Lamps held in the glaze** (`FrontRoomsTitlePoolGlaze`, scene 4's GZ-A). The lit pool vignette carries one realtime box probe:
+  512 px, HDR, its box the room's inner faces (3 cm short of the end faces), time-sliced one face a frame. It is captured once
+  per attach, the first frame the room is drawn behind its still shut door (row 1: the camera is one room back; in Tour about
+  12 s before the reveal). For the probe's own six face renders only, the slot's live L03 are on at their steady output and a
+  copy of each live lens glows at (tint.linear x 8).linear. Scene 4 uses 30 for its compact lenses; the L03 lens is about 0.63 m2 and the room hangs twelve. The
+  copies are drawn with the L03 lens's own material (made flat), so their shader variant ships in every player; they sit on
+  layer 27, out of every other camera, and are on only while a capture renders. The tile and the room's shell faces take the probe
+  through `Renderer.probeAnchor` at the room's centre; both walnut door lines are anchored off the axis and keep today's cube.
+  Unity gives a renderer every probe whose box its bounds touch, and the neighbouring slots' carpet and ceiling boxes reach 2 cm
+  past the door lines. So the box stops 3 cm short of the end faces. With the box on the faces, the Level 0 rooms on both sides
+  took the probe in the second loop, and their carpet's damp patches showed bright lamp images. The probe's brightness follows
+  the room's lamps (smoothed over 0.25 s): the glaze is dark while the room is dark and comes up with the strike. Desktop High,
+  Very High and Ultra only. Medium, iPhone and iPad have realtime probes off and keep Refl_PoolLevel.
+- **Water light.** `FrontRoomsWaterSubmerged.SetWaterLight(Recommended)` while any title pool water is on (its room connected).
+  It goes back to Today when none is on, when the start door shuts for good, and when the stream goes (a capture run that
+  walked on past the start door saw Today the moment it shut). The game's own pool keeps Today until Red picks. The water's
+  room now reaches the walls past the sills (`roomMargin`), as scene 4's bodies do, so the end walls take the water light too.
+  In calm ankle water this light is a steady wash on the walls and the ceiling: the water and the basin's net move, and the
+  mirror's sheen stays under the film grain (a still camera in the pool: temporal spread 1.6 / 255 on the walls, the grain's).
+- **Caustic nets** from the two live L03 that light the water's centre most (scene 4's score), radius 0.25 m (the troffer's lens).
+- **The deepest water:** `absorbScale` 12 on both pool waters, scene 4's key K 9 ankle value. The bounce follows it.
+- **The strike** (`StrikeCapped`): in the two pool rooms and the waiting room each lamp strikes with at most one flick. Its own
+  delay, period and rise are unchanged. Under the water light the white basin, the sills and the walls follow every flick of a
+  strike.
+
+**Photosafety** (rule 11; the math of `Tools/lookdev/flash_check.py`, general and red rules, on each whole film and again on
+windows round its worst seconds; the limit is 3 flashes in any second). Main before the renovation: Tour desktop 4.0 (FAIL) at
+the pool reveal (77.2 s) and 3.0 at the waiting room's strike (55.3 s). With it: Tour desktop 2.5 (the pool reveal 2.5 in
+three windows, the waiting room 0.5-1.0); Tour phone 3.0 (40.0 s: the camera passing Run! B's ELECTRICAL ROOM door, a room
+the renovation does not touch; the pool 2.5, the waiting room 0.5); Descent desktop 3.0 whole and 2.5 in its windows (88.0 s,
+the Office pendants' strike in R9; both pools 0.5); Descent phone 2.0 whole, at most 2.5 in a window; a still camera in the
+pool after Space 0.0. The red rule reads 0.0 in every film. The deepest water darkens the basin under the strike, and the
+capped strike keeps the reveal at 2.5.
+
+**Cost** (Editor batch on the M3 Max, desktop Ultra at 1080p, NOW and NEW bracketed under the same load; rule 25: no player
+number). Draws fall by 4-12 a view where the rails go (views that see the Office through a door gain 3-4: six base strips
+for two rails); SetPass +2 in the pool (the probe's cube breaks a batch), 0 elsewhere. GPU, synchronised at 7680 x 4320 under
+load: the pool views +19-25 ms (+24-32 %, about +1.3 ms at 1080p by pixels: the water light, the caustic nets and the box
+probe); every other room stays inside the spread between two NEW runs. The probe: 16.8 MB on desktop (a 512 px HDR cube),
+none on phones. One capture per attach behind a shut door (Tour 63.7 s for a reveal at 75.7 s, Descent 42.9 s, the second
+loop 147.2 s): the ask 0.2-4.7 ms of CPU, six faces in 8 frames, the worst of those frames 19-28 ms against a 16.7 ms median
+in 13 captures without a film (one late frame at most). One capture of 20 stalled the Editor for 2 s (the design stage saw
+0.8 s once on a fresh Editor: a first-use shader compile). The logo's contrast over the pool room falls from 3.7 to 3.1:1 (the
+far wall behind the lockup takes the water light); the stream's lowest stays Run! at 3.0-3.1:1.
+
+Code: `Scripts/Rendering/Title/FrontRoomsTitlePoolGlaze.cs` (new), `Scripts/Rendering/Title/FrontRoomsTitleVignettes.cs`,
+`Scripts/FrontRoomsRoomStream.TitleRooms.cs`. `FrontRoomsRoomStream.cs` is not touched: rows 1 and 9 of 技术美术调研 (door
+culling, no beams, dust only through `SetRoomDust`) stay as they are, and no pool room is dusty. Programme stays Tour. Every
+vignette lamp still goes through `FrontRoomsMapWorld.ShippedShadowFilter`, and `ReleaseTitleLampData` still strips URP's light data
+before the stream's Lights go. The start door still opens from a Level 0 room.
+
+Evidence: `W/level_space/sheets/title_renovation.jpg` (NOW | NEW, with `_fit.txt`), the film
+`W/level_space/renders/title_renovation/title_renovation_sbs.mp4` (NOW | NEW, one Tour loop), the renders and flash logs in
+`W/level_space/title_pool/` (`renders/after_*`, `logs/flash_after_*.txt`), the build log `W/level_space/title_renovation_build_log.txt`.
 
 ## 4. Numbers
 

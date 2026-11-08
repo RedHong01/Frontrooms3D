@@ -1,0 +1,16 @@
+structural_today.jpg 1919x1751, 12 tiles, 3 columns (crops of W/structures_assets/renders/today/*_raw.png, the 18:01 TODAY run)
+SP1_s03 | SP1 · ARCADE, HALF-WALL | arches cut out, no reveal; knife-edged top
+SP6_s05 | SP6 · GALLERY WALLS | no cap or bullnose; field tile runs over the top
+SP3_s02 | SP3 · V2 DROP | square bar rails; stepped soffit; no handrail
+SP2_s06 | SP2 · B4-L RIBBON | ribbon ends in a knife edge; no cap, no handrail
+SP6_s01 | SP6 · ISLAND CHANNEL | arch and piers as hard boxes; no cove
+SP6_s06 | SP6 · D4 DOME | 150 mm field tile drawn on a double curve
+SP4_s11 | SP4 · SLOT STAIR HALL | a sawtooth of 0.2 m waists under the flight
+SP5_s01 | SP5 · RISER SHAFT D7 | beams and services as boxes; cage stand-in
+SP2_s07 | SP2 · LAYLIGHT | a flat glow grid; no frame, no lamps above
+SP3_s01 | SP3 · V1 CUT | slab edge a dark band; no floor build-up
+KIT_s04 | KIT · TILE PLINTH | cheeks and treads knife-edged
+SP1_s04 | SP1 · TOWER FOOT | round head stepped tile by tile; ring faceted
+Crop boxes (x0,y0,x1,y1 in the 1920x1080 frame): SP1_s03 260,300,1160,806 · SP6_s05 520,160,1240,565 · SP3_s02 200,420,1100,926 · SP2_s06 700,340,1700,903 · SP6_s01 0,60,960,600 · SP6_s06 300,0,1500,675 · SP4_s11 560,20,1520,560 · SP5_s01 400,0,1520,630 · SP2_s07 560,60,1440,555 · SP3_s01 160,230,1671,1080 · KIT_s04 480,400,1440,940 · SP1_s04 480,200,1440,740
+Checked at full size 18:46: first build cut tile 1's data with an ellipsis; shortened and rebuilt.
+ALL LABELS FIT

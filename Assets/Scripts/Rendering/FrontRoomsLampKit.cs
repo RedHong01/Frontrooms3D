@@ -40,6 +40,38 @@ using UnityEngine.Rendering;
 ///                desktop and its LOD2 on phones (a LOD copy would never get the lamp's level), the kit's own materials with
 ///                the lens slot on ZL_WrapLens_R1 (the landed Run_WrapLens with the R1 emission map: dim cathode ends, as the
 ///                Low sheet showed it). Lens drive WrapLensPeak (1.8, L03's level).
+///   WallBox      Pool halls (Red 11-04 picked P1-A, "all as recommended" on the pool look; LW1 of the 11-06 light plan): the
+///                indirect metal-halide wall box of the 1977-80 patents, 760 x 300 x 190 mm in dark bronze on a rear plate, ballast
+///                and capacitor in its finned end compartments, a forward-sloping glass in a hinged frame (ZL_WALLBOX; research/
+///                zone_lamps/20_design.md s.3.4). Lens = the stepped reflector and the tubular lamp under the glass, seen only from
+///                above (132 tris; phone: 66 with the box). Glow = the lit ceiling over it, a quad on FrontRooms/LampGlow as its own
+///                renderer ("&lt;lens&gt; glow"), fitted by BuildWallBox to the ceiling over the box (WallBoxGlowSpread); the caller
+///                writes it the lens's block, so a dead box leaves its bay dark. Housing LODGroup 600 / 134 / 40 tris.
+///   Niche        Pool basins (P2-A, the same answers): the 300 W wet-niche light, a brushed stainless face ring 257 mm across
+///                with its 12 o'clock pilot screw over a prismatic lens, the lamp's frosted face clipping behind it (ZL_NICHE).
+///                Lens = the glass (336 tris); Housing = the ring, screw and hook tab (LODGroup 2736 / 714 / 96); phone 112.
+///                The caller lights it and hands that Light to FrontRoomsWaterSubmerged.RegisterNiche (glow and caustics).
+///   NicheSmall   Spa steps and weirs (the game visual line's structures P10, 11-06): P2-A's niche at 6.5 in, a 100 W lamp, the
+///                ring 165 mm across (ZL_NICHE_S; Lens 180 tris, Housing 2064 / 538 / 72, phone 84); everything else as Niche.
+///   Flush        ZL F5, scene 4's dry pool landings, soffits and the slide tower (structures_assets 30_plan.md P7, 2026-11-06): a
+///                2 x 2 ft recessed, enclosed and gasketed lay-in (the wet-location troffer): a white enamel door frame with four
+///                cam latches round a prismatic acrylic lens on a black gasket, two U-lamps faint through it (ZL_FLUSH;
+///                research/zone_lamps/10_pool.md 3.5). Lens = the lens face (32 tris); Housing = the frame, gasket and latches
+///                (LODGroup 256 / 88 / 24 tris, desktop only); phone: the lens and the frame face in an enamel swatch (10 tris).
+///                Mounting face the ceiling plane (local y 0), the lens 4 mm over the frame face 10 mm below it. Lens drive
+///                FlushLensPeak (0.9). Not registered with the Relay (flush in the lid).
+///   Globe        ZL F7, the vapour-tight "jelly jar" (P7): a cast body and threaded collar, a clear glass globe on a gasket round a
+///                100 W A19, a four-bar cast guard with a hoop (ZL_GLOBE; 10_pool.md 3.7, PL23). Lens = the globe (the lamp's glow
+///                painted in its emission map; 1,040 tris); Housing = body, collar, gasket, ribs and guard (LODGroup 5,436 /
+///                1,788 / 208 tris, desktop only); phone: the globe and the body in a zinc swatch (296 tris). Mounting face local
+///                y 0 (a ceiling, or a wall with the globe along the wall's normal), the globe along local -y, 0.23 m deep in
+///                all. Lens drive GlobeLensPeak (2.0). Scene 4: SP6's C9 wet block, SP5's janitor closet, P's fire stair.
+///   The metal-halide families (WallBox, and any HID head) take their lamp's behaviour from HidTick (HidLamp): out on a deep
+///   dip, a compressed restrike dim and blue-green first, the auxiliary quartz lamp while it waits, a per-lamp colour drift,
+///   end-of-life cycling (research/zone_lamps/20_design.md s.6). The caller drives its Light, lens and glow with the result.
+///   The two pool kits carry their own atlas (bronze, brushed stainless: not on the trim sheet), one material for lens and
+///   housing alike (the housing samples emission-free regions), and a wall frame: the mounting face is the wall, local +Z
+///   out of it, +Y up.
 ///
 /// The map (BuildFixture) asks ForCell for its cell's lamp and builds it with BuildMapLamp under the fixture root, on the
 /// ceiling plane, long side along the root's Z; the lens is named "Lens" (a direct child, beside "Light" for GlassRT).
@@ -48,7 +80,7 @@ using UnityEngine.Rendering;
 /// </summary>
 public static class FrontRoomsLampKit
 {
-    public enum Family : byte { Strip, RemotePlate, Pendant, Wrap }
+    public enum Family : byte { Strip, RemotePlate, Pendant, Wrap, WallBox, Niche, NicheSmall, Flush, Globe }
 
     /// <summary>What the map hangs at a cell (ForCell, BuildMapLamp, LensDrive).</summary>
     public enum MapLamp : byte { Troffer, Pendant, Wrap }
@@ -62,9 +94,17 @@ public static class FrontRoomsLampKit
     public const float PendantLensPeak = 1.4f;
     /// <summary>Lo-C's lens as seen (the option render's drive: L03's 1.8).</summary>
     public const float WrapLensPeak = 1.8f;
+    /// <summary>ZL F5's lens as seen: 0.9, as the laylight's diffuser (structures_assets G1 review FIX 10: at the stand-ins' 1.6
+    /// the game's post pressed the lens against its white, flat, and its prisms, U-lamps and insects did not show).</summary>
+    public const float FlushLensPeak = 0.9f;
+    /// <summary>ZL F7's globe as seen (a clear jar round a frosted 100 W lamp: brighter than a lensed fluorescent).</summary>
+    public const float GlobeLensPeak = 2.0f;
     /// <summary>O-C hangs its body's bottom this far under the ceiling plane (a 0.10 m body on 0.50 m cables) and only where that
     /// bottom stays at or above PendantMinBottom: the 2.9 m Office rooms (2.30 m), never a Low one (the 2.03 m headroom clause).</summary>
     public const float PendantDrop = .60f, PendantMinBottom = 2.2f;
+    /// <summary>The wall box's ceiling patch, along the wall and out from it, per metre of throw from the mount to the ceiling
+    /// (2.4: 4.8 m for the pool hall's 2 m, inside one 6 m bay; the patch peaks 0.3 of the way out).</summary>
+    public const float WallBoxGlowSpread = 2.4f;
     const string WrapKit = "Kit_WrapFixture_4ft", WrapLensSlot = "Run_WrapLens", WrapLensPath = "Wrap/Materials/ZL_WrapLens_R1";
 
     sealed class Kit
@@ -106,6 +146,12 @@ public static class FrontRoomsLampKit
                 new Kit { folder = "Pendant/", model = "Models/ZL_PEND", desktopPrefab = "Prefabs/ZL_PEND", phonePrefab = "Prefabs/ZL_PEND_Phone",
                           second = GlowName, secondSuffix = " glow", secondRequired = true, secondAdditive = true },
                 null,   // Wrap: the kit library's Kit_WrapFixture_4ft (LoadWrap)
+                new Kit { folder = "WallBox/", model = "Models/ZL_WALLBOX", desktopPrefab = "Prefabs/ZL_WALLBOX", phonePrefab = "Prefabs/ZL_WALLBOX_Phone",
+                          second = GlowName, secondSuffix = " glow", secondRequired = true, secondAdditive = true },
+                new Kit { folder = "Niche/", model = "Models/ZL_NICHE", desktopPrefab = "Prefabs/ZL_NICHE", phonePrefab = "Prefabs/ZL_NICHE_Phone" },
+                new Kit { folder = "NicheSmall/", model = "Models/ZL_NICHE_S", desktopPrefab = "Prefabs/ZL_NICHE_S", phonePrefab = "Prefabs/ZL_NICHE_S_Phone" },
+                new Kit { folder = "Flush/", model = "Models/ZL_FLUSH", desktopPrefab = "Prefabs/ZL_FLUSH", phonePrefab = "Prefabs/ZL_FLUSH_Phone" },
+                new Kit { folder = "Globe/", model = "Models/ZL_GLOBE", desktopPrefab = "Prefabs/ZL_GLOBE", phonePrefab = "Prefabs/ZL_GLOBE_Phone" },
             };
         var i = (int)family;
         return i >= 0 && i < kits.Length ? kits[i] : null;
@@ -279,6 +325,26 @@ public static class FrontRoomsLampKit
         return lens;
     }
 
+    /// <summary>
+    /// P1-A's wall box under <paramref name="parent"/>: <paramref name="position"/> is its mounting centre on the wall,
+    /// <paramref name="rotation"/> turns local +Z out of the wall and +Y up. Its lit ceiling (<paramref name="glow"/>, the second
+    /// renderer) is fitted to the ceiling <paramref name="ceilingAbove"/> metres over the mount: 2 mm under it, WallBoxGlowSpread
+    /// times that throw along the wall and out from it. The caller lights it and writes the glow the lens's block, as the
+    /// pendant's. Returns the lens; null when the kit is missing (the caller builds what it built before).
+    /// </summary>
+    public static MeshRenderer BuildWallBox(Transform parent, Vector3 position, Quaternion rotation, string lensName, bool phone, float ceilingAbove, out MeshRenderer glow)
+    {
+        var lens = Build(Family.WallBox, parent, position, rotation, lensName, phone, out glow);
+        if (lens != null && glow != null)
+        {
+            var d = Mathf.Max(.3f, ceilingAbove);
+            var t = glow.transform;
+            t.localPosition = position + rotation * new Vector3(0f, d - .002f, 0f);
+            t.localScale = new Vector3(WallBoxGlowSpread * d, 1f, WallBoxGlowSpread * d);
+        }
+        return lens;
+    }
+
     static MeshRenderer Part(Transform parent, string name, Mesh mesh, Material[] materials, Vector3 position, Quaternion rotation)
     {
         var go = new GameObject(name);
@@ -312,6 +378,84 @@ public static class FrontRoomsLampKit
         housing.transform.localScale = Vector3.one;
         foreach (var r in housing.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
         return housing;
+    }
+
+    // ---------------------------------------------------------------- metal-halide lamps (P1-A; 20_design s.6)
+    /// <summary>
+    /// One metal-halide lamp's state (P1-A's wall box, any HID head), kept by its caller and advanced by HidTick. The period
+    /// behaviour (research/zone_lamps/10_pool.md s.7, 20_design.md s.6; the 1977-80 indirect-HID patents): the arc goes out at
+    /// once when the line falls under HidDropOut; a hot lamp cannot restrike until it has cooled (minutes, compressed here to
+    /// HidCool seconds); it then warms over HidWarm seconds, dim and blue-green first, white last; while it is out or warming
+    /// the fixture's auxiliary quartz lamp burns, so the space never goes black ("darkness is never cover"); each lamp's white
+    /// drifts (Drift, -1 greener .. 1 pinker, set once from a hash); a failing lamp cycles, out every HidCycle seconds or so.
+    /// </summary>
+    public struct HidLamp
+    {
+        /// <summary>0 out .. 1 at full output (the warm-up's progress).</summary>
+        public float warm;
+        /// <summary>Seconds before a restrike can begin (the hot lamp cooling).</summary>
+        public float cool;
+        /// <summary>The arc burns (warming or full).</summary>
+        public bool arc;
+        /// <summary>The lamp's colour drift, -1 (greener) .. 1 (pinker).</summary>
+        public float drift;
+        /// <summary>End of life: the lamp cycles.</summary>
+        public bool failing;
+        /// <summary>Seconds at full output before a failing lamp drops out.</summary>
+        public float cycle;
+
+        /// <summary>A lamp burning at full output (a lit room's start state).</summary>
+        public static HidLamp Lit(float drift, bool failing)
+        {
+            return new HidLamp { warm = 1f, arc = true, drift = Mathf.Clamp(drift, -1f, 1f), failing = failing, cycle = CycleAfter(drift) };
+        }
+
+        internal static float CycleAfter(float drift) => HidCycle * (.7f + .6f * Mathf.Repeat(drift * 7.31f + .37f, 1f));
+    }
+
+    /// <summary>The line level under which the arc goes out (a deep dip), the compressed cool-down and warm-up (seconds; real
+    /// lamps take 5-15 minutes to restrike), and a failing lamp's mean time at full output before it cycles out.</summary>
+    public const float HidDropOut = .80f, HidCool = 8f, HidWarm = 24f, HidCycle = 45f;
+    /// <summary>The restrike's first light and colour (dim, blue-green), and the drift's two ends.</summary>
+    static readonly Color HidCold = new Color(.62f, .90f, 1f), HidGreen = new Color(.93f, 1f, .94f), HidPink = new Color(1f, .94f, .98f);
+
+    /// <summary>
+    /// Advances <paramref name="s"/> by <paramref name="dt"/> with the lamp's line at <paramref name="mains"/> (1 normal; the
+    /// W1 dips and the C22 blackout as the map has them) and returns its output, 0..1: multiply the Light's intensity and the
+    /// lens (and glow) drive by it. <paramref name="tint"/> multiplies the lamp's colour (the warm-up's blue-green, then the
+    /// lamp's drift); <paramref name="auxiliary"/> is the quartz lamp's level, 0..1 (1 while the arc is out or under 60 %).
+    /// </summary>
+    public static float HidTick(ref HidLamp s, float mains, float dt, out Color tint, out float auxiliary)
+    {
+        if (s.arc && mains < HidDropOut)
+        {
+            s.arc = false;
+            s.cool = HidCool;
+            s.warm = 0f;
+        }
+        else if (s.arc && s.failing && s.warm >= 1f)
+        {
+            s.cycle -= dt;
+            if (s.cycle <= 0f)
+            {
+                s.arc = false;
+                s.cool = HidCool;
+                s.warm = 0f;
+                s.cycle = HidLamp.CycleAfter(s.drift + .5f);
+            }
+        }
+        if (!s.arc)
+        {
+            s.cool = Mathf.Max(0f, s.cool - dt);
+            if (s.cool <= 0f && mains >= HidDropOut) { s.arc = true; s.warm = 0f; }
+        }
+        else if (s.warm < 1f) s.warm = Mathf.Min(1f, s.warm + dt / HidWarm);
+        var w = s.arc ? s.warm * s.warm * (3f - 2f * s.warm) : 0f;
+        var output = s.arc ? (.05f + .95f * w) * Mathf.Clamp01(mains * mains) : 0f;
+        var drifted = s.drift < 0f ? Color.Lerp(Color.white, HidGreen, -s.drift) : Color.Lerp(Color.white, HidPink, s.drift);
+        tint = Color.Lerp(HidCold, Color.white, w) * drifted;
+        auxiliary = s.arc ? Mathf.Clamp01((.75f - s.warm) / .15f) : 1f;
+        return output;
     }
 
     // ---------------------------------------------------------------- the map's lamp per cell (MapWorld.BuildFixture)
@@ -360,8 +504,9 @@ public static class FrontRoomsLampKit
         var mf = r != null ? r.GetComponent<MeshFilter>() : null;
         var m = mf != null ? mf.sharedMesh : null;
         if (m == null) return false;
-        for (var i = 0; i <= (int)Family.Pendant; i++)
+        for (var i = 0; i <= (int)Family.Globe; i++)
         {
+            if (i == (int)Family.Wrap) continue;
             var k = Get((Family)i);
             if (k != null && k.phonePrefab != null && Load(k) && (m == k.lensMesh || m == k.phoneMesh)) return true;
         }

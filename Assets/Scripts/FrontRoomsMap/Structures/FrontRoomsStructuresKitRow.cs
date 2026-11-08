@@ -46,6 +46,8 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
                 GuardWall = paper, GuardCap = oak, SectionMat = concrete, SectionDepth = 1.0f,
             };
             Ladder(a);
+            // NEW (structures_assets K-01): every guard of the family side by side on the plinths over 0.76 m
+            if (kit.New) GuardRow(a, FrontRoomsStructuresKit.GuardStyle.HalfWall, FrontRoomsStructuresKit.GuardStyle.Rail, FrontRoomsStructuresKit.GuardStyle.Glass, FrontRoomsStructuresKit.GuardStyle.Mesh);
             a.Build(kit);
             Below(0f, 3.9f, a.SectionDepth, paper, carpet, tiles);
             Units(0f, carpet);
@@ -60,7 +62,10 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
                 GuardWall = tile, GuardCap = tile, SectionMat = concrete, SectionDepth = 1.2f,
             };
             Ladder(b);
+            if (kit.New) GuardRow(b, FrontRoomsStructuresKit.GuardStyle.TileWall, FrontRoomsStructuresKit.GuardStyle.Glass, FrontRoomsStructuresKit.GuardStyle.Rail, FrontRoomsStructuresKit.GuardStyle.TileWall);
             b.Build(kit);
+            // NEW (K-02; G1 review FIX 9): the deck's cove base and one movement joint in sealant
+            if (kit.New) DeckCoveAndJoint();
             Below(Hall2Z, FrontRoomsStructuresKit.PoolStorey, b.SectionDepth, tile, tile, tile);
             // Pool hall light (70 section 2): metal-halide wall boxes throwing up on both long walls every 6 m, about 3.4 m up
             // (70 section 2), a down-fill grid; view lamps, so the hall's far half is lit from the arrival (review KIT-F6).
@@ -94,6 +99,70 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
         kit.Stop("瓷砖版，从西头看过去", new Vector3(1.5f, 0f, Hall2Z + 2.2f), new Vector3(30f, 1.2f, Hall2Z + 7.5f));
         kit.Stop("瓷砖版：台子正面", new Vector3(16.5f, 0f, Hall2Z + 1.2f), new Vector3(16.5f, 1.2f, Hall2Z + 7.5f));
         kit.Stop("瓷砖版：空洞边", new Vector3(37.5f, 0f, Hall2Z + 2.35f), new Vector3(37.5f, -4.5f, Hall2Z + 4.5f), 60f);
+    }
+
+    // NEW: the tile hall's cove base (Prop_PoolTile_Cove: r 50 with 50 mm flats, a natatorium deck's sanitary cove) along its
+    // south, east and west walls and the north wall's two floor-level ends (to plinth 6's and plinth 1's faces), mitred at the
+    // corners; and one EJ171 movement joint across the deck on the grout line x 19.5, in grey polyurethane sealant, over the
+    // cove and up its wall flat. The plinths' feet and the basins' coves are the plate's, with the pool's contract (G2, K2).
+    void DeckCoveAndJoint()
+    {
+        const float Face = .08f;   // the 0.16 walls stand centred on the plate's lines
+        float x0 = Face, x1 = Width * 3f - Face, z0 = Hall2Z + Face, z1 = Hall2Z + Rows * 3f - Face;
+        var cove = FrontRoomsPoolTile.Get("Cove");
+        // a ring every 1.2 m (eight tiles): one 42 m quad strip, its far ends behind the camera, interpolated the cove's u with a
+        // visible error at the 0.35 m hero (each facet's joint stepped)
+        if (cove != null)
+            kit.CoveBase(Dense(new[] { new Vector3(36.1f, 0f, z1), new Vector3(x1, 0f, z1), new Vector3(x1, 0f, z0), new Vector3(x0, 0f, z0),
+                new Vector3(x0, 0f, z1), new Vector3(2.9f, 0f, z1) }, 1.2f), cove);
+        // the joint's path on the finished surfaces (the cove laid 2 mm proud, r 50, flats 50), 0.6 mm over them
+        const float X = 19.5f, R = .05f, Flat = .05f, Lift = .002f, Up = .0006f;
+        var path = new System.Collections.Generic.List<Vector3>();
+        if (cove != null)
+        {
+            path.Add(new Vector3(X, R + Flat + Lift - .004f, z0 + Lift + Up));
+            // the cove's own six facets (CoveBase: Cove(.05, .05, 6)): the bead follows them, never dips behind a facet's chord
+            for (var i = 0; i <= 6; i++)
+            {
+                var a = Mathf.PI * .5f * (6 - i) / 6f;   // 90 deg at the wall's flat .. 0 at the floor's
+                var n = new Vector3(0f, Mathf.Cos(a), Mathf.Sin(a));
+                path.Add(new Vector3(X, R - Mathf.Cos(a) * R + Lift, z0 + R - Mathf.Sin(a) * R + Lift) + n * Up);
+            }
+            path.Add(new Vector3(X, Lift + Up, z0 + R + Flat + Lift));
+            path.Add(new Vector3(X, Up, z0 + R + Flat + Lift + .003f));
+        }
+        else path.Add(new Vector3(X, Up, z0));
+        path.Add(new Vector3(X, Up, z1));
+        kit.SealantJoint(Dense(path, .6f), new Vector3(0f, 1f, 1f));
+    }
+
+    // A path with a point at least every 'step' metres along each segment (the corners kept), for sweeps seen up close.
+    static System.Collections.Generic.List<Vector3> Dense(System.Collections.Generic.IList<Vector3> path, float step)
+    {
+        var o = new System.Collections.Generic.List<Vector3>();
+        for (var i = 0; i < path.Count; i++)
+        {
+            if (i > 0)
+            {
+                var n = Mathf.CeilToInt(Vector3.Distance(path[i - 1], path[i]) / Mathf.Max(step, .05f));
+                for (var k = 1; k < n; k++) o.Add(Vector3.Lerp(path[i - 1], path[i], k / (float)n));
+            }
+            o.Add(path[i]);
+        }
+        return o;
+    }
+
+    // NEW: plinths 3 to 6 (over 0.76 m) each carry one guard style on their three open edges, so the hall shows them side by side.
+    static void GuardRow(FrontRoomsStructuresKit.Plate p, FrontRoomsStructuresKit.GuardStyle k3, FrontRoomsStructuresKit.GuardStyle k4, FrontRoomsStructuresKit.GuardStyle k5, FrontRoomsStructuresKit.GuardStyle k6)
+    {
+        var styles = new[] { k3, k4, k5, k6 };
+        for (var k = 3; k <= 6; k++)
+        {
+            var i = 2 * k - 1;
+            // plinth 5's east edge is a 0.30 m step up to the connector's landing: no guard there
+            foreach (var side in new[] { 'S', 'W', 'E' })
+                if (!(k == 5 && side == 'E')) p.GuardEdge(i, 2, side, styles[k - 3]);
+        }
     }
 
     // One hall's cells: rows 0-1 the walk at +-0, row 2 the plinths at odd columns one to six steps high (the even columns at
@@ -158,17 +227,20 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
         var ink = FrontRoomsPoolMaterials.Lit("kit row grid ink", new Color(.12f, .12f, .12f), .2f);
         var light = FrontRoomsPoolMaterials.Lit("kit row gauge light", new Color(.86f, .85f, .82f), .3f);
         var accent = FrontRoomsPoolMaterials.Glow("kit row gauge accent", new Color(.957f, .875f, .231f));
+        // NEW, tile hall: the lines start past the deck's cove and the gauge stands in front of it (DeckCoveAndJoint)
+        var clear = kit != null && kit.New && z0 > 1f ? .19f : 0f;
+        var gx = kit != null && kit.New && z0 > 1f ? .12f : 0f;
         for (var k = 1; k < 5; k++)
         {
             var f = .6f * k;
-            kit.Box(f - .006f, .0005f, z0, f + .006f, .0035f, z0 + 3f, ink, false);
-            kit.Box(0f, .0005f, z0 + f - .006f, 3f, .0035f, z0 + f + .006f, ink, false);
+            kit.Box(f - .006f, .0005f, z0 + clear, f + .006f, .0035f, z0 + 3f, ink, false);
+            kit.Box(clear, .0005f, z0 + f - .006f, 3f, .0035f, z0 + f + .006f, ink, false);
         }
         var storeys = Mathf.RoundToInt((z0 > 1f ? FrontRoomsStructuresKit.PoolStorey : FrontRoomsStructuresKit.OfficeStorey) / Step);
         // The gauge in the cell's north-west corner, behind-left of the arrival, out of the main view (review KIT-F2).
         for (var s = 0; s < storeys; s++)
-            kit.Box(.10f, s * Step, z0 + 2.82f, .18f, (s + 1) * Step, z0 + 2.9f, s % 2 == 0 ? ink : light, false);
-        kit.Box(.08f, storeys * Step - .01f, z0 + 2.80f, .20f, storeys * Step + .01f, z0 + 2.92f, accent, false);
+            kit.Box(.10f + gx, s * Step, z0 + 2.82f, .18f + gx, (s + 1) * Step, z0 + 2.9f, s % 2 == 0 ? ink : light, false);
+        kit.Box(.08f + gx, storeys * Step - .01f, z0 + 2.80f, .20f + gx, storeys * Step + .01f, z0 + 2.92f, accent, false);
     }
 
     // A small label (outside the fiction) on a post in front of each plinth, in the placard's colours.
@@ -183,12 +255,16 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
             "5 级 · +1.50\n跨过：STEP RUN 十级（一格最多五个细模数）\n不跨：LEDGE 加护栏",
             "6 级 · +1.80\n边上不放台阶：用独立的楼梯模块（R2）\n边：LEDGE 加 1.07 米护栏（夹层、走廊边）",
         };
+        // NEW: the guard each plinth carries (GuardRow)
+        string[] guardL0 = { "", "", "护栏：半墙加橡木压顶", "护栏：钢管栏杆（, 换竖条/横杆）", "护栏：玻璃栏板，铝底槽", "护栏：钢丝网，槽钢框" };
+        string[] guardTile = { "", "", "护栏：瓷砖矮墙，圆角压边", "护栏：玻璃栏板，不锈钢槽", "护栏：不锈钢管栏杆", "护栏：瓷砖矮墙，圆角压边" };
         foreach (var z0 in new[] { 0f, Hall2Z })
         {
             for (var k = 0; k < lines.Length; k++)
             {
                 var x = 3f * (2 * k + 1) + 2.4f;
-                Label(new Vector3(x, 0f, z0 + 5.2f), lines[k]);
+                var extra = kit != null && kit.New ? (z0 > 1f ? guardTile[k] : guardL0[k]) : "";
+                Label(new Vector3(x, 0f, z0 + 5.2f), extra.Length > 0 ? lines[k] + "\n" + extra : lines[k]);
             }
             Label(new Vector3(38.4f, 0f, z0 + 2.2f), "空洞 · VOID EDGE\n楼板边露出截面，1.07 米护栏\n视线和声音能过，Relay 不能");
         }

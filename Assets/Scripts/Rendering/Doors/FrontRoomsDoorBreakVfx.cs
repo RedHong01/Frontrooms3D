@@ -1385,6 +1385,16 @@ public sealed class FrontRoomsDoorBreakVfx : IDisposable
 
     public Material SolidMaterial(int m) => solidMat[m];
 
+    /// <summary>The zone doors' Map stage (2026-11-06): a break family's own solid in one slot (the FRP leaves' foam core in the core
+    /// slot, FrontRoomsDoorBreakVisual's family slotSwaps), set once after construction; render-only. No landed family calls it.</summary>
+    public void OverrideSolid(int m, Material mat)
+    {
+        if (mat == null || m < 0 || m >= MatCount) return;
+        solidMat[m] = mat;
+        var r = solidGo[m] != null ? solidGo[m].GetComponent<MeshRenderer>() : null;
+        if (r != null) r.sharedMaterial = mat;
+    }
+
     // ======================================================================================== GPU
 
     void UploadGpu()

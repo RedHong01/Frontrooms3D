@@ -1,0 +1,8 @@
+structures_g1_sp4.jpg 1920x1948, 5 tiles, 2 columns
+title | STRUCTURES G1 SP4 OFFICE STACK TODAY VS NEW | 784/1544 FIT
+SP4_s00_raw.png | SP4 S00 TODAY | arrival, the south walk | label 128/938 data 184/798 FIT
+SP4_s00_newsteady_raw.png | SP4 S00 NEW REC | glass guards, flights, rails | label 150/938 data 224/776 FIT
+SP4_s12_todayn_raw.png | SP4 S12 TODAY | f3 looking down into the pit | label 128/938 data 224/798 FIT
+SP4_s12_newsteady_raw.png | SP4 S12 NEW REC | glass panes and rails round the atrium | label 150/938 data 304/776 FIT
+cost_SP4.png | COST SP4 | harness inventories of both runs | label 78/938 data 256/848 FIT
+ALL LABELS FIT

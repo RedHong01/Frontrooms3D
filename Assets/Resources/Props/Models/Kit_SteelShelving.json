@@ -1,0 +1,68 @@
+{
+ "name": "Kit_SteelShelving",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    -0.0,
+    1.0670000314712524,
+    -0.001811198890209198
+   ],
+   "size": [
+    0.9250720143318176,
+    2.134000062942505,
+    0.46444958448410034
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p9",
+  "shelving",
+  "storage"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  9000,
+  1800,
+  300
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.4625360071659088,
+  0.0,
+  -0.23403599858283997
+ ],
+ "boundsMax": [
+  0.4625360071659088,
+  2.134000062942505,
+  0.23041360080242157
+ ],
+ "triangles": 10096,
+ "slots": [
+  "Prop_SteelPutty",
+  "Plenum_Dark",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 1896,
+ "trianglesLod2": 240,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.001811198890209198
+ ],
+ "footprintSize": [
+  0.9250720143318176,
+  0.46444958448410034
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

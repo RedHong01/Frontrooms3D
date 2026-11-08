@@ -1,0 +1,138 @@
+{
+ "name": "Kit_DoorLeaf_Stair",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "hinge_axis",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "face_p_centre",
+   "pos": [
+    -0.025,
+    1.0524,
+    0.5
+   ]
+  },
+  {
+   "name": "face_s_centre",
+   "pos": [
+    0.025,
+    1.0524,
+    0.5
+   ]
+  },
+  {
+   "name": "knuckle_1",
+   "pos": [
+    0.033,
+    0.29,
+    -0.002
+   ]
+  },
+  {
+   "name": "knuckle_2",
+   "pos": [
+    0.033,
+    1.07,
+    -0.002
+   ]
+  },
+  {
+   "name": "knuckle_3",
+   "pos": [
+    0.033,
+    1.86,
+    -0.002
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "door_leaf",
+  "leaf_steel",
+  "stair"
+ ],
+ "swingLatchWorstZ": 0.99591,
+ "leafEnvelope": {
+  "x": [
+   -0.025,
+   0.025
+  ],
+  "y": [
+   0.008,
+   2.0968
+  ],
+  "z": [
+   0.004,
+   0.996
+  ],
+  "opening": 1.0
+ },
+ "stairLiteRect": [
+  0.679,
+  0.7806,
+  1.27,
+  1.905
+ ],
+ "liteHole": [
+  0.6690000000000002,
+  0.7905999999999999,
+  1.26,
+  1.915
+ ],
+ "leafLevels": {
+  "lod0": 232,
+  "lod1": 80,
+  "lod2": 32
+ },
+ "doorSpace": "the kits' door root: origin the opening's hinge-jamb edge on the leaf's centre plane at the floor, +Z along the opening, +X the pull face S; FrontRoomsStairwellDresser spawns it under a root scaled (-push, 1, 1)",
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  -1.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "hand-built LOD0/1/2 (kitlib fr_lods); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull",
+ "stairDoor": "EXIT (map edge N-X): P = N's side, S = the stairwell",
+ "boundsMin": [
+  -0.02500000037252903,
+  0.00800000037997961,
+  0.002899999963119626
+ ],
+ "boundsMax": [
+  0.02500000037252903,
+  2.0968000888824463,
+  0.9959117770195007
+ ],
+ "triangles": 560,
+ "slots": [
+  "Stair_DoorSteel",
+  "Stair_DoorSteelInside",
+  "Stair_Hinge"
+ ],
+ "trianglesLod1": 80,
+ "trianglesLod2": 32,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.4994058884913102
+ ],
+ "footprintSize": [
+  0.05000000074505806,
+  0.9930117770563811
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.147
+}

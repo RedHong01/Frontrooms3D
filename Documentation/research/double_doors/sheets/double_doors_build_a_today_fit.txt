@@ -1,0 +1,23 @@
+TODAY TOUR ROOM 0, DOOR 0 | main code, s1 | label fits, data fits
+NEW, TODAY ON | Build A, doorsToday on | label fits, data fits
+DIFF x8 | 0 px over 1/255, 3 at 1/255 (TV masked) | label fits, data fits
+TODAY TOUR ROOM 1, DOOR 1 | main code, s1 | label fits, data fits
+NEW, TODAY ON | Build A, doorsToday on | label fits, data fits
+DIFF x8 | 0 px over 1/255, 1029 at 1/255 (TV masked) | label fits, data fits
+TODAY TOUR RUN! ROOM, DOOR 4 | main code, s1 | label fits, data fits
+NEW, TODAY ON | Build A, doorsToday on | label fits, data fits
+DIFF x8 | 0 px over 1/255, 0 at 1/255 (TV masked) | label fits, data fits
+TODAY START DOOR, STREAM FACE | main code, s1 | label fits, data fits
+NEW, TODAY ON | Build A, doorsToday on | label fits, data fits
+DIFF x8 | 0 px over 1/255, 0 at 1/255 | label fits, data fits
+TODAY DESCENT RUN! ROOM, DOOR 3 | main code, s1 | label fits, data fits
+NEW, TODAY ON | Build A, doorsToday on | label fits, data fits
+DIFF x8 | 0 px over 1/255, 0 at 1/255 | label fits, data fits
+TODAY STATION D, STREAM PAIR | main's calls, lab, +Z face | label fits, data fits
+NEW, TODAY ON | BuildPair + zone calls | label fits, data fits
+DIFF x8 | 0 px differ (max 0); dump identical | label fits, data fits
+TODAY STATION D, ENTRANCE | main's calls, lab, +Z face | label fits, data fits
+NEW, TODAY ON | BuildPair + zone calls | label fits, data fits
+DIFF x8 | 0 px differ (max 0); dump identical | label fits, data fits
+TITLE Zone doors Build A: Today on is today | fits
+ALL LABELS FIT

@@ -324,7 +324,6 @@ QualitySettings:
     terrainFadeLength: 5
     terrainMaxTrees: 50
     excludedTargetPlatforms: []
-  m_TextureMipmapLimitGroupNames: []
   - serializedVersion: 5
     name: Handheld
     pixelLightCount: 1
@@ -381,6 +380,7 @@ QualitySettings:
     - Standalone
     - WebGL
     - Windows Store Apps
+  m_TextureMipmapLimitGroupNames: []
   m_PerPlatformDefaultQuality:
     Android: 2
     GameCoreScarlett: 5

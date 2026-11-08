@@ -1,0 +1,84 @@
+{
+ "name": "Kit_DoorLouvre_F12",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "louvre_centre",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "door",
+  "louvre",
+  "zone_pair",
+  "back_of_house"
+ ],
+ "louvreRect": [
+  -0.127,
+  0.127,
+  -0.2032,
+  0.20320000000000005
+ ],
+ "cutRect": [
+  -0.1365,
+  0.1365,
+  -0.2127,
+  0.21270000000000006
+ ],
+ "louvreCentreOnLeaf": [
+  0.0,
+  0.5334
+ ],
+ "blades": 16,
+ "bladePitch": 0.0254,
+ "bladeRise": 0.02928,
+ "bladeLip": 0.005,
+ "screws": 8,
+ "frameOverKickPlate": 0.0362,
+ "origin": "the louvre's centre on the leaf's centre plane; x across, y up, z through; screws on -Z",
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  8.0,
+  40.0
+ ],
+ "lodRatios": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "lodNote": "lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76; -1 = never cull. LOD2 is not exported until P-1.",
+ "boundsMin": [
+  -0.1459999978542328,
+  -0.22220000624656677,
+  -0.02560960128903389
+ ],
+ "boundsMax": [
+  0.1459999978542328,
+  0.22220000624656677,
+  0.024800000712275505
+ ],
+ "triangles": 1184,
+ "slots": [
+  "Painted_Metal"
+ ],
+ "trianglesLod1": 240,
+ "trianglesLod2": 24,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.00040480028837919235
+ ],
+ "footprintSize": [
+  0.2919999957084656,
+  0.050409602001309395
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.272
+}

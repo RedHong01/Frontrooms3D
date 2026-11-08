@@ -462,10 +462,48 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         // GZ-A: its reflection proxies (null: none) and whether its lenses were looked at for them
         public List<Renderer> proxies;
         public bool proxyChecked;
+        // NEW (structures_assets, contract K1; null in TODAY): the game's lamp mode (ask 5), the budget's last level, the far
+        // pool under a far lamp (FrontRoomsStructuresLamps) and whether it was looked for
+        public FrontRoomsStructuresLampModes.State mode;
+        public float budget = 1f, modeLevel = 1f;
+        public Renderer pool;
+        public bool poolChecked;
     }
 
     readonly List<Lamp> lamps = new List<Lamp>();
+    readonly Dictionary<int, int> firstBuildIndex = new Dictionary<int, int>();
+    int buildingDistrict = int.MinValue, buildingIndex = -1;
+    bool rebuilding;
     float budgetClock;
+
+    /// <summary>A district rebuilt in place leaves: its lamps drop out of the list (the cost line's 'may shadow' counted them
+    /// twice, and every district built for the first time afterwards counted its shadow pattern on from too far) and its pool
+    /// note goes (review F2, A, H).</summary>
+    public void Forget(FrontRoomsStructuresDistrict d)
+    {
+        if (d == null) return;
+        lamps.RemoveAll(l => l.district == d.Key);
+        poolNotes.Remove(d);
+    }
+
+    /// <summary>The bootstrap is about to build a district (its first build, or again after the structure assets key): its lamps'
+    /// shadow pattern starts where its first build's did.</summary>
+    public void BeginDistrictBuild(int district)
+    {
+        buildingDistrict = district;
+        rebuilding = firstBuildIndex.TryGetValue(district, out buildingIndex);
+        if (!rebuilding) firstBuildIndex[district] = buildingIndex = lamps.Count;
+    }
+
+    /// <summary>The district's build is done.</summary>
+    public void EndDistrictBuild()
+    {
+        // a rebuild runs the budget in its own frame: no frame with every fresh lamp at full, the far pools made with the build
+        if (rebuilding) budgetClock = 0f;
+        buildingDistrict = int.MinValue;
+        buildingIndex = -1;
+        rebuilding = false;
+    }
     MaterialPropertyBlock lensBlock;
     static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
@@ -473,7 +511,21 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     public void AddLamp(int district, Light light, Renderer lens, Color lensEmission, bool view = false)
     {
         if (light == null) return;
-        lamps.Add(new Lamp { light = light, lens = lens, lensEmission = lensEmission, intensity = light.intensity, mayShadow = lamps.Count % 3 == 0, view = view, district = district });
+        // every third lamp may shadow, by its place in the build order: lamps.Count on a district's first build (as always); a
+        // district built again (the structure assets key) counts on from where its first build started, so the same lamps cast
+        // shadows in TODAY and in NEW and a comparison in place shows only the assets
+        var index = lamps.Count;
+        if (rebuilding && district == buildingDistrict && buildingIndex >= 0) index = buildingIndex++;
+        lamps.Add(new Lamp { light = light, lens = lens, lensEmission = lensEmission, intensity = light.intensity, mayShadow = index % 3 == 0, view = view, district = district });
+        // NEW: the game's lamp modes (ask 5) on the lamps with a lens of the game's (the troffers): each rolls its temperament
+        // from its place; the pool districts and the fixture boxes (their HID kits come with the pool package) stay steady
+        if (FrontRoomsStructuresAssets.NewFor(district))
+        {
+            var p = light.transform.position;
+            var seed = district * 7919 ^ Mathf.RoundToInt(p.x * 10f) * 73856093 ^ Mathf.RoundToInt(p.y * 10f) * 19349663 ^ Mathf.RoundToInt(p.z * 10f) * 83492791;
+            var steady = lens == null || district == 1 || district == 2 || district == 6;
+            lamps[lamps.Count - 1].mode = FrontRoomsStructuresLampModes.Roll(seed, steady);
+        }
         if (lens != null)
         {
             if (lensBlock == null) lensBlock = new MaterialPropertyBlock();
@@ -532,11 +584,24 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 if (changed)
                 {
                     Drive(l);
+                    // NEW (contract K1): the lens follows the lamp, as the game's dead lamp has a dark lens (G1 review FIX 2: with
+                    // every light of a district at 0 the lenses stayed lit); TODAY's lens is set once, as before
+                    if (l.mode != null) DriveLens(l);
                     if (here != null && l.district == here.Key) RequestCapture(here);
                 }
                 break;
             }
         budgetClock = 0f;
+    }
+
+    // NEW: a lamp's lens at its emission x its mode's level x its scale (0 = a dark lens).
+    void DriveLens(Lamp l)
+    {
+        if (l.lens == null) return;
+        if (lensBlock == null) lensBlock = new MaterialPropertyBlock();
+        l.lens.GetPropertyBlock(lensBlock);
+        lensBlock.SetColor(LensEmissionId, l.lensEmission * (l.modeLevel * l.scale));
+        l.lens.SetPropertyBlock(lensBlock);
     }
 
     /// <summary>Lamps of one district, for its cost line.</summary>
@@ -570,7 +635,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 if (p == null || !p.isActiveAndEnabled) continue;
                 // the current district's go into its capture (its lamps on, GZ-A); any other renders as before
                 if (here != null && here.Root != null && p.transform.IsChildOf(here.Root)) { RequestCapture(here, p); continue; }
-                try { p.RenderProbe(); }
+                try { p.RenderProbe(); renderedProbes.Add(p); }
                 catch (System.Exception e) { FrontRoomsPoolMaterials.LogOnce("probe render", "a reflection probe did not render: " + e.Message); }
             }
             pendingProbes.Clear();
@@ -591,6 +656,13 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 // while its district's probes are captured every lamp of it is on: the view flag for all of them (GZ-A)
                 var view = l.view || l.district == forcedDistrict;
                 var level = (!mine && l.district != 0 ? 0f : view && mine ? 1f : Mathf.Clamp01((19f - d) / 3f)) * l.scale;
+                if (l.mode != null)
+                {
+                    // NEW: the lamp's mode on top of the budget, and its far pool where the budget has taken its light
+                    l.budget = level;
+                    level *= l.modeLevel;
+                    if (mine) FarPool(l, d);
+                }
                 var on = level > .001f;
                 if (l.light.enabled != on) l.light.enabled = on;
                 if (on) l.light.intensity = l.intensity * level;
@@ -599,6 +671,67 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
             }
         }
         if (startCapture) RenderCapture();
+        TickModes(district, dt);
+    }
+
+    // ---------------------------------------------------------------- NEW: the game's lamp modes and the far pools (contract K1)
+    //
+    // 游戏视觉's structures_assets (30_plan rows H02, S3-01, X-04; ask 5; FrontRoomsStructuresLampModes, FrontRoomsStructuresLamps):
+    // each frame the current district's moded lamps advance (the game's shapes, photosafe, Reduce Flashing honoured) and their
+    // light, lens and pool follow; a district's probes are captured with its lamps at their current level. TODAY has no moded
+    // lamp, so nothing here runs.
+
+    static readonly int LensEmissionId = Shader.PropertyToID("_EmissionColor");
+
+    void TickModes(int district, float dt)
+    {
+        for (var i = 0; i < lamps.Count; i++)
+        {
+            var l = lamps[i];
+            if (l.mode == null || l.light == null || l.district != district) continue;
+            // a capture sees each lamp as the walker does: forcing the moded lamps to full for it struck every dead and dim troffer
+            // of the district at once, past the per-lamp limiter and Reduce Flashing (review LC-1)
+            var v = FrontRoomsStructuresLampModes.Advance(l.mode, dt);
+            if (Mathf.Abs(v - l.modeLevel) < .004f) continue;
+            l.modeLevel = v;
+            var level = l.budget * v;   // the budget's level already carries the lamp's scale
+            var on = level > .001f;
+            if (l.light.enabled != on) l.light.enabled = on;
+            if (on) l.light.intensity = l.intensity * level;
+            DriveLens(l);   // the lens at the mode's level x the lamp's scale
+            if (l.pool != null) FrontRoomsStructuresLamps.SetPool(l.pool, l.light.color, Mathf.Max(0f, l.scale - l.budget) * v);
+        }
+    }
+
+    // A far lamp's pool (made the first time it is wanted, after the build, on the floor found under the lamp; clipped short of
+    // the walls round it), driven by the part of its light the budget has taken away.
+    void FarPool(Lamp l, float distance)
+    {
+        if (l.lens == null) return;
+        if (!l.poolChecked && l.budget < l.scale - .001f)
+        {
+            l.poolChecked = true;
+            var origin = l.light.transform.position;
+            RaycastHit hit;
+            if (Physics.Raycast(origin + Vector3.down * .05f, Vector3.down, out hit, 20f, ~ProxyMask, QueryTriggerInteraction.Ignore))
+            {
+                var h = origin.y - hit.point.y;
+                var radius = Mathf.Clamp(Mathf.Tan(l.light.innerSpotAngle * .5f * Mathf.Deg2Rad) * h, .8f, 3.2f);
+                var c = hit.point + Vector3.up * .3f;
+                float x0 = hit.point.x - radius, x1 = hit.point.x + radius, z0 = hit.point.z - radius, z1 = hit.point.z + radius;
+                if (Physics.Raycast(c, Vector3.left, out var wl, radius, ~ProxyMask, QueryTriggerInteraction.Ignore)) x0 = wl.point.x;
+                if (Physics.Raycast(c, Vector3.right, out var wr, radius, ~ProxyMask, QueryTriggerInteraction.Ignore)) x1 = wr.point.x;
+                if (Physics.Raycast(c, Vector3.back, out var wb, radius, ~ProxyMask, QueryTriggerInteraction.Ignore)) z0 = wb.point.z;
+                if (Physics.Raycast(c, Vector3.forward, out var wf, radius, ~ProxyMask, QueryTriggerInteraction.Ignore)) z1 = wf.point.z;
+                var parent = l.light.transform.parent != null ? l.light.transform.parent.parent : null;
+                if (parent == null) parent = l.light.transform;
+                var local = parent.InverseTransformPoint(hit.point);
+                var lo = parent.InverseTransformPoint(new Vector3(x0, hit.point.y, z0));
+                var hi = parent.InverseTransformPoint(new Vector3(x1, hit.point.y, z1));
+                l.pool = FrontRoomsStructuresLamps.BuildPool(parent, local, radius, Rect.MinMaxRect(Mathf.Min(lo.x, hi.x), Mathf.Min(lo.z, hi.z), Mathf.Max(lo.x, hi.x), Mathf.Max(lo.z, hi.z)), "far lamp pool");
+            }
+        }
+        if (l.pool != null) FrontRoomsStructuresLamps.SetPool(l.pool, l.light.color, Mathf.Max(0f, l.scale - l.budget) * l.modeLevel);
     }
 
     // ---------------------------------------------------------------- the pool glaze's lamps and probes (GZ-A)
@@ -668,6 +801,51 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     Camera[] cameraBuffer = new Camera[8];
     bool loggedProbeCamera, loggedUnseen;
     readonly HashSet<CameraType> loggedSkip = new HashSet<CameraType>();
+    // An in-place rebuild's old probes (the ; key and the asks), kept lighting the fresh district until its own capture ends: a
+    // realtime probe has no texture before it renders, and the two frames before the capture drew every tile matte and took
+    // the lamps' glints out of the water, a flash at every press (the K1 water check, 2026-11-06)
+    readonly List<ReflectionProbe> heldProbes = new List<ReflectionProbe>();
+    readonly HashSet<ReflectionProbe> renderedProbes = new HashSet<ReflectionProbe>();
+    int heldKey = int.MinValue, heldFrame, heldUntil;
+
+    /// <summary>A district about to be rebuilt in place hands over its rendered probes, moved under keeper so they stay on while
+    /// the old root goes: they light the fresh district until its first capture ends, then go.</summary>
+    public void HoldProbes(int district, Transform oldRoot, Transform keeper)
+    {
+        if (oldRoot == null || keeper == null) return;
+        renderedProbes.RemoveWhere(p => p == null);
+        var rendered = new List<ReflectionProbe>();
+        foreach (var p in oldRoot.GetComponentsInChildren<ReflectionProbe>(false))
+            if (p != null && renderedProbes.Contains(p)) rendered.Add(p);
+        if (rendered.Count > 0)
+        {
+            ReleaseHeldProbes();
+            foreach (var p in rendered)
+            {
+                p.transform.SetParent(keeper, true);
+                // above the fresh probe in the same box, so the engine's choice is a rule and not a tie-break
+                p.importance += 1;
+                heldProbes.Add(p);
+            }
+        }
+        // a second press before the first one's capture: the old root's probes have not rendered, the held ones stay
+        else if (heldKey != district) ReleaseHeldProbes();
+        if (heldProbes.Count == 0) return;
+        heldKey = district;
+        heldFrame = Time.frameCount;
+        heldUntil = Time.frameCount + CaptureFramesMax + 8;
+    }
+
+    void ReleaseHeldProbes()
+    {
+        foreach (var p in heldProbes)
+        {
+            renderedProbes.Remove(p);
+            if (p != null) Destroy(p.gameObject);
+        }
+        heldProbes.Clear();
+        heldKey = int.MinValue;
+    }
 
     /// <summary>The walker arrived in a district (the bootstrap, when it becomes the current one): its probes are captured two
     /// frames from now, with its lamps on.</summary>
@@ -719,6 +897,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     // proxies made and driven, its lamps forced on. True when the probes are to render this frame (RenderCapture).
     bool CaptureTick(int district)
     {
+        if (heldProbes.Count > 0 && Time.frameCount > heldUntil) ReleaseHeldProbes();
         if (forcedDistrict >= 0)
         {
             forcedFrames--;
@@ -732,6 +911,8 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                     + (done ? "they say they are done" : "after " + CaptureFramesMax + " frames") + "): if the pool glaze shows no lamp images, "
                     + "the probes' cameras were not recognised and layer " + ProxyLayer + " was culled from them.");
             }
+            // the fresh district's own probes have rendered: the old ones that lit it meanwhile go
+            if (heldProbes.Count > 0 && forcedDistrict == heldKey && captureFrame > heldFrame) ReleaseHeldProbes();
             forcedDistrict = -1;
             capturing.Clear();
             captureIds.Clear();
@@ -775,7 +956,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         foreach (var p in capturing)
         {
             var id = -1;
-            try { id = p.RenderProbe(); }
+            try { id = p.RenderProbe(); renderedProbes.Add(p); }
             catch (System.Exception e) { FrontRoomsPoolMaterials.LogOnce("probe render", "a reflection probe did not render: " + e.Message); }
             captureIds.Add(id);
         }

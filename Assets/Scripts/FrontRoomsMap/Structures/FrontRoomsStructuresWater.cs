@@ -172,6 +172,9 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     int zoneLook;
     float hintAt = -1f;
     int lastDistrict = -1;
+    // the district object itself: a ';' or an ask key rebuilds a district as a fresh instance under the same key, and the
+    // bodies parented under its old root die with it (夸张结构调研与设计's K1 review, finding B)
+    FrontRoomsStructuresDistrict lastInstance;
     bool districtHasWater;
     float nextStats, nextRealCheck;
     string statsLine = "";
@@ -245,9 +248,10 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     {
         if (host == null || host.Current == null) return;
         var d = host.Current;
-        if (d.Key != lastDistrict)
+        if (d.Key != lastDistrict || !ReferenceEquals(d, lastInstance))
         {
             lastDistrict = d.Key;
+            lastInstance = d;
             districtHasWater = HasWater(d);
             // a second after arriving, so the jump's own message has been read
             if (districtHasWater && !hinted) { hinted = true; hintAt = Time.time + 1.2f; }

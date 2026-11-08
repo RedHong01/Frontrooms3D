@@ -166,3 +166,24 @@ def build(kit):
     kit.no_collider()
     kit.tag("interactable", "door", "exit_device", "exit")
     dc.lod_meta(kit, sys.modules[__name__])
+
+
+def lod2_proxy(kit):
+    """LOD2 (6-25 m): the two end cases as chamfered prisms and the bar as an 8-sided tube: the silhouette A13's chain is read
+    against at the ladder's distances; ~70 tris."""
+    import door_stair_common as sc
+    def sec(hy, d):
+        return [(-hy, 0.0), (hy, 0.0), (hy, d - 0.012), (hy - 0.012, d), (-(hy - 0.012), d), (-hy, d - 0.012)]
+    sc.prism_x(kit, LATCH_X0, LATCH_X1, sec(LATCH_H / 2, CASE_D), ALU, "latch case lod2")
+    sc.prism_x(kit, HINGE_CASE_X - CASE_W / 2, HINGE_CASE_X + CASE_W / 2, sec(CASE_H / 2, CASE_D), ALU, "hinge case lod2")
+    sc.cyl(kit, (CASE_W / 2 - 0.008, 0.0, BAR_Z), (HINGE_CASE_X - CASE_W / 2 + 0.008, 0.0, BAR_Z), BAR_R, 8, CHROME, "crossbar lod2")
+
+
+# Stairwell doors (2026-11-06): the LOD2 add-on wraps make_lod1 after this module's own wrappers (lod1_keep_all), so it is
+# registered after the original build() has run.
+_build_lod01 = build
+
+
+def build(kit):
+    _build_lod01(kit)
+    __import__("door_stair_common").add_lod2(kit, lod2_proxy, "LOD0 / LOD1 as before; LOD2 hand-built (stairwell doors 2026-11-06, door_stair_common.add_lod2: P-1); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76")

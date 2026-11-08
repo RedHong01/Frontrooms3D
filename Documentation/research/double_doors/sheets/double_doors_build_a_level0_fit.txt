@@ -1,0 +1,14 @@
+TODAY LEVEL 0 ROOM 0, DOOR 0 | main code | label fits, data fits
+NEW LEVEL 0 ROOM 0, DOOR 0 | L0 | L0 door: unchanged | label fits, data fits
+DIFF x8 | 0 px over 1/255, none | label fits, data fits
+TODAY START DOOR, STREAM FACE | main code | label fits, data fits
+NEW START DOOR, STREAM FACE | start door: Level 0 | label fits, data fits
+DIFF x8 | 0 px over 1/255, none | label fits, data fits
+TODAY LEVEL 0 ROOM 1, DOOR 1 | main code | label fits, data fits
+NEW LEVEL 0 ROOM 1, DOOR 1 | the Office preview | label fits, data fits
+DIFF x8 | 23398 px over 1/255, x 761-1160 y 367-796 | label fits, data fits
+TODAY LEVEL 0 ROOM 7, DOOR 7 | main code | label fits, data fits
+NEW LEVEL 0 ROOM 7, DOOR 7 | pool: Level 0 until Build B | label fits, data fits
+DIFF x8 | 0 px over 1/255, none | label fits, data fits
+TITLE Zone doors Build A: Level 0 stays Level 0 | fits
+ALL LABELS FIT

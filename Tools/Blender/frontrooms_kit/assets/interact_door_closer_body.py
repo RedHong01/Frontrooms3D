@@ -131,3 +131,22 @@ def build(kit):
     kit.no_collider()
     kit.tag("interactable", "door", "closer", "office")
     dc.lod_meta(kit, sys.modules[__name__])
+
+
+def lod2_proxy(kit):
+    """LOD2 (5-20 m): the cover as a chamfered prism and the spindle boss; ~40 tris."""
+    import door_stair_common as sc
+    y, d = HALF_H, DEPTH
+    sec = [(-y, 0.0), (y, 0.0), (y, d - 0.008), (y - 0.008, d), (-(y - 0.008), d), (-y, d - 0.008)]
+    sc.prism_x(kit, -HALF_L, HALF_L, sec, PAINT, "body lod2")
+    sc.cyl(kit, (SPINDLE[0], HALF_H - 0.001, SPINDLE[1]), (SPINDLE[0], HALF_H + 0.015, SPINDLE[1]), 0.00635, 6, CHROME, "spindle lod2")
+
+
+# Stairwell doors (2026-11-06): the LOD2 add-on wraps make_lod1 after this module's own wrappers (lod1_keep_all), so it is
+# registered after the original build() has run.
+_build_lod01 = build
+
+
+def build(kit):
+    _build_lod01(kit)
+    __import__("door_stair_common").add_lod2(kit, lod2_proxy, "LOD0 / LOD1 as before; LOD2 hand-built (stairwell doors 2026-11-06, door_stair_common.add_lod2: P-1); lodDistances (d01, d12, dcull) m at lodBias 1, FOV 76")

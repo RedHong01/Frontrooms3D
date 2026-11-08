@@ -21,6 +21,11 @@ using UnityEngine.InputSystem;
 /// entrance and red-tube keys; C the Relay's 2.05 m body; M metric overlays; G the guide panel; Q 游戏视觉's pool zone look in
 /// the pool rooms of SP1, SP2's F0 and SP6 (on by default; off = the scene's own fixed trilight; FrontRoomsStructuresLook).
 /// Red picks by telling the coordinator the question's code (for example "SP1-2"); there is no keep or cut switch in the scene.
+/// ; 游戏视觉's structure assets (FrontRoomsStructuresAssets.New, research/structures_assets/30_plan.md: bevels by material,
+/// guards, stairs and edges as the period built them, the real surfaces) or today's greybox, bit for bit; the current district is
+/// rebuilt, the others on their next visit. NEW is the default. With NEW on, Red's open asks (30_plan section 5) are a key away:
+/// ' the pool edge, / the tile on tight curves, , the rails' pickets, . the lamp modes (each built as recommended); none of them
+/// with Shift held (Shift + . is 光影水反's lens A/B, research/light_design/10_research.md LW3).
 /// The pool tile carries the glaze Red picked (GZ-C on 2026-11-04, landed A first; research/level_space/73_pool_glaze.md
 /// section 3): the LS set's v2 maps, smoothness 0.87 and cavity 0.7 on the shared tile and band (Glaze), and the lamps'
 /// reflection proxies with the probes captured on arrival and on each change, every lamp on (FrontRoomsStructuresLook).
@@ -74,6 +79,8 @@ public sealed class FrontRoomsStructures : MonoBehaviour
     void Begin()
     {
         FrontRoomsStructuresSigns.Pads.Clear();
+        // 游戏视觉's structure assets by default (structures_assets contract K1; ; flips back to today's greybox)
+        FrontRoomsStructuresAssets.New = FrontRoomsStructuresAssets.StartNew;
         var source = levelProfile != null ? levelProfile : FrontRoomsLevelProfile.Default;
         if (levelProfile == null) FrontRoomsPoolMaterials.LogOnce("profile", "no level profile on the scene object: the code defaults are copied.");
         profileCopy = source != null ? Instantiate(source) : ScriptableObject.CreateInstance<FrontRoomsLevelProfile>();
@@ -93,7 +100,7 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         walker = FrontRoomsStructuresWalker.Create(this, hub.Site + new Vector3(0f, 0f, 1.5f), 0f);
         started = true;
         Jump(hub, 0);
-        Debug.Log(Log + "ready: hub built; districts build on their first visit. Keys: 1-6 SP1-SP6, 7 pool route, 8 kit row, 9 SP7, 0 hub, G guide, Q pool zone look.");
+        Debug.Log(Log + "ready: hub built; districts build on their first visit. Keys: 1-6 SP1-SP6, 7 pool route, 8 kit row, 9 SP7, 0 hub, G guide, Q pool zone look, ; structure assets (NEW / TODAY).");
     }
 
     /// <summary>
@@ -193,10 +200,14 @@ public sealed class FrontRoomsStructures : MonoBehaviour
             Flash(d.Code + " 还没有搭建（下一阶段）。");
             return;
         }
+        // built under the other assets switch or another answer to Red's asks: rebuilt from a fresh district first
+        if (d.Built && !d.Failed && d.AssetsSignature != FrontRoomsStructuresAssets.Signature(d.Key)) d = Rebuild(d);
         if (!d.Built && !d.Failed) BuildDistrict(d);
         if (d.Failed)
         {
             Flash(d.Code + " 构建失败：" + d.Error);
+            // a failed rebuild of the current district leaves no current one (no keys, no fall reset): back to the hub
+            if (current == null && hub != null && d != hub) Jump(hub, 0);
             return;
         }
         Activate(d);
@@ -218,8 +229,11 @@ public sealed class FrontRoomsStructures : MonoBehaviour
             root.transform.SetParent(transform, false);
             root.transform.position = d.Site;
             d.Root = root.transform;
-            d.Build(this);
+            look.BeginDistrictBuild(d.Key);
+            try { d.Build(this); }
+            finally { look.EndDistrictBuild(); }
             d.Built = true;
+            d.AssetsSignature = FrontRoomsStructuresAssets.Signature(d.Key);
             d.Cost = FrontRoomsStructuresDistrict.CostLine(d, look, Time.realtimeSinceStartup - t);
             Debug.Log(Log + "built " + d.Code + ": " + d.Cost);
         }
@@ -230,6 +244,75 @@ public sealed class FrontRoomsStructures : MonoBehaviour
             Debug.LogError(Log + "district " + d.Code + " failed to build and is left out: " + e);
             if (d.Root != null) d.Root.gameObject.SetActive(false);
         }
+        // the scene-wide C (Relay body) and M (metric marks) hold for a district built while they are on (a first build after C,
+        // or a fresh one from the ; key and the asks)
+        if (d.Built && !d.Failed && walker != null)
+        {
+            try
+            {
+                if (walker.RelayBody) d.RelayBody(this, true);
+                if (metrics) d.ShowMetrics(this, true);
+            }
+            catch (Exception e) { Debug.LogError(Log + d.Code + " relay body / metrics: " + e); }
+        }
+    }
+
+    /// <summary>
+    /// A district built again from a fresh instance of its class (the assets switch or an ask changed what it builds): the old one
+    /// leaves, is released and its root destroyed (its lamps drop out of the budget, its pool rooms out of the zone looks), the
+    /// new one takes its place in the table and is built. The pool route (the map's world) is never rebuilt here.
+    /// </summary>
+    FrontRoomsStructuresDistrict Rebuild(FrontRoomsStructuresDistrict d)
+    {
+        if (d == null || d.KeepActive) return d;
+        var fresh = d == hub ? new FrontRoomsStructuresHub(d.Site) : FrontRoomsStructuresDistrict.Make(d.GetType().FullName, d.Site);
+        if (fresh == null) return d;
+        if (current == d)
+        {
+            try { d.Leave(this); } catch (Exception e) { Debug.LogError(Log + d.Code + " leave: " + e); }
+            current = null;
+        }
+        try { d.Release(); } catch (Exception e) { Debug.LogError(Log + d.Code + " release: " + e); }
+        if (d.Root != null)
+        {
+            look.HoldProbes(d.Key, d.Root, transform);
+            d.Root.gameObject.SetActive(false);
+            Destroy(d.Root.gameObject);
+        }
+        if (d == hub) FrontRoomsStructuresSigns.Pads.Clear();
+        look.Forget(d);
+        var i = districts.IndexOf(d);
+        if (i >= 0) districts[i] = fresh;
+        if (hub == d) hub = fresh;
+        BuildDistrict(fresh);
+        return fresh;
+    }
+
+    /// <summary>The structure assets on or off (the ; key; the review harness sets it the same way): the current district is
+    /// rebuilt where the walker stands, every other one on its next visit.</summary>
+    public void SetAssetsNew(bool on)
+    {
+        FrontRoomsStructuresAssets.New = on;
+        RefreshCurrent();
+        Flash(on ? "结构资产（;）：新的 · 游戏视觉按游戏标准做的倒角、护栏、楼梯、台沿和表面（默认）"
+                 : "结构资产（;）：旧的灰盒 · 和改之前一模一样，用来对比");
+    }
+
+    // The current district again under the switch and the asks, the walker kept where it stands. Nothing happens where the key
+    // changes nothing (SP7 and the pool route keep today's build in both modes; an ask its district does not use): a Jump there
+    // re-armed SP7's alarm and streamed P round its stop. A ride ends in the rebuild's Leave, so it is read before.
+    void RefreshCurrent()
+    {
+        if (current == null || walker == null) return;
+        if (current.KeepActive || current.AssetsSignature == FrontRoomsStructuresAssets.Signature(current.Key)) return;
+        var key = current.Key;
+        var feet = walker.transform.position;
+        float yaw = walker.Yaw, pitch = walker.Pitch;
+        var riding = walker.Riding;
+        Jump(current, current.StopIndex);
+        // back where the walker stood (Teleport sets the feet 2 cm up), unless a ride ended or the fresh build failed (the hub
+        // took over)
+        if (!riding && current != null && current.Key == key) walker.Teleport(feet - Vector3.up * .02f, yaw, pitch);
     }
 
     void Activate(FrontRoomsStructuresDistrict d)
@@ -403,6 +486,23 @@ public sealed class FrontRoomsStructures : MonoBehaviour
                 ? "表面（\\）：旧的（11 月 5 日以前）  ·  办公室、Level 0、Run!、候车区、楼梯一起换"
                 : "表面（\\）：新的（游戏视觉 11 月 5 日做的，游戏里的默认）");
         }
+        // ; : 游戏视觉's structure assets or today's greybox, bit for bit (structures_assets, contract K1)
+        if (k.semicolonKey.wasPressedThisFrame) { SetAssetsNew(!FrontRoomsStructuresAssets.New); return; }
+        // Red's open asks (30_plan section 5), built as recommended with the alternatives a key away: ' pool edge (1), / tile on
+        // tight curves (2), , rails' pickets (3), . lamp modes (5); 1-3 change what is built (the district is rebuilt). Not with
+        // Shift held: Shift + . is the lens A/B of 光影水反's LW3 (FrontRoomsStructuresWater.cs)
+        if (FrontRoomsStructuresAssets.New && !(k.leftShiftKey.isPressed || k.rightShiftKey.isPressed))
+        {
+            var ask = k.quoteKey.wasPressedThisFrame ? 1 : k.slashKey.wasPressedThisFrame ? 2 : k.commaKey.wasPressedThisFrame ? 3 : k.periodKey.wasPressedThisFrame ? 5 : 0;
+            if (ask > 0)
+            {
+                var line = FrontRoomsStructuresAssets.Cycle(ask);
+                if (ask == 5) FrontRoomsStructuresLampModes.SetGameModes(FrontRoomsStructuresAssets.Lamps == FrontRoomsStructuresAssets.LampModes.Game);
+                else RefreshCurrent();
+                Flash(line);
+                return;
+            }
+        }
         Key[] districtKeys = { Key.L, Key.N, Key.T, Key.F, Key.V, Key.B, Key.Y, Key.O, Key.H };
         foreach (var key in districtKeys)
         {
@@ -455,6 +555,9 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         FrontRoomsPoolMaterials.Release();
         // The look keys write globals that would stay in the Editor after Play: back to the game's defaults.
         if (FrontRoomsSurfaceDetail.Today) FrontRoomsSurfaceDetail.Today = false;
+        FrontRoomsStructuresAssets.New = false;
+        FrontRoomsStructuresAssets.ResetAsks();
+        FrontRoomsStructuresLampModes.SetGameModes(true);
         FrontRoomsPoolTile.SetLook(FrontRoomsPoolTile.DefaultLook);
         FrontRoomsPoolTile.DishTone = FrontRoomsPoolTile.DefaultDishTone;
         if (profileCopy != null) Destroy(profileCopy);
@@ -573,6 +676,8 @@ public abstract class FrontRoomsStructuresDistrict
     public Transform Root;
     public bool Built, Failed;
     public string Error = "", Cost = "";
+    /// <summary>FrontRoomsStructuresAssets.Signature at the build (the assets switch and Red's asks it was built under).</summary>
+    public int AssetsSignature;
     /// <summary>The district's box (world): its bounds plus 2 m. Inside it, its look holds.</summary>
     public Bounds Box;
     /// <summary>The district's lowest floor (world y): a fall 3 m under it puts the walker back on its arrival point.</summary>

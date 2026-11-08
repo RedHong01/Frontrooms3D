@@ -1,0 +1,24 @@
+structures_g1_kit_hero3m.jpg 1920x6534, 21 tiles, 2 columns
+title | STRUCTURES G1 KIT HEROES AT 3 M | 558/1544 FIT
+KIT_hero_coping_300_today_raw.png | COPING 3 M TODAY | tile ledge corner, plinth 2 | label 145/938 data 216/781 FIT
+KIT_hero_coping_300_new_raw.png | COPING 3 M NEW REC | tile ledge corner, plinth 2 | label 167/938 data 216/759 FIT
+KIT_hero_nosing_300_today_raw.png | NOSING 3 M TODAY | pool nosing L, 5th step | label 145/938 data 184/781 FIT
+KIT_hero_nosing_300_new_raw.png | NOSING 3 M NEW REC | pool nosing L, 5th step | label 167/938 data 184/759 FIT
+KIT_hero_carpetbar_300_today_raw.png | CARPETBAR 3 M TODAY | carpet bar, 5th step | label 178/938 data 160/748 FIT
+KIT_hero_carpetbar_300_new_raw.png | CARPETBAR 3 M NEW REC | carpet bar, 5th step | label 200/938 data 160/726 FIT
+KIT_hero_railbracket_300_today_raw.png | RAILBRACKET 3 M TODAY | post-top saddle, plinth 4 | label 192/938 data 200/734 FIT
+KIT_hero_railbracket_300_new_raw.png | RAILBRACKET 3 M NEW REC | post-top saddle, plinth 4 | label 214/938 data 200/712 FIT
+KIT_hero_baseflange_300_today_raw.png | BASEFLANGE 3 M TODAY | post base flange, plinth 4 | label 184/938 data 208/742 FIT
+KIT_hero_baseflange_300_new_raw.png | BASEFLANGE 3 M NEW REC | post base flange, plinth 4 | label 206/938 data 208/720 FIT
+KIT_hero_glassshoe_300_today_raw.png | GLASSSHOE 3 M TODAY | glass shoe end cap | label 177/938 data 144/749 FIT
+KIT_hero_glassshoe_300_new_raw.png | GLASSSHOE 3 M NEW REC | glass shoe end cap | label 199/938 data 144/727 FIT
+KIT_hero_slabedge_300_today_raw.png | SLABEDGE 3 M TODAY | void edge: bar, section | label 166/938 data 184/760 FIT
+KIT_hero_slabedge_300_new_raw.png | SLABEDGE 3 M NEW REC | void edge: bar, section | label 188/938 data 184/738 FIT
+KIT_hero_joint_300_today_raw.png | JOINT 3 M TODAY | sealant joint over the cove | label 134/938 data 216/792 FIT
+KIT_hero_joint_300_new_raw.png | JOINT 3 M NEW REC | sealant joint over the cove | label 156/938 data 216/770 FIT
+KIT_hero_glassjoint_300_today_raw.png | GLASSJOINT 3 M TODAY | 6 mm pane joint | label 182/938 data 120/744 FIT
+KIT_hero_glassjoint_300_new_raw.png | GLASSJOINT 3 M NEW REC | 6 mm pane joint | label 204/938 data 120/722 FIT
+KIT_hero_wovenwire_300_today_raw.png | WOVENWIRE 3 M TODAY | woven wire, channel frame | label 182/938 data 200/744 FIT
+KIT_hero_wovenwire_300_new_raw.png | WOVENWIRE 3 M NEW REC | woven wire, channel frame | label 204/938 data 200/722 FIT
+cost_heroes_300.png | COST HEROES | per piece, LOD0 / LOD1 / LOD2 | label 104/938 data 232/822 FIT
+ALL LABELS FIT

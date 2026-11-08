@@ -61,6 +61,15 @@ Shader "FrontRooms/Surface"
         _FR_DamageRect ("Mask rect in leaf metres (z0, y0, 1/dz, 1/dy)", Vector) = (0.595, 0.8, 2.5, 1.6666667)
         _FR_DamageFines ("Fines colour (linear)", Color) = (0.38, 0.25, 0.13, 1)
 
+        // Zone doors (research/double_doors/20_design.md A6): the leaf-wear mask of a zone pair's leaf, read in mesh-UV metres
+        // (the title pair's slab: metres from its min corner, both faces alike, as a double-acting leaf wears), mask uv =
+        // (uv - rect.xy) * rect.zw. R grime (albedo darker), G dull, B burnish (smoother), A chip (albedo -> the chip colour).
+        // Only the zone pairs' leaf materials (Door_*_L / _R) turn it on; off, every material compiles exactly as before.
+        [Toggle(_FR_LEAFWEAR)] _UseLeafWear ("Leaf wear mask (zone door leaves)", Float) = 0
+        _FR_LeafWearMap ("Leaf wear (R grime, G dull, B burnish, A chip; linear)", 2D) = "black" {}
+        _FR_LeafWearRect ("Mask rect in mesh-UV metres (u0, v0, su, sv)", Vector) = (0, 0, 0.8364701, 0.3789314)
+        _FR_LeafWearChip ("Chip colour (linear)", Color) = (0.27, 0.181, 0.117, 1)
+
         // Print layer (wallpaper "sandwich", research/wallpaper_motion): with it on, the
         // Albedo slot holds the PAPER modulation (linear, see FR_PAPER_*) and the colour
         // comes from the print: frame 0 below, or the global _FR_Print flipbook.
@@ -109,7 +118,7 @@ Shader "FrontRooms/Surface"
         _DirtColor ("Dirt colour", Color) = (0.36, 0.33, 0.27, 1)
         _TileWear ("Wear: grout dirt, crazing, chips (0 pristine, 1 club)", Range(0, 1)) = 0
         _TileShade ("Joint relief in the tone (walls; the lamps are overhead)", Range(0, 4)) = 0.6
-        _TileLot ("Odd lots: share of off-shade tiles, their shift", Vector) = (0, 0.035, 0, 0)
+        _TileLot ("Odd lots: share of off-shade tiles, their shift; z far specular AA ceiling (0 = the look's)", Vector) = (0, 0.035, 0, 0)
         // The tile's real look (research/bathroom_rooms/70_look_build.md section 13; GZ-C's glaze, research/level_space/
         // 73_pool_glaze.md, folded in): read only while the global _FR_TileLook.x is over 0.5 (FrontRoomsPoolTile.SetLook; 0 =
         // Today: the path above, bit-identical). Every tile draws its own shape (a dish, its corners, twist, tilt, a bowed edge,
@@ -218,6 +227,9 @@ Shader "FrontRooms/Surface"
             float4 _DetailA;
             float4 _DetailB;
             float4 _DetailC;
+            // Zone doors' leaf wear (_FR_LEAFWEAR): in every pass, so the SRP batcher layout never changes.
+            float4 _FR_LeafWearRect;
+            half4 _FR_LeafWearChip;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -254,6 +266,8 @@ Shader "FrontRooms/Surface"
             #pragma shader_feature_local_fragment _FR_OWN_LIGHTS
             // Door break stage materials only (production P2): the onset mask in leaf object space. Off: bit-identical.
             #pragma shader_feature_local_fragment _FR_DAMAGE
+            // Zone doors' leaf wear (Door_*_L / _R only; research/double_doors 20_design A6). Off: bit-identical.
+            #pragma shader_feature_local_fragment _FR_LEAFWEAR
             // Creature cloth (Creature_TwillSpruce, Creature_TapeSilver only). Off: bit-identical.
             #pragma shader_feature_local_fragment _FR_SHEEN
             // Pool tile (Prop_PoolTile_* only). Off: bit-identical.
@@ -785,11 +799,15 @@ Shader "FrontRooms/Surface"
             }
 
             // Specular anti-aliasing (Tokuyoshi-Kaplanyan 2021, core RP's ProjectedSpaceGeometricNormalFiltering): addVar is the
-            // normal's screen-space variance (x 2) plus what the face map's mips averaged away, clamped at the threshold.
+            // normal's screen-space variance (x 2) plus what the face map's mips averaged away, clamped at the threshold. A material
+            // may raise the threshold with _TileLot.z (0 everywhere but scene 4's far-AA copies: max(y, 0) = y, today's arithmetic):
+            // a small round seen far away (a nosing's r 8 nose at 8-15 m) then spreads its highlight over its pixel instead of
+            // aliasing into a dotted line (structures_assets G1 review FIX 5); up close its normal turns little per pixel.
             half FRTileAA(half smoothness, float addVar)
             {
                 float r = PerceptualSmoothnessToRoughness(smoothness);
-                float r2 = saturate(r * r + min(addVar, _FR_TileAA.y * _FR_TileAA.y));
+                float cap = max(_FR_TileAA.y, _TileLot.z);
+                float r2 = saturate(r * r + min(addVar, cap * cap));
                 return (half)RoughnessToPerceptualSmoothness(sqrt(r2));
             }
 
@@ -2257,6 +2275,11 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if defined(_FR_LEAFWEAR)
+            // Zone doors' leaf wear (20_design A6): one fetch in mesh-UV metres, zone door leaves only.
+            TEXTURE2D(_FR_LeafWearMap);   SAMPLER(sampler_FR_LeafWearMap);
+        #endif
+
         #if defined(_FR_DAMAGE)
             // Door break (50_rethink 3.8): two fetches (onset + normal, one sampler) and a few ALU, on damaged doors only.
             TEXTURE2D(_FR_DamageMap);     SAMPLER(sampler_FR_DamageMap);
@@ -2593,6 +2616,14 @@ Shader "FrontRooms/Surface"
                 half3 nTS = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv), _BumpScale);
             #endif
 
+            #if defined(_FR_LEAFWEAR) && defined(_FR_MESH_UV)
+                // Zone doors' leaf wear (20_design A6): the leaf's own handling marks, in its mesh-UV metres (the left and the
+                // right leaf's materials mirror u, so u 1 is always the meeting edge). Taken in uniform control flow.
+                half4 leafWear = SAMPLE_TEXTURE2D(_FR_LeafWearMap, sampler_FR_LeafWearMap, (metres - _FR_LeafWearRect.xy) * _FR_LeafWearRect.zw);
+                albedo.rgb *= 1.0h - 0.35h * leafWear.r;
+                albedo.rgb = lerp(albedo.rgb, _FR_LeafWearChip.rgb, leafWear.a);
+            #endif
+
                 // Large-scale wear in world space (two scales, the second turned
                 // 90 degrees). Both periods divide 192 m.
                 float2 wearUV;
@@ -2613,6 +2644,9 @@ Shader "FrontRooms/Surface"
 
                 half smoothness = mask.r * _Smoothness;
                 half cavity = lerp(1.0h, mask.g, _OcclusionStrength);
+            #if defined(_FR_LEAFWEAR) && defined(_FR_MESH_UV)
+                smoothness = smoothness * (1.0h - 0.5h * leafWear.g) * (1.0h - 0.3h * leafWear.a) + 0.20h * leafWear.b;
+            #endif
 
             #if FR_DETAIL
                 // Surface detail (FRDetailSurface); off (FrontRoomsSurfaceDetail.Today: _FR_Detail.x 1) every term keeps today's value.

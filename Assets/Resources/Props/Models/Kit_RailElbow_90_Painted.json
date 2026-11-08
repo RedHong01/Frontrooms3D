@@ -1,0 +1,53 @@
+{
+ "name": "Kit_RailElbow_90_Painted",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "rail",
+  "p4"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.5,
+  8.0,
+  28.0
+ ],
+ "lodBudget": [
+  1000,
+  360,
+  90
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.06465549021959305,
+  -0.06465549021959305,
+  -0.0210999995470047
+ ],
+ "boundsMax": [
+  0.021034954115748405,
+  0.021034954115748405,
+  0.0210999995470047
+ ],
+ "triangles": 480,
+ "slots": [
+  "Prop_RailEnamel"
+ ],
+ "trianglesLod1": 120,
+ "trianglesLod2": 48,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.02181026805192232,
+  -0.0
+ ],
+ "footprintSize": [
+  0.08569044433534145,
+  0.0421999990940094
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

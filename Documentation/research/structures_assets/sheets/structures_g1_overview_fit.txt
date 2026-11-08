@@ -1,0 +1,25 @@
+structures_g1_overview.jpg 1920x6564, 22 tiles, 2 columns
+title | STRUCTURES G1 EVERY DISTRICT TODAY VS NEW | 735/1544 FIT
+KIT_s00_raw.png | KIT S00 TODAY | level 0 hall from the west | label 119/938 data 208/807 FIT
+KIT_s00_newsteady_raw.png | KIT S00 NEW REC | carpet bars, the guard row, rounds | label 141/938 data 272/785 FIT
+KIT_s03_raw.png | KIT S03 TODAY | tile hall from the west | label 119/938 data 184/807 FIT
+KIT_s03_newsteady_raw.png | KIT S03 NEW REC | cove base, glass, stainless rail | label 141/938 data 256/785 FIT
+HUB_s00_raw.png | HUB S00 TODAY | hub arrival | label 125/938 data 88/801 FIT
+HUB_s00_newsteady_raw.png | HUB S00 NEW REC | 196 tris of rounds; lamps steady here | label 147/938 data 296/779 FIT
+SP1_s02_raw.png | SP1 S02 TODAY | catch pool edge | label 128/938 data 120/798 FIT
+SP1_s02_newsteady_raw.png | SP1 S02 NEW REC | frameless glass panes, shoe, cap rail | label 150/938 data 296/776 FIT
+SP2_s08_raw.png | SP2 S08 TODAY | f0 pool edge, up the well | label 128/938 data 200/798 FIT
+SP2_s08_newsteady_raw.png | SP2 S08 NEW REC | slab edges, rounds; well pieces are G2 | label 150/938 data 304/776 FIT
+SP3_s01_raw.png | SP3 S01 TODAY | v1 cut, the rail edge | label 128/938 data 168/798 FIT
+SP3_s01_newsteady_raw.png | SP3 S01 NEW REC | pipe rail, pickets (ask 3 B), welds | label 150/938 data 280/776 FIT
+SP4_s00_raw.png | SP4 S00 TODAY | arrival, the south walk | label 128/938 data 184/798 FIT
+SP4_s00_newsteady_raw.png | SP4 S00 NEW REC | glass guards, flights, rails | label 150/938 data 224/776 FIT
+SP5_s03_raw.png | SP5 S03 TODAY | the dock | label 128/938 data 64/798 FIT
+SP5_s03_newsteady_raw.png | SP5 S03 NEW REC | dock floor lit (Stair_Fill scene-lit) | label 150/938 data 296/776 FIT
+SP6_s04_raw.png | SP6 S04 TODAY | weir terraces | label 128/938 data 104/798 FIT
+SP6_s04_newsteady_raw.png | SP6 S04 NEW REC | pool nosing L, far AA on its round | label 150/938 data 272/776 FIT
+P_s03_raw.png | P S03 TODAY | pool hall, south-west | label 105/938 data 168/821 FIT
+P_s03_new_raw.png | P S03 NEW (SAME) | unchanged in G1 (K2m is G2) | label 151/938 data 216/775 FIT
+cost_overview.png | COST ALL DISTRICTS | TODAY (main) -> NEW, LOD0 only | label 157/938 data 240/769 FIT
+note_gates.png | GATES | rule 25, the fix stage | label 47/938 data 176/879 FIT
+ALL LABELS FIT

@@ -1,0 +1,26 @@
+Eye 1.62 m at 3 m · BH-F · TODAY | today: Level 0's walnut (L0-F) · +1.5 EV both | label fits, data fits
+Eye 1.62 m at 3 m · BH-F · NEW REC | painted hollow metal, louvre, F1, kick · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · BH-F · TODAY | walnut, wood frame, brass · +1.5 EV both | label fits, data fits
+3/4 at 2.7 m · BH-F · NEW REC | grey steel in the dark-bronze frame · +1.5 EV both | label fits, data fits
+Hero 0.4 m · lever, louvre · TODAY | brass lever on walnut · +2 EV both | label fits, data fits
+Hero 0.4 m · lever, louvre · NEW REC | chrome lever, the A2 louvre below · +2 EV both | label fits, data fits
+Hero 0.45 m · the A2 louvre · TODAY | plain walnut · +2 EV both | label fits, data fits
+Hero 0.45 m · the A2 louvre · NEW REC | 16 sight-proof blades, 13-29 in · +2 EV both | label fits, data fits
+Eye 3 m · BH-K (locked) · TODAY | today: L0-K, almond · +1.5 EV both | label fits, data fits
+Eye 3 m · BH-K (locked) · NEW REC | the louvre leaf in almond, L0-K's set · +1.5 EV both | label fits, data fits
+Phone · eye 3 m · BH-F · TODAY | Handheld · +1.5 EV both | label fits, data fits
+Phone · eye 3 m · BH-F · NEW REC | Handheld · +1.5 EV both | label fits, data fits
+Phone · hero 0.45 m · louvre · TODAY | Handheld · +2 EV both | label fits, data fits
+Phone · hero 0.45 m · louvre · NEW REC | Handheld: SSAO contract applies · +2 EV both | label fits, data fits
+TODAY break · M | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · D2 | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · FINAL | T1, 3 m · +1 EV | label fits, data fits
+TODAY break · REST | T1, 3 m · +1 EV | label fits, data fits
+NEW break · M | T1, 3 m · +1 EV | label fits, data fits
+NEW break · D2 | T1, 3 m · +1 EV | label fits, data fits
+NEW break · FINAL | T1, 3 m · +1 EV | label fits, data fits
+NEW break · REST | T1, 3 m · +1 EV | label fits, data fits
+Cost · TODAY | the run's census, the dressed door at LOD0 | label fits, data fits
+Cost · NEW REC | the same census; T6 in the lobby's light | label fits, data fits
+TITLE Map doors · the back-of-house member (BH-F, BH-K) | fits
+ALL LABELS FIT

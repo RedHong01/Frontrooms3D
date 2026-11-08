@@ -1,0 +1,40 @@
+Eye 1.62 m · the north door · TODAY | cube leaf, 70 mm box frame | label fits, data fits
+Eye 1.62 m · the north door · NEW REC | steel leaf kit, F4 2 in frame face | label fits, data fits
+3/4 · the north door · TODAY | box frame 20 mm proud | label fits, data fits
+3/4 · the north door · NEW REC | frame 7/16 in proud, band to its face | label fits, data fits
+Hero 0.35 m · lever, lock edge · TODAY | flat putty, square edge · +1 EV both | label fits, data fits
+Hero 0.35 m · lever, lock edge · NEW REC | paint, latch edge wear, primer chips · +1 EV both | label fits, data fits
+Hero 0.35 m · north door hinge side · TODAY | box frame, cube edge · +1 EV both | label fits, data fits
+Hero 0.35 m · north door hinge side · NEW REC | frame soffit, leaf edge seam · +1 EV both | label fits, data fits
+Eye 2.4 m · the EXIT, stair face · TODAY | the reveal: boxes, paper strip | label fits, data fits
+Eye 2.4 m · the EXIT, stair face · NEW REC | one steel throat to the EXIT | label fits, data fits
+3/4 · the EXIT, stair face · TODAY | shell box frame + map trim | label fits, data fits
+3/4 · the EXIT, stair face · NEW REC | shell frame + EXIT frame kit | label fits, data fits
+Hero 0.35 m · closer, head · TODAY | shoe on the box (20 mm proud) · +2 EV both | label fits, data fits
+Hero 0.35 m · closer, head · NEW REC | shoe on the 2 in face (11.1 mm) · +2 EV both | label fits, data fits
+Hero 0.35 m · hinge jamb, reveal · TODAY | trim box, wallpaper strip · +1 EV both | label fits, data fits
+Hero 0.35 m · hinge jamb, reveal · NEW REC | deep rabbet, butt, steel throat · +1 EV both | label fits, data fits
+Hero 0.35 m · latch jamb · TODAY | trim box beside the cube · +1 EV both | label fits, data fits
+Hero 0.35 m · latch jamb · NEW REC | rabbet, stop, silencer behind · +1 EV both | label fits, data fits
+Hero 0.35 m · F13 lite (live) · TODAY | cube holed for the kit · +0.5 EV both | label fits, data fits
+Hero 0.35 m · F13 lite (live) · NEW REC | the leaf's own cut-out, same kit · +0.5 EV both | label fits, data fits
+Floor 2 · the sealed leaf, eye · TODAY | cube 1.10 m in the box frame | label fits, data fits
+Floor 2 · the sealed leaf, eye · NEW REC | Kit_DoorLeaf_StairWide, F4 frame | label fits, data fits
+Floor 2 · the sealed leaf, 3/4 · TODAY | from the far door side | label fits, data fits
+Floor 2 · the sealed leaf, 3/4 · NEW REC | from the far door side | label fits, data fits
+Hero 0.35 m · sealed leaf hinge · TODAY | knuckle on the cube · +1 EV both | label fits, data fits
+Hero 0.35 m · sealed leaf hinge · NEW REC | knuckle, frame face, infill · +1 EV both | label fits, data fits
+Hero 0.35 m · sealed leaf closer · TODAY | shoe on the box · +2 EV both | label fits, data fits
+Hero 0.35 m · sealed leaf closer · NEW REC | shoe on the frame face · +2 EV both | label fits, data fits
+Floor 2 · the north door from X · TODAY | REENTRY, lever, B1 | label fits, data fits
+Floor 2 · the north door from X · NEW REC | REENTRY, lever, B1 | label fits, data fits
+Next corridor · NOT AN EXIT · TODAY | cube face, no butts | label fits, data fits
+Next corridor · NOT AN EXIT · NEW REC | steel leaf, butts on this side | label fits, data fits
+Phone tier · the north door · TODAY | Handheld, cube leaves, box frames | label fits, data fits
+Phone tier · the north door · NEW REC | Handheld, kits at their LODs | label fits, data fits
+Phone tier · the EXIT, stair face · TODAY | reduced tier | label fits, data fits
+Phone tier · the EXIT, stair face · NEW REC | reduced tier | label fits, data fits
+Phone tier · the sealed leaf · TODAY | reduced tier | label fits, data fits
+Phone tier · the sealed leaf · NEW REC | reduced tier | label fits, data fits
+TITLE Stairwell doors · the stair side | fits
+ALL LABELS FIT

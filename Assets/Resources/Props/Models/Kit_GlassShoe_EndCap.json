@@ -1,0 +1,53 @@
+{
+ "name": "Kit_GlassShoe_EndCap",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "rail",
+  "p4"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.5,
+  8.0,
+  28.0
+ ],
+ "lodBudget": [
+  500,
+  220,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.0,
+  0.0,
+  -0.032999999821186066
+ ],
+ "boundsMax": [
+  0.0033427199814468622,
+  0.10599999874830246,
+  0.032999999821186066
+ ],
+ "triangles": 480,
+ "slots": [
+  "Trans_AluminiumSatin"
+ ],
+ "trianglesLod1": 124,
+ "trianglesLod2": 36,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.0016713599907234311,
+  -0.0
+ ],
+ "footprintSize": [
+  0.0033427199814468622,
+  0.06599999964237213
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

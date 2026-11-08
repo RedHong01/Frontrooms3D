@@ -25,6 +25,12 @@ using UnityEngine.Rendering;
 /// meets a lited leaf's collider at a point passes through the glass (inside liteRect inset 10 mm). The Relay's own sight
 /// never asks it (RelaySeesThroughLites = false): the leaf collider stays one solid box.
 /// No per-frame allocation once warm; harness rules: ASCII, no tuples, FrontRoomsObjectId instead of GetInstanceID.
+///
+/// Glazing and shape (zone doors Build B, 2026-11-06, research/double_doors/20_design.md B3.5; append-only): a lite is Wired
+/// (Glass_Wired / Glass_WiredDark, every lite before the pool) or Tempered (Glass_Tempered / Glass_TemperedDark: the same glass
+/// without the wire keyword, the pool's clear 1/4 in panes), and Rect or Round (the A1 porthole: the sight test is the Rect's
+/// inscribed circle, inset 10 mm). Each glazing has its own shared pair and its own fade pool. Today's lites keep Wired and Rect:
+/// their materials, pool and sight test are as before.
 /// </summary>
 [AddComponentMenu("")]
 [DisallowMultipleComponent]
@@ -32,7 +38,14 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
 {
     public enum Kind { MapDoor, StreamDoor, StationSkin }
 
+    /// <summary>The glass of a lite (append-only).</summary>
+    public enum Glazing : byte { Wired, Tempered }
+
+    /// <summary>The lite's outline for the sight test (append-only): Rect, or Round (the circle inscribed in the Rect).</summary>
+    public enum Shape : byte { Rect, Round }
+
     public const string LiveMaterialName = "Glass_Wired", DarkMaterialName = "Glass_WiredDark";
+    public const string TemperedLiveName = "Glass_Tempered", TemperedDarkName = "Glass_TemperedDark";
     /// <summary>LIVE to DARK and back (30_design 2.3).</summary>
     public const float FadeSeconds = .40f;
     /// <summary>The player-side sight passes inside the lite rect inset by this much (30_design 5.2).</summary>
@@ -73,11 +86,16 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
     public float PeekWeight { get; private set; }
     /// <summary>Seconds the last LIVE / DARK change took (the harness's G7 reading).</summary>
     public float LastFadeSeconds { get; private set; }
+    /// <summary>The lite's glass (Wired unless a stream lite was attached Tempered, or a kit carries Glass_Tempered).</summary>
+    public Glazing LiteGlazing { get; private set; }
+    /// <summary>The lite's outline for the sight test.</summary>
+    public Shape LiteShape { get; private set; }
 
     readonly List<Renderer> glassRenderers = new List<Renderer>();
     readonly List<int> glassSlots = new List<int>();
     float live, target, fadeClock = -1f;
     Material borrowed, applied;
+    Glazing borrowedGlazing;
     Func<bool> peekAvailable;
     FrontRoomsMapWorld map;
     // The door break took over the glass: the leaf this sits on is switched off, the lite lives on in the break's body.
@@ -86,6 +104,10 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
     static Material liveShared, darkShared;
     static readonly Stack<Material> pool = new Stack<Material>();
     static int poolMade;
+    // the tempered glazing's shared pair and fade pool (Build B), made and loaded only when a tempered lite exists
+    static Material temperedLive, temperedDark;
+    static readonly Stack<Material> temperedPool = new Stack<Material>();
+    static int temperedMade;
     static Runner runner;
     static readonly int LiteDarkId = Shader.PropertyToID("_LiteDark"), PeekReflectId = Shader.PropertyToID("_PeekReflect"), WireSoftId = Shader.PropertyToID("_WireSoftPx");
 
@@ -108,12 +130,35 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
         return lite;
     }
 
-    /// <summary>A title stream leaf or the station skin (FrontRoomsDoubleDoorKit). Stream lites start DARK.</summary>
+    /// <summary>As above with the lite's outline for the sight test (the zone doors' Map stage, 2026-11-06: the pool member's A1
+    /// porthole is Round; its glazing is the kit's Glass_Tempered, read by CollectGlass). The call above stays the Rect one.</summary>
+    public static FrontRoomsDoorLite AttachMap(GameObject leafKit, FrontRoomsMapWorld.Door door, Transform root, Vector4 rect, FrontRoomsMapWorld map, Shape shape)
+    {
+        var lite = AttachMap(leafKit, door, root, rect, map);
+        if (lite != null) lite.LiteShape = shape;
+        return lite;
+    }
+
+    /// <summary>A title stream leaf or the station skin (FrontRoomsDoubleDoorKit). Stream lites start DARK. Wired glass, a Rect.</summary>
     public static FrontRoomsDoorLite AttachStream(GameObject owner, Renderer glass, Transform root, Vector4 rect, bool dead)
+    {
+        return AttachStream(owner, glass, root, rect, dead, Glazing.Wired, Shape.Rect);
+    }
+
+    /// <summary>As above with the lite's glazing and shape (the zone doors' pool: Tempered, Round). Re-callable on the same glass
+    /// (a re-dress): the component is kept, its glass list refilled, Ready kept; a glazing change gives back a borrowed fade
+    /// material to its own pool first.</summary>
+    public static FrontRoomsDoorLite AttachStream(GameObject owner, Renderer glass, Transform root, Vector4 rect, bool dead, Glazing glazing, Shape shape)
     {
         if (owner == null) return null;
         var lite = owner.GetComponent<FrontRoomsDoorLite>();
         if (lite == null) lite = owner.AddComponent<FrontRoomsDoorLite>();
+        if (lite.LiteGlazing != glazing)
+        {
+            lite.ReturnBorrowed();
+            lite.LiteGlazing = glazing;
+        }
+        lite.LiteShape = shape;
         lite.LiteKind = dead ? Kind.StationSkin : Kind.StreamDoor;
         lite.Dead = dead;
         lite.Root = root;
@@ -168,6 +213,13 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
                     glassRenderers.Add(r);
                     glassSlots.Add(i);
                     // the glass casts no shadow (FrontRooms/Glass has no caster pass anyway); the frame's slot does
+                }
+                else if (mats[i] != null && (mats[i].name == TemperedLiveName || mats[i].name == TemperedDarkName))
+                {
+                    // a kit glazed with clear tempered glass (Build B: the map's pool leaf, when the Map stage builds it)
+                    glassRenderers.Add(r);
+                    glassSlots.Add(i);
+                    if (LiteGlazing != Glazing.Tempered) { ReturnBorrowed(); LiteGlazing = Glazing.Tempered; }
                 }
         }
     }
@@ -239,6 +291,13 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
         if (!byCollider.TryGetValue(FrontRoomsObjectId.Of(c), out var lite) || lite == null || lite.Dead || lite.Root == null) return false;
         var p = lite.Root.InverseTransformPoint(hitPoint);
         var r = lite.Rect;
+        if (lite.LiteShape == Shape.Round)
+        {
+            // a porthole: the circle inscribed in the rect, inset 10 mm
+            var rad = Mathf.Min(r.y - r.x, r.w - r.z) * .5f - SightInset;
+            float dz = p.z - (r.x + r.y) * .5f, dy = p.y - (r.z + r.w) * .5f;
+            return rad > 0f && dz * dz + dy * dy <= rad * rad;
+        }
         return p.z >= r.x + SightInset && p.z <= r.y - SightInset && p.y >= r.z + SightInset && p.y <= r.w - SightInset;
     }
 
@@ -315,17 +374,25 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
         if (glassRenderers.Count == 0) return;
         Material want;
         var dark = DarkAmount;
-        if (PeekWeight <= 0f && dark <= 0f) want = liveShared;
-        else if (PeekWeight <= 0f && dark >= 1f) want = darkShared;
+        var tempered = LiteGlazing == Glazing.Tempered;
+        if (tempered) EnsureTempered();
+        var liveMat = tempered ? temperedLive : liveShared;
+        var darkMat = tempered ? temperedDark : darkShared;
+        if (PeekWeight <= 0f && dark <= 0f) want = liveMat;
+        else if (PeekWeight <= 0f && dark >= 1f) want = darkMat;
         else
         {
-            if (borrowed == null) borrowed = Borrow(PeekWeight > 0f);
+            if (borrowed == null)
+            {
+                borrowed = Borrow(LiteGlazing, PeekWeight > 0f);
+                borrowedGlazing = LiteGlazing;
+            }
             if (borrowed == null)
             {
                 // the pool is out: this fade snaps to its end (a snap in a crowd of fades reads as nothing)
                 live = target;
                 fadeClock = -1f;
-                want = live >= 1f ? liveShared : darkShared;
+                want = live >= 1f ? liveMat : darkMat;
             }
             else
             {
@@ -350,8 +417,16 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
         }
     }
 
-    static Material Borrow(bool must)
+    static Material Borrow(Glazing glazing, bool must)
     {
+        if (glazing == Glazing.Tempered)
+        {
+            // the tempered pool: its own FadePoolSize, made from its own live material (null without it: the fade snaps)
+            if (temperedPool.Count > 0) return temperedPool.Pop();
+            if ((temperedMade >= FadePoolSize && !must) || temperedLive == null) return null;
+            temperedMade++;
+            return new Material(temperedLive) { name = TemperedLiveName + " (fade " + temperedMade + ")", hideFlags = HideFlags.DontSave };
+        }
         if (pool.Count > 0) return pool.Pop();
         if (poolMade >= FadePoolSize && !must) return null;
         poolMade++;
@@ -361,7 +436,8 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
     void ReturnBorrowed()
     {
         if (borrowed == null) return;
-        pool.Push(borrowed);
+        if (borrowedGlazing == Glazing.Tempered) temperedPool.Push(borrowed);
+        else pool.Push(borrowed);
         borrowed = null;
     }
 
@@ -371,9 +447,30 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
         if (darkShared == null) darkShared = FrontRoomsSurfaces.TryGet(DarkMaterialName);
     }
 
+    // loaded only when a tempered lite exists, so a build without one loads exactly what it loaded before
+    static void EnsureTempered()
+    {
+        if (temperedLive == null) temperedLive = FrontRoomsSurfaces.TryGet(TemperedLiveName);
+        if (temperedDark == null) temperedDark = FrontRoomsSurfaces.TryGet(TemperedDarkName);
+    }
+
     /// <summary>The shared materials (DoubleDoorKit builds its glass with them).</summary>
     public static Material LiveShared { get { EnsureShared(); return liveShared; } }
     public static Material DarkShared { get { EnsureShared(); return darkShared; } }
+
+    /// <summary>The shared LIVE material of a glazing.</summary>
+    public static Material LiveSharedOf(Glazing glazing)
+    {
+        if (glazing == Glazing.Tempered) { EnsureTempered(); return temperedLive; }
+        return LiveShared;
+    }
+
+    /// <summary>The shared DARK material of a glazing.</summary>
+    public static Material DarkSharedOf(Glazing glazing)
+    {
+        if (glazing == Glazing.Tempered) { EnsureTempered(); return temperedDark; }
+        return DarkShared;
+    }
 
     /// <summary>Tools and the harness: step every lite now (the runner does this each LateUpdate).</summary>
     public static void TickAll(float dt)
@@ -398,7 +495,8 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
             n++;
             if (l.live >= 1f) lv++; else if (l.live <= 0f) dk++; else fd++;
         }
-        return "lites " + n + " live " + lv + " dark " + dk + " fading " + fd + " pool " + poolMade + " (free " + pool.Count + ")";
+        var s = "lites " + n + " live " + lv + " dark " + dk + " fading " + fd + " pool " + poolMade + " (free " + pool.Count + ")";
+        return temperedMade > 0 ? s + " tempered pool " + temperedMade + " (free " + temperedPool.Count + ")" : s;
     }
 
     // ------------------------------------------------------------------ holed leaf meshes (30_design 1.4)
@@ -416,6 +514,133 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
         var m = HoledBox(new Vector3(.10f, 2.08f, .96f), new Vector3(0f, 1.055f, .5f), rect, "Leaf shadow (holed, " + Mathf.RoundToInt((rect.y - rect.x) / .0254f) + " x " + Mathf.RoundToInt((rect.w - rect.z) / .0254f) + ")");
         holedShadows[rect] = m;
         return m;
+    }
+
+    /// <summary>
+    /// The Map stage (zone doors, 2026-11-06): the proxy of a leaf with a second opening on the same axis (the back-of-house
+    /// member's A2 louvre under its F1 lite: light passes the louvre's blades). Both rects (z0, z1, y0, y1), one shared mesh per
+    /// pair. A pair that overlaps or does not share its z span falls back to the lite's one hole.
+    /// </summary>
+    public static Mesh HoledShadowBox(Vector4 rect, Vector4 rect2)
+    {
+        if (Mathf.Abs(rect.x - rect2.x) > 1e-4f || Mathf.Abs(rect.y - rect2.y) > 1e-4f || (rect2.w > rect.z && rect.w > rect2.z)) return HoledShadowBox(rect);
+        var key = new Vector4(rect.x + rect.z * 10f, rect.y + rect.w * 10f, rect2.z, rect2.w);
+        if (holedShadows2.TryGetValue(key, out var cached) && cached != null) return cached;
+        var lo = rect.z < rect2.z ? rect : rect2;
+        var hi = rect.z < rect2.z ? rect2 : rect;
+        var m = HoledStack(new Vector3(.10f, 2.08f, .96f), new Vector3(0f, 1.055f, .5f), rect.x, rect.y, lo.z, lo.w, hi.z, hi.w,
+            "Leaf shadow (holed, lite + louvre)");
+        holedShadows2[key] = m;
+        return m;
+    }
+
+    /// <summary>
+    /// The Map stage: the proxy of a leaf with the A1 porthole (a 32-gon through-hole inscribed in the rect, the clear 16 in), so
+    /// a lamp behind the door throws a round patch of light through it, not a square. One shared mesh per rect.
+    /// </summary>
+    public static Mesh HoledShadowBoxRound(Vector4 rect)
+    {
+        if (holedRound.TryGetValue(rect, out var cached) && cached != null) return cached;
+        var m = HoledRound(new Vector3(.10f, 2.08f, .96f), new Vector3(0f, 1.055f, .5f), rect, 32, "Leaf shadow (holed, porthole)");
+        holedRound[rect] = m;
+        return m;
+    }
+
+    static readonly Dictionary<Vector4, Mesh> holedShadows2 = new Dictionary<Vector4, Mesh>();
+    static readonly Dictionary<Vector4, Mesh> holedRound = new Dictionary<Vector4, Mesh>();
+
+    // A box (size, centre) with two through-holes along X sharing the z span hz0..hz1 (y spans a, then b above it).
+    static Mesh HoledStack(Vector3 size, Vector3 centre, float hz0, float hz1, float ay0, float ay1, float by0, float by1, string name)
+    {
+        float x = size.x * .5f, y0 = centre.y - size.y * .5f, y1 = centre.y + size.y * .5f, z0 = centre.z - size.z * .5f, z1 = centre.z + size.z * .5f;
+        var v = new List<Vector3>();
+        var t = new List<int>();
+        foreach (var s in new[] { -1f, 1f })
+        {
+            var n = new Vector3(s, 0f, 0f);
+            var X = s * x;
+            Quad(v, t, new Vector3(X, y0, z0), new Vector3(X, y0, z1), new Vector3(X, ay0, z1), new Vector3(X, ay0, z0), n);
+            Quad(v, t, new Vector3(X, ay1, z0), new Vector3(X, ay1, z1), new Vector3(X, by0, z1), new Vector3(X, by0, z0), n);
+            Quad(v, t, new Vector3(X, by1, z0), new Vector3(X, by1, z1), new Vector3(X, y1, z1), new Vector3(X, y1, z0), n);
+            foreach (var band in new[] { new Vector2(ay0, ay1), new Vector2(by0, by1) })
+            {
+                Quad(v, t, new Vector3(X, band.x, z0), new Vector3(X, band.x, hz0), new Vector3(X, band.y, hz0), new Vector3(X, band.y, z0), n);
+                Quad(v, t, new Vector3(X, band.x, hz1), new Vector3(X, band.x, z1), new Vector3(X, band.y, z1), new Vector3(X, band.y, hz1), n);
+            }
+        }
+        Quad(v, t, new Vector3(-x, y0, z0), new Vector3(x, y0, z0), new Vector3(x, y0, z1), new Vector3(-x, y0, z1), Vector3.down);
+        Quad(v, t, new Vector3(-x, y1, z0), new Vector3(x, y1, z0), new Vector3(x, y1, z1), new Vector3(-x, y1, z1), Vector3.up);
+        Quad(v, t, new Vector3(-x, y0, z0), new Vector3(x, y0, z0), new Vector3(x, y1, z0), new Vector3(-x, y1, z0), Vector3.back);
+        Quad(v, t, new Vector3(-x, y0, z1), new Vector3(x, y0, z1), new Vector3(x, y1, z1), new Vector3(-x, y1, z1), Vector3.forward);
+        foreach (var band in new[] { new Vector2(ay0, ay1), new Vector2(by0, by1) })
+        {
+            Quad(v, t, new Vector3(-x, band.x, hz0), new Vector3(x, band.x, hz0), new Vector3(x, band.x, hz1), new Vector3(-x, band.x, hz1), Vector3.up);
+            Quad(v, t, new Vector3(-x, band.y, hz0), new Vector3(x, band.y, hz0), new Vector3(x, band.y, hz1), new Vector3(-x, band.y, hz1), Vector3.down);
+            Quad(v, t, new Vector3(-x, band.x, hz0), new Vector3(x, band.x, hz0), new Vector3(x, band.y, hz0), new Vector3(-x, band.y, hz0), Vector3.forward);
+            Quad(v, t, new Vector3(-x, band.x, hz1), new Vector3(x, band.x, hz1), new Vector3(x, band.y, hz1), new Vector3(-x, band.y, hz1), Vector3.back);
+        }
+        return Finish(v, t, z0, z1, y0, y1, name);
+    }
+
+    // A box (size, centre) with a round through-hole along X inscribed in rect (z0, z1, y0, y1): each face is the ring between the
+    // n-gon and the hole's bounding square (a quad per segment; n a multiple of 8 so the square's corners are ring vertices), then
+    // the four quads round the square; the hole's wall faces in.
+    static Mesh HoledRound(Vector3 size, Vector3 centre, Vector4 rect, int n, string name)
+    {
+        float x = size.x * .5f, y0 = centre.y - size.y * .5f, y1 = centre.y + size.y * .5f, z0 = centre.z - size.z * .5f, z1 = centre.z + size.z * .5f;
+        float cz = (rect.x + rect.y) * .5f, cy = (rect.z + rect.w) * .5f, r = Mathf.Min(rect.y - rect.x, rect.w - rect.z) * .5f;
+        float sz0 = cz - r, sz1 = cz + r, sy0 = cy - r, sy1 = cy + r;
+        var v = new List<Vector3>();
+        var t = new List<int>();
+        foreach (var s in new[] { -1f, 1f })
+        {
+            var nrm = new Vector3(s, 0f, 0f);
+            var X = s * x;
+            Quad(v, t, new Vector3(X, y0, z0), new Vector3(X, y0, z1), new Vector3(X, sy0, z1), new Vector3(X, sy0, z0), nrm);
+            Quad(v, t, new Vector3(X, sy1, z0), new Vector3(X, sy1, z1), new Vector3(X, y1, z1), new Vector3(X, y1, z0), nrm);
+            Quad(v, t, new Vector3(X, sy0, z0), new Vector3(X, sy0, sz0), new Vector3(X, sy1, sz0), new Vector3(X, sy1, z0), nrm);
+            Quad(v, t, new Vector3(X, sy0, sz1), new Vector3(X, sy0, z1), new Vector3(X, sy1, z1), new Vector3(X, sy1, sz1), nrm);
+            for (var i = 0; i < n; i++)
+            {
+                float a0 = 2f * Mathf.PI * i / n, a1 = 2f * Mathf.PI * (i + 1) / n;
+                var c0 = new Vector3(X, cy + r * Mathf.Sin(a0), cz + r * Mathf.Cos(a0));
+                var c1 = new Vector3(X, cy + r * Mathf.Sin(a1), cz + r * Mathf.Cos(a1));
+                Quad(v, t, c0, c1, SquarePoint(X, cz, cy, r, a1), SquarePoint(X, cz, cy, r, a0), nrm);
+            }
+        }
+        Quad(v, t, new Vector3(-x, y0, z0), new Vector3(x, y0, z0), new Vector3(x, y0, z1), new Vector3(-x, y0, z1), Vector3.down);
+        Quad(v, t, new Vector3(-x, y1, z0), new Vector3(x, y1, z0), new Vector3(x, y1, z1), new Vector3(-x, y1, z1), Vector3.up);
+        Quad(v, t, new Vector3(-x, y0, z0), new Vector3(x, y0, z0), new Vector3(x, y1, z0), new Vector3(-x, y1, z0), Vector3.back);
+        Quad(v, t, new Vector3(-x, y0, z1), new Vector3(x, y0, z1), new Vector3(x, y1, z1), new Vector3(-x, y1, z1), Vector3.forward);
+        for (var i = 0; i < n; i++)
+        {
+            float a0 = 2f * Mathf.PI * i / n, a1 = 2f * Mathf.PI * (i + 1) / n, am = (a0 + a1) * .5f;
+            Quad(v, t, new Vector3(-x, cy + r * Mathf.Sin(a0), cz + r * Mathf.Cos(a0)), new Vector3(x, cy + r * Mathf.Sin(a0), cz + r * Mathf.Cos(a0)),
+                new Vector3(x, cy + r * Mathf.Sin(a1), cz + r * Mathf.Cos(a1)), new Vector3(-x, cy + r * Mathf.Sin(a1), cz + r * Mathf.Cos(a1)),
+                new Vector3(0f, -Mathf.Sin(am), -Mathf.Cos(am)));
+        }
+        return Finish(v, t, z0, z1, y0, y1, name);
+    }
+
+    // The point where the ray from the hole's centre at angle a meets the hole's bounding square (half side r), in the face X.
+    static Vector3 SquarePoint(float X, float cz, float cy, float r, float a)
+    {
+        float dz = Mathf.Cos(a), dy = Mathf.Sin(a);
+        var k = r / Mathf.Max(Mathf.Abs(dz), Mathf.Abs(dy));
+        return new Vector3(X, cy + dy * k, cz + dz * k);
+    }
+
+    static Mesh Finish(List<Vector3> v, List<int> t, float z0, float z1, float y0, float y1, string name)
+    {
+        var mesh = new Mesh { name = name, hideFlags = HideFlags.DontSave };
+        mesh.SetVertices(v);
+        mesh.SetTriangles(t, 0);
+        var uv = new List<Vector2>(v.Count);
+        for (var i = 0; i < v.Count; i++) uv.Add(new Vector2((v[i].z - z0) / (z1 - z0), (v[i].y - y0) / (y1 - y0)));
+        mesh.SetUVs(0, uv);
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
     }
 
     /// <summary>
@@ -497,8 +722,13 @@ public sealed class FrontRoomsDoorLite : MonoBehaviour
         ForceNotReady = false;
         MapDoorReady = null;
         liveShared = darkShared = null;
+        temperedPool.Clear();
+        temperedMade = 0;
+        temperedLive = temperedDark = null;
         holedShadows.Clear();
         holedUnits.Clear();
+        holedShadows2.Clear();
+        holedRound.Clear();
     }
 
     [AddComponentMenu("")]

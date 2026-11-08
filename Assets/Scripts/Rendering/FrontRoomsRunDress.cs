@@ -39,6 +39,44 @@ public static class FrontRoomsRunDress
     /// <summary>The side door's plate or stencil: centred on the leaf, over the F5 lite (the lite fills 1.194-1.575 m).</summary>
     public const float SideDoorPlateY = 1.75f;
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+    /// <summary>WebGL players keep today's Run! doors (rule 5).</summary>
+    public static bool DoorsToday { get { return true; } set { } }
+#else
+    /// <summary>
+    /// Zone doors, Run! polish (2026-11-06, research/double_doors/30_build.md Part R; inventory rows C2 / C3). False (the default):
+    /// the side doors stand in Kit_DoorFrame_Steel_DA_Wall (the F4 sleeve on the corridor face only, at the true section, with
+    /// black strips behind the leaf's gaps and the strike's lip on the latch soffit) instead of the squeezed Kit_DoorFrame_Steel_DA,
+    /// and each held-open compartment leaf carries a regular-arm closer (sprayed to match its 630 hardware) and a swivel armature on its pull face,
+    /// its holder set where the armature meets it. True: today's dress, byte for byte. Read while a dress is built, as
+    /// FrontRoomsDoubleDoorKit.Today; without the new kits in the library the dress falls back to today's.
+    /// </summary>
+    public static bool DoorsToday { get; set; }
+#endif
+
+    /// <summary>Run! polish: the side doors' one-face frame (Tools/Blender/frontrooms_kit/assets/door_frame_steel_da_wall.py), authored
+    /// in the prop leaf's root (the wall face at X 0.020), and the strike on its latch soffit (the map's RN-K strike).</summary>
+    public const string SideDoorWallFrameKit = "Kit_DoorFrame_Steel_DA_Wall", SideDoorStrikeKit = "Kit_Lock_StrikeMortise_DA";
+    /// <summary>Run! polish: the compartment leaves' closer kits (the landed regular arm, LOD0 / 1 / 2) and armature (run_magnet_armature.py).</summary>
+    public const string CloserBodyKit = "Kit_DoorCloser_Body", CloserArmKit = "Kit_DoorCloser_Arm", CloserForearmKit = "Kit_DoorCloser_Forearm",
+        CloserShoeKit = "Kit_DoorCloser_Shoe", ArmatureKit = "Kit_RunMagnetArmature";
+    /// <summary>Run! polish: the almond props' worn face, Prop_SteelAlmond with the leaf wear layer (_FR_LEAFWEAR) and the kit leaf's
+    /// mask DoorWear_RunMap (Tools/lookdev/gen_door_wear_run_map.py: the knob's hand marks, cart rubber and primer chips over the
+    /// kick plate, the mop line), the C-1 pair's wear language on the kit leaf.</summary>
+    public const string WornAlmond = "Door_RunAlmond_Map";
+    static readonly int LeafWearMapId = Shader.PropertyToID("_FR_LeafWearMap");
+
+    /// <summary>The worn almond, or null without it. The kit leaf's face P runs its mesh u along -Z, so the mask is read with wrapU
+    /// Mirror (both faces wear the latch edge at u 1), as FrontRoomsInteractableKit's DoorParts.MirrorLeafWear does for the map rows.</summary>
+    static Material WornAlmondMaterial()
+    {
+        var m = FrontRoomsSurfaces.TryGet(WornAlmond);
+        if (m == null || !m.HasProperty(LeafWearMapId)) return m;
+        var tex = m.GetTexture(LeafWearMapId);
+        if (tex != null && tex.wrapModeU != TextureWrapMode.Mirror) tex.wrapModeU = TextureWrapMode.Mirror;
+        return m;
+    }
+
     public static Transform Build(Transform parent, RunRigLayout l)
     {
         var root = new GameObject("Run B / dress").transform;
@@ -588,6 +626,9 @@ public static class FrontRoomsRunDress
         var squeeze = Mathf.Clamp((l.wallThickness - .0025f) / (wallHalf + frameHalf), .8f, 1f);
         var frameBack = wallHalf * squeeze;    // the near casing's back on the wall face
         var leafFace = leafInfo != null && leafInfo.TryAnchor("escutcheon_s", out var esc0) ? esc0.x : .022f;
+        // Run! polish: the one-face frame, in the leaf's own root (spawned at the leaf's point), when the kit is in the library.
+        var wallFrame = !DoorsToday && FrontRoomsKitLibrary.Has(SideDoorWallFrameKit);
+        var leafFinish = wallFrame ? (WornAlmondMaterial() ?? almond) : almond;
         for (var i = 0; i < l.sideDoors.Length; i++)
         {
             var d = l.sideDoors[i];
@@ -597,12 +638,22 @@ public static class FrontRoomsRunDress
             // Local +X (the kits' S face) into the corridor, local +Z from the hinge to the latch along the wall.
             var rot = Quaternion.Euler(0f, right ? 180f : 0f, 0f);
             var hingeZ = right ? d.z + .5f : d.z - .5f;
-            var frame = Kit(SideDoorFrameKit, root, new Vector3(face - n.x * frameBack, 0f, hingeZ), rot, false, "run b side door frame", new Vector3(squeeze, 1f, 1f));
+            GameObject frame;
+            if (wallFrame)
+            {
+                frame = Kit(SideDoorWallFrameKit, root, new Vector3(face - n.x * (leafFace - .002f), 0f, hingeZ), rot, false, "run b side door frame");
+                // The strike (the RN-K row's mortise strike, in the row's satin chrome) on the latch soffit, 0.3 mm proud of it: only its
+                // corridor-side lip stands in front of the wall face, in the 9.1 mm return.
+                if (frame != null)
+                    Swap(Kit(SideDoorStrikeKit, frame.transform, new Vector3(0f, StrikeY, StrikeZ), StrikeTurn, false, "run b side door strike"),
+                        FrontRoomsInteractableKit.HardwareChromeFrom, satin);
+            }
+            else frame = Kit(SideDoorFrameKit, root, new Vector3(face - n.x * frameBack, 0f, hingeZ), rot, false, "run b side door frame", new Vector3(squeeze, 1f, 1f));
             Swap(frame, FrontRoomsInteractableKit.HardwareChromeFrom, satin);
             var leaf = Kit(SideDoorLeafKit, root, new Vector3(face - n.x * (leafFace - .002f), 0f, hingeZ), rot, false, "run b side door leaf");
             if (leaf == null) continue;
             foreach (var r in leaf.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
-            Swap(leaf, "Door_Enamel", almond);
+            Swap(leaf, "Door_Enamel", leafFinish);
             Swap(leaf, FrontRoomsInteractableKit.HardwareChromeFrom, satin);
             Swap(leaf, FrontRoomsInteractableKit.LeafPlateFrom, stainless);
             if (leafInfo != null && leafInfo.HasLite) FrontRoomsDoorLite.AttachDead(leaf, leaf.transform, leafInfo.LiteRect);
@@ -625,6 +676,25 @@ public static class FrontRoomsRunDress
     public const string FrameKit = "Kit_RunCompartmentFrame", FrameHolderKit = "Kit_RunMagnetHolder";
     const float FrameHingeX = .988f, FrameHingeZ = .095f, FrameLeafOpen = 115f, FrameHolderY = 1.95f, FrameHolderZ = .86f;
 
+    // Run! polish (30_build.md Part R; the numbers are the leaf at 115 deg on its knuckle (FrameHingeX, FrameHingeZ), the kit leaf's
+    // faces at +-0.022, Kit_RunMagnetHolder's coil cap 68.8 mm off the wall).
+    /// <summary>The side door's strike on Kit_DoorFrame_Steel_DA_Wall's latch soffit (its "strike" anchor, Y 0.968, Z 0.998), 0.3 mm
+    /// proud of the soffit so its lip never shares the soffit's plane; turned as the map's strike (DoorParts: StrikeTurn).</summary>
+    const float StrikeY = .968f, StrikeZ = .9977f;
+    static readonly Quaternion StrikeTurn = Quaternion.Euler(0f, 180f, 0f);
+    /// <summary>The holder's centre along the corridor from the frame line: there the armature's disc meets its face 0.3 mm clear (today
+    /// 0.86, where the leaf's face cut 16 mm into the magnet), and the armature's centre on the pull face, along the leaf from the knuckle.</summary>
+    const float HolderZPolish = .7438f, ArmatureAlong = .7401f;
+    /// <summary>The closer body's mount on the pull face (the spindle 0.35 m from the knuckle at 2.0675 m, the stairwell's heights) and the
+    /// shoe's pivot in the shut leaf's root: its back on the head casing's +Z face (z 0.091 of the frame, 16 mm in front of the shut
+    /// leaf's centre plane), 0.10 m in from the knuckle. Elbow 110 deg at 115 deg open; the forearm crosses over the leaf's top by the
+    /// hinge, its rod's underside 17 mm over the top (Kit_DoorCloser_Forearm's gooseneck).</summary>
+    const float LeafFaceX = .022f, CloserMountY = 2.0275f, CloserMountZ = .375f, ShoeOut = .016f, ShoeY = 2.13f, ShoeAlong = .10f;
+    /// <summary>The closers' paint: "spray painted to match door hardware" (the 1992 spec, research Z1 2.6), the period's sprayed
+    /// aluminium finish over the leaves' 630 hardware: the kick plates' satin stainless (a bare metal slot reflected the dark soffit
+    /// as near black in the lab).</summary>
+    const string CloserPaint = FrontRoomsInteractableKit.LeafPlateTo;
+
     /// <summary>
     /// The compartment frames (71 s.10 SP7: FD1 on z 9, the receding variant's trigger plane, and FD2 on z 18; 10 RN-2; card 2):
     /// Kit_RunCompartmentFrame on each line, its two leaves (the side doors' Kit_DoorLeaf_SteelRun_DA in almond with a dead lite and no
@@ -639,6 +709,11 @@ public static class FrontRoomsRunDress
         var satin = FrontRoomsSurfaces.TryGet(FrontRoomsInteractableKit.HardwareChromeTo);
         var stainless = FrontRoomsSurfaces.TryGet(FrontRoomsInteractableKit.LeafPlateTo) ?? satin;
         var leafInfo = FrontRoomsKitLibrary.GetInfo(SideDoorLeafKit);
+        // Run! polish: closers and armatures on the held-open leaves, when every kit is in the library (else today's pairs, whole).
+        var polish = !DoorsToday && FrontRoomsKitLibrary.Has(CloserBodyKit) && FrontRoomsKitLibrary.Has(CloserArmKit)
+            && FrontRoomsKitLibrary.Has(CloserForearmKit) && FrontRoomsKitLibrary.Has(CloserShoeKit) && FrontRoomsKitLibrary.Has(ArmatureKit);
+        var paint = polish ? FrontRoomsSurfaces.TryGet(CloserPaint) : null;
+        var leafFinish = polish ? (WornAlmondMaterial() ?? almond) : almond;
         for (var i = 0; i < l.compartmentFrames.Length; i++)
         {
             var z = l.compartmentFrames[i];
@@ -652,16 +727,83 @@ public static class FrontRoomsRunDress
                 if (leaf != null)
                 {
                     foreach (var r in leaf.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
-                    Swap(leaf, "Door_Enamel", almond);
+                    Swap(leaf, "Door_Enamel", leafFinish);
                     Swap(leaf, FrontRoomsInteractableKit.HardwareChromeFrom, satin);
                     Swap(leaf, FrontRoomsInteractableKit.LeafPlateFrom, stainless);
                     if (leafInfo != null && leafInfo.HasLite) FrontRoomsDoorLite.AttachDead(leaf, leaf.transform, leafInfo.LiteRect);
+                    if (polish) HoldOpenHardware(root, leaf.transform, hinge, s, satin, paint);
                 }
-                Kit(FrameHolderKit, root, new Vector3(s * l.halfWidth, FrameHolderY, z + FrameHolderZ),
+                Kit(FrameHolderKit, root, new Vector3(s * l.halfWidth, FrameHolderY, z + (polish ? HolderZPolish : FrameHolderZ)),
                     Quaternion.LookRotation(s > 0 ? Vector3.left : Vector3.right, Vector3.up), false, "run b compartment magnet");
             }
         }
     }
+
+    /// <summary>
+    /// Run! polish (research 10_research.md R.5: a held-open fire door shuts by its closer when the magnet lets go, US 3,204,154; the
+    /// 1989 holder's armature sits on the door's pull side, US 4,852,919): on the leaf's pull face (the goal side when shut, the wall
+    /// side at 115 deg) a regular-arm closer, body at the top rail by the hinge, its shoe on the frame's head casing, the arm solved
+    /// once for the held pose (the two circles of FrontRoomsStairwellDresser's closer: arm 0.24, forearm 0.26, the elbow on the root
+    /// farther from the leaf); and the swivel armature where the wall magnet meets it. The kits are authored with +X on the pull
+    /// face: they hang under roots scaled (pull, 1, 1), the right leaf's pull face being the leaf kit's +X (S), the left one's -X (P).
+    /// Render-only, no shadows (as the leaves), the paint matched to the 630 hardware, satin chrome.
+    /// </summary>
+    static void HoldOpenHardware(Transform root, Transform leaf, Vector3 hinge, int s, Material satin, Material paint)
+    {
+        var pull = s > 0 ? 1f : -1f;
+        var onLeaf = new GameObject("run b compartment hold-open (pull side)").transform;
+        onLeaf.SetParent(leaf, false);
+        onLeaf.localScale = new Vector3(pull, 1f, 1f);
+        var rs = Quaternion.Euler(0f, 90f, 0f);
+        var mount = new Vector3(LeafFaceX, CloserMountY, CloserMountZ);
+        var body = Kit(CloserBodyKit, onLeaf, mount, rs, false, "run b compartment closer body");
+        var spindle = mount + rs * new Vector3(.025f, .0405f, .04f);
+        // The shoe hangs on the frame: a root at the knuckle in the shut leaf's yaw, scaled as the leaf's.
+        var onFrame = new GameObject("run b compartment closer shoe (pull side)").transform;
+        onFrame.SetParent(root, false);
+        onFrame.localPosition = hinge;
+        onFrame.localRotation = Quaternion.Euler(0f, -s * 90f, 0f);
+        onFrame.localScale = new Vector3(pull, 1f, 1f);
+        var shoe = Kit(CloserShoeKit, onFrame, new Vector3(ShoeOut, ShoeY, ShoeAlong), rs, false, "run b compartment closer shoe");
+        var arm = Kit(CloserArmKit, onLeaf, spindle, Quaternion.identity, false, "run b compartment closer arm");
+        var fore = Kit(CloserForearmKit, onLeaf, spindle, Quaternion.identity, false, "run b compartment closer forearm");
+        if (shoe != null && arm != null && fore != null) SolveCloser(onLeaf, spindle, shoe.transform, arm.transform, fore.transform);
+        var armature = Kit(ArmatureKit, onLeaf, new Vector3(LeafFaceX, FrameHolderY, ArmatureAlong), Quaternion.identity, false, "run b compartment armature");
+        foreach (var go in new[] { body, shoe, arm, fore, armature })
+        {
+            if (go == null) continue;
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = ShadowCastingMode.Off;
+            Swap(go, "Prop_SteelBrown", paint);
+            Swap(go, FrontRoomsInteractableKit.HardwareChromeFrom, satin);
+        }
+    }
+
+    /// <summary>The arm's elbow from the spindle (on the leaf) and the shoe (on the frame) in plan, in the pull-side root: circle
+    /// (spindle, 0.24) and circle (shoe, 0.26), the root farther from the leaf (+X); the forearm on the arm's elbow_top (0.012 up).</summary>
+    static void SolveCloser(Transform onLeaf, Vector3 spindle, Transform shoe, Transform arm, Transform fore)
+    {
+        const float a = .24f, b = .26f;
+        var info = FrontRoomsKitLibrary.GetInfo(CloserArmKit);
+        var rise = info != null && info.TryAnchor("elbow_top", out var top) ? top.y : .012f;
+        var sh = onLeaf.InverseTransformPoint(shoe.position);
+        var p0 = new Vector2(spindle.x, spindle.z);
+        var p1 = new Vector2(sh.x, sh.z);
+        var dist = Mathf.Max(1e-4f, Vector2.Distance(p0, p1));
+        var along = (a * a - b * b + dist * dist) / (2f * dist);
+        var h = Mathf.Sqrt(Mathf.Max(0f, a * a - along * along));
+        var dir = (p1 - p0) / dist;
+        var mid = p0 + dir * Mathf.Min(along, a);
+        var perp = new Vector2(-dir.y, dir.x);
+        var e1 = mid + perp * h;
+        var e2 = mid - perp * h;
+        var e = e1.x >= e2.x ? e1 : e2;
+        arm.localPosition = spindle;
+        arm.localRotation = Quaternion.Euler(0f, Yaw(p0, e), 0f);
+        fore.localPosition = new Vector3(e.x, spindle.y + rise, e.y);
+        fore.localRotation = Quaternion.Euler(0f, Yaw(e, p1), 0f);
+    }
+
+    static float Yaw(Vector2 from, Vector2 to) => Mathf.Atan2(-(to.y - from.y), to.x - from.x) * Mathf.Rad2Deg;
 
     /// <summary>Every slot named <paramref name="from"/> on every renderer of a part (all LODs) takes <paramref name="to"/>.</summary>
     static void Swap(GameObject go, string from, Material to)

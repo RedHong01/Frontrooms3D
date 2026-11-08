@@ -1,0 +1,38 @@
+TODAY PREVIEW 11 M | Level 0 room 7, eye 1.62 | label fits, data fits
+PD-A REC PREVIEW 11 M | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B PREVIEW 11 M | anodised aluminium (swap) | label fits, data fits
+PD-C PREVIEW 11 M | aqua epoxy steel (swap) | label fits, data fits
+TODAY EYE 3 M | door 7, -Z, Level 0 side | label fits, data fits
+PD-A REC EYE 3 M | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B EYE 3 M | anodised aluminium (swap) | label fits, data fits
+PD-C EYE 3 M | aqua epoxy steel (swap) | label fits, data fits
+TODAY 3/4 AT 3 M | door 7 from Level 0 | label fits, data fits
+PD-A REC 3/4 AT 3 M | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B 3/4 AT 3 M | anodised aluminium (swap) | label fits, data fits
+PD-C 3/4 AT 3 M | aqua epoxy steel (swap) | label fits, data fits
+TODAY INSIDE THE POOL | door 7, +Z, the band | label fits, data fits
+PD-A REC INSIDE THE POOL | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B INSIDE THE POOL | anodised aluminium (swap) | label fits, data fits
+PD-C INSIDE THE POOL | aqua epoxy steel (swap) | label fits, data fits
+TODAY THE EXIT | door 8, -Z, from the pool | label fits, data fits
+PD-A REC THE EXIT | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B THE EXIT | anodised aluminium (swap) | label fits, data fits
+PD-C THE EXIT | aqua epoxy steel (swap) | label fits, data fits
+TODAY HERO 0.35 M | the lite, Level 0 face | label fits, data fits
+PD-A REC HERO 0.35 M | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B HERO 0.35 M | anodised aluminium (swap) | label fits, data fits
+PD-C HERO 0.35 M | aqua epoxy steel (swap) | label fits, data fits
+TODAY HERO, POOL SIDE | the lite from the pool | label fits, data fits
+PD-A REC HERO, POOL SIDE | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B HERO, POOL SIDE | anodised aluminium (swap) | label fits, data fits
+PD-C HERO, POOL SIDE | aqua epoxy steel (swap) | label fits, data fits
+TODAY OPEN 88 DEG | door 7 over the sill | label fits, data fits
+PD-A REC OPEN 88 DEG | moulded FRP, A1, aqua frame | label fits, data fits
+PD-B OPEN 88 DEG | anodised aluminium (swap) | label fits, data fits
+PD-C OPEN 88 DEG | aqua epoxy steel (swap) | label fits, data fits
+TODAY COST | lab census, BB1-BB3 films | label fits, data fits
+PD-A REC COST | lab census, BB1-BB3 films | label fits, data fits
+PD-B COST | lab census, BB1-BB3 films | label fits, data fits
+PD-C COST | lab census, BB1-BB3 films | label fits, data fits
+TITLE Zone doors Build B: the pool doors in the title | fits
+ALL LABELS FIT

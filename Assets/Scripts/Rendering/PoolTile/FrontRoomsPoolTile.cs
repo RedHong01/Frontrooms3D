@@ -18,6 +18,10 @@ using UnityEngine;
 ///   Nosing              the stairs' dark nosing L (50 mm on the tread, 25 mm down the riser; Red 10-31 17:24), mesh UV
 ///   Coping              full bullnose coping, 300 mm units, mesh UV across the unrolled profile
 ///   FieldMesh, CourseMesh  the field and the course on mesh UVs in metres (the structures scene's tile and band)
+///   Field108Mesh, Field75Mesh, Field50Mesh, MosaicMesh  the tile for tiled curves by radius (scene 4; 109.1, 75, 50, 25 mm), mesh UV
+///   Bullnose, Cove, Gutter, WeirLip  scene 4's trim pieces: the outside-corner bullnose, the pool cove r 50, the roll-out gutter
+///                       with its flush finger grate, the square weir lip with its drip groove; mesh UV across the unrolled profile
+///                       (FrontRoomsStructureProfiles has the matching sections)
 /// The tile's look (70_look_build.md section 13; Red 2026-11-04, the Pools tile and the dish, verbatim there): SetLook picks
 /// one for every pool tile material at once (FrontRooms/Surface reads the globals Publish writes). Today = the tile as landed
 /// 11-04 12:52, bit for bit; GZC = the glaze line's GZ-C as given (research/level_space/73_pool_glaze.md, Red's pick 16:4x);
@@ -38,7 +42,9 @@ public static class FrontRoomsPoolTile
     public static readonly string[] Kinds =
     {
         "Field", "FieldClub", "Course", "CourseClub", "Cap", "Mosaic", "MosaicClub", "Lane", "Deck", "Tread", "Riser", "Nosing", "Coping",
-        "FieldMesh", "CourseMesh"
+        "FieldMesh", "CourseMesh",
+        // structures assets (scene 4, structures_tile_trims): tiled curves by radius (Red's ask 2) and the four trim pieces
+        "Field108Mesh", "Field75Mesh", "Field50Mesh", "MosaicMesh", "Bullnose", "Cove", "Gutter", "WeirLip"
     };
 
     /// <summary>The tile's look. Today = the landed tile, bit for bit; the others: see the class summary.</summary>
@@ -109,6 +115,9 @@ public static class FrontRoomsPoolTile
         Look = DefaultLook;
         dishTone = DefaultDishTone;
         publishedTier = -1;
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        lastDescribedLook = DefaultLook;
+#endif
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -176,7 +185,20 @@ public static class FrontRoomsPoolTile
         // the dish in tone (section 13.15): the look's own amounts times DishTone, the dish's falloff and the fade's end
         var tone = ToneOf(Look) * dishTone;
         Shader.SetGlobalVector(ToneId, new Vector4(tone.x, tone.y, phone ? ToneNearPhone : ToneNear, phone ? ToneFadeEndPhone : ToneFadeEnd));
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // GlassRT describes a tile by the look (Today: as before; else the glaze's colour): describe the loaded ones again
+        if (Look != lastDescribedLook)
+        {
+            lastDescribedLook = Look;
+            foreach (var kv in shared) if (kv.Value != null) FrontRoomsGlassRTSystem.RefreshMaterial(kv.Value);
+            foreach (var kv in atWater) if (kv.Value != null) FrontRoomsGlassRTSystem.RefreshMaterial(kv.Value);
+        }
+#endif
     }
+
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+    static PoolTileLook lastDescribedLook = DefaultLook;
+#endif
 
     /// <summary>The phone tier, as the lamp kits take it.</summary>
     public static bool PhoneTier { get { return FrontRoomsTrofferKit.PhoneTier; } }

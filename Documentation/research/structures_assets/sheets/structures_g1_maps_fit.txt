@@ -1,0 +1,14 @@
+structures_g1_maps.jpg 1919x1751, 11 tiles, 3 columns
+title | STRUCTURES SCENE G1 NEW MAPS | 527/1552 FIT
+t_trim_a.png | P3 TRIM SHEET STRIPS 0-8 | sealant to fascia cap, 1 m across | label 219/617 data 264/386 FIT
+t_trim_b.png | P3 TRIM SHEET STRIPS 7-15 | carpet bar to the tee face | label 232/617 data 208/373 FIT
+t_wire.png | P3 WOVEN WIRE | 10 ga on 1 1/2 in diamonds, cut out | label 127/617 data 280/478 FIT
+t_fire.png | P3 FIREPROOFING | sprayed, 1 m map, lumps 5-14 mm | label 138/617 data 248/467 FIT
+t_floor.png | P8 ACCESS FLOOR | 600 mm HPL panels, PVC edges | label 142/617 data 224/463 FIT
+t_f50.png | P2 FIELD 2 IN | 50 mm glazed, 1.6 mm joints | label 111/617 data 216/494 FIT
+t_bull.png | P2 BULLNOSE TRIM | face, r 8 round, top; 150 mm units | label 149/617 data 272/456 FIT
+t_gut.png | P2 GUTTER, DECK SIDE | deck and the finger grate's edge | label 176/617 data 256/429 FIT
+t_weir.png | P2 WEIR LIP | underside, drip groove, nose, top | label 98/617 data 264/507 FIT
+t_cove.png | P2 COVE | r 50 with its flats, 2x; KIT's deck cove | label 68/617 data 320/537 FIT
+t_cost.png | COST MAPS | G1-a's new maps, desktop / phone | label 86/617 data 256/519 FIT
+ALL LABELS FIT

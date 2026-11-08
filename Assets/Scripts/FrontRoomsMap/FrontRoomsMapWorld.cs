@@ -408,6 +408,12 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         public float lastStrike = float.NegativeInfinity;
         public bool ambientHold;
         public FlashTrack flash;
+        // Zone lamps (P1-A, metal halide; zone_lamps 20_design s.6): HidTick's state for a lamp marked hid (the pool's wall
+        // boxes), its light colour and lens emission before the drive's tint, and the drive's own clock (LampTick has no dt).
+        public bool hid;
+        public FrontRoomsLampKit.HidLamp hidLamp;
+        public Color hidColor, hidEmission;
+        public float hidClock;
         // M1 (lamp check 10_lamp_look_check.md): the cell's look hold (SetLampHold), null when none.
         public LampHold hold;
     }
@@ -601,6 +607,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         public readonly List<Vector3> normals = new List<Vector3>();
         public readonly List<Vector2> uvs = new List<Vector2>();
         public readonly List<int> triangles = new List<int>();
+        // Surface bevels (FrontRoomsMapWorld.Bevel.cs): the builder holds rounds, so its renderer frames the plain path's UVs on
+        // the normal's main axis (_FR_PlanarSnap 1, AddRenderer).
+        public bool planarSnap;
 
         public void Box(Vector3 center, Vector3 size, Vector3 worldOffset, float repeat)
         {
@@ -2463,6 +2472,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     void Update()
     {
         if (!begun || player == null) return;
+        PollSurfaceDetail();   // surface bevels and the pool's wet band follow FrontRoomsSurfaceDetail.Today (a change rebuilds the built chunks)
         frameWork.Clear();
         workWatch.Restart();
         Stream(ChunkOf(StreamCenter), chunksPerFrame);
@@ -2631,6 +2641,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         }
         var collision = new MeshBuilder();
         poolCollision = Cache.HasPool ? collision : null;   // pool family: read only by the pool pass (FrontRoomsMapWorld.Pool.cs)
+        BeginBevelChunk(collision);   // surface bevels (FrontRoomsMapWorld.Bevel.cs): on unless FrontRoomsSurfaceDetail.Today or WebGL
         wallFaces.Clear();
         int BlockOf(int i, int j, float ceiling) => (i / BlockCells + j / BlockCells * blocks) * heights + HeightClass(ceiling);
 
@@ -2805,10 +2816,15 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var r = go.AddComponent<MeshRenderer>();
         r.sharedMaterial = material;
         r.shadowCastingMode = ShadowCastingMode.On;
-        if (material.HasProperty(CeilingHeightId))
+        // Surface bevels: a renderer with rounds takes FrontRooms/Surface's planar snap in the same block (flat faces draw the same,
+        // probe Q2). While the chunk rounds, every shell renderer takes it, so the blocks of one height keep one block content
+        // (snap on some renderers only split them: SetPass +26-73 % in the editor counters, build log LOOK 2).
+        var snap = (builder.planarSnap || bevelChunk) && material.HasProperty(PlanarSnapId);
+        if (material.HasProperty(CeilingHeightId) || snap)
         {
             var props = new MaterialPropertyBlock();
-            props.SetFloat(CeilingHeightId, ceilingWorldY);
+            if (material.HasProperty(CeilingHeightId)) props.SetFloat(CeilingHeightId, ceilingWorldY);
+            if (snap) props.SetFloat(PlanarSnapId, 1f);
             r.SetPropertyBlock(props);
         }
         return mesh;
@@ -3072,14 +3088,28 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var startB = startA;
         var endA = startA;
         var endB = startA;
+        // Surface bevels (FrontRoomsMapWorld.Bevel.cs): an edge with a face the rounds may touch holds its render boxes back
+        // (collision goes in at once, as Solid writes it) and FinishBevelEdge draws them, rounded unless the kit took a piece.
+        // Off (FrontRoomsSurfaceDetail.Today, WebGL): the pieces go in exactly as before.
+        var bevel = bevelChunk && (BevelMaterial(wallA) || BevelMaterial(wallB)) ? new List<BevelPiece>() : null;
+        var kitTook = false;
+        int bevelStart = BevelEndNone, bevelEnd = BevelEndNone;
+        float outStart = 0f, outEnd = 0f;
+        bool ownStart = false, ownEnd = false;
         if (FrontRoomsTransitionKit.B0)
         {
             var alongX = along.x > .5f;
-            CornerReach(alongX ? new GridCoord(a.x, a.y + 1) : new GridCoord(a.x + 1, a.y), alongX ? FrontRoomsTransitionKit.East : FrontRoomsTransitionKit.North, out var sa, out var sb);
-            CornerReach(new GridCoord(a.x + 1, a.y + 1), alongX ? FrontRoomsTransitionKit.West : FrontRoomsTransitionKit.South, out var ea, out var eb);
+            var startPoint = alongX ? new GridCoord(a.x, a.y + 1) : new GridCoord(a.x + 1, a.y);
+            var startRole = alongX ? FrontRoomsTransitionKit.East : FrontRoomsTransitionKit.North;
+            CornerReach(startPoint, startRole, out var sa, out var sb);
+            if (bevel != null) bevelStart = BevelEndAt(startPoint, startRole, alongX, out outStart, out ownStart);
+            var endPoint = new GridCoord(a.x + 1, a.y + 1);
+            var endRole = alongX ? FrontRoomsTransitionKit.West : FrontRoomsTransitionKit.South;
+            CornerReach(endPoint, endRole, out var ea, out var eb);
+            if (bevel != null) bevelEnd = BevelEndAt(endPoint, endRole, alongX, out outEnd, out ownEnd);
             startA *= sa; startB *= sb; endA *= ea; endB *= eb;
         }
-        void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd)
+        void Piece(float from, float to, float bottom, float top, bool extendStart, bool extendEnd, int bevelRole = 0)
         {
             if (from > 0f || !mayExtendStart) extendStart = false;
             if (to < length || !mayExtendEnd) extendEnd = false;
@@ -3092,6 +3122,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             // collision boxes exactly as below, in the same order; the render geometry is the kit's.
             if (transition != null && transition.Piece(from, to, bottom, top, fA, tA, fB, tB, blockIndex))
             {
+                kitTook = true;
                 if (wallA == wallB && sideA == sideB && fA == fB && tA == tB)
                 {
                     if (tA - fA < .05f) return;
@@ -3112,6 +3143,12 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
                 if (tA - fA < .05f) return;
                 var center = start + along * ((fA + tA) * .5f) + Vector3.up * ((bottom + top) * .5f);
                 var size = along * (tA - fA) + across * WallThickness + Vector3.up * (top - bottom);
+                if (bevel != null)
+                {
+                    bevelCollision.Box(center, Abs(size), origin, 1f);
+                    bevel.Add(new BevelPiece { block = blockIndex, material = wallA, from = fA, to = tA, bottom = bottom, top = top, side = 0f, role = bevelRole, atStart = extendStart, atEnd = extendEnd });
+                    return;
+                }
                 solid(blockIndex, wallA, center, Abs(size), WallpaperRepeat);
                 return;
             }
@@ -3119,6 +3156,12 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             {
                 if (t - f < .05f) return;
                 var center = start + along * ((f + t) * .5f) + Vector3.up * ((bottom + top) * .5f) + across * (WallThickness * .25f * side);
+                if (bevel != null)
+                {
+                    bevelCollision.Box(center, Abs(along * (t - f) + across * (WallThickness * .5f) + Vector3.up * (top - bottom)), origin, 1f);
+                    bevel.Add(new BevelPiece { block = block, material = material, from = f, to = t, bottom = bottom, top = top, side = side, role = bevelRole, atStart = extendStart, atEnd = extendEnd });
+                    return;
+                }
                 solid(block, material, center, Abs(along * (t - f) + across * (WallThickness * .5f) + Vector3.up * (top - bottom)), WallpaperRepeat);
             }
             Skin(sideA, wallA, fA, tA, -1f);
@@ -3129,6 +3172,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         {
             transition?.Edge(kind, a, b, start, along, height, 0f, 0f, 0f, 0f, sideA, sideB, wallA, wallB, mayExtendStart, mayExtendEnd);   // TRANSITION (T5d)
             Piece(0f, length, 0f, height, true, true);
+            FinishBevelEdge(bevel, kitTook, kind, a, b, start, along, across, height, 0f, 0f, 0f, wallA, wallB, sideA, sideB, get, origin, bevelStart, outStart, ownStart, bevelEnd, outEnd, ownEnd);
             AddWallFaces(faces, faceData, kind, a, b, start, along, 0f, 0f, 0f, 0f);
             return;
         }
@@ -3154,10 +3198,13 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         }
         // TRANSITION (T5d): the kit's frame, halo and band for this edge, with the map's own computed opening.
         transition?.Edge(kind, a, b, start, along, height, c, width, openingTop, sill, sideA, sideB, wallA, wallB, mayExtendStart, mayExtendEnd);
-        Piece(0f, c - width * .5f, 0f, height, true, false);
-        Piece(c + width * .5f, length, 0f, height, false, true);
-        Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false);
+        // Surface bevels: an arch's jambs and soffit round (roles 1-3); a door's and a window's are under their casings.
+        var archRole = kind == EdgeKind.Arch ? 1 : 0;
+        Piece(0f, c - width * .5f, 0f, height, true, false, archRole);
+        Piece(c + width * .5f, length, 0f, height, false, true, archRole * 2);
+        Piece(c - width * .5f, c + width * .5f, openingTop, height, false, false, archRole * 3);
         if (sill > 0f) Piece(c - width * .5f, c + width * .5f, 0f, sill, false, false);
+        FinishBevelEdge(bevel, kitTook, kind, a, b, start, along, across, height, c, width, openingTop, wallA, wallB, sideA, sideB, get, origin, bevelStart, outStart, ownStart, bevelEnd, outEnd, ownEnd);
         AddWallFaces(faces, faceData, kind, a, b, start, along, c - width * .5f, c + width * .5f, sill, openingTop);
 
         if (kind == EdgeKind.Arch) return;
@@ -3368,7 +3415,16 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     void BuildColumn(byte style, Vector3 at, float height, ZoneTheme zoneTheme, ThemeMaterials theme, int blockIndex, BuilderFn get, SolidFn solid, Vector3 origin)
     {
         var w = (style & MapChunk.ColumnLarge) != 0 ? ModuleUnits.ColumnLarge : ModuleUnits.ColumnSmall;
-        solid(blockIndex, theme.wall, at + Vector3.up * (height * .5f), new Vector3(w, height, w), WallpaperRepeat);
+        // Surface bevels: a papered or painted column's four arrises round (render; its collision box as Solid writes it). The
+        // Office's (a _FR_DETAIL board meeting its bulkheads) waits for package B2.
+        if (bevelChunk && zoneTheme != ZoneTheme.Office && BevelMaterial(theme.wall))
+        {
+            var centre = at + Vector3.up * (height * .5f);
+            var size = new Vector3(w, height, w);
+            BevelBoxInto(get(blockIndex, theme.wall), theme.wall, centre, size, BevelColumnEdges, BevelWallRadius, BevelWallSegments, origin, WallpaperRepeat);
+            bevelCollision.Box(centre, size, origin, 1f);
+        }
+        else solid(blockIndex, theme.wall, at + Vector3.up * (height * .5f), new Vector3(w, height, w), WallpaperRepeat);
         var cove = w + ModuleUnits.CoveProud * 2f;
         get(blockIndex, trim).Box(at + Vector3.up * (ModuleUnits.CoveHeight * .5f), new Vector3(cove, ModuleUnits.CoveHeight, cove), origin, 1f);
         if (zoneTheme != ZoneTheme.Office) return;
@@ -5111,11 +5167,14 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// </summary>
     /// Run! (M8, 系统设计 2026-10-30; 11_rnx_lite 4): a Run! room's goal door (IsRunDoor) is never locked, so a key floor never
     /// ends the sprint at a locked door; with runRooms off no door is a Run door and the rule is today's.
+    /// The pool's fire stair door (IsPoolFireStairDoor, the structures scene's pool route only) is an egress door and is never
+    /// locked either (zone doors Map stage contract 2026-11-06: a fire door never locks against egress, and the Stair member's
+    /// locked row would lose its T6 contrast); with no pool plan the rule is today's.
     /// <summary>Tools (scene 3's museum, 交互设计): a door's own lock rule, true locked, false free; null, or null for a
     /// door, keeps the floor's rule. Nothing in the game sets it.</summary>
     public Func<Door, bool?> LockRuleForTools { get; set; }
 
-    public bool LockedByRule(Door door) => door != null && !IsRunDoor(door)
+    public bool LockedByRule(Door door) => door != null && !IsRunDoor(door) && !IsPoolFireStairDoor(door)
         && (IsExitDoor(door) ? exitLocked : LockRuleForTools?.Invoke(door) ?? InteriorDoorsLocked);
 
     /// <summary>
@@ -6699,6 +6758,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             level *= lowest;
             f.dip = lowest;
         }
+        if (f.hid) level = HidLevel(f);
         if (f.band < 0)
         {
             f.band = (sbyte)(level < LampBands[0] ? 0 : level < LampBands[1] ? 1 : level < LampBands[2] ? 2 : 3);
@@ -6713,6 +6773,35 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         FixtureChanged?.Invoke(f.cell, level);
         return level;
     }
+
+    // Zone lamps P1-A (20_design s.6): a metal-halide lamp's level. Its line is the override layer's dip (a W1 dip or the C22
+    // blackout under FrontRoomsLampKit.HidDropOut puts the arc out; it restrikes after HidCool and warms over HidWarm, dim and
+    // blue-green first); its mode picks its state: Dead out (a dark bay), Stutter and Dim an aged lamp at 60 %, Failing cycling.
+    // While the arc is out or warming, the fixture's quartz lamp holds it at a warm HidQuartzLevel ("darkness is never cover").
+    // The Light and the lens (and its glow) take the drive's colour.
+    float HidLevel(Fixture f)
+    {
+        var dt = Mathf.Max(0f, f.clock - f.hidClock);
+        f.hidClock = f.clock;
+        if (f.mode == 3)
+        {
+            f.light.color = f.hidColor;
+            f.emission = f.hidEmission;
+            return 0f;
+        }
+        f.hidLamp.failing = f.mode == 2;
+        var output = FrontRoomsLampKit.HidTick(ref f.hidLamp, f.dip, dt, out var tint, out var auxiliary);
+        if (f.mode == 1 || f.mode == 4) output *= .6f;
+        var quartz = auxiliary * HidQuartzLevel;
+        var c = quartz > output ? HidQuartzTint : tint;
+        f.light.color = f.hidColor * c;
+        f.emission = f.hidEmission * c;
+        return Mathf.Max(output, quartz);
+    }
+
+    /// <summary>A pool wall box's quartz restrike lamp: its share of the box's light while the arc is out, and its colour.</summary>
+    const float HidQuartzLevel = .15f;
+    static readonly Color HidQuartzTint = new Color(1f, .78f, .55f);
 
     // FixtureChanged's lines (the ink gate's edges 0.15 / 0.55, R10b's "invisible" 0.8) and how far past one a level must go.
     static readonly float[] LampBands = { .15f, .55f, .8f };
@@ -7351,8 +7440,10 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// steel DA frame, never locked (LockedByRule).</summary>
     public bool IsRunDoor(Door door) => door != null && Cache != null && Cache.Run != null && Cache.Run.IsRunDoorEdge(door.a, door.b);
 
-    /// <summary>M8 (DoorMemberFor, the D1.6 contract): Run on a Run! goal door; null elsewhere (the kit's theme rule).</summary>
-    public FrontRoomsDoorMember? DoorMemberFor(Door door) => IsRunDoor(door) ? FrontRoomsDoorMember.Run : (FrontRoomsDoorMember?)null;
+    /// <summary>M8 (DoorMemberFor, the D1.6 contract): Run on a Run! goal door; Stair on the pool's fire stair door (the visual
+    /// line's zone doors, Map stage 2026-11-06: IsPoolFireStairDoor, the stairwell A language); null elsewhere (the kit's theme rule).</summary>
+    public FrontRoomsDoorMember? DoorMemberFor(Door door) => IsRunDoor(door) ? FrontRoomsDoorMember.Run
+        : IsPoolFireStairDoor(door) ? FrontRoomsDoorMember.Stair : (FrontRoomsDoorMember?)null;
 
     /// <summary>The Run! room a cell belongs to, or null (always null with runRooms off).</summary>
     public FrontRoomsRunRoom RunRoomAt(GridCoord cell) => Cache != null && Cache.Run != null ? Cache.Run.RoomAt(cell) : null;
