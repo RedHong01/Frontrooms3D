@@ -1,0 +1,18 @@
+structures_g2_b_flume.jpg 1919x2167, 15 tiles, 3 columns
+title | G2-B · THE FLUME AS BUILT | 437/1576 FIT
+f_lip_today.png | TODAY · exit | main: the sweep's cut end over the pool | label 104/617 data 312/501 FIT
+f_lip_new.png | NEW · exit lip | 8 mm laminate, the rolled lip, the bed | label 120/617 data 304/485 FIT
+f_lip_hero.png | Hero 0.45 m · lip | the bead rolled round the whole section | label 156/617 data 312/449 FIT
+f_bend_today.png | TODAY · low bend | main: bands for flanges, no bolts | label 150/617 data 264/455 FIT
+f_bend_new.png | NEW · low bend | SL-B rolled lips, teal band, flange pairs | label 136/617 data 328/469 FIT
+f_flange_hero.png | Hero 0.35 m · flange pair | two ribs, sealant, 3/8 in hex bolts | label 229/617 data 280/376 FIT
+f_saddle_today.png | TODAY · saddle | main: a flat tile block, line contact | label 129/617 data 296/476 FIT
+f_saddle_new.png | NEW · cradle | the seat follows the tube; flange slot | label 116/617 data 304/489 FIT
+f_cradle_hero.png | Hero 0.6 m · low cradle | 2 in tile seat, bullnose lips, the pad | label 216/617 data 304/389 FIT
+f_tube_today.png | TODAY · SL-A tube | main: clear aqua glass, two-sided | label 151/617 data 264/454 FIT
+f_tube_new.png | NEW · SL-A milky | opaque laminate; light through it | label 144/617 data 264/461 FIT
+f_cap_hero.png | SL-C · cap on its flanges | bolt row every 300 mm; dark gel coat | label 218/617 data 288/387 FIT
+f_slot_today.png | TODAY · the slot | main: the trough from the start room | label 144/617 data 288/461 FIT
+f_slot_new.png | NEW · the slot | waxed ivory, the riding lane polished | label 130/617 data 296/475 FIT
+f_cost.png | COST | fewer triangles than today at LOD0 | label 39/617 data 272/566 FIT
+ALL LABELS FIT

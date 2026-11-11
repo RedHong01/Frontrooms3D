@@ -1,0 +1,81 @@
+{
+ "name": "Kit_PalletJack",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.0425,
+    -0.33999999999999997
+   ],
+   "size": [
+    0.686,
+    0.085,
+    1.22
+   ]
+  },
+  {
+   "centre": [
+    0.0,
+    0.6,
+    0.53
+   ],
+   "size": [
+    0.34,
+    1.2,
+    0.3
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  50.0
+ ],
+ "lodBudget": [
+  4500,
+  1500,
+  250
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.34299999475479126,
+  -3.725290298461914e-09,
+  -0.949999988079071
+ ],
+ "boundsMax": [
+  0.34299999475479126,
+  1.226812481880188,
+  0.6528721451759338
+ ],
+ "triangles": 4960,
+ "slots": [
+  "Prop_PalletJackRed",
+  "Prop_SteelBlack",
+  "Prop_Chrome",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 2240,
+ "trianglesLod2": 252,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.13499999999999995
+ ],
+ "footprintSize": [
+  0.686,
+  1.63
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.3
+}

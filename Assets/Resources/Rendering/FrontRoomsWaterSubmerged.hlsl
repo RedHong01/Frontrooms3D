@@ -24,6 +24,13 @@
 // dies with its lamp): the exit point on the flat surface solved exactly (Snell, Newton), the spreading of a flat
 // interface (dr / dtw), the transmission out, and the long ripple's caustic over the path in air, blurred by the
 // source's own size. Only the long cascade (7-30 cm) modulates it: large areas never move faster than its waves.
+//
+// Soft room faces (_FR_SubBoxSoft, FrontRoomsWaterSubmerged.BoxSoft; structures G2-a, 2026-11-07, scene 4's SP6 spring line):
+// a body's room is a box, and every light this file puts above the water (the thrown niche light, the mirror, the bounce)
+// stops at its faces. A face that crosses a wall or a vault draws a hard step there; at a spring line the box's top or side
+// can sit on the crease itself. With a width w the room tests take P up to w / 2 past each face, and each term is weighted
+// by saturate(0.5 + (P's distance inside the nearest face) / w): 1 from w / 2 inside, 0 at w / 2 outside, so a face is a
+// ramp, not a line. 0 (the default, the game and the map) is the hard test exactly: every weight is 1.0.
 #include "Assets/Resources/Rendering/FrontRoomsWaterRipples.hlsl"
 
 #define FR_SUB_MAX 12
@@ -33,6 +40,7 @@
 #define FR_SUB_LUT_N 64.0
 
 float  _FR_SubCount;                 // bodies registered (0: nothing here runs)
+float  _FR_SubBoxSoft;               // soft room faces: the ramp's width (m); 0 = the hard test, bit for bit (see the head)
 float4 _FR_SubRect[FR_SUB_MAX];      // the water's rectangle (world): x min, z min, x max, z max
 float4 _FR_SubRoom[FR_SUB_MAX];      // the room above it (world, the rectangle widened): x min, z min, x max, z max
 float4 _FR_SubParam[FR_SUB_MAX];     // x water height (world y), y absorption scale (Q1), z basin albedo (trapping), w room top (world y)
@@ -61,6 +69,7 @@ struct FRSub
     float  albedo;    // the basin's albedo, for the trapping
     bool   under;     // under the water of the body
     bool   room;      // above it, inside its room (the thrown light)
+    float  roomW;     // 1 inside the room's box, ramping to 0 across its faces (_FR_SubBoxSoft); 1 with the hard test
     float  pxM;       // metres per screen pixel here (the caustics' footprint)
 };
 
@@ -74,25 +83,34 @@ FRSub FRSubFind(float3 P, float pxM)
     s.albedo = 0.8;
     s.under = false;
     s.room = false;
+    s.roomW = 1.0;
     s.pxM = pxM;
+    float hs = 0.5 * _FR_SubBoxSoft;
     // Which water a point belongs to never depends on the registry's order (several waters in one hall, scene 4's
     // terraces over a catch pool, 2026-11-04): under a body's rectangle and below its surface, that body (the lowest
     // surface above P: the water P is in); over a rectangle and above its surface, that body's room (the highest surface
-    // below P: the water under P); elsewhere the first room that holds P. Equal heights keep the first, as before.
+    // below P: the water under P); elsewhere the first room that holds P. Equal heights keep the first, as before. With soft
+    // faces a point near a face may lie in two rooms' ramps: the room it lies deepest in, so a room's own walls never take a
+    // neighbour's ramp (the hard test keeps the first, bit for bit).
     int n = (int)_FR_SubCount;
     int under = -1, over = -1, room = -1;
-    float underY = 1e30, overY = -1e30;
+    float underY = 1e30, overY = -1e30, roomDin = -1e30;
     [loop] for (int i = 0; i < FR_SUB_MAX; i++)
     {
         if (i >= n) break;
         float4 r = _FR_SubRoom[i];
         float4 p = _FR_SubParam[i];
-        if (P.x < r.x || P.z < r.y || P.x > r.z || P.z > r.w || P.y > p.w) continue;
+        if (P.x < r.x - hs || P.z < r.y - hs || P.x > r.z + hs || P.z > r.w + hs || P.y > p.w + hs) continue;
         float4 w = _FR_SubRect[i];
         bool inWater = P.x >= w.x - 0.02 && P.z >= w.y - 0.02 && P.x <= w.z + 0.02 && P.z <= w.w + 0.02;
         if (inWater && P.y < p.x) { if (p.x < underY) { under = i; underY = p.x; } }
         else if (inWater) { if (p.x > overY) { over = i; overY = p.x; } }
-        if (room < 0) room = i;
+        if (hs > 0.0)
+        {
+            float di = min(min(min(P.x - r.x, r.z - P.x), min(P.z - r.y, r.w - P.z)), p.w - P.y);
+            if (di > roomDin) { room = i; roomDin = di; }
+        }
+        else if (room < 0) room = i;
     }
     int b = under >= 0 ? under : (over >= 0 ? over : room);
     if (b >= 0)
@@ -105,6 +123,12 @@ FRSub FRSubFind(float3 P, float pxM)
         s.under = under >= 0;
         s.depth = s.under ? q.x - P.y : 0.0;
         s.room = !s.under;
+        if (s.room && _FR_SubBoxSoft > 0.0)
+        {
+            float4 rb = _FR_SubRoom[b];
+            float din = min(min(min(P.x - rb.x, rb.z - P.x), min(P.z - rb.y, rb.w - P.z)), q.w - P.y);
+            s.roomW = saturate(0.5 + din / _FR_SubBoxSoft);
+        }
     }
     return s;
 }
@@ -484,7 +508,7 @@ half3 FRSubThrown(float3 P, half3 N, FRSub sub)
     }
     if (bestE > 0.0 && _FR_SubMode.x > 0.5)
         E *= (half)max(lerp(1.0, FRRingLens(bestS, bestPath * (FR_SUB_N - 1.0), max(bestPath * bestAlpha, sub.pxM)), _FR_SubMode.z), 0.0);
-    return E * (half)_FR_SubThrown.x;
+    return E * (half)(_FR_SubThrown.x * sub.roomW);
 }
 
 // ------------------------------------------------------------------------------------------------ the room lit by its water
@@ -654,9 +678,12 @@ float3 FRSubBounce(float3 P, float3 N)
         if (i >= n) break;
         float4 r = _FR_SubRoom[i];
         float4 p = _FR_SubParam[i];
-        if (P.x < r.x || P.z < r.y || P.x > r.z || P.z > r.w || P.y > p.w || P.y <= p.x + 0.002) continue;
+        float hb = 0.5 * _FR_SubBoxSoft;
+        if (P.x < r.x - hb || P.z < r.y - hb || P.x > r.z + hb || P.z > r.w + hb || P.y > p.w + hb || P.y <= p.x + 0.002) continue;
+        // soft faces: this body's room box as a ramp (1.0 exactly with the hard test)
+        float wb = _FR_SubBoxSoft > 0.0 ? saturate(0.5 + min(min(min(P.x - r.x, r.z - P.x), min(P.z - r.y, r.w - P.z)), p.w - P.y) / _FR_SubBoxSoft) : 1.0;
         float4 w = _FR_SubRect[i];
-        float F = FRSubRectFF(P, N, w, p.x);
+        float F = FRSubRectFF(P, N, w, p.x) * wb;
         if (F <= 1e-5) continue;
         float4 A = _FR_SubBounceA[i];
         float3 Lw = _FR_SubBounceB[i].rgb + (A.rgb + A.w) * up;
@@ -671,7 +698,7 @@ float3 FRSubBounce(float3 P, float3 N)
 // Both terms (FrontRooms/Surface calls this only while _FR_SubWL.w is on)
 half3 FRSubWaterLight(InputData inputData, FRSub sub)
 {
-    float3 E = FRSubBounce(inputData.positionWS, (float3)inputData.normalWS) + FRSubMirror(inputData, sub);
+    float3 E = FRSubBounce(inputData.positionWS, (float3)inputData.normalWS) + FRSubMirror(inputData, sub) * sub.roomW;
     return (half3)E;
 }
 

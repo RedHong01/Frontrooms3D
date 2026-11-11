@@ -1,0 +1,17 @@
+structures_g2_sp1.jpg 1920x4226, 14 tiles, 2 columns
+title | G2 · SP1 SLIDE HALL · TODAY VS NEW | 609/1576 FIT
+SP1_s00_today.png | TODAY · s00 arrival | main: stand-in boxes, clear SL-A tube | label 178/938 data 296/748 FIT
+SP1_s00_new.png | NEW · s00 arrival | P1-A boxes, milky SL-A on flanges, arches in courses | label 164/938 data 416/762 FIT
+SP1_s01_today.png | TODAY · s01 start tub | main: a box light, a square bar | label 197/938 data 248/729 FIT
+SP1_s01_new.png | NEW · s01 start tub | signal head at the left edge (1 m), gel coat, crossbar | label 183/938 data 432/743 FIT
+SP1_s02_today.png | TODAY · s02 catch pool | main: a tile prism edge, a white niche disc | label 207/938 data 344/719 FIT
+SP1_s02_new.png | NEW · s02 catch pool | roll-out gutter, the drain's Lane square, ZL_NICHE_S | label 193/938 data 416/733 FIT
+SP1_s03_today.png | TODAY · s03 terrace top | main: sheet quads at the weirs | label 217/938 data 240/709 FIT
+SP1_s03_new.png | NEW · s03 terrace top | porcelain weir lips and nappes, glass guards | label 203/938 data 352/723 FIT
+SP1_s04_today.png | TODAY · s04 tower foot | main: the door head cut in tile steps | label 211/938 data 296/715 FIT
+SP1_s04_new.png | NEW · s04 tower foot | true round head, the ring in 150 mm columns | label 197/938 data 344/729 FIT
+SP1_s02_phone.png | Phone · s02 | iPhone 16 Pro tier, Medium, NEW | label 110/938 data 248/816 FIT
+SP1_s02_off.png | Lamps off · s02 | lamps at 0: the ambient and probes stay | label 145/938 data 312/781 FIT
+SP1_cost.png | COST | TODAY -> NEW, the harness's inventories | label 39/938 data 312/887 FIT
+SP1_flash.png | FLASH | the project's flash_check on the final code | label 47/938 data 344/879 FIT
+ALL LABELS FIT

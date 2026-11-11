@@ -1,0 +1,15 @@
+structures_g2_exposure_ab.jpg 1920x1105, 12 tiles, 4 columns
+title | EXPOSURE A/B: TODAY | X0.8 | 443/1544 FIT
+ab_SP1_s02_p6_today.png | TODAY · SP1 s02 eye | LW0 4.0 · REC | label 180/457 data 104/265 FIT
+ab_SP1_s02_p6_x08.png | X0.8 · SP1 s02 eye | LW0 2.0 | label 172/457 data 56/273 FIT
+ab_SP1_s02_p15_today.png | TODAY · SP1 court | LW0 4.0 · REC | label 161/457 data 104/284 FIT
+ab_SP1_s02_p15_x08.png | X0.8 · SP1 court | LW0 4.5 | label 153/457 data 56/292 FIT
+ab_SP1_s03_p12_today.png | TODAY · SP1 s03 top | LW0 5.0 · REC | label 182/457 data 104/263 FIT
+ab_SP1_s03_p12_x08.png | X0.8 · SP1 s03 top | LW0 4.5 | label 174/457 data 56/271 FIT
+ab_SP6_s07_p33_today.png | TODAY · SP6 s07 deck | LW0 4.5 · REC | label 192/457 data 104/253 FIT
+ab_SP6_s07_p33_x08.png | X0.8 · SP6 s07 deck | LW0 4.5 | label 184/457 data 56/261 FIT
+ab_SP6_s06_p-16_today.png | TODAY · SP6 s06 dome | LW0 2.0 · REC | label 194/457 data 104/251 FIT
+ab_SP6_s06_p-16_x08.png | X0.8 · SP6 s06 dome | LW0 1.0 | label 186/457 data 56/259 FIT
+ab_flash.png | FLASH · LW0 counts | limit 3 | label 173/457 data 56/272 FIT
+ab_cost.png | COST · what x0.8 changes | clone-only test | label 225/457 data 120/220 FIT
+ALL LABELS FIT

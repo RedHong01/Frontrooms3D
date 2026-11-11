@@ -1,0 +1,11 @@
+structures_g2_b_gate.jpg 1919x1375, 8 tiles, 3 columns
+title | G2-B · GATES AND THE RIDE | 440/1576 FIT
+g_ride0.png | The ride · 1.0 s | out of the tub down the waxed slot | label 140/617 data 272/465 FIT
+g_ride1.png | The ride · 4.0 s | inside SL-A: lamps through the laminate | label 140/617 data 312/465 FIT
+g_ride2.png | The ride · 11.4 s | SL-C under its dark cap, the void | label 153/617 data 264/452 FIT
+g_ride3.png | The ride · 15.7 s | the exit lip, the catch pool ahead | label 153/617 data 272/452 FIT
+g_phone_SP1_01.png | Phone · SP1 s01 | start room, kits in the phone tier | label 149/617 data 272/456 FIT
+g_phone_SP2_08.png | Phone · SP2 s08 | up the well from the F0 basin | label 149/617 data 232/456 FIT
+g_proof.png | PROOF | renders/g2b_proof_final.tsv | label 50/617 data 216/555 FIT
+g_gates.png | GATES | see 60_build.md G2b.4 | label 47/617 data 168/558 FIT
+ALL LABELS FIT

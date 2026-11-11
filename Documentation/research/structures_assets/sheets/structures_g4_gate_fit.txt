@@ -1,0 +1,18 @@
+structures_g4_gate.jpg 1920x1381, 15 tiles, 4 columns
+title | G4 GATES: FILMS, PROOF, WALK | 484/1576 FIT
+g_hps_60.png | HPS 1.0 s | full sodium | label 82/457 data 88/363 FIT
+g_hps_130.png | HPS 2.2 s | dip: arc out | label 82/457 data 96/363 FIT
+g_hps_520.png | HPS 8.7 s | restrike, pink | label 82/457 data 112/363 FIT
+g_hps_840.png | HPS 14 s | mercury blue | label 78/457 data 96/367 FIT
+g_hps_1470.png | HPS 24.5 s | sodium again | label 95/457 data 96/350 FIT
+g_trip_60.png | trip s03 1.0 s | armed | label 129/457 data 40/316 FIT
+g_trip_180.png | trip s03 3.0 s | tripped (T) | label 129/457 data 88/316 FIT
+g_trip_420.png | trip s03 7.0 s | power back | label 129/457 data 80/316 FIT
+g_flash.png | FLASH · SP5 NEW | limit 3 | label 144/457 data 56/301 FIT
+g_proof.png | PROOF · NEW off | 0 px everywhere | label 142/457 data 120/303 FIT
+g_walk.png | WALK · SP5 | fail=0 | label 100/457 data 48/345 FIT
+g_shader.png | SHADER · gate | PASS | label 121/457 data 32/324 FIT
+g_phone_t.png | PHONE · s03 TODAY | iPhone 16 Pro, Medium | label 163/457 data 168/282 FIT
+g_phone_n.png | PHONE · s03 NEW | phone materials | label 149/457 data 120/296 FIT
+g_cost.png | COST · lamp modes | frame cost nil | label 161/457 data 112/284 FIT
+ALL LABELS FIT

@@ -1,0 +1,15 @@
+structures_g2_a_spring.jpg 1919x1771, 12 tiles, 3 columns
+title | G2-A · THE SP6 SPRING LINE | 454/1576 FIT
+s_still_SP6_s06.png | I off · under the dome | SP6 in G2-a NEW, key I at Today | label 195/617 data 248/410 FIT
+s_main_SP6_s06.png | Main · I on, hard faces | median +0.000 p99 +0.077 stop | label 195/617 data 232/410 FIT
+s_new_SP6_s06.png | NEW · fitted room, soft faces | median +0.017 p99 +0.096 stop | label 259/617 data 232/346 FIT
+s_still_SP6_s07v45_-25.png | I off · up to the dome | SP6 in G2-a NEW, key I at Today | label 190/617 data 248/415 FIT
+s_main_SP6_s07v45_-25.png | Main · I on, hard faces | median +0.000 p99 +0.077 stop | label 195/617 data 232/410 FIT
+s_new_SP6_s07v45_-25.png | NEW · fitted room, soft faces | median +0.011 p99 +0.106 stop | label 259/617 data 232/346 FIT
+s_still_SP6_s08v180_-20.png | I off · grotto vault | SP6 in G2-a NEW, key I at Today | label 176/617 data 248/429 FIT
+s_main_SP6_s08v180_-20.png | Main · I on, hard faces | median +0.055 p99 +0.138 stop | label 195/617 data 232/410 FIT
+s_new_SP6_s08v180_-20.png | NEW · fitted room, soft faces | median +0.079 p99 +0.153 stop | label 259/617 data 232/346 FIT
+s_how.png | How to read | the ratio maps | label 104/617 data 112/501 FIT
+s_parts.png | Parts | A1 + K2-W | label 49/617 data 72/556 FIT
+s_cost.png | COST | soft faces | label 39/617 data 80/566 FIT
+ALL LABELS FIT

@@ -1,0 +1,67 @@
+{
+ "name": "Kit_MobileShelving_Rail",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    -0.0,
+    0.015000000596046448,
+    -0.0
+   ],
+   "size": [
+    0.10000000149011612,
+    0.030000001192092896,
+    3.0
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "floor_rail"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  160,
+  60,
+  24
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.05000000074505806,
+  0.0,
+  -1.5
+ ],
+ "boundsMax": [
+  0.05000000074505806,
+  0.030000001192092896,
+  1.5
+ ],
+ "triangles": 104,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_StainlessSatin"
+ ],
+ "trianglesLod1": 104,
+ "trianglesLod2": 48,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.10000000149011612,
+  3.0
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

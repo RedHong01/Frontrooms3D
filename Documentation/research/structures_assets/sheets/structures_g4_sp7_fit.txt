@@ -1,0 +1,19 @@
+structures_g4_sp7.jpg 1920x1381, 16 tiles, 4 columns
+title | G4 SP7: TODAY AND ITS END KITS | 514/1576 FIT
+sp7_s00.png | TODAY · s00 arrival | stays TODAY | label 178/457 data 88/267 FIT
+sp7_s01.png | TODAY · s01 at FD1 | stays TODAY | label 170/457 data 88/275 FIT
+sp7_s02.png | TODAY · s02 end, look back | stays TODAY | label 237/457 data 88/208 FIT
+sp7_s03.png | TODAY · s03 release hall | stays TODAY | label 223/457 data 88/222 FIT
+sp7_s04.png | TODAY · s04 outside the door | stays TODAY | label 258/457 data 88/187 FIT
+sp7_s05.png | TODAY · s05 red tube | stays TODAY | label 188/457 data 88/257 FIT
+sp7_s06.png | TODAY · s06 4 m to the end | stays TODAY | label 239/457 data 88/206 FIT
+sp7_collar_300.png | KIT · collar 3 m | Kit_ExpansionCollar | label 144/457 data 152/301 FIT
+sp7_collar_035.png | KIT · collar 0.35 m | wool joint, bolts | label 174/457 data 136/271 FIT
+sp7_comb_300.png | KIT · comb plate 3 m | Kit_CombPlate | label 180/457 data 104/265 FIT
+sp7_comb_035.png | KIT · comb 0.35 m | 112 teeth | label 158/457 data 72/287 FIT
+sp7_lamps_300.png | KIT · work lamps 3 m | Kit_TempLightString | label 187/457 data 152/258 FIT
+sp7_lamps_035.png | KIT · work lamp 0.35 | caged A21 | label 189/457 data 72/256 FIT
+sp7_scrap_250.png | KIT · TI scrap 2.5 m | Kit_TIScrap | label 173/457 data 88/272 FIT
+sp7_scrap_050.png | KIT · TI scrap 0.5 m | studs, gypsum | label 173/457 data 104/272 FIT
+sp7_cost.png | COST · SP7 kits | unwired | label 137/457 data 56/308 FIT
+ALL LABELS FIT

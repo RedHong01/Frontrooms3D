@@ -32,6 +32,7 @@ public static class FrontRoomsStructuresAssets
             if (isNew == value) return;
             isNew = value;
             Serial++;
+            PublishScaleTerms();
         }
     }
 
@@ -66,8 +67,9 @@ public static class FrontRoomsStructuresAssets
     /// service zones; or the two-line rail made real everywhere. Glass stays glass.</summary>
     public enum PublicRail { Pickets = 0, TwoLine = 1 }
 
-    /// <summary>Ask 4, Red's paper at the wrong scale (V4, the spine, SP4's 11.9 m walls): today (the default: it is Red's
-    /// pick), lot steps per wall, or lot steps and butt joins above a roll's length. Built by structures_scale_terms (G3).</summary>
+    /// <summary>Ask 4, Red's paper at the wrong scale (V4, the spine, SP4's 11.9 m walls): lot steps per wall and butt joins
+    /// above a roll's length (the default: Red's pick C, 2026-11-11 12:45, after G3's comparison sheet), lot steps only, or
+    /// today's paper. Built by structures_scale_terms (G3).</summary>
     public enum PaperScale { Today = 0, LotSteps = 1, LotStepsAndJoins = 2 }
 
     /// <summary>Ask 5, the game's lamp modes in scene 4: REC the game's tier-1 modes (pool fluorescents steady until the 0d
@@ -77,18 +79,19 @@ public static class FrontRoomsStructuresAssets
     public static PoolEdge Edge = PoolEdge.ByDistrict;
     public static CurveTile Curves = CurveTile.ByRadius;
     public static PublicRail Rails = PublicRail.Pickets;
-    public static PaperScale Paper = PaperScale.Today;
+    public static PaperScale Paper = PaperScale.LotStepsAndJoins;
     public static LampModes Lamps = LampModes.Game;
 
-    /// <summary>Every ask back to its default (the recommendation; ask 4 off).</summary>
+    /// <summary>Every ask back to its default (the recommendation; ask 4 C, Red's pick 2026-11-11).</summary>
     public static void ResetAsks()
     {
         Edge = PoolEdge.ByDistrict;
         Curves = CurveTile.ByRadius;
         Rails = PublicRail.Pickets;
-        Paper = PaperScale.Today;
+        Paper = PaperScale.LotStepsAndJoins;
         Lamps = LampModes.Game;
         Serial++;
+        PublishScaleTerms();
     }
 
     /// <summary>What a district's build depends on (the switch and the asks that change geometry: 1-3): a district built under
@@ -112,7 +115,28 @@ public static class FrontRoomsStructuresAssets
             default: return "";
         }
         Serial++;
+        if (ask == 4) PublishScaleTerms();
         return AskLine(ask);
+    }
+
+    // ---------------------------------------------------------------- the scale terms (structures_scale_terms, P18)
+
+    static readonly int ScaleTermsId = Shader.PropertyToID("_FR_ScaleTerms");
+
+    /// <summary>One roll's length for ask 4's butt joins (m): 7 yd, the narrow goods' longest single roll (20_research.md C.3.4),
+    /// so the game's tallest papered room (5.4 m) keeps no join and V4 (14.6 m) gets two.</summary>
+    public const float RollLength = 6.4f;
+
+    /// <summary>
+    /// FrontRooms/Surface's scale terms (P18; 30_plan rows S3-06, S4-08, ask 4), one global: x ask 4 (0 off, 1 a lot step per wall,
+    /// 2 lot steps and butt joins over one roll: the default, Red's pick C; the backquote cycles it), y the lay-in T-bar as a
+    /// footprint line in rooms whose lid is over 4 m above the eye (on in NEW), z the roll length. Zero in TODAY and wherever
+    /// scene 4 is not running (the game never writes it), where the shader skips every term and draws today's frame bit for bit.
+    /// The walls' lots are the mesh's UV1 (FrontRoomsStructuresMesh, NEW only).
+    /// </summary>
+    static void PublishScaleTerms()
+    {
+        Shader.SetGlobalVector(ScaleTermsId, isNew ? new Vector4((int)Paper, 1f, RollLength, 0f) : Vector4.zero);
     }
 
     /// <summary>The pool edge system a district builds (ask 1): its recommended one unless Red's key picked one for all.</summary>
@@ -175,8 +199,8 @@ public static class FrontRoomsStructuresAssets
                 switch (Paper)
                 {
                     case PaperScale.LotSteps: return "问题 4 · 高墙上的墙纸：每面墙一个批次色差（B）";
-                    case PaperScale.LotStepsAndJoins: return "问题 4 · 高墙上的墙纸：批次色差加横向接缝（C，推荐）";
-                    default: return "问题 4 · 高墙上的墙纸：和现在一样（默认关：这是你选过的墙纸）";
+                    case PaperScale.LotStepsAndJoins: return "问题 4 · 高墙上的墙纸：批次色差加横向接缝（C，你选的，默认）";
+                    default: return "问题 4 · 高墙上的墙纸：和现在一样，不加色差和接缝（A）";
                 }
             case 5:
                 return Lamps == LampModes.Game
@@ -333,10 +357,11 @@ public static class FrontRoomsStructuresAssets
         Edge = PoolEdge.ByDistrict;
         Curves = CurveTile.ByRadius;
         Rails = PublicRail.Pickets;
-        Paper = PaperScale.Today;
+        Paper = PaperScale.LotStepsAndJoins;
         Lamps = LampModes.Game;
         resolved.Clear();
         sceneLit.Clear();
         farAA.Clear();
+        Shader.SetGlobalVector(ScaleTermsId, Vector4.zero);
     }
 }

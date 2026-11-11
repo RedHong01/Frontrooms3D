@@ -1,0 +1,72 @@
+{
+ "name": "Kit_DotMatrixPrinter_OnStand",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.34,
+    0.0
+   ],
+   "size": [
+    0.7,
+    0.68,
+    0.5
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  45.0
+ ],
+ "lodBudget": [
+  3800,
+  1300,
+  280
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.3499999940395355,
+  0.0,
+  -0.27000001072883606
+ ],
+ "boundsMax": [
+  0.3499999940395355,
+  0.9350000023841858,
+  0.25
+ ],
+ "triangles": 2936,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_PlasticBlack",
+  "Prop_CompAtlas",
+  "Prop_Cardboard",
+  "Prop_PlasticGrey",
+  "Prop_PlasticBeige",
+  "Prop_Chrome",
+  "Prop_CompIndicator"
+ ],
+ "trianglesLod1": 1624,
+ "trianglesLod2": 218,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.7,
+  0.5
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

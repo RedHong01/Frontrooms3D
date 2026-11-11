@@ -1,0 +1,67 @@
+{
+ "name": "Kit_DockLeveler",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "lip_hinge",
+   "pos": [
+    0.0,
+    -0.022,
+    0.012
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "noCollider": true,
+ "deckTop": 0.0035,
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  6000,
+  1800,
+  200
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.9909999966621399,
+  -0.4620000123977661,
+  -2.2860000133514404
+ ],
+ "boundsMax": [
+  0.9909999966621399,
+  0.012199999764561653,
+  0.05000000074505806
+ ],
+ "triangles": 6336,
+ "slots": [
+  "Prop_TreadPlate",
+  "Prop_TreadPlateYellow",
+  "Prop_SteelBlack",
+  "Plenum_Dark"
+ ],
+ "trianglesLod1": 2092,
+ "trianglesLod2": 152,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -1.1180000063031912
+ ],
+ "footprintSize": [
+  1.9819999933242798,
+  2.3360000140964985
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

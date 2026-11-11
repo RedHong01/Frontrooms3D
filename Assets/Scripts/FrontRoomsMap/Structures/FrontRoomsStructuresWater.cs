@@ -122,7 +122,21 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     };
     static readonly float[] GlowBounce = { 0f, 1f, .5f, 0f, 0f, 1f, 2f };   // BounceGain after the look (3 and 7 move it)
     const float CausticRadius = .05f;
+    /// <summary>Shift + .: LW3's lens A/B (research/light_design/10_research.md, LW3 (c), Red 11-06 "全部按推荐": the lens tied to
+    /// its light, an A/B shown to Red before any default moves) on 游戏视觉's FrontRoomsLampLens: today's fixed lens, or each lens
+    /// following its own Light (E = pi x I / A x its colour) at the research's view-angle factor or at the full value. Exposure
+    /// and bloom stay today's (Red 11-10 15:49 kept image 1's brightness). Forward only: Shift is part of the key.</summary>
+    static readonly string[] LensNames =
+    {
+        "1 现在：灯罩是固定亮度（你 10-31 选的 L03 灯罩 1.8），灯调暗、熄灭或闪的时候灯罩不跟着变",
+        "2 跟随灯光（推荐系数 0.55）：每个灯罩的亮度和颜色跟着自己的灯，灯闪、调暗、熄灭时灯罩和地面一起变；Level 0 的灯罩大约是现在的 3 倍亮",
+        "3 跟随灯光（物理全值 1.0）：同 2，灯罩按灯的真实亮度，Level 0 大约是现在的 6 倍亮，最刺眼的一档",
+    };
+    static readonly string[] LensShort = { "1 现在", "2 跟随灯光 ×0.55（推荐）", "3 跟随灯光 ×1.0" };
+    static readonly float[] LensFactor = { 1f, .55f, 1f };
     const string NicheLamp = "Lamp · underwater";                          // FrontRoomsStructuresKit.Underwater's lamp
+    // K2 (structures G2-a): the light room's faces past the room's wall lines (into the walls), over its ceiling, and the soft ramp
+    const float LightRoomInto = .25f, LightRoomOver = .2f, LightRoomSoft = .6f;
 
     /// <summary>Z: 游戏视觉's pool zone look (pool_zone_look, 70 section 3) over each body's room, or the scene's own trilight.</summary>
     static readonly string[] ZoneNames =
@@ -158,13 +172,18 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     FrontRoomsGlassRTQuality rtAtStart;
     bool rtChanged, hinted, tierChanged, rippleChanged;
     int tier, ripple;
+    int lens;                                             // Shift + . (LW3's lens A/B)
+    bool lensChanged;
     // the walker's own strides (ripple 3 and 4)
     Vector3 lastFeet;
     bool haveFeet, leftFoot;
     float walked, nextStride = .7f;
     readonly System.Random strideRandom = new System.Random(4113);
-    // the water's light (I), the wet niches it registered, and the halls' probes
-    int glow;
+    // the water's light (I), the wet niches it registered, and the halls' probes. LW1 in scene 4 (research/light_design/
+    // 10_research.md, Red 11-06 "全部按推荐", retargeted to scene 4's pools 11-07): the scene opens on 游戏视觉's
+    // Recommended state, once the flash check showed it adds no flash at any stop ("Checks per step", LW0 row)
+    const int GlowDefault = 5;
+    int glow = GlowDefault;
     readonly List<Light> niches = new List<Light>();
     readonly Dictionary<Light, float> nicheBase = new Dictionary<Light, float>();
     readonly List<Light> roomLights = new List<Light>();
@@ -242,6 +261,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     {
         host = GetComponent<FrontRoomsStructures>();
         rtAtStart = FrontRoomsGlassRT.Quality;
+        if (glow != 0) ApplyGlow();                       // the statics now; bodies built later register their niches
     }
 
     void Update()
@@ -261,7 +281,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         if (hintAt > 0f && Time.time >= hintAt)
         {
             hintAt = -1f;
-            host.Flash("水的预览：K 换水面（" + LookCount + " 版），U 换波纹，I 水光，Z 区域外观，P 换平台档，J 切换光追（左下角看数据）。");
+            host.Flash("水的预览：K 换水面（" + LookCount + " 版），U 换波纹，I 水光，Z 区域外观，P 换平台档，J 切换光追，Shift . 灯罩对比（左下角看数据）。");
         }
 
         var k = Keyboard.current;
@@ -296,6 +316,13 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             ApplyGlow();
             ScheduleProbes();
             host.Flash("水光 · " + GlowNames[glow] + (IsReal(look) ? "" : "（只对游戏视觉的水面有效：按 K 换到第 4 版以后）"));
+        }
+        // K1's ask keys bind '.' alone and ignore presses while Shift is held, so Shift + . is this key's alone
+        if (k != null && (k.leftShiftKey.isPressed || k.rightShiftKey.isPressed) && k.periodKey.wasPressedThisFrame)
+        {
+            lens = (lens + 1) % LensNames.Length;
+            ApplyLens();
+            host.Flash("灯罩 · " + LensNames[lens] + "（对比用，默认不变；地图 P 区的灯不跟着变）");
         }
         if (probeFrames > 0 && --probeFrames == 0) RenderProbes();
         if (k != null && k.uKey.wasPressedThisFrame)
@@ -368,6 +395,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         }
         TearDownBodies();
         if (glow != 0) FrontRoomsWaterSubmerged.SetWaterLight(FrontRoomsWaterSubmerged.WaterLightLook.Today);
+        if (lensChanged) { FrontRoomsLampLens.Set(FrontRoomsLampLens.Mode.Today); FrontRoomsLampLens.SetViewFactor(1f); }
         if (poolWater != null) Destroy(poolWater);
         if (poolWaterAnkle != null) Destroy(poolWaterAnkle);
         if (rippleA != null) Destroy(rippleA);
@@ -479,6 +507,14 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             if (score > sa) { b = a; sb = sa; a = l; sa = score; }
             else if (score > sb) { b = l; sb = score; }
         }
+    }
+
+    /// <summary>Shift + .'s state on FrontRoomsLampLens: the factor first, so a press re-drives the lenses once.</summary>
+    void ApplyLens()
+    {
+        lensChanged = true;
+        FrontRoomsLampLens.SetViewFactor(LensFactor[lens]);
+        FrontRoomsLampLens.Set(lens == 0 ? FrontRoomsLampLens.Mode.Today : FrontRoomsLampLens.Mode.Tied);
     }
 
     /// <summary>I's state on 游戏视觉's statics, and the district's underwater lamps as wet niches while it is on.</summary>
@@ -683,6 +719,10 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
     {
         TearDownBodies();
         if (d == null || d.Root == null || !RealAvailable()) return;
+        // K2 (游戏视觉's structures G2-a, the SP6 spring line): in NEW the water's light reaches each body's own room as the district
+        // built it, and the room's faces are soft ramps (FrontRoomsWaterSubmerged.BoxSoft), so no face of a box crosses a wall,
+        // a vault or a dome as a hard line; TODAY keeps the hard boxes of the rays below, bit for bit
+        FrontRoomsWaterSubmerged.BoxSoft = FrontRoomsStructuresAssets.NewFor(d.Key) ? LightRoomSoft : 0f;
         var walker = host != null ? host.Walker : null;
         var feet = walker != null ? walker.transform.position : d.Root.position;
         builtAt = feet;
@@ -834,6 +874,21 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         // the walls: the box grows past the water by the mean of the two sides' gaps (FrontRoomsWaterSurface.roomMargin is symmetric)
         var eye = c + Vector3.up * 1.2f;
         var margin = new Vector2(Gap(eye, Vector3.right, Vector3.left, hx), Gap(eye, Vector3.forward, Vector3.back, hz));
+        // K2 (NEW): the light's room is the pool room the district gave the zone look (FrontRoomsStructuresLook.PoolRoomAt: the
+        // dome hall up to its crown, the grotto to its vault, one box for every body of a hall), 0.25 m into its walls, its top
+        // the higher of that ceiling and the rays' lid above, 0.2 m over it; the reflections keep the box above
+        var lit = false;
+        var litPad = Vector4.zero;
+        var litHeight = 0f;
+        Rect roomFoot;
+        float roomFloor, roomCeiling;
+        if (FrontRoomsStructuresAssets.NewFor(d.Key) && host != null && host.Look != null && host.Look.PoolRoomAt(d, c + Vector3.up * .05f, out roomFoot, out roomFloor, out roomCeiling))
+        {
+            lit = true;
+            litPad = new Vector4(c.x - hx - (roomFoot.xMin - LightRoomInto), roomFoot.xMax + LightRoomInto - (c.x + hx),
+                c.z - hz - (roomFoot.yMin - LightRoomInto), roomFoot.yMax + LightRoomInto - (c.z + hz));
+            litHeight = Mathf.Max(roomCeiling, c.y + room) + LightRoomOver - c.y;
+        }
 
         var go = new GameObject("Water body · " + index + " (" + (hx * 2f).ToString("0.0") + " x " + (hz * 2f).ToString("0.0") + " m, " + (kind == FrontRoomsWaterSurface.Kind.Ankle ? "ankle" : "basin") + ")");
         go.SetActive(false);
@@ -856,6 +911,9 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         ws.kind = kind;
         ws.roomHeight = room;
         ws.roomMargin = margin;
+        ws.lightRoom = lit;
+        ws.lightRoomPad = litPad;
+        ws.lightRoomHeight = litHeight;
         ws.absorbScale = AbsorbOf(kind);
         // the two lamps that light this water most carry the ripple's caustics onto its floor (17 section 4.4)
         CausticLamps(c, hx + margin.x, hz + margin.y, room, out ws.causticSourceA, out ws.causticSourceB);
@@ -968,6 +1026,7 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
         sources.Clear();
         builtCapped = false;
         candidates = 0;
+        FrontRoomsWaterSubmerged.BoxSoft = 0f;
         if (host != null && host.Walker != null && FrontRoomsWaterPlanar.Viewer == host.Walker.View) FrontRoomsWaterPlanar.Viewer = null;
     }
 
@@ -1038,9 +1097,9 @@ public sealed class FrontRoomsStructuresWater : MonoBehaviour
             var body = FrontRoomsStructuresSigns.BodyFontAsset;
             if (body != null) style.font = body;
         }
-        var text = "水面：" + LookNames[(int)look] + "\n波纹：" + RippleNames[ripple] + "\n水光：" + GlowNames[glow] + "\n区域外观：" + ZoneLine(host.Current) + "\n平台档：" + TierNames[tier] + "\n光追：" + RTName(FrontRoomsGlassRT.Quality) + "  ·  " + FrontRoomsGlassRT.Status + "\n" + statsLine;
+        var text = "水面：" + LookNames[(int)look] + "\n波纹：" + RippleNames[ripple] + "\n水光：" + GlowNames[glow] + "\n灯罩：" + LensShort[lens] + "\n区域外观：" + ZoneLine(host.Current) + "\n平台档：" + TierNames[tier] + "\n光追：" + RTName(FrontRoomsGlassRT.Quality) + "  ·  " + FrontRoomsGlassRT.Status + "\n" + statsLine;
         const float w = 560f;
-        const string head = "水 · K 换水面  ·  U 波纹  ·  I 水光  ·  Z 区域外观  ·  P 平台档  ·  J 光追  ·  K、U、I 按住 Shift 往回";
+        const string head = "水 · K 换水面  ·  U 波纹  ·  I 水光  ·  Z 区域外观  ·  P 平台档  ·  J 光追  ·  Shift . 灯罩  ·  K、U、I 按住 Shift 往回";
         var hh = style.CalcHeight(new GUIContent(head), w - 24f);
         var h = style.CalcHeight(new GUIContent(text), w - 24f) + 24f + hh;
         var r = new Rect(24f, Screen.height - 44f - h, w, h);

@@ -1,0 +1,62 @@
+{
+ "name": "Kit_MicroficheReader_Carousel",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "desk_top"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  35.0
+ ],
+ "lodBudget": [
+  2800,
+  1100,
+  150
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.5260000228881836,
+  0.0,
+  -0.5494272708892822
+ ],
+ "boundsMax": [
+  0.16297370195388794,
+  0.5327026844024658,
+  0.3009999990463257
+ ],
+ "triangles": 2552,
+ "slots": [
+  "Prop_PlasticBeige",
+  "Prop_Rubber",
+  "Prop_PlasticBlack",
+  "Prop_ProjectionLit_Off",
+  "Prop_PlasticGrey",
+  "Prop_Chrome",
+  "Prop_Glass",
+  "Prop_SteelBlack",
+  "Prop_PaperAtlas"
+ ],
+ "trianglesLod1": 1472,
+ "trianglesLod2": 332,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.18151316046714783,
+  -0.12421363592147827
+ ],
+ "footprintSize": [
+  0.6889737248420715,
+  0.8504272699356079
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

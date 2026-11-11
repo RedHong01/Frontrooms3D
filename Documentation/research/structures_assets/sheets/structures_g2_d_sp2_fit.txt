@@ -1,0 +1,17 @@
+structures_g2_d_sp2.jpg 1920x1381, 14 tiles, 4 columns
+title | G2-D SP2: TODAY | NEW | 369/1576 FIT
+d_SP2_s05_today.png | TODAY · s05 F0 from +4.5 | main | label 230/457 data 32/215 FIT
+d_SP2_s05_new.png | NEW · s05 F0 from +4.5 | coves on the deck | label 216/457 data 136/229 FIT
+d_SP2_v_wallcove_today.png | TODAY · north wall foot | knife joint | label 213/457 data 88/232 FIT
+d_SP2_v_wallcove_new.png | NEW · north wall foot | cove r 50 + flats | label 199/457 data 136/246 FIT
+d_SP2_v_corner3m_today.png | TODAY · NW corner 3 m | knife joint | label 200/457 data 88/245 FIT
+d_SP2_v_corner3m_new.png | NEW · NW corner 3 m | mitred cove | label 186/457 data 88/259 FIT
+d_SP2_v_mark3m_today.png | TODAY · north edge | deck only | label 166/457 data 72/279 FIT
+d_SP2_v_mark3m_new.png | NEW · north edge | blank inlays | label 152/457 data 96/293 FIT
+d_SP2_v_coping_today.png | TODAY · north coping | deck only | label 183/457 data 72/262 FIT
+d_SP2_v_coping_new.png | NEW · north coping | inlay beside it | label 169/457 data 120/276 FIT
+d_SP2_v_drain035_today.png | TODAY · deck drain 0.35 m | deck only | label 229/457 data 72/216 FIT
+d_SP2_v_drain035_new.png | NEW · deck drain 0.35 m | Kit_FloorDrain | label 215/457 data 112/230 FIT
+sp2_flash.png | FLASH · LW0 per stop | limit 3 | label 189/457 data 56/256 FIT
+sp2_cost.png | COST · SP2 NEW vs main | inventory | label 204/457 data 72/241 FIT
+ALL LABELS FIT

@@ -1,0 +1,71 @@
+{
+ "name": "Kit_ProjectionScreen_TripodLit",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.6,
+    -0.08
+   ],
+   "size": [
+    0.8,
+    1.2,
+    0.7
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "screen"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  2200,
+  800,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.9629999995231628,
+  0.0,
+  -0.44300001859664917
+ ],
+ "boundsMax": [
+  0.9629999995231628,
+  2.3369998931884766,
+  0.18299999833106995
+ ],
+ "triangles": 904,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_Aluminium",
+  "Prop_Rubber",
+  "Prop_PlasticBlack",
+  "Prop_ProjectionLit",
+  "Prop_PlasticWhite"
+ ],
+ "trianglesLod1": 588,
+ "trianglesLod2": 236,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.08000000000000002
+ ],
+ "footprintSize": [
+  0.8,
+  0.7
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.387
+}

@@ -1,0 +1,18 @@
+structures_g3_gate.jpg 1920x1381, 15 tiles, 4 columns
+title | G3 GATES: FILMS, PROOF, WALK | 484/1576 FIT
+g_lc2_0.png | LC-2 · 0.7 s | two troffers full | label 110/457 data 136/335 FIT
+g_lc2_a.png | LC-2 · 1.65 s | lamp A dips 0.49 | label 123/457 data 128/322 FIT
+g_lc2_b.png | LC-2 · 1.35 s | lamp B dips 0.47 | label 123/457 data 128/322 FIT
+g_flash.png | FLASH · SP3 / SP4 | limit 3 | label 157/457 data 56/288 FIT
+g_proof.png | PROOF · NEW off | TODAY untouched | label 142/457 data 120/303 FIT
+g_walk.png | WALK · NEW + TODAY | fail=0 / 0 | label 169/457 data 80/276 FIT
+g_shader.png | SHADER · gate | PASS | label 121/457 data 32/324 FIT
+g_on_09.png | NEW · SP4 s09 | laylight lit | label 133/457 data 96/312 FIT
+g_off_09.png | OFF · SP4 s09 | lamps 0: laylight dark | label 128/457 data 176/317 FIT
+g_off_00.png | OFF · SP4 s00 | FR-9 fixed | label 128/457 data 80/317 FIT
+g_ph3t.png | PHONE · SP3 s00 TODAY | iPhone 16 Pro, Medium | label 202/457 data 168/243 FIT
+g_ph3n.png | PHONE · SP3 s00 NEW | phone materials | label 188/457 data 120/257 FIT
+g_ph4n.png | PHONE · SP4 s00 NEW | phone materials | label 188/457 data 120/257 FIT
+g_pick_main.png | MAIN NEW · SP3 s01 | pickets before G12 | label 175/457 data 144/270 FIT
+g_pick_g3.png | G3 NEW · SP3 s01 | gaps 152 mm or less | label 162/457 data 152/283 FIT
+ALL LABELS FIT

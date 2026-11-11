@@ -1,0 +1,15 @@
+structures_g2_review_walls.jpg 1920x3699, 12 tiles, 2 columns
+title | STRUCTURES G2 REVIEW WALLS EDGES WATER | 708/1576 FIT
+SP6_v_drums_newsteady_raw.png | stepping drums (D1) | black tops on the walk route: zero normals | label 175/938 data 336/751 FIT
+sp6_oculus.png | oculus and dome (D2, D4) | collar below the shell; joints spiral | label 217/938 data 296/709 FIT
+SP6_v_apse_newsteady_raw.png | apse R 3.0 | 6-degree quads: bent tile, seams show | label 91/938 data 296/835 FIT
+SP2_v_b4l_newsteady_raw.png | B4-L from its eye (D9) | sawtooth tread boxes, no soffit, no rail | label 193/938 data 320/733 FIT
+SP1_v_coping_newsteady_raw.png | catch pool edge | a 0.32 m slab 30 mm proud: no gutter | label 137/938 data 288/789 FIT
+SP1_v_cove_newsteady_raw.png | wall to deck, SP1 | knife inside corner: no cove base | label 154/938 data 264/772 FIT
+sp6_b2.png | sloped parapet (D5) | no cap; its planar top reads as steps | label 174/938 data 296/752 FIT
+SP2_v_cascade_newsteady_raw.png | cascade C5, SP2 | a flat 9 m sheet: reads as blue glass | label 139/938 data 296/787 FIT
+SP6_v_weireye_newsteady_raw.png | weir W1, SP6 (D7) | a white board; a nosing strip on the crest | label 158/938 data 336/768 FIT
+SP2_v_glassblock_newsteady_raw.png | E7 floor light (D8) | an emissive slab: reads as white floor tile | label 169/938 data 344/757 FIT
+SP6_v_c8_newsteady_raw.png | C8 hole guards (D6) | picket cages: 59 k tris in a service tank | label 176/938 data 328/750 FIT
+note_walls.png | note | D3 is on the slide sheet; the record: 60_build.md, G2 review | label 38/938 data 480/888 FIT
+ALL LABELS FIT

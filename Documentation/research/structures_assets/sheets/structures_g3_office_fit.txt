@@ -1,0 +1,23 @@
+structures_g3_office.jpg 1920x2792, 20 tiles, 4 columns
+title | G3-B · SP4 OFFICE KITS, THE SCALE TERMS, THE K3 DRAFT | 922/1528 FIT
+today_SP4_s02.png | TODAY · 1.35 bay | s02: greybox prisms | label 149/457 data 152/296 FIT
+today_SP4_s05.png | TODAY · 2.16 bay | s05: greybox prisms | label 149/457 data 152/296 FIT
+today_SP4_s10.png | TODAY · blade field | s10: prisms + posts | label 167/457 data 152/278 FIT
+today_SP4_s08.png | TODAY · boardroom | s08: one prism pane | label 165/457 data 152/280 FIT
+h1350.png | HERO 0.35 M · cap 1.35 | panel, post, T-cap | label 210/457 data 144/235 FIT
+h2160.png | HERO 0.35 M · cap 2.16 | from below, LOD0 | label 210/457 data 128/235 FIT
+hmull.png | HERO 0.35 M · mullion | gaskets both faces | label 197/457 data 144/248 FIT
+hsill.png | HERO 0.35 M · mullion foot | on the sill channel | label 241/457 data 152/204 FIT
+bay1350.png | Bay 1.35 · 3 M | 53 in · 920 | label 133/457 data 88/312 FIT
+bay2160.png | Bay 2.16 · 3 M | 85 in · 1,048 | label 133/457 data 104/312 FIT
+family.png | Family row · 3 M | new 2.16 1.65 1.52 1.35 | label 150/457 data 184/295 FIT
+hfoot.png | HERO 0.35 M · T-base foot | 18.5 in, glides | label 230/457 data 120/215 FIT
+free.png | Freestanding · 3 M | 1.35 / 1.65 / 2.16 · 2,234 | label 167/457 data 208/278 FIT
+sf.png | Storefront · 3 M | 2 lites · 188 | label 154/457 data 104/291 FIT
+corner.png | Corner post · 3 M | 114 sq · 168 | label 162/457 data 96/283 FIT
+fr7.png | FR-7 · carpet bar strip | trim sheet rows 448-511 | label 210/457 data 184/235 FIT
+cost.png | COST · SP4 | counted at LOD0 | label 97/457 data 120/348 FIT
+p18.png | P18 · ask 4 off | Red picks after the pair | label 143/457 data 192/302 FIT
+k3.png | K3 · DRAFT | render owed: walk, NEW-off | label 96/457 data 208/349 FIT
+sources.png | SOURCES · P17 | 60_build G3-b | label 131/457 data 104/314 FIT
+ALL LABELS FIT

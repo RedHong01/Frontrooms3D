@@ -1,0 +1,67 @@
+{
+ "name": "Kit_RecordsCarton_Sagging",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.012,
+    0.516,
+    0.004
+   ],
+   "size": [
+    0.355,
+    1.032,
+    0.41100000000000003
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "clutter",
+  "carton"
+ ],
+ "lodDistances": [
+  3.0,
+  9.0,
+  35.0
+ ],
+ "lodBudget": [
+  1600,
+  560,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.16289231181144714,
+  0.0,
+  -0.19802528619766235
+ ],
+ "boundsMax": [
+  0.18119262158870697,
+  1.0199999809265137,
+  0.20584328472614288
+ ],
+ "triangles": 1060,
+ "slots": [
+  "Prop_PaperAtlas"
+ ],
+ "trianglesLod1": 80,
+ "trianglesLod2": 40,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.01200000000000001,
+  0.0040000000000000036
+ ],
+ "footprintSize": [
+  0.355,
+  0.41100000000000003
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.07
+}

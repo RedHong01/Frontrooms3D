@@ -1,0 +1,73 @@
+{
+ "name": "Kit_StairFlight_SteelPan",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "top_nosing",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "bottom_landing_edge",
+   "pos": [
+    0.0,
+    -1.75,
+    2.5200000000000005
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "stair",
+  "stairwell_walkable"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  8.0,
+  18.0,
+  0.0
+ ],
+ "lodBudget": [
+  7000,
+  2200,
+  400
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "stairwell_walkable STAIR author 2026-11-10 (research/stairwell/80 section 6)",
+ "boundsMin": [
+  -0.5929999947547913,
+  -1.7515090703964233,
+  -0.0027000010013580322
+ ],
+ "boundsMax": [
+  0.597000002861023,
+  -0.003000000026077032,
+  2.8955671787261963
+ ],
+ "triangles": 4636,
+ "slots": [
+  "Stair_Fill",
+  "Stair_SteelEnamel",
+  "Stair_RailWorn",
+  "Stair_PrimerChip"
+ ],
+ "trianglesLod1": 704,
+ "trianglesLod2": 356,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.0020000040531158447,
+  1.4464335888624191
+ ],
+ "footprintSize": [
+  1.1899999976158142,
+  2.8982671797275543
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

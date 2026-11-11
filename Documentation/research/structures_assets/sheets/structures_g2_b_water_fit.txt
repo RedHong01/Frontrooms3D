@@ -1,0 +1,15 @@
+structures_g2_b_water.jpg 1919x1771, 12 tiles, 3 columns
+title | G2-B · THE WATER FLOW | 394/1576 FIT
+w_court_today.png | TODAY · court weir | main: a tile lip and a sheet quad | label 167/617 data 264/438 FIT
+w_court_new.png | NEW · court weir | weir lip, nappe, foam on the water | label 153/617 data 272/452 FIT
+w_t1.png | NEW · T1 into the pool | a 0.55 m sheet lands 0.22 m out | label 199/617 data 248/406 FIT
+w_casc_today.png | TODAY · SP2 cascade | main: a 9 m pane of blue glass | label 178/617 data 240/427 FIT
+w_casc_new.png | NEW · SP2 cascade | streaks of film on the tile; no navy | label 164/617 data 288/441 FIT
+w_casc_mid.png | Cascade · 2.2 m | rivulets, a line at every joint | label 140/617 data 248/465 FIT
+w_w1_today.png | TODAY · SP6 weir W1 | main: white boards, a nosing strip | label 183/617 data 272/422 FIT
+w_w1_new.png | NEW · SP6 weir W1 | porcelain lip, the curtain, foam | label 169/617 data 256/436 FIT
+w_w3.png | NEW · SP6 W3 | into the basin at Wade | label 124/617 data 176/481 FIT
+w_lip_today.png | TODAY · W1 lip | main: the stair nosing on the crest | label 129/617 data 280/476 FIT
+w_lip_new.png | NEW · W1 lip | the sheet leaves the drip groove | label 115/617 data 256/490 FIT
+w_flash.png | FLASH · COST | falls turned at the stops | label 111/617 data 200/494 FIT
+ALL LABELS FIT

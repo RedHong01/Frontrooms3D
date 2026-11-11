@@ -1,0 +1,25 @@
+stair_walk_then_now.jpg 1920x1993, 22 tiles, 4 columns
+title | STAIR WALK THEN AND NOW | 420/1576 FIT
+tn_t_door.png | TODAY · EXIT from the maze | X (1, 14), seed 20261001 | label 231/457 data 192/214 FIT
+tn_n_door.png | NEW · EXIT from the maze | its own EXIT cell X1 (3, -4) | label 217/457 data 224/228 FIT
+tn_t_exit_8m.png | TODAY · EXIT farther back | 5.57 m: corridor ends | label 223/457 data 168/222 FIT
+tn_n_exit_8m.png | NEW · EXIT farther back | 8.6 m free on this map | label 209/457 data 176/236 FIT
+tn_t_landing.png | TODAY · Exit landing | C22 vestibule, real map | label 173/457 data 184/272 FIT
+tn_n_landing.png | NEW · Exit landing | turn wrap on the +x wall | label 159/457 data 192/286 FIT
+tn_t_flight.png | TODAY · Down flight 1 | C22 vestibule, real map | label 193/457 data 184/252 FIT
+tn_n_flight.png | NEW · Down flight 1 | wrap edge-on, far wall lit | label 179/457 data 208/266 FIT
+tn_t_turn_back.png | TODAY · Back at the EXIT | C22 vestibule, real map | label 207/457 data 184/238 FIT
+tn_n_turn_back.png | NEW · Back at the EXIT | static leaf, sealed | label 193/457 data 152/252 FIT
+tn_t_far_approach.png | TODAY · Far approach | north door, same floor | label 186/457 data 176/259 FIT
+tn_n_far_approach.png | NEW · Far approach | flight 2 to the far door | label 172/457 data 192/273 FIT
+tn_t_far_door.png | TODAY · Far door | north door, same floor | label 148/457 data 176/297 FIT
+tn_n_far_door.png | NEW · Far door | far door, its own floor | label 134/457 data 184/311 FIT
+tn_t_detail.png | TODAY · Detail 1 m | floor by the north wall | label 160/457 data 184/285 FIT
+tn_n_detail.png | NEW · Detail 1 m | tread 5 nosing, 1 m | label 146/457 data 152/299 FIT
+tn_tr_landing.png | TODAY phone · Exit landing | reduced tier | label 228/457 data 96/217 FIT
+tn_nr_landing.png | NEW phone · Exit landing | reduced: 3 plain spots | label 214/457 data 176/231 FIT
+tn_tr_far_door.png | TODAY phone · Far door | reduced tier | label 203/457 data 96/242 FIT
+tn_nr_far_door.png | NEW phone · Far door | reduced: 3 plain spots | label 189/457 data 176/256 FIT
+tn_cost.png | COST | desktop is the reference | label 39/457 data 192/406 FIT
+tn_cams.png | CAMERAS | same eye in both columns | label 70/457 data 192/375 FIT
+ALL LABELS FIT

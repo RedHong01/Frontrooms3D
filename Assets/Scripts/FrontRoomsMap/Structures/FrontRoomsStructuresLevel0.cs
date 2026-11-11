@@ -32,6 +32,10 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
     public override void Build(FrontRoomsStructures host)
     {
         kit = new FrontRoomsStructuresKit(host, this);
+        // K3 (游戏视觉's structures G3-b, NEW only): each room's metals, glass and trims in its own renderers and probe (the K1 review's
+        // FR-1: the halls' aluminium carpet bars and nosings glowed neutral under no probe of their room); the first hall a piece lies in
+        // takes it. The field's rooms with something that shines, then the six modules beyond.
+        kit.Halls(Halls());
         wall = FrontRoomsPoolMaterials.Surface("L0_Wallpaper", new Color(.80f, .74f, .48f));
         carpet = FrontRoomsPoolMaterials.Surface("L0_Carpet", new Color(.62f, .55f, .36f));
         ceiling = FrontRoomsPoolMaterials.Surface("L0_Ceiling", new Color(.86f, .83f, .70f));
@@ -49,6 +53,17 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         kit.Safe("split suite", BuildSplitSuite);
         kit.Safe("beyond the field", BuildBeyond);
         kit.Finish();
+        if (kit.New)
+        {
+            // K3: a box probe per hall (rendered once with the district's lamps on, as Slide's and Well's)
+            var res = new[] { 256, 256, 256, 256, 256, 256, 256, 256, 128, 128, 128, 128, 128 };
+            var halls = Halls();
+            for (var i = 0; i < halls.Length; i++)
+            {
+                try { host.Look.Probe(Root, new Bounds(Site + halls[i].center, halls[i].size), res[Mathf.Min(i, res.Length - 1)]); }
+                catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP3 probe " + i, "SP3 probe failed: " + e.Message); }
+            }
+        }
         kit.Safe("signs", BuildSigns);
 
         Box = new Bounds(Site + new Vector3(105f, 5f, 15f), new Vector3(214f, 20f, 34f));
@@ -66,6 +81,24 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         kit.Stop("分层套间：夹层", new Vector3(29f, Gallery, 7.8f), new Vector3(30f, 1.2f, 1.5f));
         BeyondStops();
     }
+
+    // K3: SP3's halls (district metres): the field's rooms where metal, glass or trims shine, then the modules beyond
+    static Bounds[] Halls() => new[]
+    {
+        FrontRoomsStructuresKit.Hall(0f, 12f, 15f, 24f, Patch, 2.9f),           // V1: the suite, its cut and the room below
+        FrontRoomsStructuresKit.Hall(24f, 12f, 36f, 24f, -2.4f, 2.9f),          // V2: the drop
+        FrontRoomsStructuresKit.Hall(39f, 6f, 48f, 18f, 0f, TallCeil),          // V4: the tall grid
+        FrontRoomsStructuresKit.Hall(0f, 0f, 12f, 9f, 0f, 2.9f),                // the computer room
+        FrontRoomsStructuresKit.Hall(24f, 0f, 36f, 9f, 0f, SplitCeil),          // the split suite
+        FrontRoomsStructuresKit.Hall(0f, 9f, 39f, 12f, 0f, 2.9f),               // the spine
+        FrontRoomsStructuresKit.Hall(54f, 6f, 69f, 18f, -.9f, 2.9f),            // (f) the training room
+        FrontRoomsStructuresKit.Hall(171f, 6f, 183f, 15f, 0f, 5.4f),            // (j) the file mezzanine
+        FrontRoomsStructuresKit.Hall(75f, 6f, 93f, 30f, -1.2f, 2.9f),           // (g) the bowl
+        FrontRoomsStructuresKit.Hall(99f, 6f, 132f, 27f, Patch, 2.9f),          // (h) the islands and their patch
+        FrontRoomsStructuresKit.Hall(147f, 6f, 156f, 15f, -.6f, 2.9f),          // (i) the sunken lounge
+        FrontRoomsStructuresKit.Hall(195f, 6f, 207f, 18f, -1.2f, 2.9f),         // (k) the flat lid
+        FrontRoomsStructuresKit.Hall(48f, 3f, 210f, 6f, 0f, 2.9f),              // the corridor east
+    };
 
     // ---------------------------------------------------------------- the field: one plate in Level 0's own finish
 
@@ -162,6 +195,16 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         foreach (var h in holes)
         {
             kit.Box(h.x - .05f, y + .16f, h.y - .05f, h.x + .65f, y + .7f, h.y + .65f, plenum, false);
+        }
+        if (kit.New && holes.Length > 0)
+        {
+            // K3 (NEW; S3-02): the first hole's tile hangs from its far T-bar (a 595 mm lay-in panel, 16 mm, 28 degrees down, the loose
+            // tile's own surface); the game's cable whips sag through the second (G1's kit). Render only.
+            var loose = FrontRoomsPoolMaterials.Surface("L0_CeilingTile_Loose", new Color(.80f, .78f, .71f));
+            var h0 = holes[0];
+            var tilt = Quaternion.Euler(0f, 0f, -28f);
+            kit.Mesh.Box(new Vector3(h0.x + .02f, y - .008f, h0.y + .3f) + tilt * new Vector3(.2975f, 0f, 0f), new Vector3(.595f, .016f, .595f), tilt, loose, false);
+            if (holes.Length > 1) kit.Kit("Kit_CableWhips", new Vector3(holes[1].x + .3f, y, holes[1].y + .3f), 0f, new Vector3(.5f, .6f, .5f), plenum, false);
         }
         kit.Troffer(new Vector3(x + 1.5f, y, z + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
     }
@@ -289,6 +332,19 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
                 var l = kit.Troffer(new Vector3(3f * i + 1.5f, TallCeil, 3f * j + 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true, false, scale, 22f);
                 if (l != null) { l.spotAngle = 120f; l.innerSpotAngle = 80f; }
             }
+        if (kit.New)
+        {
+            // K3 (NEW; S3-06): two weak warm up-fills 4 m under the lid (no shadow, outside the shadow pattern: today's lamps keep their
+            // turns), so the lid between the lenses takes the walls' bounce as a real 14.6 m room's does (RCR 13.5, 20_research C.3.3)
+            var look = kit.Host.Look;
+            look.AddingOutside = true;
+            foreach (var f in new[] { new Vector3(43.5f, TallCeil - 4f, 10.5f), new Vector3(43.5f, TallCeil - 4f, 13.5f) })
+            {
+                var l = kit.Lamp("grid bounce (up-fill)", LightType.Spot, f, Vector3.up, 150f, 110f, 2.2f, 6f, new Color(1f, .93f, .80f), true, Vector3.zero, null, Color.black);
+                if (l != null) look.NoShadow(l);
+            }
+            look.AddingOutside = false;
+        }
         // A water cooler and a chair for scale.
         kit.Kit("Kit_WaterCooler", new Vector3(46.9f, 0f, 16.9f), 225f, new Vector3(.32f, 1.1f, .32f));
         kit.Kit("Kit_TaskChair", new Vector3(44.6f, 0f, 15.8f), 200f, new Vector3(.6f, .9f, .6f));
@@ -306,11 +362,74 @@ public sealed partial class FrontRoomsStructuresLevel0 : FrontRoomsStructuresDis
         kit.Lid(3f, 0f, 9f, 3f, 2.9f, ceiling);
         kit.Troffer(new Vector3(4.5f, 2.9f, 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
         kit.Troffer(new Vector3(7.5f, 2.9f, 1.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
+        if (kit.New && FrontRoomsKitLibrary.Has("Kit_SystemCabinet_CPU"))
+        {
+            ComputerRoomNew();
+            return;
+        }
         // Grey cabinet rows (62 2.3, r3 still S1), 1.8 tall, with aisles between them.
         var grey = FrontRoomsPoolMaterials.Lit("computer cabinet grey", new Color(.62f, .62f, .60f), .35f);
         kit.StandIn("computer cabinet row", new Vector3(3.9f, .3f + .9f, 4.35f), new Vector3(6.6f, 1.8f, .6f), grey);
         kit.StandIn("computer cabinet row", new Vector3(3.9f, .3f + .9f, 7.05f), new Vector3(6.6f, 1.8f, .6f), grey);
         kit.StandIn("computer console", new Vector3(1.4f, .3f + .4f, 1.9f), new Vector3(1.6f, .8f, .7f), grey);
+    }
+
+    // K3 (NEW; S3-07, 62 2.3, 30_plan rule 4): the room as a 1989 machine room on 600 mm access floor (G1's cells; one cell with a
+    // panel out and its lifter beside it, two with the cold aisle's perforated row), 游戏视觉's P16 kits: a processor and disk row
+    // and a disk and comms row facing each other across a 1.6 m cold aisle, the tape wall and the downflow unit on the north wall,
+    // the console (desk, terminal, keyboard, chair), the band printer with its forms, the dot-matrix, the halon pair, the chart
+    // recorder and the power-off station at the door. Kit colliders (bodies) replace the stand-ins' (30_plan S3-07: walk gate).
+    void ComputerRoomNew()
+    {
+        const float F = .3f + .0066f;       // the access floor's top over the +0.30 deck (the cells' panels stand 6.6 mm proud)
+        // the floor: whole 3 m cells over the raised deck (the ramp's landing strip x 3..9, z 0..3 keeps its carpet)
+        foreach (var c in new[] { new Vector2(1.5f, 4.5f), new Vector2(1.5f, 7.5f), new Vector2(4.5f, 7.5f), new Vector2(7.5f, 7.5f) })
+            kit.Kit("Kit_AccessFloor_Cell_3m", new Vector3(c.x, .3f + .0056f, c.y), 0f, new Vector3(3f, .01f, 3f), null, false);
+        kit.Kit("Kit_AccessFloor_CellOpen_3m", new Vector3(1.5f, .3f + .0056f, 1.5f), 180f, new Vector3(3f, .01f, 3f), null, false);
+        kit.Kit("Kit_FloorTileLifted", new Vector3(2.6f, F, .5f), 200f, new Vector3(.6f, .2f, .6f), null, false);
+        foreach (var x in new[] { 4.5f, 7.5f }) kit.Kit("Kit_AccessFloor_CellPerf_3m", new Vector3(x, .3f + .0056f, 4.5f), 180f, new Vector3(3f, .01f, 3f), null, false);
+        kit.Kit("Kit_AccessFloor_EdgeTrim_3m", new Vector3(9f, .3f, 7.5f), 90f, new Vector3(3f, .3f, .05f), null, false);
+        kit.Kit("Kit_AccessFloor_RampNosing_1200", new Vector3(5.4f, .3f, .6f), 90f, new Vector3(1.2f, .01f, .05f), null, false);
+        // row A (z 4.3, fronts north) and row B (z 6.75, fronts south) across the cold aisle; 0.76 m cabinets from x 1.6
+        string[] rowA = { "Kit_SystemCabinet_PDU", "Kit_SystemCabinet_CPU", "Kit_SystemCabinet_CPU_Charcoal", "Kit_SystemCabinet_Disk", "Kit_SystemCabinet_Disk", "Kit_SystemCabinet_Disk_Charcoal", "Kit_SystemCabinet_Comms", "Kit_SystemCabinet_Comms_Charcoal" };
+        string[] rowB = { "Kit_SystemCabinet_DiskPack", "Kit_SystemCabinet_Disk", "Kit_SystemCabinet_CPU", "Kit_SystemCabinet_Disk_Charcoal", "Kit_SystemCabinet_CPU_Charcoal", "Kit_SystemCabinet_Comms", "Kit_SystemCabinet_PDU" };
+        for (var k = 0; k < rowA.Length; k++) kit.Kit(rowA[k], new Vector3(1.98f + .76f * k, F, 4.3f), 0f, new Vector3(.76f, 1.83f, .86f));
+        for (var k = 0; k < rowB.Length; k++) kit.Kit(rowB[k], new Vector3(1.98f + .76f * k, F, 6.75f), 180f, new Vector3(.76f, 1.83f, .86f));
+        // the north wall (face z 8.92): the downflow unit, two reel drives with their reels, the cartridge drive, a still reel drive, the
+        // tape rack; the halon pair in the corner; the tape cart in the service aisle
+        kit.Kit("Kit_CRACUnit", new Vector3(1.9f, F, 8.49f), 180f, new Vector3(1.83f, 1.9f, .86f));
+        foreach (var x in new[] { 3.78f, 4.54f })
+        {
+            var unit = kit.Kit("Kit_TapeDrive_Reel", new Vector3(x, F, 8.545f), 180f, new Vector3(.76f, 1.69f, .75f));
+            ReelAt(unit, "reelFile", "Kit_TapeReel_File");
+            ReelAt(unit, "reelMachine", "Kit_TapeReel_Machine");
+        }
+        kit.Kit("Kit_TapeDrive_Cartridge", new Vector3(5.30f, F, 8.545f), 180f, new Vector3(.76f, 1.69f, .75f));
+        kit.Kit("Kit_TapeDrive_Reel_Static", new Vector3(6.06f, F, 8.545f), 180f, new Vector3(.76f, 1.69f, .75f));
+        kit.Kit("Kit_TapeRack", new Vector3(6.975f, F, 8.72f), 180f, new Vector3(1.07f, 1.98f, .38f));
+        kit.Kit("Kit_HalonCylinder_Pair", new Vector3(8.4f, F, 8.72f), 180f, new Vector3(.67f, 1.55f, .35f));
+        kit.Kit("Kit_TapeCart", new Vector3(6.4f, F, 7.75f), 90f, new Vector3(.98f, 1.2f, .53f));
+        // the console where the stand-in stood: the operator faces the rows over the terminal
+        kit.Kit("Kit_OfficeDesk", new Vector3(1.4f, F, 1.95f), 180f, new Vector3(1.52f, .74f, .76f));
+        kit.Kit("Kit_DataTerminal", new Vector3(1.2f, F + .74f, 2.03f), 180f, new Vector3(.32f, .26f, .32f));
+        kit.Kit("Kit_Keyboard", new Vector3(1.2f, F + .74f, 1.705f), 180f, new Vector3(.46f, .03f, .17f));
+        kit.Kit("Kit_TaskChair", new Vector3(1.2f, F, 1.33f), 0f, new Vector3(.6f, .9f, .6f));
+        kit.Kit("Kit_DotMatrixPrinter_OnStand", new Vector3(2.9f, F, 2.0f), 180f, new Vector3(.7f, .94f, .52f));
+        // the band printer as an island on the landing with its forms
+        kit.Kit("Kit_LinePrinter", new Vector3(4.6f, .3f, 2.2f), 0f, new Vector3(.87f, 1.13f, .755f));
+        kit.Kit("Kit_FanfoldBox", new Vector3(5.55f, .3f, 2.35f), 15f, new Vector3(.52f, .28f, .46f));
+        // the west wall's chart recorder at 1.5 m; the power-off station at 1.2 m beside the arch (x 12)
+        kit.Kit("Kit_ChartRecorder", new Vector3(.08f, F + 1.5f, 3.4f), 90f, new Vector3(.36f, .4f, .16f));
+        kit.Kit("Kit_EPOStation_Halon", new Vector3(11.92f, 1.2f, 3.4f), -90f, new Vector3(.4f, .15f, .08f));
+    }
+
+    // A reel at a tape unit's sidecar anchor (the reel kit's origin is the anchor; the unit's yaw), as G3-a1 built them.
+    void ReelAt(GameObject unit, string anchor, string reel)
+    {
+        var info = unit != null ? FrontRoomsKitLibrary.GetInfo("Kit_TapeDrive_Reel") : null;
+        if (info == null || !info.TryAnchor(anchor, out var local)) return;
+        var at = Root.InverseTransformPoint(unit.transform.TransformPoint(local));
+        kit.Kit(reel, at, unit.transform.localEulerAngles.y, new Vector3(.27f, .27f, .06f), null, false);
     }
 
     // ---------------------------------------------------------------- the split suite (T_L0_SplitSuite, must)

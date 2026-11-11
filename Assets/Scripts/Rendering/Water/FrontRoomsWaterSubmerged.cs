@@ -56,6 +56,11 @@ public static class FrontRoomsWaterSubmerged
     /// <summary>Where the viewer is (FrontRoomsWaterPlanar sets it each frame; tools before they render): with more bodies
     /// than the shader holds (MaxBodies), the nearest are published.</summary>
     public static Vector3 ViewerPosition;
+    /// <summary>Soft room faces (FrontRoomsWaterSubmerged.hlsl, _FR_SubBoxSoft; structures G2-a, scene 4's SP6 spring line): the
+    /// width (m) over which the thrown niche light, the mirror and the bounce ramp out across each face of a body's room box
+    /// instead of stopping at it. 0 (the default: the game, the map's pools, the title rooms) is the hard test bit for bit; scene
+    /// 4 sets 0.6 in NEW (FrontRoomsStructuresWater). Never tied to SetWaterLight: the title rooms call that too.</summary>
+    public static float BoxSoft;
 
     public enum Mode { Off = 0, Desktop = 1, Phone = 2, WebGL = 3 }
 
@@ -106,6 +111,7 @@ public static class FrontRoomsWaterSubmerged
     static readonly Vector4[] lampPos = new Vector4[MaxLamps], lampCol = new Vector4[MaxLamps];
 
     static readonly int CountId = Shader.PropertyToID("_FR_SubCount");
+    static readonly int BoxSoftId = Shader.PropertyToID("_FR_SubBoxSoft");
     static readonly int RectId = Shader.PropertyToID("_FR_SubRect");
     static readonly int RoomId = Shader.PropertyToID("_FR_SubRoom");
     static readonly int ParamId = Shader.PropertyToID("_FR_SubParam");
@@ -147,6 +153,9 @@ public static class FrontRoomsWaterSubmerged
     {
         bodies.Clear();
         lamps.Clear();
+        nearest.Clear();
+        BoxSoft = 0f;
+        Shader.SetGlobalFloat(BoxSoftId, 0f);
         loaded = false;
         lastFrame = -1;
         ForceMode = -1;
@@ -330,6 +339,7 @@ public static class FrontRoomsWaterSubmerged
             lastFrame = Time.frameCount;
         }
         Shader.SetGlobalVector(WaterlineId, Waterline);
+        Shader.SetGlobalFloat(BoxSoftId, Mathf.Max(BoxSoft, 0f));
         for (var i = bodies.Count - 1; i >= 0; i--) if (bodies[i] == null) bodies.RemoveAt(i);
         if (bodies.Count > MaxBodies) bodies.Sort(ByViewerDistance);
         var n = Enabled ? Mathf.Min(bodies.Count, MaxBodies) : 0;
@@ -356,9 +366,19 @@ public static class FrontRoomsWaterSubmerged
             src0[i] = Source(b.srcA, b.radius);
             src1[i] = Source(b.srcB, b.radius);
         }
-        // the wet niches: each under one body's water, its live share read now (flicker, dim, dead)
+        // the wet niches: each under one body's water, its live share read now (flicker, dim, dead). With more than the shader
+        // holds (scene 4's SP6 registers 24), the ones nearest the viewer go first, so the walker's own room keeps its glow and
+        // caustics (structures G2-a); up to MaxLamps the registration order stands, as before (the map, the title rooms)
         var m = 0;
-        foreach (var l in lamps)
+        var order = lamps;
+        if (lamps.Count > MaxLamps)
+        {
+            nearest.Clear();
+            nearest.AddRange(lamps);
+            nearest.Sort(ByNearest);
+            order = nearest;
+        }
+        foreach (var l in order)
         {
             if (m >= MaxLamps) break;
             if (l == null || l.light == null) continue;
@@ -399,6 +419,16 @@ public static class FrontRoomsWaterSubmerged
         Shader.SetGlobalVector(LongDId, longD);
         Shader.SetGlobalVector(TexId, texels);
         PublishWaterLight(n, mode);
+    }
+
+    // The niches nearest the viewer first (the walker's room), nulls last.
+    static readonly List<Lamp> nearest = new List<Lamp>();
+    static readonly Comparison<Lamp> ByNearest = (a, b) => NicheDistance(a).CompareTo(NicheDistance(b));
+
+    static float NicheDistance(Lamp l)
+    {
+        if (l == null || l.light == null) return float.MaxValue;
+        return (l.light.transform.position - ViewerPosition).sqrMagnitude;
     }
 
     static int ByViewerDistance(Body a, Body b)
@@ -460,7 +490,8 @@ public static class FrontRoomsWaterSubmerged
     /// <summary>Tools and logs.</summary>
     public static string Describe()
     {
-        var s = "bodies " + bodies.Count + ", niches " + lamps.Count + ", mode " + LastMode + ", caustics "
+        var s = "bodies " + bodies.Count + ", niches " + lamps.Count + (lamps.Count > MaxLamps ? " (the " + MaxLamps + " nearest published)" : "")
+            + (BoxSoft > 0f ? ", soft room faces " + BoxSoft.ToString("0.00") + " m" : "") + ", mode " + LastMode + ", caustics "
             + (fine != null ? fine.name + " " + fine.width + "^2 x " + fine.depth + " " + fine.format : "none") + " / "
             + (longArr != null ? longArr.name + " " + longArr.width + "^2 x " + longArr.depth + " " + longArr.format : "none");
         foreach (var b in bodies)

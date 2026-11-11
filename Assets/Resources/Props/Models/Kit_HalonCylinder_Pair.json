@@ -1,0 +1,71 @@
+{
+ "name": "Kit_HalonCylinder_Pair",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.5,
+    0.0
+   ],
+   "size": [
+    0.68,
+    1.0,
+    0.32
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "wall_unit"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  45.0
+ ],
+ "lodBudget": [
+  5200,
+  1800,
+  400
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.33257219195365906,
+  0.0,
+  -0.2005000114440918
+ ],
+ "boundsMax": [
+  0.33257219195365906,
+  1.5499999523162842,
+  0.15299999713897705
+ ],
+ "triangles": 3116,
+ "slots": [
+  "RunB_FireRed",
+  "Prop_PlasticBlack",
+  "Prop_CompAtlas",
+  "Prop_Brass",
+  "Prop_Chrome",
+  "RunB_GalvSteel"
+ ],
+ "trianglesLod1": 1336,
+ "trianglesLod2": 428,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.68,
+  0.32
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

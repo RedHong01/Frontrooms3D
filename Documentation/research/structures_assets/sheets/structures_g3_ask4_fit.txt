@@ -1,0 +1,35 @@
+structures_g3_ask4.jpg 1920x2605, 32 tiles, 4 columns
+title | G3 ASK 4: THE PAPER AT SCALE | 491/1544 FIT
+a4_SP3_00_t.png | TODAY · SP3 s00 spine | today's greybox | label 197/457 data 120/248 FIT
+a4_SP3_00_a.png | A OFF · SP3 s00 spine | NEW, ask 4 off | label 193/457 data 112/252 FIT
+a4_SP3_00_b.png | B · SP3 s00 spine | lot step per wall | label 160/457 data 136/285 FIT
+a4_SP3_00_c.png | C REC · SP3 s00 spine | B + butt joins | label 196/457 data 112/249 FIT
+a4_SP3_01_t.png | TODAY · SP3 s01 V1 | today's greybox | label 176/457 data 120/269 FIT
+a4_SP3_01_a.png | A OFF · SP3 s01 V1 | NEW, ask 4 off | label 172/457 data 112/273 FIT
+a4_SP3_01_b.png | B · SP3 s01 V1 | lot step per wall | label 139/457 data 136/306 FIT
+a4_SP3_01_c.png | C REC · SP3 s01 V1 | B + butt joins | label 175/457 data 112/270 FIT
+a4_SP3_04_t.png | TODAY · SP3 s04 V4 | today's greybox | label 176/457 data 120/269 FIT
+a4_SP3_04_a.png | A OFF · SP3 s04 V4 | NEW, ask 4 off | label 172/457 data 112/273 FIT
+a4_SP3_04_b.png | B · SP3 s04 V4 | lot step per wall | label 139/457 data 136/306 FIT
+a4_SP3_04_c.png | C REC · SP3 s04 V4 | B + butt joins | label 175/457 data 112/270 FIT
+a4_SP3_05_t.png | TODAY · SP3 s05 V4 | today's greybox | label 176/457 data 120/269 FIT
+a4_SP3_05_a.png | A OFF · SP3 s05 V4 | NEW, ask 4 off | label 172/457 data 112/273 FIT
+a4_SP3_05_b.png | B · SP3 s05 V4 | lot step per wall | label 139/457 data 136/306 FIT
+a4_SP3_05_c.png | C REC · SP3 s05 V4 | B + butt joins | label 175/457 data 112/270 FIT
+a4_SP4_00_t.png | TODAY · SP4 s00 stack | today's greybox | label 201/457 data 120/244 FIT
+a4_SP4_00_a.png | A OFF · SP4 s00 stack | NEW, ask 4 off | label 197/457 data 112/248 FIT
+a4_SP4_00_b.png | B · SP4 s00 stack | lot step per wall | label 164/457 data 136/281 FIT
+a4_SP4_00_c.png | C REC · SP4 s00 stack | B + butt joins | label 200/457 data 112/245 FIT
+a4_SP4_10_t.png | TODAY · SP4 s10 F3 | today's greybox | label 175/457 data 120/270 FIT
+a4_SP4_10_a.png | A OFF · SP4 s10 F3 | NEW, ask 4 off | label 171/457 data 112/274 FIT
+a4_SP4_10_b.png | B · SP4 s10 F3 | lot step per wall | label 138/457 data 136/307 FIT
+a4_SP4_10_c.png | C REC · SP4 s10 F3 | B + butt joins | label 174/457 data 112/271 FIT
+a4_join_newpaper0.png | A OFF · V4 join 2x | s04, 6.4 m line | label 160/457 data 120/285 FIT
+a4_join_newpaper1.png | B · V4 join 2x | lot step only | label 127/457 data 104/318 FIT
+a4_join_newpaper2.png | C REC · V4 join 2x | joint 1.5 mm, slip | label 163/457 data 144/282 FIT
+a4_amp_v4.png | C vs A · x24 SP3 s04 | 303137 px, max 14 / 255 | label 192/457 data 184/253 FIT
+a4_amp_sp4.png | B vs A · x24 SP4 s00 | 174589 px, max 3 / 255 | label 192/457 data 176/253 FIT
+a4_amp_sp3.png | B vs A · x24 SP3 s01 | 149210 px, max 3 / 255 | label 192/457 data 176/253 FIT
+a4_what.png | ASK 4 · A / B / C | shader only, no map | label 140/457 data 152/305 FIT
+a4_seen.png | ASK 4 · seen, cost, REC | Red picks | label 200/457 data 72/245 FIT
+ALL LABELS FIT

@@ -1,0 +1,64 @@
+{
+ "name": "Kit_StorefrontCorner",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "top",
+   "pos": [
+    0.0,
+    1.7211,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p17",
+  "office",
+  "storefront"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  1500,
+  300,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-b 2026-11-10 (30_plan.md P17 structures_office_props: storefront)",
+ "boundsMin": [
+  -0.05714999884366989,
+  0.0,
+  -0.05714999884366989
+ ],
+ "boundsMax": [
+  0.05855274945497513,
+  1.7210999727249146,
+  0.05855274945497513
+ ],
+ "triangles": 168,
+ "slots": [
+  "Trans_AluminiumSatin",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 124,
+ "trianglesLod2": 60,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.0007013753056526184,
+  0.0007013753056526184
+ ],
+ "footprintSize": [
+  0.11570274829864502,
+  0.11570274829864502
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.771
+}

@@ -1,0 +1,18 @@
+structures_g2_flash.jpg 1919x2167, 15 tiles, 3 columns
+title | G2 · LW0 FLASH CHECK AT SP1 SP2 SP6 | 658/1576 FIT
+f_s02_ev.png | SP1 s02 eye · 6.0 | events: the L03 lenses and the wall under the grid | label 163/617 data 400/442 FIT
+f_s02_off.png | Lenses hidden · 3.0 | the same turn, the L03 lenses' glow off | label 172/617 data 312/433 FIT
+f_s02_half.png | L03 x0.5 · 3.0 | light and lens at half (Look.Scale) | label 135/617 data 280/470 FIT
+f_court_ev.png | SP1 court · 4.5 | events: lit treads, dark nosings, terraces | label 144/617 data 336/461 FIT
+f_court_half.png | Court, L03 x0.5 · 2.0 | the troffers' light on the treads halved | label 195/617 data 320/410 FIT
+f_court_off.png | Court, lenses hidden · 4.5 | the lenses do not make the court's | label 232/617 data 272/373 FIT
+f_s00_ev.png | SP1 s00 arrival · 7.0 | events: scene 4's placard, the near pier | label 200/617 data 320/405 FIT
+f_s00_np.png | Placards hidden · 4.5 | test furniture, not game content | label 193/617 data 256/412 FIT
+f_sp2.png | SP2 s08 cascade · 2.0 | SP2's worst stop 2.5 (s05): PASS | label 203/617 data 256/402 FIT
+f_s07_ev.png | SP6 s07 deck · 4.5 | events: B2's ladder of lit treads, nosings | label 175/617 data 336/430 FIT
+f_s07_off.png | B2 lights off · 3.5 | a quarter 4.0; + glaze 0.9 3.0 | label 171/617 data 240/434 FIT
+f_beach.png | SP6 beach water · 0.0 | LW0's own case: PASS | label 200/617 data 160/405 FIT
+f_counts.png | COUNTS | SP1 and SP6 over 3; SP2 passes | label 59/617 data 240/546 FIT
+f_terms.png | TERMS | none of them in our paths | label 51/617 data 200/554 FIT
+f_next.png | NEXT | for the parent: lamps line, owners, Red | label 37/617 data 312/568 FIT
+ALL LABELS FIT

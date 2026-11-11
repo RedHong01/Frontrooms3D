@@ -105,6 +105,16 @@ Shader "FrontRooms/Surface"
         [Toggle(_FR_SHEEN)] _UseSheen ("Creature cloth (sheen + per-texel metal)", Float) = 0
         _Sheen ("Sheen strength", Range(0, 1)) = 0
 
+        // Thin translucent laminate (structures G2-b: the slide's SL-A tube, unpigmented fibreglass 8 mm; research/structures_assets
+        // 20_research.md A.7.2 and level_space 61 section 2.2, "light and shapes, not detail"). With this on, the light that reaches
+        // the surface's BACK face (every lamp with its shadow, and the ambient) comes through the laminate, diffused and tinted, and a
+        // lamp straight behind it along the view glows through; the surface stays opaque (no sorting; its depth is there for the
+        // planar water and GlassRT, which treats it as a plain Surface: diffuse, no traced mirror). Only Prop_Gelcoat_SLA_* enable
+        // it; off, every material is bit-identical. WebGL compiles it out.
+        [Toggle(_FR_TRANSLUCENT)] _UseTranslucent ("Thin translucent laminate (back light through it)", Float) = 0
+        _TransTint ("Translucent: transmitted colour", Color) = (0.55, 0.85, 0.82, 1)
+        _TransParams ("Translucent: amount, wrap, forward glow, glow power", Vector) = (0.6, 0.35, 0.25, 4)
+
         // Pool tile (research/bathroom_rooms/70_look_build.md, "Tile"; maps from Tools/lookdev/pool_tile/gen_pool_tile.py). With
         // this on, the Albedo slot holds TILE DATA (linear: R tone, the albedo multiplier 0.75 + 0.5 R; G glaze thickness; B grout)
         // and the mask R smoothness, G cavity, B dirt potential, A chips. The colours are the material's: the glaze (_BaseColor)
@@ -230,6 +240,9 @@ Shader "FrontRooms/Surface"
             // Zone doors' leaf wear (_FR_LEAFWEAR): in every pass, so the SRP batcher layout never changes.
             float4 _FR_LeafWearRect;
             half4 _FR_LeafWearChip;
+            // Thin translucent laminate (_FR_TRANSLUCENT): in every pass, so the SRP batcher layout never changes.
+            half4 _TransTint;
+            float4 _TransParams;
         CBUFFER_END
 
         // _BaseMap, _BumpMap and _EmissionMap come from URP's SurfaceInput,
@@ -274,6 +287,8 @@ Shader "FrontRooms/Surface"
             #pragma shader_feature_local_fragment _FR_TILE
             // Surface detail (the Office's materials and what they share; 60_build.md section 2). Off: bit-identical.
             #pragma shader_feature_local_fragment _FR_DETAIL
+            // Thin translucent laminate (Prop_Gelcoat_SLA_* only; structures G2-b). Off: bit-identical.
+            #pragma shader_feature_local_fragment _FR_TRANSLUCENT
             // Look-dev debug views (specular-only, diffuse-only, wear masks, albedo). A global
             // shader_feature: no material enables it, so player builds strip it; the editor
             // compiles it on demand when a tool calls Shader.EnableKeyword("_FR_DEBUG_VIEW").
@@ -941,12 +956,31 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if !defined(SHADER_API_GLES3) && !defined(SHADER_API_WEBGPU)
+            // structures_scale_terms (the game visual line's structures_assets P18; 30_plan rows S3-06, S4-08, ask 4): WebGL compiles it out
+            #define FR_SCALE 1
+        #else
+            #define FR_SCALE 0
+        #endif
+        #if FR_SCALE
+            // Global, written by FrontRoomsStructuresAssets in scene 4 only (unset = 0 everywhere else, so none of the scale terms
+            // runs and the frame is today's, bit for bit): x Red's ask 4 (0 off, the default: the paper is Red's pick; 1 a lot step
+            // per wall; 2 lot steps and a butt join each roll length on walls taller than one roll), y 1 = the lay-in T-bar drawn as
+            // a footprint line in tall rooms (scene 4's NEW), z one roll's length in metres (6.4: 7 yd), w unused.
+            float4 _FR_ScaleTerms;
+        #endif
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
                 float4 tangentOS  : TANGENT;
                 float2 uv         : TEXCOORD0;
+            #if FR_SCALE
+                // scene 4's per-wall value (FrontRoomsStructuresMesh UV1, NEW only: x the wall's lot 0..1, 0 = not a wall; y the
+                // wall's foot, metres); every other mesh reads zeros
+                float2 wallUV     : TEXCOORD1;
+            #endif
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -958,6 +992,9 @@ Shader "FrontRooms/Surface"
                 float4 tangentWS  : TEXCOORD2;
                 float2 uv         : TEXCOORD3;
                 half4 fogAndVertexLight : TEXCOORD4;
+            #if FR_SCALE
+                float2 wall       : TEXCOORD6;
+            #endif
                 DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 5);
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
@@ -976,6 +1013,9 @@ Shader "FrontRooms/Surface"
                 o.normalWS = n.normalWS;
                 o.tangentWS = float4(n.tangentWS, input.tangentOS.w * GetOddNegativeScale());
                 o.uv = input.uv;
+            #if FR_SCALE
+                o.wall = input.wallUV;
+            #endif
                 half fog = ComputeFogFactor(p.positionCS.z);
                 o.fogAndVertexLight = half4(fog, VertexLighting(p.positionWS, n.normalWS));
                 OUTPUT_SH(o.normalWS, o.vertexSH);
@@ -2552,6 +2592,161 @@ Shader "FrontRooms/Surface"
             }
         #endif
 
+        #if defined(_FR_TRANSLUCENT) && !defined(SHADER_API_GLES3) && !defined(SHADER_API_WEBGPU)
+            // Thin translucent laminate (structures G2-b, SL-A): one light's share through the sheet. nBack is the BACK face's
+            // normal; the light reaching it is diffused by the glass mat (a wrapped lobe: the sheet scatters light round its own
+            // thickness) and a little goes on forward along the view (a lamp straight behind the sheet glows through it).
+            half3 FRTransOne(Light light, half3 nBack, half3 v, half wrap, half fwd, half fwdPow)
+            {
+                half att = light.distanceAttenuation * light.shadowAttenuation;
+                half d = saturate((dot(nBack, light.direction) + wrap) / (1.0h + wrap));
+                half f = fwd * pow(saturate(dot(-v, light.direction)), fwdPow);
+                return light.color * (att * (d + f));
+            }
+
+            // What comes through: every lamp (with its shadow) and the ambient on the back face, tinted by the laminate
+            // (_TransTint) and scaled by its transmittance (_TransParams.x). Added to the front's own lighting in Frag; above the
+            // water only (the tube is never under it).
+            half3 FRTranslucent(InputData inputData, half occlusion)
+            {
+                half amount = (half)_TransParams.x;
+                if (amount <= 0.0h) return half3(0, 0, 0);
+                half3 nb = -inputData.normalWS;
+                half3 v = inputData.viewDirectionWS;
+                half wrap = (half)_TransParams.y;
+                half fwd = (half)_TransParams.z;
+                half fwdPow = max((half)_TransParams.w, 1.0h);
+                half4 shadowMask = CalculateShadowMask(inputData);
+                AmbientOcclusionFactor aoFactor;
+                aoFactor.indirectAmbientOcclusion = 1.0h;
+                aoFactor.directAmbientOcclusion = 1.0h;
+                uint meshRenderingLayers = GetMeshRenderingLayer();
+                half3 sum = SampleSH(nb) * occlusion;
+                Light mainLight = GetMainLight(inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
+            #endif
+                    sum += FRTransOne(mainLight, nb, v, wrap, fwd, fwdPow);
+            #if defined(_ADDITIONAL_LIGHTS)
+                uint pixelLightCount = GetAdditionalLightsCount();
+            #if USE_CLUSTER_LIGHT_LOOP
+                [loop] for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                {
+                    CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        sum += FRTransOne(light, nb, v, wrap, fwd, fwdPow);
+                }
+            #endif
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            #ifdef _LIGHT_LAYERS
+                    if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            #endif
+                        sum += FRTransOne(light, nb, v, wrap, fwd, fwdPow);
+                LIGHT_LOOP_END
+            #endif
+                return sum * (half3)_TransTint.rgb * amount;
+            }
+        #endif
+
+        #if FR_SCALE
+            // ---------------------------------------------------------------- structures_scale_terms (P18)
+            // The banal kit at the wrong scale (20_research.md C.3.3 S3 and C.3.4 S4): scene 4's walls are 14.6 m tall (V4), 39 m long
+            // (SP3's spine) or 11.9 m (SP4's stack), where one roll of Red's C+2 paper repeats as a texture would. Each term has a real
+            // cause and runs only where _FR_ScaleTerms turns it on.
+
+            // A line of width w (m) centred at d = 0, faded to its area mean once it is under a pixel (px m): K7's filter.
+            float FRScaleLine(float d, float w, float px)
+            {
+                return saturate((0.5 * w + 0.5 * px - abs(d)) / px) * saturate(w / px);
+            }
+
+            // The metres one pixel spans at p (the frustum's height over the screen's at this distance, stretched by the view's
+            // slant), as FRDetailSurface takes it: from the camera, never from derivatives.
+            float FRScalePx(float3 p, float3 nGeo)
+            {
+                float3 toCam = _WorldSpaceCameraPos.xyz - p;
+                float dist = max(length(toCam), 1e-4);
+                float ndv = max(abs(dot(nGeo, toCam / dist)), 0.2);
+                return max(dist * 2.0 / (max(abs(UNITY_MATRIX_P._m11), 1e-3) * max(_ScreenParams.y, 1.0)) / ndv, 1e-5);
+            }
+
+            // A wall's lot (its UV1.x, a hash of the wall's line) as a tone step 1.5-2.5 % lighter or darker with a small hue shift:
+            // every production run has its own shade and installers keep one lot to a wall (F16-F18), so the step falls at corners.
+            half3 FRScaleLot(float lot)
+            {
+                float h = frac(lot * 7.31 + 0.137);
+                float s = (lot < 0.5 ? -1.0 : 1.0) * (0.015 + 0.010 * h);
+                float hue = (frac(lot * 13.7 + 0.71) - 0.5) * 0.012;
+                return half3(1.0 + s + hue, 1.0 + s, 1.0 + s - hue);
+            }
+
+            // Ask 4 C: over the wall's foot (UV1.y) each roll length starts the next roll, hung a few mm off the pattern (the match
+            // slip: up 2-6 mm, along +-1.5 mm, by roll). Returns the slip (m: along the wall, up) and the roll's index (0 = the first).
+            float2 FRScaleSlip(float2 wall, float y, out float rollK)
+            {
+                float roll = max(_FR_ScaleTerms.z, 1.0);
+                rollK = max(floor((y - wall.y) / roll), 0.0);
+                if (rollK < 1.0) return float2(0.0, 0.0);
+                float a = frac(sin(wall.x * 91.7 + rollK * 12.9898) * 43758.5453);
+                float b = frac(sin(wall.x * 47.3 + rollK * 78.233) * 24634.6345);
+                return float2((a - 0.5) * 0.003, 0.002 + 0.004 * b);
+            }
+
+            // The butt join's line: dust in the 1.5 mm joint (darker) and the upper sheet's edge lifted over it (a lighter line just
+            // above), filtered by the footprint; 0 below the first roll's top.
+            half FRScaleSeam(float2 wall, float y, float px, out half lift)
+            {
+                float roll = max(_FR_ScaleTerms.z, 1.0);
+                float r = (y - wall.y) / roll;
+                float k = round(r);
+                lift = 0.0h;
+                if (k < 1.0) return 0.0h;
+                float d = (r - k) * roll;
+                lift = (half)FRScaleLine(d - 0.0018, 0.0015, px);
+                return (half)FRScaleLine(d, 0.0015, px);
+            }
+
+        #if FR_DETAIL
+            // The lay-in ceiling seen from far below (kind 3; C.3.3 S3, K7): past about 1 cm a pixel the map's drawn T-bar (24 mm, at
+            // every 0.6 m of the map's 1.2 m tile) aliases on the mips into moire; there the grid is drawn again as a line filtered by
+            // the footprint over the panel's own colour (the map at the panel's centre at a quarter-panel texel, where no bar is), the
+            // bar's colour from the map on the bar. Only on a lid more than about 4 m over the eye (V4's 14.6 m lid, the slot hall's
+            // 10.7, a well's lid), so every 2.9 m room draws as today. Both lay-in maps are 2048 px a tile (the LOD assumes it).
+            void FRScaleTBar(float3 p, float3 nGeo, float2 m, inout half4 albedo, inout half4 mask, inout half3 nTS)
+            {
+                float px = FRScalePx(p, nGeo);
+                float w = smoothstep(3.5, 4.5, p.y - _WorldSpaceCameraPos.y) * smoothstep(0.008, 0.016, px);
+                UNITY_BRANCH
+                if (w <= 0.0) return;
+                const float TS = 0.6, BAR = 0.0238;
+                float2 cf = floor(m / TS);
+                float2 g = m / TS - cf;
+                float2 e = min(g, 1.0 - g) * TS;
+                float cov = max(FRScaleLine(e.x, BAR, px), FRScaleLine(e.y, BAR, px));
+                float texel0 = _TileSize.x / max(_BaseMap_ST.x, 1e-3) / 2048.0;
+                float2 toUV = _BaseMap_ST.xy / max(_TileSize.xy, 1e-3);
+                float2 uvPanel = (cf + 0.5) * TS * toUV + _BaseMap_ST.zw;
+                float2 mb = e.x < e.y ? float2(round(m.x / TS) * TS, m.y) : float2(m.x, round(m.y / TS) * TS);
+                float2 uvBar = mb * toUV + _BaseMap_ST.zw;
+                float lodPanel = log2(max(TS * 0.25 / texel0, 1.0));
+                float lodBar = log2(max(BAR * 0.25 / texel0, 1.0));
+                half4 aP = SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_BaseMap, uvPanel, lodPanel);
+                half4 aB = SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_BaseMap, uvBar, lodBar);
+                half4 mP = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvPanel, lodPanel);
+                half4 mB = SAMPLE_TEXTURE2D_LOD(_MaskMap, sampler_MaskMap, uvBar, lodBar);
+                half c = (half)cov;
+                half k = (half)w;
+                albedo = lerp(albedo, lerp(aP, aB, c) * _BaseColor, k);
+                mask = lerp(mask, lerp(mP, mB, c), k);
+                nTS = normalize(lerp(nTS, half3(0.0h, 0.0h, 1.0h), k));
+            }
+        #endif
+        #endif
+
             void Frag(Varyings input, out half4 outColor : SV_Target0
             #ifdef _WRITE_RENDERING_LAYERS
                 , out uint outRenderingLayers : SV_Target1
@@ -2582,6 +2777,13 @@ Shader "FrontRooms/Surface"
                 }
             #endif
                 float2 uv = metres / max(_TileSize.xy, 1e-3) * _BaseMap_ST.xy + _BaseMap_ST.zw;
+            #if FR_SCALE && defined(_FR_PRINT)
+                // structures_scale_terms (ask 4 C): above each butt join the next roll, a few mm off the pattern
+                float rollK = 0.0;
+                UNITY_BRANCH
+                if (_FR_ScaleTerms.x > 1.5 && input.wall.x > 0.0)
+                    uv += FRScaleSlip(input.wall, input.positionWS.y, rollK) * _BaseMap_ST.xy / max(_TileSize.xy, 1e-3);
+            #endif
 
             #if defined(_FR_PRINT)
                 // Paper x print. Everything below (wear, stains, grime) sits over the ink. The cue
@@ -2614,6 +2816,33 @@ Shader "FrontRooms/Surface"
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv) * _BaseColor;
                 half4 mask = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
                 half3 nTS = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv), _BumpScale);
+            #if FR_SCALE && FR_DETAIL
+                // structures_scale_terms (K7): the lay-in ceiling's T-bar as a footprint line in tall rooms (scene 4's NEW only)
+                UNITY_BRANCH
+                if (_FR_ScaleTerms.y > 0.5 && _DetailKind.x > 2.5 && _DetailKind.x < 3.5 && nGeo.y < -0.5)
+                    FRScaleTBar(input.positionWS, nGeo, metres, albedo, mask, nTS);
+            #endif
+            #endif
+
+            #if FR_SCALE
+                // structures_scale_terms (Red's ask 4; off unless Red's key turns it on): the wall's lot on the paper and on painted
+                // board (kind 1); on the paper above one roll, the butt join's line and the next roll's own shade
+                UNITY_BRANCH
+                if (_FR_ScaleTerms.x > 0.5 && input.wall.x > 0.0)
+                {
+                #if defined(_FR_PRINT)
+                    albedo.rgb *= FRScaleLot(input.wall.x);
+                    UNITY_BRANCH
+                    if (_FR_ScaleTerms.x > 1.5 && rollK > 0.5)
+                    {
+                        half lift;
+                        half gap = FRScaleSeam(input.wall, input.positionWS.y, FRScalePx(input.positionWS, nGeo), lift);
+                        albedo.rgb *= (1.0h - 0.45h * gap) * (1.0h + 0.08h * lift) * (half)(1.0 + 0.016 * (frac(rollK * 0.618 + input.wall.x) - 0.5));
+                    }
+                #elif FR_DETAIL
+                    if (_DetailKind.x > 0.5 && _DetailKind.x < 1.5) albedo.rgb *= FRScaleLot(input.wall.x);
+                #endif
+                }
             #endif
 
             #if defined(_FR_LEAFWEAR) && defined(_FR_MESH_UV)
@@ -2700,7 +2929,8 @@ Shader "FrontRooms/Surface"
             #else
                 half wetPorous = saturate((0.55h - smoothness) / 0.4h);
             #endif
-                float wetY = (_WaterY < -999.0 && sub.body >= 0) ? sub.waterY : _WaterY;
+                // (soft room faces, structures G2-a: only inside the room's own box, never on its ramp outside it; 1 with the hard test)
+                float wetY = (_WaterY < -999.0 && sub.body >= 0 && sub.roomW > 0.5) ? sub.waterY : _WaterY;
                 FRWetBand(input.positionWS, metres.x, nGeo, wetPorous, wetY, albedo.rgb, smoothness, nTS);
 
             #if defined(_FR_DAMAGE)
@@ -2836,6 +3066,10 @@ Shader "FrontRooms/Surface"
             #if defined(_FR_SHEEN)
                 if (!sub.under)
                     color.rgb += FRSheen(inputData, s, mask.a);
+            #endif
+            #if defined(_FR_TRANSLUCENT) && !defined(SHADER_API_GLES3) && !defined(SHADER_API_WEBGPU)
+                if (!sub.under)
+                    color.rgb += FRTranslucent(inputData, s.occlusion);
             #endif
                 UNITY_BRANCH
                 if (sub.room)

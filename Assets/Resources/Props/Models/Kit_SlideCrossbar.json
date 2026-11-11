@@ -1,0 +1,53 @@
+{
+ "name": "Kit_SlideCrossbar",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "slide",
+  "p15"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.5,
+  9.0,
+  32.0
+ ],
+ "lodBudget": [
+  1400,
+  520,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.8999999761581421,
+  -0.035999998450279236,
+  -0.035999998450279236
+ ],
+ "boundsMax": [
+  0.8999999761581421,
+  0.035999998450279236,
+  0.035999998450279236
+ ],
+ "triangles": 1488,
+ "slots": [
+  "Prop_StainlessSatin"
+ ],
+ "trianglesLod1": 624,
+ "trianglesLod2": 148,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.7999999523162842,
+  0.07199999690055847
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

@@ -109,6 +109,40 @@ public static class FrontRoomsMapVerification
     }
 
     /// <summary>
+    /// The walkable stair (MAP_GENERATION.md "Walkable stair") for the combined round, whatever the profile says: the same
+    /// seeds and floors as the EXIT planner check, with every EXIT 1 x 2 (ChooseStairExit) and each later floor started in the
+    /// previous X1-X2 (SeedForStair), checked by the validator's own loops (CheckStairExit). Writes
+    /// Verification/map-verification-walkable-stair.json; the profile is not changed.
+    /// -executeMethod FrontRoomsMapVerification.RunWalkableStairBatch; a failure throws after the report is saved.
+    /// </summary>
+    [MenuItem("FrontRooms/Map/Verify walkable stair EXITs (forced on)")]
+    public static void RunWalkableStairBatch()
+    {
+        var profile = FrontRoomsLevelProfiles.Resolve();
+        var modules = profile.ModuleData();
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var exits = FrontRoomsMapValidator.RunStairExits(profile.generation, FirstSeed, SeedCount, ExitFloors, TitleDoorWorldCell, TitleHalfCells, TitleRows, modules);
+        var seconds = watch.Elapsed.TotalSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+        var path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Verification", "map-verification-walkable-stair.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, JsonUtility.ToJson(exits, true));
+        var pass = exits.failed == 0;
+        var summary = "[FrontRoomsMap] walkable stair " + (pass ? "PASS" : "FAIL") + " - EXIT planner " + exits.passed + "/" + exits.seedCount + " seeds x " + exits.floors
+            + " floors (" + ExitSummary(exits) + ") in " + seconds + " s - " + path;
+        if (pass) Debug.Log(summary);
+        else
+        {
+            foreach (var seed in exits.seeds)
+                if (!seed.passed) { Debug.LogError("[FrontRoomsMap] walkable stair, seed " + seed.seed + ": " + string.Join(" | ", seed.errors)); break; }
+            Debug.LogError(summary);
+        }
+        Debug.Log("[FrontRoomsMap] walkable stair per floor: " + ExitDetail(exits));
+        Debug.Log("[FrontRoomsMap] walkable stair " + FrontRulesSummary(exits));
+        Debug.Log("[FrontRoomsMap] walkable stair " + WidenedFloors(exits));
+        if (!pass) throw new Exception(summary);
+    }
+
+    /// <summary>
     /// C16 (V7b) for the combined round, whatever the profile says: alarm doors on with every Low and Standard zone's slot
     /// forced (so every rule meets an alarm door wherever one fits), foil on and forced and Run! rooms on with the profile's
     /// budget (one ledger, and the "unchanged" rows for both), the profile's numbers otherwise.

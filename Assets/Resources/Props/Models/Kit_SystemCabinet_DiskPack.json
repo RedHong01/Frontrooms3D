@@ -1,0 +1,75 @@
+{
+ "name": "Kit_SystemCabinet_DiskPack",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.475,
+    0.0
+   ],
+   "size": [
+    0.76,
+    0.95,
+    0.76
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "row_unit"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  3000,
+  1000,
+  220
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "service": 1.2,
+ "boundsMin": [
+  -0.3799999952316284,
+  0.0,
+  -0.3799999952316284
+ ],
+ "boundsMax": [
+  0.3799999952316284,
+  0.9520000219345093,
+  0.39159998297691345
+ ],
+ "triangles": 3748,
+ "slots": [
+  "Prop_PlasticGrey",
+  "Prop_SteelBeige",
+  "Prop_PlasticPutty",
+  "Prop_Glass",
+  "Prop_Chrome",
+  "Prop_Aluminium",
+  "Prop_PlasticBlack",
+  "Prop_CompAtlas",
+  "Prop_CompIndicator",
+  "Prop_PerfSteel"
+ ],
+ "trianglesLod1": 1544,
+ "trianglesLod2": 264,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.76,
+  0.76
+ ],
+ "placement": "Floor",
+ "minCeiling": 0.0
+}

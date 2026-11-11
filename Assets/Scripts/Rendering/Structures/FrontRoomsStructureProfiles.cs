@@ -525,7 +525,12 @@ public static class FrontRoomsStructureProfiles
                         normals.Add(nrm.normalized);
                         var v = idx == 0 && e == 1 && s.Closed ? vSpan : s.V[idx];
                         if (o.vRange.sqrMagnitude > 0f) v = Mathf.Lerp(o.vRange.x, o.vRange.y, vSpan > 1e-6f ? Mathf.Clamp01(v / vSpan) : 0f);
-                        uvs.Add(new Vector2(o.u0 + along[j] * o.uScale, v));
+                        // u: metres along the path at the centreline; at a creased joint each copy measures its own point's distance
+                        // along its own segment (structures G2-c: a mitred corner's points lie off the centreline's station; with the
+                        // centreline's u the run after a corner was sheared and its tiles drew as chevrons)
+                        var along0 = along[j];
+                        if (fr >= 0) along0 += Vector3.Dot(pos - path[j], segT[fr]);
+                        uvs.Add(new Vector2(o.u0 + along0 * o.uScale, v));
                     }
                 }
             }

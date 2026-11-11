@@ -1,0 +1,54 @@
+{
+ "name": "Kit_DoorWedge",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "closet",
+  "p20"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  20.0
+ ],
+ "lodBudget": [
+  120,
+  40,
+  12
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.02500000037252903,
+  0.0,
+  -0.07500000298023224
+ ],
+ "boundsMax": [
+  0.02500000037252903,
+  0.03999999910593033,
+  0.07500000298023224
+ ],
+ "triangles": 20,
+ "slots": [
+  "Prop_WoodOak"
+ ],
+ "trianglesLod1": 12,
+ "trianglesLod2": 12,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.05000000074505806,
+  0.15000000596046448
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

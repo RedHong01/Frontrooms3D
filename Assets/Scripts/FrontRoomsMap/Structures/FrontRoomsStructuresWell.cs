@@ -38,6 +38,16 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
     public override void Build(FrontRoomsStructures host)
     {
         kit = new FrontRoomsStructuresKit(host, this);
+        // K2 (游戏视觉's structures G2-a, NEW only): the zone lamps line's pool kits on this district's lamps (PlaceLampKits after the
+        // shell), and each floor's own renderers inside its own probe (the K1 review's FR-1; the first hall a piece lies in takes
+        // it: the core, then the floors by height)
+        kit.PoolLamps = true;
+        kit.Halls(
+            FrontRoomsStructuresKit.Hall(21f, 9f, 24f, 18f, -3f, 21f),       // the B3 core, every level
+            FrontRoomsStructuresKit.Hall(0f, 0f, 24f, 21f, -3f, 8.85f),      // F0, the pool hall and its gallery
+            FrontRoomsStructuresKit.Hall(0f, 0f, 24f, 21f, 8.85f, 12.4f),    // F1 Run!
+            FrontRoomsStructuresKit.Hall(0f, 0f, 24f, 21f, 12.4f, 16.3f),    // F2 Office
+            FrontRoomsStructuresKit.Hall(0f, 0f, 24f, 21f, 16.3f, 21f));     // F3 Level 0
         tile = FrontRoomsPoolMaterials.Tile;
         nosing = FrontRoomsPoolMaterials.Nosing;
         runLower = FrontRoomsPoolMaterials.Surface("RunB_BlockLower", new Color(.55f, .56f, .55f));
@@ -71,8 +81,23 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         kit.Safe("cascade", BuildCascade);
         kit.Safe("lamps", BuildLamps);
         kit.Finish();
+        // K2 (游戏视觉's structures G2-d, NEW only; review 5.2, 6, 8): F0's cove base and EJ171 joints on its dry decks (the deck and
+        // the +4.5 gallery), two deck drains, four blank depth marks at the basin, read from the finished shell
+        // (FrontRoomsStructurePoolFinish); render only, finished at once
+        if (kit.New)
+        {
+            kit.Safe("pool finish", () => new FrontRoomsStructurePoolFinish.Plan(kit, 0f, 0f)
+                .Hall(FrontRoomsStructuresKit.Hall(0f, 0f, 24f, 21f, -1.2f, 8.5f))
+                .Drain(new Vector3(2.7f, 0f, 13.5f)).Drain(new Vector3(9f, 0f, 19.65f))
+                .Mark(new Vector3(8f, 0f, 18f), Vector3.forward).Mark(new Vector3(11f, 0f, 18f), Vector3.forward)
+                .Mark(new Vector3(15f, 0f, 10.5f), Vector3.right).Mark(new Vector3(15f, 0f, 16.5f), Vector3.right)
+                .Build());
+            kit.Finish();
+        }
         kit.Safe("office dressing", DressOffices);
         kit.Safe("zone volumes", BuildVolumes);
+        // K2: after the shell's colliders and the pool rooms (a bounce binds to a box of its own room)
+        kit.Safe("pool lamps", kit.PlaceLampKits);
         kit.Safe("signs", BuildSigns);
 
         Box = new Bounds(Site + new Vector3(12f, 9.6f, 10.5f), new Vector3(28f, 24f, 25f));
@@ -92,6 +117,14 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
 
         try { host.Look.Probe(Root, new Bounds(Site + new Vector3(12f, Lid0 * .5f, 10.5f), new Vector3(24f, Lid0, 21f)), 1024); }
         catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP2 probe", "SP2 probe: " + e.Message); }
+        // K2 (NEW, FR-1): one probe a floor over the pool hall (F1, F2, F3): their guards' shoes and cap rails, glass and rails
+        // reflected the zone cube
+        if (kit.New)
+            foreach (var floor in new[] { new Vector2(F1, F1Ceil), new Vector2(F2, F2Ceil), new Vector2(F3, F3Ceil) })
+            {
+                try { host.Look.Probe(Root, new Bounds(Site + new Vector3(12f, (floor.x + floor.y) * .5f, 10.5f), new Vector3(24f, floor.y - floor.x, 21f)), 512); }
+                catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP2 probe K2", "SP2 probe (K2): " + e.Message); }
+            }
     }
 
     // ---------------------------------------------------------------- F0: the pool hall, the basin, the arcade, the cascade wall
@@ -464,10 +497,18 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         for (var j = 3; j <= 5; j++) kit.Prism(new Vector3(6f, 0f, 3f * j + .6f), new Vector3(6f, 0f, 3f * j + 2.4f), F3 + 1.0f, F3 + 2.1f, .012f, glass, true);
         kit.Guard(new Vector3(9.95f, 0f, 18f), new Vector3(11.05f, 0f, 18f), F3, FrontRoomsStructuresKit.GuardStyle.Rail);
         // The glass-block floor light (E7), 1 x 2 cells in the east gallery, lit from the office below; a steel grid on it.
+        if (kit.New)
+        {
+            GlassBlockFloorNew();
+            kit.Box(15f, F3 - .08f, 12f, 15.2f, F3, 18f, l0Carpet);
+        }
+        else
+        {
         kit.Box(15.2f, F3 - .08f, 12f, 18f, F3, 18f, glassBlock);
         kit.Box(15f, F3 - .08f, 12f, 15.2f, F3, 18f, l0Carpet);
         for (var g = 1; g < 5; g++) kit.Box(15f + g * .6f - .01f, F3, 12f, 15f + g * .6f + .01f, F3 + .004f, 18f, FrontRoomsPoolMaterials.Steel, false);
         for (var g = 1; g < 10; g++) kit.Box(15.2f, F3, 12f + g * .6f - .01f, 18f, F3 + .004f, 12f + g * .6f + .01f, FrontRoomsPoolMaterials.Steel, false);
+        }
         kit.Lid(15f, 12f, 18f, 18f, F3Ceil, l0Ceil);
         kit.Troffer(new Vector3(16.5f, F3Ceil, 13.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
         kit.Troffer(new Vector3(16.5f, F3Ceil, 16.5f + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), true);
@@ -552,21 +593,77 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         kit.Box(9f, F1, 6.3f, 12f, F1 + .01f, 8.92f, tile, false);
         kit.Box(8.85f, F1, 6.15f, 9f, F1 + .15f, 8.92f, tile);
         kit.Box(12f, F1, 6.15f, 12.15f, F1 + .15f, 8.92f, tile);
-        kit.Box(8.85f, F1, 6.0f, 12.15f, F1 + .45f, 6.3f, tile);
+        WeirWall(new Vector3(8.85f, F1, 6.0f), new Vector3(12.15f, F1 + .45f, 6.3f), Vector3.forward);
         kit.Box(9f, F1 - .1f, 8.93f, 12f, F1 + .02f, 9.15f, tile);
-        kit.Water(9f, 6.3f, 12f, 9.15f, F1 + .07f);
-        Sheet(new Vector3(9.05f, 0f, 6.31f), new Vector3(11.95f, 0f, 6.31f), F1 + .45f, F1 + .07f);
+        // K2 (游戏视觉's structures G2-b, NEW): F1's water stops at the slot lip's back edge (z 8.93). Its rectangle reached over the
+        // lip to 9.15, past the cascade wall's face (z 9.0), and the Submerged look takes a point under a water's rectangle and below
+        // its surface as IN that water: the whole 9 m wall under the lip was drawn 9 m deep in the channel (a navy panel behind the
+        // film; on main too, hidden under the old blue sheet). The water over the lip is the cascade film's first stretch, a full
+        // sheet over the crest (BuildCascade's WallFilm). TODAY: to 9.15 as it was.
+        kit.Water(9f, 6.3f, 12f, kit.New ? 8.93f : 9.15f, F1 + .07f);
+        Fall(new Vector3(9.05f, 0f, 6.31f), new Vector3(11.95f, 0f, 6.31f), F1 + .45f, F1 + .07f, Vector3.forward, .01f, "SP2 F1 overflow weir");
         // The fall: from the lip down F0's tiled cascade wall to the splash trough at its foot.
-        Sheet(new Vector3(9.05f, 0f, 9.07f), new Vector3(11.95f, 0f, 9.07f), F1 - .05f, .08f);
+        if (kit.New)
+        {
+            // K2 (游戏视觉's structures G2-b, NEW only; review section 9, 30_plan S2-10 REC): the cascade as a film clinging to the
+            // tile: over the slot lip's front, under it back to the wall's face (z 9.0), 9 m down the wall into the trough, with
+            // rivulets, a bright line at every joint and the foam in the trough (FrontRoomsStructureFalls.WallFilm). The free sheet
+            // stays the owners' option (the TODAY quads below).
+            // the first stretch over the lip's top (z 8.93 to the nose at 9.15, 50 mm of water thinning to the crest's critical depth
+            // and over the nose) is a full sheet; from the nose down, the film
+            FrontRoomsStructureFalls.WallFilm(kit.PartRoot, new Vector3(9.05f, 0f, 9.0f), new Vector3(11.95f, 0f, 9.0f), new[]
+            {
+                new Vector2(-.07f, F1 + .068f), new Vector2(.06f, F1 + .055f), new Vector2(.13f, F1 + .042f),
+                new Vector2(.153f, F1 + .025f), new Vector2(.153f, F1 - .103f), new Vector2(.003f, F1 - .103f), new Vector2(.003f, .07f),
+            }, Vector3.forward, Meshes, "SP2 cascade C5", 3);
+        }
+        else Sheet(new Vector3(9.05f, 0f, 9.07f), new Vector3(11.95f, 0f, 9.07f), F1 - .05f, .08f);
         // The splash trough inside the basin, its front lip spilling into the basin.
         kit.Shell(Lid0, -1.12f);
         kit.Box(8.7f, -1.12f, 9.0f, 8.85f, .1f, 9.85f, tile);
         kit.Box(12.15f, -1.12f, 9.0f, 12.3f, .1f, 9.85f, tile);
-        kit.Box(8.85f, -1.12f, 9.7f, 12.15f, .1f, 9.85f, tile);
+        WeirWall(new Vector3(8.85f, -1.12f, 9.7f), new Vector3(12.15f, .1f, 9.85f), Vector3.forward);
         kit.Box(8.85f, -1.12f, 9.0f, 12.15f, -.2f, 9.7f, tile);
         kit.Water(8.85f, 9.0f, 12.15f, 9.7f, .07f);
-        Sheet(new Vector3(8.85f, 0f, 9.86f), new Vector3(12.15f, 0f, 9.86f), .1f, -.05f);
+        Fall(new Vector3(8.85f, 0f, 9.86f), new Vector3(12.15f, 0f, 9.86f), .1f, -.05f, Vector3.forward, .01f, "SP2 splash trough spill");
         kit.Shell(Lid0, 0f);
+    }
+
+    // K2 (游戏视觉's structures G2-b, NEW only; review section 9, PC24-PC26): a weir wall from min to max whose top is the crest the
+    // water leaves 'out' over: in NEW its top 60 mm are P1's square porcelain weir lip (a drip groove under the nose, P2's WeirLip
+    // tile) on the wall set 60 mm lower; the collider is the wall's as today. TODAY: the box as it was.
+    void WeirWall(Vector3 min, Vector3 max, Vector3 outDir)
+    {
+        if (!kit.New) { kit.Box(min, max, tile); return; }
+        kit.Box(min, new Vector3(max.x, max.y - .06f, max.z), tile, false);
+        kit.Box(min, max, null, true);
+        Vector3 a, b;
+        if (Mathf.Abs(outDir.x) > .5f)
+        {
+            var x = outDir.x < 0f ? min.x : max.x;
+            a = new Vector3(x, 0f, min.z);
+            b = new Vector3(x, 0f, max.z);
+        }
+        else
+        {
+            var z = outDir.z < 0f ? min.z : max.z;
+            a = new Vector3(min.x, 0f, z);
+            b = new Vector3(max.x, 0f, z);
+        }
+        var v = new List<Vector3>();
+        var n = new List<Vector3>();
+        var uv = new List<Vector2>();
+        var t = new List<int>();
+        FrontRoomsStructureFalls.WeirLip(a, b, max.y, outDir, v, n, uv, t);
+        kit.Mesh.Append(v, n, uv, t, FrontRoomsPoolTile.Get("WeirLip"), false);
+    }
+
+    // K2 (G2-b, NEW only): a fall over a lip: FrontRoomsStructureFalls' nappe on the flow water, from the nose ('back' metres
+    // behind the TODAY sheet's line), with its foam line where it lands. TODAY: the two transparent quads as they were.
+    void Fall(Vector3 a, Vector3 b, float top, float bottom, Vector3 outDir, float back, string name)
+    {
+        if (!kit.New) { Sheet(a, b, top, bottom); return; }
+        FrontRoomsStructureFalls.Nappe(kit.PartRoot, a - outDir * back, b - outDir * back, top, bottom, outDir, Meshes, name);
     }
 
     // A falling water sheet (greybox: a transparent quad, both faces).
@@ -658,6 +755,8 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         lightGo.transform.localPosition = new Vector3(0f, -.092f, 0f);
         lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         var l = lightGo.AddComponent<Light>();
+        // their pending line (30_plan K2), in NEW only so that TODAY stays today's frame bit for bit
+        if (kit.New) FrontRoomsMapWorld.ShippedShadowFilter(l);
         l.type = LightType.Spot;
         l.spotAngle = 172f;
         l.innerSpotAngle = 124f;
@@ -775,5 +874,31 @@ public sealed class FrontRoomsStructuresWell : FrontRoomsStructuresDistrict
         sb.AppendLine("灰盒占位：四层的栏杆、桥、楼梯细部、玻璃砖地灯、大圆楼梯顶上的天窗、流水和泳池水；泳池层的瓷砖贴图只在这个场景里，其他三层的墙面、地毯、吊顶和灯是游戏自己的。黑色人形是 Relay 的静态替身（2.05 米），只用来检查视线，不会动。");
         sb.AppendLine();
         sb.AppendLine("技术记录：游戏里一次只加载一层，往下看到的会是替身竖井；这里四层是真的叠起来的。B4-L 宽 1.45、内半径 2.95、30 级 × 0.15、中间一个平台，约 185 度；楼梯间每层两段（泳池层 15 级，其他 13 级）。");
+    }
+
+    // K2 (structures G2-c, C10; review D8), NEW only: E7 as a glass-block paver floor (30_plan S2-08: lit by the office below,
+    // never a glowing floor): 6 in pressed-glass pavers in an aluminium T-grid (FrontRoomsStructureCurveTile.GlassPavers) on
+    // Prop_GlassBlock (FrontRooms/Surface's thin translucency: the light well's lamp under it comes up through the glass); an
+    // aluminium angle at the carpet. The floor's collider is today's box, exactly; the grid and glass cast no shadow.
+    void GlassBlockFloorNew()
+    {
+        kit.Box(15.2f, F3 - .08f, 12f, 18f, F3, 18f, null, true);
+        var phone = FrontRoomsTrofferKit.PhoneTier;
+        var glass = phone ? FrontRoomsSurfaces.TryGet("Prop_GlassBlock_Phone") : null;
+        if (glass == null) glass = FrontRoomsSurfaces.TryGet("Prop_GlassBlock");
+        if (glass == null) glass = glassBlock;
+        var alu = FrontRoomsSurfaces.TryGet("Trans_AluminiumSatin");
+        if (alu == null) alu = FrontRoomsPoolMaterials.Steel;
+        var o = new FrontRoomsStructureCurveTile.Out();
+        FrontRoomsStructureCurveTile.GlassPavers(o, 15.3f, 12f, 18f, 18f, F3, .15f);
+        var keep = kit.Mesh.CastShadows;
+        kit.Mesh.CastShadows = false;
+        foreach (var kv in o.Kinds)
+        {
+            var l = kv.Value;
+            if (l.t.Count > 0) kit.Mesh.Append(l.v, l.n, l.uv, l.t, kv.Key.Length == 0 ? glass : alu, false);
+        }
+        kit.Box(15.2f, F3 - .06f, 12f, 15.3f, F3 - .001f, 18f, alu, false);
+        kit.Mesh.CastShadows = keep;
     }
 }

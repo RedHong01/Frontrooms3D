@@ -248,10 +248,12 @@ namespace FrontRooms.Map
             if (!exit.found || exit.throughGlass) return Miss(plan, FloorStationMiss.NoExit, exit.found ? "the EXIT is only reached through glass" : "the floor has no EXIT");
             var x = exit.exitCell;
             var n = exit.frontCell;
+            // The cells the EXIT leaves out: X, or X1-X2 with the walkable stair (ExitPlan.stair); every walk keeps out of them.
+            var xr = exit.ExitArea;
             var reach = Math.Max(WalkMax, exit.distance);
-            var fromDoor = Walk(cache, NoOverlay, startArea, x, door, reach);
+            var fromDoor = Walk(cache, NoOverlay, startArea, xr, door, reach);
             if (!fromDoor.TryGetValue(n, out var route)) return Miss(plan, FloorStationMiss.NoExit, "N is not on foot from the arrival door");
-            var fromN = Walk(cache, NoOverlay, startArea, x, n, route);
+            var fromN = Walk(cache, NoOverlay, startArea, xr, n, route);
 
             var passed = new List<Candidate>();
             var seed = cache.Generator.Seed;
@@ -268,7 +270,7 @@ namespace FrontRooms.Map
                         if (pair.Value + 1 < WalkMin || pair.Value + 1 > WalkMax) continue;
                         report.candidates++;
                         var l = Layout(t, pair.Key, startArea, n, x);
-                        var reject = Prefilter(cache, t, l, startArea, door, x, fromDoor, fromN, route, out var e2);
+                        var reject = Prefilter(cache, t, l, startArea, door, x, xr, fromDoor, fromN, route, out var e2);
                         if (reject != FloorStationMiss.None) { report.rejects[(int)reject]++; continue; }
                         passed.Add(new Candidate { template = t, order = order, layout = l, e2 = e2, hash = MapHash.Hash(seed, pair.Key.x, pair.Key.y, SaltPick + order) });
                     }
@@ -278,18 +280,21 @@ namespace FrontRooms.Map
             passed.Sort((a, b) => a.hash != b.hash ? a.hash.CompareTo(b.hash) : a.order != b.order ? a.order.CompareTo(b.order)
                 : a.layout.e1Out.x != b.layout.e1Out.x ? a.layout.e1Out.x.CompareTo(b.layout.e1Out.x) : a.layout.e1Out.y.CompareTo(b.layout.e1Out.y));
 
-            var placard = FrontRoomsExitPlanner.StairDoorPlacardWest(cache, door);
+            // G1's answer for the arrival door, kept by the carve: C22's (west cell's south wall) or, after a walkable stair (a
+            // 1 x 2 start area with its door south of it), the far door's mirror (FarDoorPlacardWest).
+            var stairStart = FrontRoomsExitPlanner.IsStairStart(startArea, door);
+            var placard = StartPlacard(cache, door, stairStart);
             foreach (var c in passed)
             {
                 if (report.tries >= MaxCarves) { report.rejects[(int)FloorStationMiss.Budget] = passed.Count - report.tries; break; }
                 report.tries++;
                 var l = c.layout;
                 var overlay = FrontRoomsStartGroup.BuildFloorCarve(cache, c.template, l, c.e2);
-                var miss = CheckOverlay(cache, overlay, l, startArea, door, x, n, route, reach, out var walk);
+                var miss = CheckOverlay(cache, overlay, l, startArea, door, xr, n, route, reach, out var walk);
                 if (miss != FloorStationMiss.None) { report.rejects[(int)miss]++; continue; }
                 var carve = FrontRoomsMapCarve.FromFloorStation(overlay, c.template, l, seed);
                 cache.SetCarve(carve);
-                if (!ReadBack(cache, l, c.e2, startArea, door, x, n, placard))
+                if (!ReadBack(cache, l, c.e2, startArea, door, x, n, placard, exit.stair, stairStart))
                 {
                     cache.ClearCarve();
                     report.rejects[(int)FloorStationMiss.Carved]++;
@@ -349,7 +354,7 @@ namespace FrontRooms.Map
         }
 
         // Zones and walks alone, nothing carved. Reads the generator's zones (pure, no ZoneTier record) and the walks already made.
-        static FloorStationMiss Prefilter(FrontRoomsMapCache cache, FloorStationTemplate t, StartGroupLayout l, CellRect startArea, GridCoord door, GridCoord x,
+        static FloorStationMiss Prefilter(FrontRoomsMapCache cache, FloorStationTemplate t, StartGroupLayout l, CellRect startArea, GridCoord door, GridCoord x, CellRect xr,
             Dictionary<GridCoord, int> fromDoor, Dictionary<GridCoord, int> fromN, int route, out EdgeKind e2)
         {
             e2 = EdgeKind.Arch;
@@ -372,9 +377,10 @@ namespace FrontRooms.Map
             }
             if (FrontRoomsExitPlanner.InArea(startArea, l.e2Out) || l.e2Out == door || l.e1Out == door) return FloorStationMiss.StartArea;
 
+            // Chebyshev cells to the exit area's nearest cell (X; with the walkable stair X1 or X2).
             for (var j = s.y; j < s.y + s.h; j++)
             for (var i = s.x; i < s.x + s.w; i++)
-                if (Math.Max(Math.Abs(i - x.x), Math.Abs(j - x.y)) < ExitGapCells) return FloorStationMiss.NearExit;
+                if (Math.Max(Math.Max(Math.Max(xr.x - i, i - (xr.x + xr.w - 1)), 0), Math.Max(Math.Max(xr.y - j, j - (xr.y + xr.h - 1)), 0)) < ExitGapCells) return FloorStationMiss.NearExit;
 
             var exitChunk = MapGrid.ChunkOf(x);
             if (MapGrid.ChunkOf(l.e1Out) == exitChunk || MapGrid.ChunkOf(l.e2Out) == exitChunk) return FloorStationMiss.ExitChunk;
@@ -403,7 +409,7 @@ namespace FrontRooms.Map
         }
 
         // The rules on the virtual overlay: no glass join, both openings lead on, 10-20 cells from the door, the EXIT's walk as it was.
-        static FloorStationMiss CheckOverlay(FrontRoomsMapCache cache, StartGroupCarve overlay, StartGroupLayout l, CellRect area, GridCoord door, GridCoord x, GridCoord n, int route, int reach, out List<GridCoord> walk)
+        static FloorStationMiss CheckOverlay(FrontRoomsMapCache cache, StartGroupCarve overlay, StartGroupLayout l, CellRect area, GridCoord door, CellRect x, GridCoord n, int route, int reach, out List<GridCoord> walk)
         {
             walk = null;
             if (overlay.windowJoins > 0 || overlay.repairFailures > 0) return FloorStationMiss.Glass;
@@ -434,15 +440,23 @@ namespace FrontRooms.Map
         }
 
         // Set on the cache: what the overlay promised reads back from real chunks, and X and the stairwell's door kept theirs.
-        static bool ReadBack(FrontRoomsMapCache cache, StartGroupLayout l, EdgeKind e2, CellRect area, GridCoord door, GridCoord x, GridCoord n, bool placard) =>
+        // The walkable stair (stairExit): the pair's rules on X1-X2; after a walkable stair (stairStart): the far door's G1.
+        static bool ReadBack(FrontRoomsMapCache cache, StartGroupLayout l, EdgeKind e2, CellRect area, GridCoord door, GridCoord x, GridCoord n, bool placard, bool stairExit, bool stairStart) =>
             cache.Edge(l.e1In, l.e1Out) == EdgeKind.Arch && cache.Edge(l.e2In, l.e2Out) == e2
             && FrontRoomsStartGroup.LeadsOn(cache, NoOverlay, l, l.e1Out) && FrontRoomsStartGroup.LeadsOn(cache, NoOverlay, l, l.e2Out)
-            && FrontRoomsExitPlanner.ExitCellFits(cache, area, x) && FrontRoomsExitPlanner.KeepsChunkWhole(cache, area, x, n)
+            && (stairExit
+                ? FrontRoomsExitPlanner.StairCellsFit(cache, area, x) && FrontRoomsExitPlanner.StairKeepsChunkWhole(cache, area, x, n)
+                : FrontRoomsExitPlanner.ExitCellFits(cache, area, x) && FrontRoomsExitPlanner.KeepsChunkWhole(cache, area, x, n))
             && FrontRoomsExitPlanner.FrontStandard(cache, n) && FrontRoomsExitPlanner.Sightline(cache, x) == FrontRoomsExitPlanner.SightlineView.Clear
-            && FrontRoomsExitPlanner.StairDoorPlacardWest(cache, door) == placard;
+            && StartPlacard(cache, door, stairStart) == placard;
 
-        // Walking steps from a cell over the overlay (no wall, no glass), never into the start area or X, out to cap.
-        static Dictionary<GridCoord, int> Walk(FrontRoomsMapCache cache, StartGroupCarve overlay, CellRect area, GridCoord x, GridCoord from, int cap)
+        // G1 at the floor's arrival door: StairDoorPlacardWest after C22's vestibule, FarDoorPlacardWest after a walkable stair.
+        static bool StartPlacard(FrontRoomsMapCache cache, GridCoord door, bool stairStart) =>
+            stairStart ? FrontRoomsExitPlanner.FarDoorPlacardWest(cache, door) : FrontRoomsExitPlanner.StairDoorPlacardWest(cache, door);
+
+        // Walking steps from a cell over the overlay (no wall, no glass), never into the start area or X (X1-X2 with the
+        // walkable stair: the rect x), out to cap.
+        static Dictionary<GridCoord, int> Walk(FrontRoomsMapCache cache, StartGroupCarve overlay, CellRect area, CellRect x, GridCoord from, int cap)
         {
             var dist = new Dictionary<GridCoord, int> { { from, 0 } };
             var queue = new Queue<GridCoord>();
@@ -455,7 +469,7 @@ namespace FrontRooms.Map
                 foreach (var step in Steps4)
                 {
                     var next = cell + step;
-                    if (dist.ContainsKey(next) || next == x || FrontRoomsExitPlanner.InArea(area, next)) continue;
+                    if (dist.ContainsKey(next) || FrontRoomsExitPlanner.InArea(x, next) || FrontRoomsExitPlanner.InArea(area, next)) continue;
                     if (!FrontRoomsExitPlanner.Walkable(overlay.Edge(cache, cell, next))) continue;
                     dist[next] = d + 1;
                     queue.Enqueue(next);

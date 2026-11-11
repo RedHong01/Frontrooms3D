@@ -1,0 +1,21 @@
+structures_g2_c_edges.jpg 1919x2563, 18 tiles, 3 columns
+title | G2-C · EDGES, CAPS, FITTINGS, GLASS | 587/1576 FIT
+e_sp1_today.png | TODAY · SP1 catch pool | main: a tile prism 30 mm proud | label 204/617 data 240/401 FIT
+e_sp1_new.png | NEW · roll-out edge | the curb, its bullnose, the finger grate | label 177/617 data 320/428 FIT
+e_hero_new.png | Hero 0.9 m · the gutter | fingers square to the edge at the corner | label 211/617 data 320/394 FIT
+e_sp2_today.png | TODAY · SP2 F0 basin | main: the same prism round every basin | label 183/617 data 304/422 FIT
+e_sp2_new.png | NEW · roll-out edge | SP2 F0: ask 1 B, the ways out stay steps | label 177/617 data 320/428 FIT
+e_sp6_new.png | NEW · SP6 rim-flow | ask 1 A: the grate flush at the water | label 174/617 data 296/431 FIT
+e_b2_today.png | TODAY · B2 parapet | main: no cap, a stepped planar top (D5) | label 168/617 data 312/437 FIT
+e_b2_new.png | NEW · raking cap | a cap course on the rake, plumb ends | label 148/617 data 288/457 FIT
+e_cheek_new.png | NEW · step-run cheeks | the same raking guard, its cap | label 198/617 data 240/407 FIT
+e_c8_today.png | TODAY · C8 hole guard | main: picket cage, two posts a corner | label 195/617 data 296/410 FIT
+e_c8_new.png | NEW · C8 service rail | ask 3 A: two-line rail, one post a corner | label 191/617 data 328/414 FIT
+e_drain_new.png | NEW · main drain | slotted bronze grate in a dark Lane square | label 145/617 data 336/460 FIT
+e_glass_today.png | TODAY · E7 floor light | main: an emissive slab under a steel grid | label 198/617 data 328/407 FIT
+e_glass_new.png | NEW · glass-block pavers | 6 in pressed glass in an aluminium T-grid | label 227/617 data 328/378 FIT
+e_under_new.png | NEW · E7 from below | the light well's lamp comes up through it | label 186/617 data 328/419 FIT
+e_cost.png | COST | fittings and pavers about 26 k LOD0 | label 39/617 data 280/566 FIT
+e_gate.png | GATES | all pass; landed in main 10:44 / 10:46 | label 47/617 data 304/558 FIT
+e_open.png | OPEN | the owners' or the next G2 pass | label 39/617 data 248/566 FIT
+ALL LABELS FIT

@@ -1,0 +1,68 @@
+{
+ "name": "Kit_DockBumper",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.2285,
+    0.057
+   ],
+   "size": [
+    0.254,
+    0.457,
+    0.114
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19",
+  "wall_unit"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  1600,
+  320,
+  24
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.1420000046491623,
+  -0.0279999990016222,
+  -0.0021509528160095215
+ ],
+ "boundsMax": [
+  0.1420000046491623,
+  0.48499998450279236,
+  0.1172068864107132
+ ],
+ "triangles": 1836,
+ "slots": [
+  "Prop_Rubber",
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 316,
+ "trianglesLod2": 12,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.057
+ ],
+ "footprintSize": [
+  0.254,
+  0.114
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

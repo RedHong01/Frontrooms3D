@@ -157,6 +157,27 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 break;
         }
         environmentDirty = 0f;
+        // LW3 (游戏视觉's lens hook, FrontRoomsLampLens): where the camera is, for a fixed exposure per zone; it only keeps the
+        // zone while nothing is set (the default), so the frame stays today's
+        FrontRoomsLampLens.AtZone(LensZone(preset));
+    }
+
+    // LW3: a preset's grade zone (FrontRoomsLampLens.Zone), as the game grades it: the pool hall presets as the hall, night a lamp state.
+    static FrontRoomsLampLens.Zone LensZone(Preset preset)
+    {
+        switch (preset)
+        {
+            case Preset.Office: return FrontRoomsLampLens.Zone.Office;
+            case Preset.Level0Tall: return FrontRoomsLampLens.Zone.Tall;
+            case Preset.Pool:
+            case Preset.PoolNight: return FrontRoomsLampLens.Zone.PoolHall;
+            case Preset.PoolClub: return FrontRoomsLampLens.Zone.PoolClub;
+            case Preset.PoolDark: return FrontRoomsLampLens.Zone.PoolDark;
+            case Preset.RunB:
+            case Preset.RunBTripped:
+            case Preset.RunBRed: return FrontRoomsLampLens.Zone.RunB;
+            default: return FrontRoomsLampLens.Zone.Level0;
+        }
     }
 
     // The preset's own reflection cube, set at once as before; inside a pool zone (zone look on) the zone's cube stays shown
@@ -286,6 +307,9 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         public FrontRoomsZoneLookVolume volume;
         public FrontRoomsStructuresDistrict district;
         public string name;
+        // K2 (structures G2-a): the room as the district gave it (district metres): footprint, floor, ceiling
+        public Rect footprint;
+        public float floor, ceiling;
     }
 
     readonly List<PoolRoomEntry> poolRooms = new List<PoolRoomEntry>();
@@ -319,7 +343,8 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                 return null;
             }
             v.enabled = ZoneLookOn;
-            poolRooms.Add(new PoolRoomEntry { volume = v, district = d, name = room });
+            poolRooms.Add(new PoolRoomEntry { volume = v, district = d, name = room, footprint = Rect.MinMaxRect(Mathf.Min(x0, x1), Mathf.Min(z0, z1), Mathf.Max(x0, x1), Mathf.Max(z0, z1)),
+                floor = floor, ceiling = ceiling });
             return v;
         }
         catch (System.Exception e)
@@ -341,6 +366,36 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         if (d == null) return false;
         foreach (var r in poolRooms) if (r.district == d && r.volume != null) return true;
         return false;
+    }
+
+    /// <summary>
+    /// K2 (structures G2-a, the water's light room, the pool rig's rooms): the smallest pool room of <paramref name="d"/> that
+    /// holds the world point (its footprint, and between <paramref name="below"/> under its floor (default PoolRoomBelow: a basin
+    /// under an access floor counts) and its ceiling), as the district gave it: footprint (world xz), floor and ceiling (world y;
+    /// the dome hall's crown, the grotto's vault). False when none does (the map's pool route, a district without pool rooms).
+    /// </summary>
+    public bool PoolRoomAt(FrontRoomsStructuresDistrict d, Vector3 world, out Rect footprint, out float floor, out float ceiling, float below = PoolRoomBelow)
+    {
+        footprint = default(Rect);
+        floor = ceiling = 0f;
+        if (d == null || d.Root == null) return false;
+        var p = d.Root.InverseTransformPoint(world);
+        PoolRoomEntry best = null;
+        var area = float.MaxValue;
+        foreach (var r in poolRooms)
+        {
+            if (r.district != d || r.footprint.width <= 0f) continue;
+            if (p.x < r.footprint.xMin || p.x > r.footprint.xMax || p.z < r.footprint.yMin || p.z > r.footprint.yMax) continue;
+            if (p.y < r.floor - below || p.y > r.ceiling) continue;
+            var a = r.footprint.width * r.footprint.height;
+            if (a < area) { area = a; best = r; }
+        }
+        if (best == null) return false;
+        var o = d.Root.position;
+        footprint = new Rect(best.footprint.xMin + o.x, best.footprint.yMin + o.z, best.footprint.width, best.footprint.height);
+        floor = best.floor + o.y;
+        ceiling = best.ceiling + o.y;
+        return true;
     }
 
     /// <summary>The district's pool rooms' look volumes (logs, tests).</summary>
@@ -466,11 +521,33 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         // pool under a far lamp (FrontRoomsStructuresLamps) and whether it was looked for
         public FrontRoomsStructuresLampModes.State mode;
         public float budget = 1f, modeLevel = 1f;
+        // LC-4 (K1 review, structures G3-b): the mode level the lens and pool were last written at (-1: never), and a lens left
+        // behind while out of view
+        public float lensLevel = -1f;
+        public bool lensDirty;
         public Renderer pool;
         public bool poolChecked;
+        // K2 (structures G2-a; null / false in TODAY and outside the pool districts' rig): the second renderer the lens drive also
+        // writes (P1-A's lit ceiling), a wall box's metal-halide state or a niche's incandescent one (its temperament, colour as
+        // built, level and tint now), the box a bounce follows, never a shadow (30_plan rule 6: P1-A's indirect boxes, the
+        // bounce and the niches), and a lamp outside the shadow pattern (an extra niche: later lamps keep their turns)
+        public Renderer glow;
+        public bool hid, niche, noShadow, outside;
+        public FrontRoomsLampKit.HidLamp hidLamp;
+        public FrontRoomsStructuresLampModes.Mode hidMode;
+        public Color hidColor = Color.white, hidTint = Color.white;
+        public float hidLevel = 1f;
+        public Lamp leader;
+        // LW3 (FrontRoomsLampLens, read only while Tied): the lens's kit opening (m2; 0 = not looked up yet) and the lens-only
+        // share its builder baked into lensEmission (SP1's pool grid 0.4)
+        public float lensArea, lensShare = 1f;
     }
 
     readonly List<Lamp> lamps = new List<Lamp>();
+    // K2: lamps added outside the shadow pattern (they take no place in it), and the pool rig's lamps and line (Dip)
+    int outsideCount, rigCount;
+    int dipDistrict = int.MinValue;
+    float dipLine = 1f, dipUntil = -1f;
     readonly Dictionary<int, int> firstBuildIndex = new Dictionary<int, int>();
     int buildingDistrict = int.MinValue, buildingIndex = -1;
     bool rebuilding;
@@ -482,6 +559,12 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     public void Forget(FrontRoomsStructuresDistrict d)
     {
         if (d == null) return;
+        foreach (var l in lamps)
+            if (l.district == d.Key)
+            {
+                if (l.outside) outsideCount--;
+                if (l.hid || l.niche || l.leader != null) rigCount--;
+            }
         lamps.RemoveAll(l => l.district == d.Key);
         poolNotes.Remove(d);
     }
@@ -492,7 +575,7 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     {
         buildingDistrict = district;
         rebuilding = firstBuildIndex.TryGetValue(district, out buildingIndex);
-        if (!rebuilding) firstBuildIndex[district] = buildingIndex = lamps.Count;
+        if (!rebuilding) firstBuildIndex[district] = buildingIndex = lamps.Count - outsideCount;
     }
 
     /// <summary>The district's build is done.</summary>
@@ -514,9 +597,13 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         // every third lamp may shadow, by its place in the build order: lamps.Count on a district's first build (as always); a
         // district built again (the structure assets key) counts on from where its first build started, so the same lamps cast
         // shadows in TODAY and in NEW and a comparison in place shows only the assets
-        var index = lamps.Count;
-        if (rebuilding && district == buildingDistrict && buildingIndex >= 0) index = buildingIndex++;
-        lamps.Add(new Lamp { light = light, lens = lens, lensEmission = lensEmission, intensity = light.intensity, mayShadow = index % 3 == 0, view = view, district = district });
+        // (K2: a lamp added while AddingOutside takes no turn and never shadows; TODAY never sets it)
+        var outside = AddingOutside;
+        var index = lamps.Count - outsideCount;
+        if (rebuilding && district == buildingDistrict && buildingIndex >= 0 && !outside) index = buildingIndex++;
+        lamps.Add(new Lamp { light = light, lens = lens, lensEmission = lensEmission, intensity = light.intensity, mayShadow = !outside && index % 3 == 0, view = view, district = district,
+            outside = outside, noShadow = outside });
+        if (outside) outsideCount++;
         // NEW: the game's lamp modes (ask 5) on the lamps with a lens of the game's (the troffers): each rolls its temperament
         // from its place; the pool districts and the fixture boxes (their HID kits come with the pool package) stay steady
         if (FrontRoomsStructuresAssets.NewFor(district))
@@ -530,7 +617,8 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         {
             if (lensBlock == null) lensBlock = new MaterialPropertyBlock();
             lens.GetPropertyBlock(lensBlock);
-            lensBlock.SetColor(EmissionColorId, lensEmission);
+            // LW3: a lamp built while the hook is Tied takes its tied lens at once (Today: the emission given, as always)
+            lensBlock.SetColor(EmissionColorId, FrontRoomsLampLens.Tied ? TiedLens(lamps[lamps.Count - 1]) : lensEmission);
             lens.SetPropertyBlock(lensBlock);
         }
     }
@@ -586,7 +674,8 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                     Drive(l);
                     // NEW (contract K1): the lens follows the lamp, as the game's dead lamp has a dark lens (G1 review FIX 2: with
                     // every light of a district at 0 the lenses stayed lit); TODAY's lens is set once, as before
-                    if (l.mode != null) DriveLens(l);
+                    // (LW3: while the lens hook is Tied every lens follows its lamp)
+                    if (l.mode != null || l.hid || l.niche || FrontRoomsLampLens.Tied) DriveLens(l);
                     if (here != null && l.district == here.Key) RequestCapture(here);
                 }
                 break;
@@ -594,14 +683,65 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
         budgetClock = 0f;
     }
 
-    // NEW: a lamp's lens at its emission x its mode's level x its scale (0 = a dark lens).
+    // NEW: a lamp's lens at its emission x its mode's level x its scale (0 = a dark lens). K2: a pool rig lamp's at its drive's
+    // level and tint instead, and its glow (P1-A's lit ceiling) takes the lens's block, so a dead box leaves its bay dark.
     void DriveLens(Lamp l)
     {
-        if (l.lens == null) return;
+        if (l.lens == null && l.glow == null) return;
         if (lensBlock == null) lensBlock = new MaterialPropertyBlock();
-        l.lens.GetPropertyBlock(lensBlock);
-        lensBlock.SetColor(LensEmissionId, l.lensEmission * (l.modeLevel * l.scale));
-        l.lens.SetPropertyBlock(lensBlock);
+        var c = l.hid || l.niche ? l.lensEmission * l.hidTint * (l.hidLevel * l.scale) : l.lensEmission * (l.modeLevel * l.scale);
+        if (l.lens != null)
+        {
+            l.lens.GetPropertyBlock(lensBlock);
+            // LW3: Tied, the lens from its own light; the glow below keeps today's drive (it is the lit ceiling, not the lens)
+            lensBlock.SetColor(LensEmissionId, FrontRoomsLampLens.Tied ? TiedLens(l) : c);
+            l.lens.SetPropertyBlock(lensBlock);
+        }
+        if (l.glow != null)
+        {
+            l.glow.GetPropertyBlock(lensBlock);
+            lensBlock.SetColor(LensEmissionId, c);
+            l.glow.SetPropertyBlock(lensBlock);
+        }
+    }
+
+    // ---------------------------------------------------------------- LW3: 游戏视觉's lens hook (FrontRoomsLampLens)
+    //
+    // research/light_design/10_research.md LW3 (Red 2026-11-06 "全部按推荐"; the A/B before anything lands): Today (the default)
+    // writes every lens exactly as above, so every frame is today's. Tied: a lamp's lens is pi x I / A x its light's colour,
+    // I = its full intensity x its state (mode, metal-halide or niche level, scale), never the walker's budget (a far lamp keeps
+    // its lit lens), A its kit's opening, times the share its builder baked in (SP1's pool grid 0.4). A flip of the hook
+    // re-drives every lens once and recaptures the current district's probes; nothing runs per frame at rest.
+
+    int lensVersion;
+
+    Color TiedLens(Lamp l)
+    {
+        if (l.lensArea <= 0f)
+        {
+            l.lensArea = FrontRoomsLampLens.AreaOf(l.lens);
+            l.lensShare = FrontRoomsLampLens.ShareOf(l.lens, l.lensEmission);
+        }
+        var state = (l.hid || l.niche ? l.hidLevel : l.modeLevel) * l.scale;
+        return FrontRoomsLampLens.Drive(l.light, l.intensity * state, l.lensArea, l.lensShare);
+    }
+
+    // The hook moved (Toggle, Set, ViewFactor while Tied): each lens once. Tied from its light; Today what today's code had
+    // written (a moded or pool-rig lamp at its state, any other at the emission it was built with).
+    void RelightLenses()
+    {
+        lensVersion = FrontRoomsLampLens.Version;
+        if (lensBlock == null) lensBlock = new MaterialPropertyBlock();
+        for (var i = 0; i < lamps.Count; i++)
+        {
+            var l = lamps[i];
+            if (l.lens == null || l.light == null) continue;
+            if (FrontRoomsLampLens.Tied || l.mode != null || l.hid || l.niche) { DriveLens(l); continue; }
+            l.lens.GetPropertyBlock(lensBlock);
+            lensBlock.SetColor(EmissionColorId, l.lensEmission);
+            l.lens.SetPropertyBlock(lensBlock);
+        }
+        if (here != null) RequestCapture(here);
     }
 
     /// <summary>Lamps of one district, for its cost line.</summary>
@@ -619,6 +759,8 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
     /// <summary>The budget, ten times a second: called by the bootstrap with the walker's eye and the current district.</summary>
     public void Tick(Vector3 eye, int district, float dt)
     {
+        // LW3: the lens hook moved since the last frame (one int compare otherwise)
+        if (lensVersion != FrontRoomsLampLens.Version) RelightLenses();
         if (environmentDirty >= 0f)
         {
             environmentDirty += dt;
@@ -663,14 +805,21 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
                     level *= l.modeLevel;
                     if (mine) FarPool(l, d);
                 }
+                else if (l.hid || l.niche || l.leader != null)
+                {
+                    // K2: the pool rig's drive on top of the budget (TickHid: a box's metal-halide lamp, a niche, a bounce)
+                    l.budget = level;
+                    level *= l.hidLevel;
+                }
                 var on = level > .001f;
                 if (l.light.enabled != on) l.light.enabled = on;
                 if (on) l.light.intensity = l.intensity * level;
-                var shadow = on && (l.mustShadow || (l.mayShadow && d < 9f)) ? LightShadows.Soft : LightShadows.None;
+                var shadow = on && !l.noShadow && (l.mustShadow || (l.mayShadow && d < 9f)) ? LightShadows.Soft : LightShadows.None;
                 if (l.light.shadows != shadow) l.light.shadows = shadow;
             }
         }
         if (startCapture) RenderCapture();
+        TickHid(district, dt);
         TickModes(district, dt);
     }
 
@@ -692,14 +841,27 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
             // a capture sees each lamp as the walker does: forcing the moded lamps to full for it struck every dead and dim troffer
             // of the district at once, past the per-lamp limiter and Reduce Flashing (review LC-1)
             var v = FrontRoomsStructuresLampModes.Advance(l.mode, dt);
-            if (Mathf.Abs(v - l.modeLevel) < .004f) continue;
+            var seen = l.lens == null || l.lens.isVisible;
+            if (Mathf.Abs(v - l.modeLevel) < .004f)
+            {
+                // LC-4: a lens left behind while out of view catches up once it is seen
+                if (l.lensDirty && seen) { DriveLens(l); l.lensLevel = l.modeLevel; l.lensDirty = false; }
+                continue;
+            }
             l.modeLevel = v;
             var level = l.budget * v;   // the budget's level already carries the lamp's scale
             var on = level > .001f;
             if (l.light.enabled != on) l.light.enabled = on;
             if (on) l.light.intensity = l.intensity * level;
-            DriveLens(l);   // the lens at the mode's level x the lamp's scale
-            if (l.pool != null) FrontRoomsStructuresLamps.SetPool(l.pool, l.light.color, Mathf.Max(0f, l.scale - l.budget) * v);
+            // LC-4 (K1 review): the lens (at the mode's level x the lamp's scale) and its pool only on a step of .05 or more or at the
+            // ends (dark, full), the lens only while it is in view; the light follows every step as before (SP3 wrote about 650
+            // property blocks a frame)
+            if (Mathf.Abs(v - l.lensLevel) >= .05f || ((v <= .001f || v >= .999f) && Mathf.Abs(v - l.lensLevel) > 1e-4f))
+            {
+                if (seen) { DriveLens(l); l.lensLevel = v; l.lensDirty = false; }
+                else l.lensDirty = true;
+                if (l.pool != null) FrontRoomsStructuresLamps.SetPool(l.pool, l.light.color, Mathf.Max(0f, l.scale - l.budget) * v);
+            }
         }
     }
 
@@ -732,6 +894,176 @@ public sealed class FrontRoomsStructuresLook : MonoBehaviour
             }
         }
         if (l.pool != null) FrontRoomsStructuresLamps.SetPool(l.pool, l.light.color, Mathf.Max(0f, l.scale - l.budget) * l.modeLevel);
+    }
+
+    // ---------------------------------------------------------------- K2: the pool rig's lamps (structures G2-a)
+    //
+    // 游戏视觉's structures_assets G2-a (Red 2026-11-07 21:54: image 1 lit by image 2's lamps; FrontRoomsStructuresPoolLamps): in
+    // NEW, SP1, SP2 and SP6 put the zone lamps line's P1-A wall boxes, P2-A / ZL_NICHE_S niches and ZL_FLUSH on the lights they
+    // always made (FrontRoomsStructuresKit.PlaceLampKits). Each box's light is a metal-halide lamp (its temperament from the
+    // game's odds, its line, HidTick's drop-out, restrike and warm-up, the quartz lamp's 15 %); each niche an incandescent one
+    // (Steady or Dead; a dip dims it); a bounce follows its box. Nothing here runs in TODAY or for any other lamp.
+
+    /// <summary>K2: lamps added while this is set take no turn in the shadow pattern and never shadow (an extra niche).</summary>
+    public bool AddingOutside;
+
+    Lamp Find(Light light)
+    {
+        if (light == null) return null;
+        for (var i = lamps.Count - 1; i >= 0; i--) if (lamps[i].light == light) return lamps[i];
+        return null;
+    }
+
+    /// <summary>K2: a lamp's kit lens (and its glow) after the build, driven like a lens given to AddLamp.</summary>
+    public void AttachLens(Light light, Renderer lens, Color lensEmission, Renderer glow = null)
+    {
+        var l = Find(light);
+        if (l == null) return;
+        l.lens = lens;
+        l.glow = glow;
+        l.lensEmission = lensEmission;
+        l.lensArea = 0f;   // LW3: a new lens, its opening looked up again when Tied
+        l.lensShare = 1f;
+        DriveLens(l);
+    }
+
+    /// <summary>K2: the light's intensity as it is now is its full level (a small niche's x 0.4, set after the build).</summary>
+    public void Retune(Light light)
+    {
+        var l = Find(light);
+        if (l == null) return;
+        l.intensity = light.intensity;
+        if (FrontRoomsLampLens.Tied) DriveLens(l);   // LW3: a tied lens follows its light's new full level
+    }
+
+    /// <summary>K2: a wall box's light as a metal-halide lamp: its temperament rolled from <paramref name="seed"/> at the game's
+    /// odds (Dead, Stutter / Dim at 60 %, Failing cycling), or Steady when <paramref name="steady"/> (a room's only boxes), its
+    /// drift, never a shadow; its own moded state goes (no far pool).</summary>
+    public void SetHid(Light light, int seed, float drift, bool steady = false)
+    {
+        var l = Find(light);
+        if (l == null) return;
+        if (!l.hid && !l.niche && l.leader == null) rigCount++;
+        l.hid = true;
+        l.niche = false;
+        l.noShadow = true;
+        l.mode = null;
+        l.hidMode = steady ? FrontRoomsStructuresLampModes.Mode.Steady : FrontRoomsStructuresLampModes.Roll(seed, false).mode;
+        l.hidColor = light.color;
+        l.hidLamp = FrontRoomsLampKit.HidLamp.Lit(drift, l.hidMode == FrontRoomsStructuresLampModes.Mode.Failing);
+        Color c;
+        l.hidLevel = FrontRoomsStructuresPoolLamps.HidLevel(ref l.hidLamp, ModeOf(l), 1f, 0f, out c);
+        l.hidTint = c;
+        light.color = l.hidColor * c;
+        DriveLens(l);
+    }
+
+    /// <summary>K2: a niche's light as an incandescent lamp (Steady or Dead from <paramref name="seed"/>), never a shadow.</summary>
+    public void SetNiche(Light light, int seed)
+    {
+        var l = Find(light);
+        if (l == null) return;
+        if (!l.hid && !l.niche && l.leader == null) rigCount++;
+        l.niche = true;
+        l.hid = false;
+        l.noShadow = true;
+        l.mode = null;
+        l.hidMode = FrontRoomsStructuresPoolLamps.Incandescent(FrontRoomsStructuresLampModes.Roll(seed, false).mode);
+        l.hidColor = light.color;
+        l.hidTint = Color.white;
+        l.hidLevel = FrontRoomsStructuresPoolLamps.NicheLevel(ModeOf(l), 1f);
+        DriveLens(l);
+    }
+
+    /// <summary>K2: a bounce (a down-fill without a body) follows its box's level and colour; never a shadow.</summary>
+    public void Follow(Light light, Light leader)
+    {
+        var l = Find(light);
+        var b = Find(leader);
+        if (l == null || b == null || b == l) return;
+        if (!l.hid && !l.niche && l.leader == null) rigCount++;
+        l.leader = b;
+        l.noShadow = true;
+        l.mode = null;
+        l.hidColor = light.color;
+        l.hidLevel = b.hidLevel;
+        l.hidTint = b.hidTint;
+        light.color = l.hidColor * b.hidTint;
+    }
+
+    /// <summary>K2: a lamp that never shadows (30_plan rule 6), whatever its turn in the pattern.</summary>
+    public void NoShadow(Light light)
+    {
+        var l = Find(light);
+        if (l != null) l.noShadow = true;
+    }
+
+    /// <summary>K2: a dip of a district's line (the pool rig's key): to <paramref name="line"/> for <paramref name="seconds"/>. Under
+    /// 0.80 every box's arc goes out at once (one step), the quartz lamps hold 15 %, the arcs restrike 8 s later and warm up over
+    /// 24 s; the niches dim with the line and come back.</summary>
+    public void Dip(int district, float line, float seconds)
+    {
+        dipDistrict = district;
+        dipLine = Mathf.Clamp01(line);
+        dipUntil = Time.time + Mathf.Max(0f, seconds);
+    }
+
+    /// <summary>K2: the district's pool rig in one line (boxes, niches, bounces; dead, aged, failing), for the G panel and logs.</summary>
+    public string RigLine(int district)
+    {
+        int boxes = 0, niches = 0, bounces = 0, dead = 0, aged = 0, failing = 0;
+        foreach (var l in lamps)
+        {
+            if (l.district != district || l.light == null) continue;
+            if (l.leader != null) { bounces++; continue; }
+            if (!l.hid && !l.niche) continue;
+            if (l.hid) boxes++; else niches++;
+            var m = l.hidMode;
+            if (m == FrontRoomsStructuresLampModes.Mode.Dead) dead++;
+            else if (m == FrontRoomsStructuresLampModes.Mode.Stutter || m == FrontRoomsStructuresLampModes.Mode.Dim) aged++;
+            else if (m == FrontRoomsStructuresLampModes.Mode.Failing) failing++;
+        }
+        return boxes + " wall boxes, " + niches + " niches, " + bounces + " bounces; " + dead + " dead, " + aged + " aged, " + failing + " failing";
+    }
+
+    // Ask 5's A (every lamp steady) holds the rig steady too.
+    static FrontRoomsStructuresLampModes.Mode ModeOf(Lamp l) =>
+        FrontRoomsStructuresLampModes.GameModes ? l.hidMode : FrontRoomsStructuresLampModes.Mode.Steady;
+
+    // Each frame for the current district: the boxes and niches advance, the bounces follow; a light, lens and glow are written
+    // only when the level or colour moves (no property block written at rest: the K1 review's LC-4).
+    void TickHid(int district, float dt)
+    {
+        if (rigCount <= 0) return;
+        var mains = district == dipDistrict && Time.time < dipUntil ? dipLine : 1f;
+        for (var i = 0; i < lamps.Count; i++)
+        {
+            var l = lamps[i];
+            if (l.light == null || l.district != district || l.leader != null || !(l.hid || l.niche)) continue;
+            Color c;
+            float v;
+            if (l.hid) v = FrontRoomsStructuresPoolLamps.HidLevel(ref l.hidLamp, ModeOf(l), mains, dt, out c);
+            else { v = FrontRoomsStructuresPoolLamps.NicheLevel(ModeOf(l), mains); c = Color.white; }
+            ApplyHid(l, v, c);
+        }
+        for (var i = 0; i < lamps.Count; i++)
+        {
+            var l = lamps[i];
+            if (l.light != null && l.district == district && l.leader != null) ApplyHid(l, l.leader.hidLevel, l.leader.hidTint);
+        }
+    }
+
+    void ApplyHid(Lamp l, float v, Color c)
+    {
+        if (Mathf.Abs(v - l.hidLevel) < .004f && Mathf.Abs(c.r - l.hidTint.r) + Mathf.Abs(c.g - l.hidTint.g) + Mathf.Abs(c.b - l.hidTint.b) < .006f) return;
+        l.hidLevel = v;
+        l.hidTint = c;
+        l.light.color = l.hidColor * c;
+        var level = l.budget * v;
+        var on = level > .001f;
+        if (l.light.enabled != on) l.light.enabled = on;
+        if (on) l.light.intensity = l.intensity * level;
+        DriveLens(l);
     }
 
     // ---------------------------------------------------------------- the pool glaze's lamps and probes (GZ-A)

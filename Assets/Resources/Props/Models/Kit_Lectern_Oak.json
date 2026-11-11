@@ -1,0 +1,69 @@
+{
+ "name": "Kit_Lectern_Oak",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.59,
+    0.0
+   ],
+   "size": [
+    0.61,
+    1.18,
+    0.5
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "lectern"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  45.0
+ ],
+ "lodBudget": [
+  2000,
+  800,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.33000001311302185,
+  0.0,
+  -0.24604828655719757
+ ],
+ "boundsMax": [
+  0.33000001311302185,
+  1.4409905672073364,
+  0.26604828238487244
+ ],
+ "triangles": 2044,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_WoodOak",
+  "Prop_Brass",
+  "Prop_PlasticWhite"
+ ],
+ "trianglesLod1": 860,
+ "trianglesLod2": 108,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.61,
+  0.5
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.491
+}

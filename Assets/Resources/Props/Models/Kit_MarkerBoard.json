@@ -1,0 +1,61 @@
+{
+ "name": "Kit_MarkerBoard",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "wall_decor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  700,
+  300,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -1.224000096321106,
+  0.8959999680519104,
+  -0.0020000003278255463
+ ],
+ "boundsMax": [
+  1.224000096321106,
+  2.128999948501587,
+  0.07700000703334808
+ ],
+ "triangles": 1250,
+ "slots": [
+  "Prop_Hardboard",
+  "Prop_PaperAtlas",
+  "Trans_AluminiumSatin",
+  "Prop_PlasticGrey",
+  "Prop_PlasticWhite",
+  "Prop_PlasticBlack",
+  "Prop_PlasticBlue",
+  "Prop_PlasticRed"
+ ],
+ "trianglesLod1": 738,
+ "trianglesLod2": 122,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.03750000335276127
+ ],
+ "footprintSize": [
+  2.448000192642212,
+  0.07900000736117363
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

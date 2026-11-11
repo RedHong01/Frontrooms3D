@@ -1,0 +1,57 @@
+{
+ "name": "Kit_TapeReel_Machine",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "reel"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  1800,
+  600,
+  110
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.13334999978542328,
+  -0.13334999978542328,
+  -0.0
+ ],
+ "boundsMax": [
+  0.13334999978542328,
+  0.13334999978542328,
+  0.05770000070333481
+ ],
+ "triangles": 2192,
+ "slots": [
+  "Prop_CompAtlas",
+  "Prop_Aluminium",
+  "Prop_PlasticBlack",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 1048,
+ "trianglesLod2": 280,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.028850000351667404
+ ],
+ "footprintSize": [
+  0.26669999957084656,
+  0.05770000070333481
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

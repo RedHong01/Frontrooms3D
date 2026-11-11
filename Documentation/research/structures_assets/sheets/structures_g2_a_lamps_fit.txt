@@ -1,0 +1,21 @@
+structures_g2_a_lamps.jpg 1919x2563, 18 tiles, 3 columns
+title | G2-A · THE POOL KITS ON IMAGE 1 | 538/1576 FIT
+l_sp1_today.png | TODAY · SP1 hall | main: stand-in boxes, down-fill lenses on the lid | label 148/617 data 392/457 FIT
+l_sp1_new.png | NEW · SP1 hall | P1-A on the walls; the bounces have no body | label 134/617 data 344/471 FIT
+l_sp1_hero.png | P1-A from above | reflector, tubular lamp, glass; 0.6 m | label 141/617 data 296/464 FIT
+l_sp6_today.png | TODAY · SP6 BeachHall | main: grey stand-in boxes and discs | label 196/617 data 280/409 FIT
+l_sp6_new.png | NEW · SP6 BeachHall | P1-A on the wall face, its lit lid; niches | label 182/617 data 336/423 FIT
+l_sp6_box.png | P1-A · flat lid | 18 of SP6's 21 boxes show their lit patch | label 130/617 data 328/475 FIT
+l_sp2_today.png | TODAY · SP2 from the gallery | main: the basin's 8 stand-in discs | label 259/617 data 272/346 FIT
+l_sp2_new.png | NEW · SP2 from the gallery | 8 P2-A at 0.70 m under; 12 P1-A | label 245/617 data 248/360 FIT
+l_sp2_p2a.png | P2-A · through the water | 257 mm ring, 1.0 m, above the water | label 226/617 data 280/379 FIT
+l_sp1_step.png | ZL_NICHE_S · SP1 steps | extra: the steps' cheek, 0.74 m of water | label 208/617 data 320/397 FIT
+l_sp6_c7.png | ZL_NICHE_S · SP6 C7 cheek | the floating niche moved onto the stair | label 237/617 data 312/368 FIT
+l_sp6_weir.png | ZL_NICHE_S · under W3 | extra: aimed up at the falling sheet | label 204/617 data 288/401 FIT
+l_sp6_dome.png | P1-A · under the dome | no flat lid: patch off, aim kept, steady | label 195/617 data 320/410 FIT
+l_sp6_terrace.png | P1-A · terrace at +3.90 | was +4.60, 0.8 m under the lid | label 215/617 data 240/390 FIT
+l_sp1_flush.png | ZL_FLUSH · start room lid | a bounce with no box in its room | label 230/617 data 256/375 FIT
+l_sp2_modes.png | NEW · the game's modes | SP2 F0: 1 dead, 1 aged, 2 failing boxes | label 204/617 data 312/401 FIT
+l_dip.png | Off state · Home dip | boxes out, quartz 15 %, niches dimmed | label 177/617 data 296/428 FIT
+l_cost.png | COST | kits in main (zone lamps, G1); nothing new | label 39/617 data 336/566 FIT
+ALL LABELS FIT

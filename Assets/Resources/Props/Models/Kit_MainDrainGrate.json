@@ -1,0 +1,55 @@
+{
+ "name": "Kit_MainDrainGrate",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "pool",
+  "p11"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.0,
+  7.0,
+  24.0
+ ],
+ "lodBudget": [
+  400,
+  160,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.16500000655651093,
+  -0.04500000178813934,
+  -0.16499999165534973
+ ],
+ "boundsMax": [
+  0.16500000655651093,
+  0.0028262000996619463,
+  0.16499999165534973
+ ],
+ "triangles": 2536,
+ "slots": [
+  "Prop_BrassSatin",
+  "Plenum_Dark",
+  "Prop_ChromeSatin"
+ ],
+ "trianglesLod1": 616,
+ "trianglesLod2": 72,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.33000001311302185,
+  0.32999998331069946
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

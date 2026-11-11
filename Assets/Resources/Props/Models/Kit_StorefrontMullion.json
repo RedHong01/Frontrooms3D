@@ -1,0 +1,64 @@
+{
+ "name": "Kit_StorefrontMullion",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "top",
+   "pos": [
+    0.0,
+    1.7211,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p17",
+  "office",
+  "storefront"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  1400,
+  300,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-b 2026-11-10 (30_plan.md P17 structures_office_props: storefront)",
+ "boundsMin": [
+  -0.02362775057554245,
+  0.0,
+  -0.05714999884366989
+ ],
+ "boundsMax": [
+  0.02362775057554245,
+  1.7210999727249146,
+  0.05714999884366989
+ ],
+ "triangles": 188,
+ "slots": [
+  "Trans_AluminiumSatin",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 124,
+ "trianglesLod2": 84,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.0472555011510849,
+  0.11429999768733978
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.771
+}

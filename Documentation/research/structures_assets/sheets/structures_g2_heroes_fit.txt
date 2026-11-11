@@ -1,0 +1,29 @@
+structures_g2_heroes.jpg 1919x3751, 26 tiles, 3 columns
+title | G2 · THE POOL PIECES UP CLOSE | 510/1576 FIT
+h_box035.png | Hero 0.35 m · P1-A wall box | glass, reflector, lamp, from above | label 253/617 data 272/352 FIT
+h_box06.png | 0.6 m · P1-A whole | 786 mm housing on the tile, its glass | label 170/617 data 296/435 FIT
+h_box3m.png | 3 m · P1-A on the hall wall | the up-light's scallop over the box | label 245/617 data 280/360 FIT
+h_p2a1.png | 1.0 m · P2-A niche | 0.70 m down, through the water | label 162/617 data 240/443 FIT
+h_p2a3.png | 3 m · P2-A from the deck | the niche and the basin's steps | label 222/617 data 248/383 FIT
+h_nichs.png | 1.1 m · ZL_NICHE_S | the catch pool's small niche, through water | label 169/617 data 344/436 FIT
+h_esc035.png | Hero 0.35 m · escutcheon | the crossbar's flange on the tub's cheek | label 229/617 data 320/376 FIT
+h_esc3.png | 2.5 m · the start tub | crossbar in two escutcheons, the chain | label 190/617 data 304/415 FIT
+h_signal.png | 0.6 m · start light | textured black paint; grain off | label 170/617 data 248/435 FIT
+h_flange.png | Hero 0.35 m · flume flange | a pair: ribs, hex bolts, washers, sealant | label 243/617 data 328/362 FIT
+h_pad.png | Hero 0.35 m · cradle pad | the seat's tile and the black bearing pad | label 225/617 data 328/380 FIT
+h_flange3.png | 3 m · the low bend | SL-B on its tiled cradles, flange pairs | label 168/617 data 312/437 FIT
+h_weir.png | 0.45 m · weir lip | porcelain lip, drip groove, the sheet | label 155/617 data 296/450 FIT
+h_weir3.png | 2.6 m · court weir T2 > T1 | the lip and the nappe into T1 | label 239/617 data 232/366 FIT
+h_cradle.png | 0.6 m · low cradle | seat tile, bullnose lips, the pad | label 170/617 data 264/435 FIT
+h_gut035.png | Hero 0.35 m · gutter grate | finger grate, the curb's bullnose | label 244/617 data 264/361 FIT
+h_gut09.png | 0.9 m · roll-out gutter | fingers square to the edge | label 212/617 data 208/393 FIT
+h_gut3.png | 3 m · catch pool edge | the roll-out edge round the basin | label 193/617 data 264/412 FIT
+h_tower.png | Hero 0.35 m · curved tile wall | the tower at R 1.8: a flat facet a column | label 277/617 data 328/328 FIT
+h_door.png | 1.9 m · tower door | true round head, bullnose reveals | label 173/617 data 264/432 FIT
+h_apse.png | 5.3 m · apse R 3.0 | 150 mm columns; glints step tile by tile | label 164/617 data 320/441 FIT
+speckle_hero_flange.png | Speckle probe · flange | grain on | grain off | + SSAO off | label 204/617 data 264/401 FIT
+speckle_hero_cradle.png | Speckle probe · cradle | grain on | grain off | + SSAO off | label 206/617 data 264/399 FIT
+speckle_hero_signal.png | Speckle probe · start light | grain on | grain off | + SSAO off | label 245/617 data 264/360 FIT
+h_speckle.png | SPECKLE | film grain + SSAO; the maps are clean | label 67/617 data 296/538 FIT
+h_cost.png | COST | the kits' sidecars | label 39/617 data 144/566 FIT
+ALL LABELS FIT

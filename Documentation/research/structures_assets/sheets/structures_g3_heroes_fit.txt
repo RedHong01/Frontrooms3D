@@ -1,0 +1,39 @@
+structures_g3_heroes.jpg 1920x2911, 36 tiles, 4 columns
+title | G3 HEROES: 0.35 M AND 3 M | 459/1576 FIT
+h_SP3_reel_035.png | reel drive 0.35 m | two reels, window | label 156/457 data 136/289 FIT
+h_SP3_reel_300.png | reel drives 3 m | cabinet row | label 136/457 data 88/309 FIT
+h_SP3_cpu_035.png | processor 0.35 m | indicator strip | label 158/457 data 120/287 FIT
+h_SP3_cpu_180.png | cold aisle 1.8 m | rows face to face | label 141/457 data 136/304 FIT
+h_SP3_disk_035.png | disk cabinet 0.35 | glazed top, packs | label 152/457 data 136/293 FIT
+h_SP3_crac_300.png | downflow unit 3 m | panels, grilles | label 163/457 data 120/282 FIT
+h_SP3_printer_035.png | band printer 0.35 | forms in the window | label 159/457 data 152/286 FIT
+h_SP3_floorcell_300.png | console, lifted tile | lifter, open cell | label 167/457 data 136/278 FIT
+h_SP3_halon_300.png | tape rack, halon | corner of the room | label 141/457 data 144/304 FIT
+h_SP3_epo_035.png | power-off station | EPO + halon abort | label 157/457 data 136/288 FIT
+h_SP3_ohp_035.png | overhead 0.35 m | head and mirror | label 145/457 data 120/300 FIT
+h_SP3_ohp_180.png | overhead 1.8 m | throw to the screen | label 132/457 data 152/313 FIT
+h_SP3_screen_300.png | wall screen 3 m | lit by the overhead | label 143/457 data 152/302 FIT
+h_SP3_lectern_180.png | lectern 1.8 m | from the rows | label 121/457 data 104/324 FIT
+h_SP3_rows_180.png | tucked row 1.8 m | tables and chairs | label 153/457 data 136/292 FIT
+h_SP3_chairs_035.png | stack of six 0.35 | chrome sled frames | label 152/457 data 144/293 FIT
+h_SP3_shelf_035.png | open file 0.35 m | end-tab folders | label 144/457 data 120/301 FIT
+h_SP3_shelf_300.png | open files 3 m | under the gallery | label 124/457 data 136/321 FIT
+h_SP3_carriage_035.png | hand wheel 0.35 m | carriage end panel | label 163/457 data 144/282 FIT
+h_SP3_carriage_300.png | carriages 3 m | 0.79 m aisles | label 121/457 data 104/324 FIT
+h_SP3_lateral_300.png | laterals 3 m | drawer out, cart | label 112/457 data 128/333 FIT
+h_SP3_sofa_300.png | lounge 3 m | main's seating | label 95/457 data 112/350 FIT
+h_SP4_post1350_035.png | 1.35 post 0.35 m | cap and T-caps | label 155/457 data 112/290 FIT
+h_SP4_post2160_035.png | 2.16 cap 0.35 m | from below | label 145/457 data 80/300 FIT
+h_SP4_panel1350_035.png | 1.35 panel 0.35 m | cap, trims, fabric | label 163/457 data 144/282 FIT
+h_SP4_panel1350_300.png | 1.35 bays 3 m | the pit's panels | label 124/457 data 128/321 FIT
+h_SP4_freest_035.png | T-foot 0.35 m | freestanding screen | label 121/457 data 152/324 FIT
+h_SP4_freest_300.png | screens 3 m | the F3 blade field | label 106/457 data 144/339 FIT
+h_SP4_mullion_035.png | mullion 0.35 m | gaskets both faces | label 132/457 data 144/313 FIT
+h_SP4_mullion_300.png | storefront 3 m | two lites, channels | label 135/457 data 152/310 FIT
+h_SP4_laylit_300.png | laylight bay 3 m | lamp rows behind | label 141/457 data 128/304 FIT
+h_SP4_laydead_300.png | dead row 3 m | one row out | label 116/457 data 88/329 FIT
+h_SP3_reel_300_t.png | TODAY · reel drives | a grey box | label 171/457 data 80/274 FIT
+h_SP3_shelf_300_t.png | TODAY · file rows | one grey mass | label 155/457 data 104/290 FIT
+h_SP4_mullion_300_t.png | TODAY · boardroom | plain glass | label 165/457 data 88/280 FIT
+h_cost.png | COST · kits | LOD0 triangles | label 98/457 data 112/347 FIT
+ALL LABELS FIT

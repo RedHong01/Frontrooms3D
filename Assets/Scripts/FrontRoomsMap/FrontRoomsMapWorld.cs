@@ -380,6 +380,10 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         public byte startGroup;
         // C22: within its light's range of X, the EXIT's stairwell cell (its light would reach through the stairwell's walls): held by ExitLamps.
         public bool exitGroup;
+        // The walkable stair (desktop): one of the at most ForcedExitShadows exit-group lamps nearest the stair's two cells, within
+        // ForcedExitShadowMetres, given soft shadows while it is lit so its light stops on the shell's walls (RefreshForcedShadows).
+        // Always false without a walkable-stair exit area, so every other lamp ticks as before.
+        public bool forceShadow;
         // The near tick (every tier unless TickFixturesEveryLens): the light's position relative to its chunk
         // root (chunk roots only translate), what this map last set on the Light,
         // and the lens emission factor last written, so a far lamp costs no native
@@ -749,6 +753,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     RectInt startArea;
     bool hasStartArea;
     GridCoord startDoorCell;
+    // The walkable stair (SetStartArea with stair): the start area is the last floor's X1-X2 and its door cell N' lies
+    // south of X1 (the far door, under the EXIT). False for the title's strip and C22's one-cell stairwell.
+    bool startStair;
     // World-XZ rects the start area keeps free of furnishing (visual Q16, research/placard/40_contract_map.md).
     readonly List<Rect> startKeepClear = new List<Rect>();
     // The exit area (SetExitArea, C22): X, the EXIT's stairwell cell; N = X + (0, -1), the cell in front of the
@@ -756,6 +763,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     GridCoord exitCell, exitFront;
     bool hasExitArea;
     long exitEdge;
+    // The walkable stair (SetExitArea with stair): the exit area is 1 x 2, X1 = exitCell and X2 = exitCell + (0, 1).
+    bool exitStair;
     // The EXIT's seal (SealExit): None; Shutting (asked: the door shuts and nothing opens it again); Locked (it
     // latched, and is locked for good).
     enum ExitSeal { None, Shutting, Locked }
@@ -1096,15 +1105,29 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// changed, but IsBuilt and PassageBetween treat the cells as no map, so
     /// the Relay and the autopilot never route through them. Call before Begin.
     /// </summary>
-    public void SetStartArea(RectInt cells, GridCoord doorCell)
+    public void SetStartArea(RectInt cells, GridCoord doorCell) => SetStartArea(cells, doorCell, false);
+
+    /// <summary>
+    /// SetStartArea, and with <paramref name="stair"/> the walkable stair's start (MAP_GENERATION.md "Walkable stair"):
+    /// <paramref name="cells"/> is the last floor's X1-X2 (1 x 2) and <paramref name="doorCell"/> N' = N, south of X1. Then
+    /// the only open edge round the area is N'-X1, where the shell's far door and its wall stand (StartAreaEdge); every
+    /// other outside edge, X2's north one too, is a wall in the outside cell's paper and height. The start lamp groups,
+    /// the door's furnishing keep-clear and the stairwell rules (InStairwell, TransitionExcluded) follow the door's side.
+    /// Without stair (the title's strip, C22's one-cell stairwell) exactly SetStartArea as before.
+    /// </summary>
+    public void SetStartArea(RectInt cells, GridCoord doorCell, bool stair)
     {
         startKeepClear.Clear();
         startArea = cells;
         startDoorCell = doorCell;
         hasStartArea = cells.width > 0 && cells.height > 0;
-        transitionStartStairwell = cells.width == 1 && cells.height == 1;   // TRANSITION (T2): see TransitionExcluded
+        startStair = stair && hasStartArea;
+        transitionStartStairwell = (cells.width == 1 && cells.height == 1) || startStair;   // TRANSITION (T2): see TransitionExcluded
         floorStartArea = hasStartArea;   // C13 (V7a): DeviceWalled
     }
+
+    /// <summary>The start area is the walkable stair's (SetStartArea with stair): X1-X2 with its door N' on X1's south side.</summary>
+    public bool StartIsStair => hasStartArea && startStair;
 
     /// <summary>
     /// Give the start area back to the map, once the stream rooms are gone.
@@ -1133,7 +1156,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     // C22: a one-cell start area is a stairwell (NextFloor: the last floor's X), never the title's stream rooms (a strip
     // five cells wide). Its north line is closed by FrontRoomsStairwell.JoinNextFloor's end wall, which runs only between
     // X's side walls (+-1.42 m), so those walls take their north corners by CornerReach, as every other wall end does.
-    bool StartAreaIsStairwell => hasStartArea && startArea.width == 1 && startArea.height == 1;
+    // The walkable stair's start area (X1-X2, startStair) is a stairwell too: its far-door wall closes X1's south line between
+    // X1's side walls, so those take their corners the same way.
+    bool StartAreaIsStairwell => hasStartArea && ((startArea.width == 1 && startArea.height == 1) || startStair);
 
     /// <summary>
     /// True while a built chunk has geometry shaped by the start area: one that
@@ -1188,20 +1213,33 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// C23 round 3: each build of the EXIT door raises ExitDoorBuilt for the visual dressing; a new exit area
     /// starts unlocked (ExitLocked false, with no ExitLockChanged: no door of it is built yet).
     /// </summary>
-    public void SetExitArea(GridCoord cell)
+    public void SetExitArea(GridCoord cell) => SetExitArea(cell, false);
+
+    /// <summary>
+    /// SetExitArea, and with <paramref name="stair"/> the walkable stair's exit area (FrontRoomsExitPlanner.ChooseStairExit;
+    /// MAP_GENERATION.md "Walkable stair"): <paramref name="cell"/> is X1 and X2 = X1 + (0, 1) is left out too. N-X1 stays
+    /// the only map door (the EXIT); X1-X2 is open inside the stair; every other edge of the pair is a wall in the outside
+    /// cell's paper and height. InExitArea, IsReserved, the exit lamp group, the column and fixture keep-outs and the device
+    /// rules cover both cells; HoldExitLamps is the same 5 x 5 round N. The planner holds X1 to chunk-local j 1..5, so X2
+    /// lies in X1's chunk, the one that never shifts. Without stair exactly SetExitArea as before.
+    /// </summary>
+    public void SetExitArea(GridCoord cell, bool stair)
     {
         exitCell = cell;
         exitFront = new GridCoord(cell.x, cell.y - 1);
         exitEdge = EdgeId(exitFront, cell);
         hasExitArea = true;
+        exitStair = stair;
         exitSeal = ExitSeal.None;
         exitLocked = false;
         ExitLamps = 1f;
         // Only chunk-local 1..6 keeps X's four edges, its corners and N in X's own chunk, the one chunk that never shifts.
+        // The walkable stair: X1 at j 1..5, so X2 (j 2..6) and the pair's corners stay in it too.
         var o = MapGrid.ChunkOrigin(MapGrid.ChunkOf(cell));
         int i = cell.x - o.x, j = cell.y - o.y;
-        if (i < 1 || i > MapGrid.ChunkCells - 2 || j < 1 || j > MapGrid.ChunkCells - 2)
+        if (i < 1 || i > MapGrid.ChunkCells - 2 || j < 1 || j > MapGrid.ChunkCells - (stair ? 3 : 2))
             Debug.LogWarning("[FrontRoomsMap] Exit cell " + cell + " lies on its chunk's outer row or column (local " + i + ", " + j
+                + (stair ? "; the walkable stair's X2 one further north" : "")
                 + "): a neighbour chunk builds some of its edges, and that chunk may shift. FrontRoomsExitPlanner never chooses such a cell.");
         RegroupExitLamps();
         HoldExitLamps();
@@ -1242,6 +1280,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     public void ClearExitArea()
     {
         hasExitArea = false;
+        exitStair = false;
         exitSeal = ExitSeal.None;
         exitLocked = false;
         ExitLamps = 1f;
@@ -1250,17 +1289,26 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
 
     public bool HasExitArea => hasExitArea;
 
-    /// <summary>X, the EXIT's stairwell cell (meaningful while HasExitArea).</summary>
+    /// <summary>X, the EXIT's stairwell cell (meaningful while HasExitArea); X1 with the walkable stair.</summary>
     public GridCoord ExitCell => exitCell;
 
     /// <summary>N = X + (0, -1): the map cell in front of the EXIT door, where the player opens it (meaningful while HasExitArea).</summary>
     public GridCoord ExitFrontCell => exitFront;
 
-    public bool InExitArea(GridCoord cell) => hasExitArea && cell == exitCell;
+    /// <summary>The exit area is the walkable stair's (SetExitArea with stair): X1 = ExitCell and X2 = ExitTurnCell.</summary>
+    public bool ExitIsStair => hasExitArea && exitStair;
+
+    /// <summary>X2 = X1 + (0, 1), the walkable stair's turn end (meaningful while ExitIsStair).</summary>
+    public GridCoord ExitTurnCell => new GridCoord(exitCell.x, exitCell.y + 1);
+
+    /// <summary>The cells the exit area leaves out: X (1 x 1), or X1-X2 (1 x 2) with the walkable stair; empty without an exit area.</summary>
+    public RectInt ExitRect => hasExitArea ? new RectInt(exitCell.x, exitCell.y, 1, exitStair ? 2 : 1) : default;
+
+    public bool InExitArea(GridCoord cell) => hasExitArea && (cell == exitCell || (exitStair && cell.x == exitCell.x && cell.y == exitCell.y + 1));
 
     /// <summary>
     /// A stairwell cell: this floor's X, or the one-cell start area that was the last floor's X (C22). For readers that
-    /// treat both stairwells alike (声音设计's stair room tone). The walkable stair will make both 1 x 2.
+    /// treat both stairwells alike (声音设计's stair room tone). With the walkable stair both are 1 x 2 (X1-X2).
     /// </summary>
     public bool InStairwell(GridCoord cell) => InExitArea(cell) || (StartAreaIsStairwell && InStartArea(cell));
 
@@ -2030,7 +2078,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     {
         if (!hasExitArea) return false;
         var o = data.Origin;
-        return room.Contains(exitCell.x - o.x, exitCell.y - o.y);
+        // The walkable stair: X2 too (the planner never chooses a pair in a room either).
+        return room.Contains(exitCell.x - o.x, exitCell.y - o.y) || (exitStair && room.Contains(exitCell.x - o.x, exitCell.y + 1 - o.y));
     }
 
     /// <summary>
@@ -2042,7 +2091,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
 
     /// <summary>True when a column or bulkhead between two cell corners would touch the start area, X, or their edges.</summary>
     bool TouchesReserved(int x0, int y0, int x1, int y1) =>
-        TouchesStartArea(x0, y0, x1, y1) || (hasExitArea && x1 >= exitCell.x && x0 <= exitCell.x + 1 && y1 >= exitCell.y && y0 <= exitCell.y + 1);
+        TouchesStartArea(x0, y0, x1, y1) || (hasExitArea && x1 >= exitCell.x && x0 <= exitCell.x + 1 && y1 >= exitCell.y && y0 <= exitCell.y + (exitStair ? 2 : 1));
 
     /// <summary>The chunk holding the cell is built, reserved cells included (IsBuilt is false for those): the stairwell shows itself while X's chunk stands.</summary>
     public bool IsChunkBuiltAt(GridCoord cell) => built.ContainsKey(MapGrid.ChunkOf(cell));
@@ -2132,7 +2181,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var cx = (cell.x + .5f) * cs;
         var cz = (cell.y + .5f) * cs;
         var dx = Mathf.Max(exitCell.x * cs - cx, 0f, cx - (exitCell.x + 1) * cs);
-        var dz = Mathf.Max(exitCell.y * cs - cz, 0f, cz - (exitCell.y + 1) * cs);
+        var dz = Mathf.Max(exitCell.y * cs - cz, 0f, cz - (exitCell.y + (exitStair ? 2 : 1)) * cs);
         return dx * dx + dz * dz < range * range;
     }
 
@@ -2142,6 +2191,72 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         foreach (var chunk in built.Values)
             foreach (var f in chunk.fixtures)
                 f.exitGroup = f.light != null && ExitLampGroup(f.cell, f.light.range);
+        RefreshForcedShadows();
+    }
+
+    // ---------- The walkable stair's forced lamp shadows (contract 60 v1.1 section 4, Light; desktop only) ----------
+
+    /// <summary>
+    /// With a walkable-stair exit area the old floor's exit lamps stay lit through the walk down (no blackout on desktop),
+    /// and a shadowless map lamp lights straight through the shell's walls. So while the exit area stands, the
+    /// ForcedExitShadows exit-group lamps nearest the stair's two cells (within ForcedExitShadowMetres of them, XZ) cast
+    /// soft shadows whenever they are lit, whatever their own castsShadow and shadowRadius say. Desktop only (WebGL and
+    /// handheld keep their light budgets; WebGL takes the exit lamps to 0 at the seal instead, as C22 does). The pick is
+    /// refreshed when the exit area changes and every ForcedShadowRefreshFrames frames while it stands (new chunks bring
+    /// new lamps). No lamp is ever forced without a walkable-stair exit area. Tools set ForcedExitShadowsForTools (-1:
+    /// from the platform, 0 off, 1 on).
+    /// </summary>
+    public const int ForcedExitShadows = 6;
+    public const float ForcedExitShadowMetres = 10f;
+    const int ForcedShadowRefreshFrames = 30;
+    public static int ForcedExitShadowsForTools { get; set; } = -1;
+    static bool ForcedExitShadowsOn => ForcedExitShadowsForTools >= 0 ? ForcedExitShadowsForTools > 0
+        : Application.platform != RuntimePlatform.WebGLPlayer && !FrontRoomsHandheld.Active;
+    readonly List<Fixture> forcedPick = new List<Fixture>();
+    int forcedShadowFrame;
+
+    /// <summary>How many lamps carry the walkable stair's forced shadows now (tools and tests).</summary>
+    public int ForcedShadowLamps
+    {
+        get
+        {
+            var count = 0;
+            foreach (var chunk in built.Values)
+                foreach (var f in chunk.fixtures)
+                    if (f.forceShadow) count++;
+            return count;
+        }
+    }
+
+    // Metres (XZ) from a cell's centre to the nearest point of the exit area's rect.
+    float ExitRectMetres(GridCoord cell)
+    {
+        var cs = MapGrid.CellSize;
+        var cx = (cell.x + .5f) * cs;
+        var cz = (cell.y + .5f) * cs;
+        var dx = Mathf.Max(exitCell.x * cs - cx, 0f, cx - (exitCell.x + 1) * cs);
+        var dz = Mathf.Max(exitCell.y * cs - cz, 0f, cz - (exitCell.y + (exitStair ? 2 : 1)) * cs);
+        return Mathf.Sqrt(dx * dx + dz * dz);
+    }
+
+    void RefreshForcedShadows()
+    {
+        forcedPick.Clear();
+        var on = hasExitArea && exitStair && ForcedExitShadowsOn;
+        foreach (var chunk in built.Values)
+            foreach (var f in chunk.fixtures)
+            {
+                f.forceShadow = false;
+                if (on && f.exitGroup && f.light != null && ExitRectMetres(f.cell) <= ForcedExitShadowMetres) forcedPick.Add(f);
+            }
+        if (forcedPick.Count == 0) return;
+        forcedPick.Sort((a, b) =>
+        {
+            var c = ExitRectMetres(a.cell).CompareTo(ExitRectMetres(b.cell));
+            return c != 0 ? c : a.cell.x != b.cell.x ? a.cell.x.CompareTo(b.cell.x) : a.cell.y.CompareTo(b.cell.y);
+        });
+        for (var k = 0; k < forcedPick.Count && k < ForcedExitShadows; k++) forcedPick[k].forceShadow = true;
+        forcedPick.Clear();
     }
 
     // ---------- The next floor, in place (C22, D1) ----------
@@ -2167,7 +2282,14 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     /// ShiftedChunks and the map's own materials. The map stops streaming until the caller, having chosen the
     /// floor's EXIT on Cache and set it (SetExitArea), calls Begin(player, false).
     /// </summary>
-    public void NextFloor(int seed, int tier, RectInt startArea, GridCoord startDoorCell)
+    public void NextFloor(int seed, int tier, RectInt startArea, GridCoord startDoorCell) => NextFloor(seed, tier, startArea, startDoorCell, false);
+
+    /// <summary>
+    /// NextFloor, and with <paramref name="stair"/> the walkable stair's next floor: <paramref name="startArea"/> is the old
+    /// X1-X2 (1 x 2) and <paramref name="startDoorCell"/> N' = N, south of X1 (SetStartArea with stair). The map root never
+    /// moves (variant B): the game moves the shell and the player up by FloorToFloor instead.
+    /// </summary>
+    public void NextFloor(int seed, int tier, RectInt startArea, GridCoord startDoorCell, bool stair)
     {
         // Run! (71 s.9, card 2): one floor deeper for the deck's floor gates and history (the deck itself is the run's).
         runFloor++;
@@ -2231,7 +2353,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         doorsNeedKeys = keys;
         CreateCache();
         GenerationTier = tier;
-        SetStartArea(startArea, startDoorCell);
+        SetStartArea(startArea, startDoorCell, stair);
         begun = false;
         TouchPassageRevision();
     }
@@ -2845,7 +2967,13 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var inB = InStartArea(b);
         if (!inA && !inB) return kind;
         if (inA && inB) return EdgeKind.Open;
-        if (northward && inA) return EdgeKind.Open;
+        if (startStair)
+        {
+            // The walkable stair's start (X1-X2, door N' south of X1): only N'-X1 is left open, for the shell's far door and
+            // its wall; X2's north edge and every other outside edge is a wall.
+            if (northward && inB && a == startDoorCell) return EdgeKind.Open;
+        }
+        else if (northward && inA) return EdgeKind.Open;
         var outside = Cache.ZoneOf(inA ? b : a);
         height = MapGrid.CeilingHeight(outside.height);
         wallA = wallB = MaterialsOf(inA ? b : a, outside).wall;
@@ -2861,6 +2989,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     {
         var inA = InExitArea(a);
         if (!inA && !InExitArea(b)) return kind;
+        // The walkable stair: X1-X2 lies inside the stair, open, and nothing of the map is built on it.
+        if (exitStair && inA && InExitArea(b)) return EdgeKind.Open;
         var outside = Cache.ZoneOf(inA ? b : a);
         height = MapGrid.CeilingHeight(outside.height);
         wallA = wallB = MaterialsOf(inA ? b : a, outside).wall;
@@ -2868,9 +2998,11 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     }
 
     // The exit rule on an edge's kind: N to X is the EXIT door, X's other edges are walls, every other edge is as it was.
+    // The walkable stair: N to X1 is the EXIT door, X1-X2 open, the pair's other edges walls.
     EdgeKind ExitKind(GridCoord a, GridCoord b, EdgeKind kind)
     {
         if (!InExitArea(a) && !InExitArea(b)) return kind;
+        if (exitStair && InExitArea(a) && InExitArea(b)) return EdgeKind.Open;
         return a == exitFront || b == exitFront ? EdgeKind.Door : EdgeKind.Wall;
     }
 
@@ -2916,7 +3048,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             if (room.Overlaps(near))
             {
                 if (hasStartArea && startArea.Overlaps(near)) room = JoinRects(room, startArea);
-                return IsExitChunk(coord) ? JoinRects(room, new RectInt(exitCell.x, exitCell.y, 1, 1)) : room;
+                return IsExitChunk(coord) ? JoinRects(room, new RectInt(exitCell.x, exitCell.y, 1, exitStair ? 2 : 1)) : room;
             }
         }
         else if (hasStation)
@@ -2934,7 +3066,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         }
         var area = hasStartArea ? startArea : default;
         if (!IsExitChunk(coord)) return area;
-        var x = new RectInt(exitCell.x, exitCell.y, 1, 1);
+        var x = new RectInt(exitCell.x, exitCell.y, 1, exitStair ? 2 : 1);
         var o = MapGrid.ChunkOrigin(coord);
         // The planner's 2 x 2 blocks start one cell west and south of the chunk.
         if (!hasStartArea || !startArea.Overlaps(new RectInt(o.x - 1, o.y - 1, MapGrid.ChunkCells + 1, MapGrid.ChunkCells + 1))) return x;
@@ -3018,7 +3150,8 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
     ///   door is no map door (the edge is Open to the kits, so they keep no sweep), and its leaf swings into that cell.
     /// - A26, floor 1's group for the whole floor: the station (the first room, its own skin and set piece), the
     ///   corridor C1..N, X, and the strip, which ClearStartArea gives back to the map.
-    /// Add X2 with the walkable stair when it exists.
+    /// The walkable stair's X2 is in both reserved areas (InExitArea, InStartArea), so IsReserved takes it in; the square round
+    /// its start door is the one round N' (startDoorCell), whose far door is no map door either.
     /// </summary>
     bool TransitionExcluded(GridCoord c) =>
         IsReserved(c) || (hasExitArea && TransitionHold(c, exitFront)) || (transitionStartStairwell && TransitionHold(c, startDoorCell))
@@ -3921,6 +4054,9 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         var dx = Mathf.Max(startArea.xMin * cs - cx, 0f, cx - startArea.xMax * cs);
         var dz = Mathf.Max(startArea.yMin * cs - cz, 0f, cz - startArea.yMax * cs);
         if (dx * dx + dz * dz >= range * range) return 0;
+        // Group 1 lies on the door cell's side of the door line (lit with the door's swing), group 2 behind it. The walkable
+        // stair's door faces south (N' under X1), so its door side is the door row and south of it.
+        if (startStair) return cell.y <= startDoorCell.y ? (byte)1 : (byte)2;
         return cell.y >= startDoorCell.y ? (byte)1 : (byte)2;
     }
 
@@ -3953,6 +4089,12 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
         TickLampOverrides(dt);
         TickLampHolds(dt);
         if (player == null) return;
+        // The walkable stair's forced shadows follow the chunks that come and go (never without a walkable-stair exit area).
+        if (hasExitArea && exitStair && ++forcedShadowFrame >= ForcedShadowRefreshFrames)
+        {
+            forcedShadowFrame = 0;
+            RefreshForcedShadows();
+        }
         if (TickFixturesNearOnly || !TickFixturesEveryLens) { TickFixturesNear(dt, !TickFixturesNearOnly); return; }
         var p = player.position;
         foreach (var chunk in built.Values)
@@ -3968,7 +4110,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             if (f.light.enabled != on) f.light.enabled = on;
             f.lightOn = on;
             if (on) f.light.intensity = f.baseIntensity * f.level * fade;
-            var shadows = f.castsShadow && on && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
+            var shadows = (f.castsShadow && on && d < shadowRadius) || (f.forceShadow && on) ? LightShadows.Soft : LightShadows.None;
             if (f.light.shadows != shadows) f.light.shadows = shadows;
             f.shadowMode = shadows;
             WriteEmission(f, Mathf.Max(.04f, f.level * held));
@@ -4041,7 +4183,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
                 {
                     // Lit: the same per-frame updates as the every-lens path.
                     f.light.intensity = f.baseIntensity * f.level * fade;
-                    var shadows = f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None;
+                    var shadows = (f.castsShadow && d < shadowRadius) || f.forceShadow ? LightShadows.Soft : LightShadows.None;
                     if (f.shadowMode != shadows) { f.light.shadows = shadows; f.shadowMode = shadows; }
                     WriteEmission(f, factor);
                     continue;
@@ -4144,7 +4286,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             string problem = null;
             if (f.light.enabled != on) problem = "enabled " + f.light.enabled + " expected " + on;
             else if (on && Mathf.Abs(f.light.intensity - f.baseIntensity * f.level * fade) > 1e-4f) problem = "intensity " + f.light.intensity + " expected " + f.baseIntensity * f.level * fade;
-            else if (on && f.light.shadows != (f.castsShadow && d < shadowRadius ? LightShadows.Soft : LightShadows.None)) problem = "shadows " + f.light.shadows;
+            else if (on && f.light.shadows != ((f.castsShadow && d < shadowRadius) || (f.forceShadow && cap == 0) ? LightShadows.Soft : LightShadows.None)) problem = "shadows " + f.light.shadows;
             else if (!on && f.light.shadows != LightShadows.None) problem = "shadows " + f.light.shadows + " while off";
             else if (on && (glow - expectedGlow).maxColorComponent > 1e-4f) problem = "lit glow " + glow + " expected " + expectedGlow;
             else if (on && Mathf.Abs(read.GetFloat(LampDipId) - f.dip) > 1e-5f) problem = "lens dip " + read.GetFloat(LampDipId) + " expected " + f.dip;
@@ -4575,7 +4717,11 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
             if (room.Contains(startDoorCell.x - o.x, startDoorCell.y - o.y))
             {
                 var depth = ModuleUnits.DoorClearDepth + ModuleUnits.WallHalf;
-                doorway = new Rect((startDoorCell.x - o.x) * cs, (startDoorCell.y - o.y) * cs, cs, depth);
+                // The strip on the door cell's edge that faces the area: its south edge for a door north of the area, its north
+                // edge for the walkable stair's far door (nothing swings into N': the far leaf swings into the stair).
+                doorway = startStair
+                    ? new Rect((startDoorCell.x - o.x) * cs, (startDoorCell.y - o.y + 1) * cs - depth, cs, depth)
+                    : new Rect((startDoorCell.x - o.x) * cs, (startDoorCell.y - o.y) * cs, cs, depth);
                 clear.Add(doorway.Value);
             }
             foreach (var w in startKeepClear)
@@ -7199,7 +7345,7 @@ public sealed partial class FrontRoomsMapWorld : MonoBehaviour
 
     // Cells the map walls for the floor: its start area (kept after ClearStartArea) and X.
     bool DeviceWalled(GridCoord cell) =>
-        (floorStartArea && cell.x >= startArea.xMin && cell.x < startArea.xMax && cell.y >= startArea.yMin && cell.y < startArea.yMax) || (hasExitArea && cell == exitCell);
+        (floorStartArea && cell.x >= startArea.xMin && cell.x < startArea.xMax && cell.y >= startArea.yMin && cell.y < startArea.yMax) || InExitArea(cell);
 
     /// <summary>
     /// RELAY 6's no-device cells on this floor (C13's foil, the auto entries): the start area and X with a ring of one cell,

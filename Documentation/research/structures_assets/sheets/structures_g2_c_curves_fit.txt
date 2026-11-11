@@ -1,0 +1,18 @@
+structures_g2_c_curves.jpg 1919x2167, 15 tiles, 3 columns
+title | G2-C · TILE ON CURVES BY RADIUS | 537/1576 FIT
+c_door_today.png | TODAY · tower door | main: the head cut in tile steps | label 172/617 data 256/433 FIT
+c_door_new.png | NEW · tower door | true round head, bullnose reveals | label 158/617 data 264/447 FIT
+c_soffit_new.png | NEW · tower stair | helicoid soffit, mosaic newel, rail | label 161/617 data 280/444 FIT
+c_arch_today.png | TODAY · walk arches | main: the tile map bent round 80 mm facets | label 179/617 data 336/426 FIT
+c_arch_new.png | NEW · walk arches | a facet a course, both arrises bullnosed | label 165/617 data 320/440 FIT
+c_pier_new.png | NEW · round pier | 50 mm columns at R 0.45, its top round | label 150/617 data 304/455 FIT
+c_drums_today.png | TODAY · stepping drums | main: the tops render black (D1) | label 204/617 data 256/401 FIT
+c_drums_new.png | NEW · stepping drums | 50 mm tile, a real top, its bullnose | label 190/617 data 288/415 FIT
+c_apse_new.png | NEW · apse R 3.0 | 150 mm columns: glints step tile by tile | label 149/617 data 320/456 FIT
+c_dome_today.png | TODAY · saucer dome | main: spiral joints, ragged oculus (D2, D4) | label 178/617 data 344/427 FIT
+c_dome_new.png | NEW · saucer dome | whole tiles in rings, oculus cut round | label 164/617 data 304/441 FIT
+c_vault_new.png | NEW · grotto vault | 21 courses of 150 mm from the springing | label 170/617 data 312/435 FIT
+c_b4l_today.png | TODAY · B4-L spiral | main: a sawtooth of tread boxes (D9) | label 171/617 data 288/434 FIT
+c_b4l_new.png | NEW · B4-L spiral | smooth soffit, ribbon under a Cap course | label 157/617 data 320/448 FIT
+c_cost.png | COST | about +80 k LOD0 over the three districts | label 39/617 data 328/566 FIT
+ALL LABELS FIT

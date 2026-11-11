@@ -1,0 +1,80 @@
+{
+ "name": "Kit_MopSink",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.127,
+    0.305
+   ],
+   "size": [
+    0.61,
+    0.254,
+    0.61
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "basin",
+   "pos": [
+    0.0,
+    0.04,
+    0.305
+   ]
+  }
+ ],
+ "tags": [
+  "wall_unit",
+  "structures",
+  "run",
+  "closet",
+  "p20"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  50.0
+ ],
+ "lodBudget": [
+  4500,
+  1600,
+  200
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.30900001525878906,
+  0.0,
+  -1.3987644376101116e-09
+ ],
+ "boundsMax": [
+  0.30900001525878906,
+  1.2790000438690186,
+  0.6139999628067017
+ ],
+ "triangles": 4152,
+ "slots": [
+  "Prop_MoldedStone",
+  "Prop_StainlessSatin",
+  "Prop_PlasticBlack",
+  "Prop_Chrome",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 1812,
+ "trianglesLod2": 816,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.305
+ ],
+ "footprintSize": [
+  0.61,
+  0.61
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

@@ -66,9 +66,26 @@ using UnityEngine.Rendering;
 ///                1,788 / 208 tris, desktop only); phone: the globe and the body in a zinc swatch (296 tris). Mounting face local
 ///                y 0 (a ceiling, or a wall with the globe along the wall's normal), the globe along local -y, 0.23 m deep in
 ///                all. Lens drive GlobeLensPeak (2.0). Scene 4: SP6's C9 wet block, SP5's janitor closet, P's fire stair.
+///   WallPack     Kit_WallPackHPS, scene 4's SP5 outside ramp (structures_assets 30_plan.md P19, G4-a 2026-11-10): the 1980s medium
+///                high-pressure sodium wall pack (70-150 W ED17, 2100 K; research/structures_assets/20_research.md C.4.4, F19): a die-cast
+///                dark bronze housing 422 x 292 x 262 mm with a sloped finned hood, a hinged die-cast door frame, a prismatic borosilicate
+///                refractor whose horizontal prisms are geometry, a conduit hub and a button photocell (ZL_WALLPACK). Lens = the refractor
+///                (124 tris: what the lamp lights shows through it in its emission map); Housing LODGroup 588 / 276 / 78 on the kit's own
+///                atlas (one material, as the wall box); phone 80. Wall frame as the wall box (+Z out of the wall, +Y up). Lens drive
+///                WallPackLensPeak (2.4, the slot's sodium source), its colour and output from HpsTick.
+///   DockArm      Kit_DockLightArm, SP5's dock edge (P19): a swing-arm dock light (LS60; F20): a two-piece pivot bracket on two U-bolts
+///                round a 4 in post (Kit_DockLightPost's arm_mount), a 40 in arm of 1-1/2 in square tube swung 40 degrees toward local +X,
+///                a yoke and a spun steel shade tilted 25 degrees down over a PAR38 flood (the lens), a wire guard, the cord in clips to
+///                a switch box (ZL_DOCKARM). Lens = the PAR's face (440 tris); Housing LODGroup 2,836 / 1,746 / 178; phone 226. Mounting
+///                face = the bracket's back on the post's front (the post's axis at local z -0.057); the flood looks along local +Z. Lens
+///                drive DockArmLensPeak (2.6, a bare flood face). No auxiliary lamp; not registered with the Relay.
 ///   The metal-halide families (WallBox, and any HID head) take their lamp's behaviour from HidTick (HidLamp): out on a deep
 ///   dip, a compressed restrike dim and blue-green first, the auxiliary quartz lamp while it waits, a per-lamp colour drift,
 ///   end-of-life cycling (research/zone_lamps/20_design.md s.6). The caller drives its Light, lens and glow with the result.
+///   The high-pressure sodium family (WallPack) takes HpsTick on the same HidLamp state: out on a deep dip, a hot restrike after
+///   HpsCool (real lamps about a minute), a warm-up over HpsWarm from the starting gas's pink-violet through mercury's pale blue to
+///   the sodium colour, no auxiliary lamp, and the sodium lamp's end-of-life cycling (out, cool, restrike, warm, out again). Every
+///   change is a ramp of seconds or a single step, so a cycling or restriking head never flashes (photosafety, WCAG 2.3.1).
 ///   The two pool kits carry their own atlas (bronze, brushed stainless: not on the trim sheet), one material for lens and
 ///   housing alike (the housing samples emission-free regions), and a wall frame: the mounting face is the wall, local +Z
 ///   out of it, +Y up.
@@ -80,7 +97,7 @@ using UnityEngine.Rendering;
 /// </summary>
 public static class FrontRoomsLampKit
 {
-    public enum Family : byte { Strip, RemotePlate, Pendant, Wrap, WallBox, Niche, NicheSmall, Flush, Globe }
+    public enum Family : byte { Strip, RemotePlate, Pendant, Wrap, WallBox, Niche, NicheSmall, Flush, Globe, WallPack, DockArm }
 
     /// <summary>What the map hangs at a cell (ForCell, BuildMapLamp, LensDrive).</summary>
     public enum MapLamp : byte { Troffer, Pendant, Wrap }
@@ -99,6 +116,11 @@ public static class FrontRoomsLampKit
     public const float FlushLensPeak = 0.9f;
     /// <summary>ZL F7's globe as seen (a clear jar round a frosted 100 W lamp: brighter than a lensed fluorescent).</summary>
     public const float GlobeLensPeak = 2.0f;
+    /// <summary>The HPS wall pack's refractor as seen at full output (the dock's sodium slot source: brighter than a fluorescent lens);
+    /// multiply by HpsTick's output and colour.</summary>
+    public const float WallPackLensPeak = 2.4f;
+    /// <summary>The dock light's PAR38 face as seen (a bare 150-300 W flood face).</summary>
+    public const float DockArmLensPeak = 2.6f;
     /// <summary>O-C hangs its body's bottom this far under the ceiling plane (a 0.10 m body on 0.50 m cables) and only where that
     /// bottom stays at or above PendantMinBottom: the 2.9 m Office rooms (2.30 m), never a Low one (the 2.03 m headroom clause).</summary>
     public const float PendantDrop = .60f, PendantMinBottom = 2.2f;
@@ -152,6 +174,8 @@ public static class FrontRoomsLampKit
                 new Kit { folder = "NicheSmall/", model = "Models/ZL_NICHE_S", desktopPrefab = "Prefabs/ZL_NICHE_S", phonePrefab = "Prefabs/ZL_NICHE_S_Phone" },
                 new Kit { folder = "Flush/", model = "Models/ZL_FLUSH", desktopPrefab = "Prefabs/ZL_FLUSH", phonePrefab = "Prefabs/ZL_FLUSH_Phone" },
                 new Kit { folder = "Globe/", model = "Models/ZL_GLOBE", desktopPrefab = "Prefabs/ZL_GLOBE", phonePrefab = "Prefabs/ZL_GLOBE_Phone" },
+                new Kit { folder = "WallPack/", model = "Models/ZL_WALLPACK", desktopPrefab = "Prefabs/ZL_WALLPACK", phonePrefab = "Prefabs/ZL_WALLPACK_Phone" },
+                new Kit { folder = "DockArm/", model = "Models/ZL_DOCKARM", desktopPrefab = "Prefabs/ZL_DOCKARM", phonePrefab = "Prefabs/ZL_DOCKARM_Phone" },
             };
         var i = (int)family;
         return i >= 0 && i < kits.Length ? kits[i] : null;
@@ -458,6 +482,57 @@ public static class FrontRoomsLampKit
         return output;
     }
 
+    // ---------------------------------------------------------------- high-pressure sodium lamps (Kit_WallPackHPS; G4-a)
+    /// <summary>The sodium lamp's line level under which the arc goes out, its compressed hot restrike and warm-up (seconds; real HPS
+    /// lamps restrike in about a minute and warm up in three to four), and an end-of-life lamp's mean time at full output before it
+    /// cycles out (real cycling lamps: minutes).</summary>
+    public const float HpsDropOut = .80f, HpsCool = 6f, HpsWarm = 16f, HpsCycle = 40f;
+    /// <summary>The sodium lamp's colour at full output (2100 K, Ra about 24): the colour scene 4's SP5 gives its two heads.</summary>
+    public static readonly Color HpsSodium = new Color(1f, .55f, .22f);
+    /// <summary>The warm-up's colours: the starting gas's pink-violet glow at the strike, then mercury's pale blue before the sodium
+    /// takes over (research/zone_lamps/10_other.md, 10_pool.md PL15).</summary>
+    static readonly Color HpsStrike = new Color(.80f, .56f, 1f), HpsMercury = new Color(.78f, .86f, 1f);
+
+    /// <summary>
+    /// Advances a sodium lamp <paramref name="s"/> (the HidLamp state; HidLamp.Lit to start it burning) by <paramref name="dt"/> with its
+    /// line at <paramref name="mains"/> and returns its output, 0..1: multiply the Light's intensity and the lens drive
+    /// (WallPackLensPeak) by it. <paramref name="color"/> is the lamp's colour now (the strike's pink-violet, mercury's blue, then
+    /// HpsSodium nudged by the lamp's drift), to set as the Light's colour and the lens's tint. No auxiliary lamp: a sodium head out
+    /// is dark until it restrikes (the dock's own strips and heads keep the room lit; darkness is never cover). Every change is a
+    /// single step (the arc out) or a ramp over seconds, never a flicker.
+    /// </summary>
+    public static float HpsTick(ref HidLamp s, float mains, float dt, out Color color)
+    {
+        if (s.arc && mains < HpsDropOut)
+        {
+            s.arc = false;
+            s.cool = HpsCool;
+            s.warm = 0f;
+        }
+        else if (s.arc && s.failing && s.warm >= 1f)
+        {
+            s.cycle -= dt;
+            if (s.cycle <= 0f)
+            {
+                s.arc = false;
+                s.cool = HpsCool;
+                s.warm = 0f;
+                s.cycle = HpsCycle * (.7f + .6f * Mathf.Repeat(s.drift * 5.17f + .61f, 1f));
+            }
+        }
+        if (!s.arc)
+        {
+            s.cool = Mathf.Max(0f, s.cool - dt);
+            if (s.cool <= 0f && mains >= HpsDropOut) { s.arc = true; s.warm = 0f; }
+        }
+        else if (s.warm < 1f) s.warm = Mathf.Min(1f, s.warm + dt / HpsWarm);
+        var w = s.arc ? s.warm * s.warm * (3f - 2f * s.warm) : 0f;
+        var output = s.arc ? (.03f + .97f * w) * Mathf.Clamp01(mains * mains) : 0f;
+        var sodium = Color.Lerp(HpsSodium, new Color(1f, .60f, .27f), .5f + .5f * s.drift);
+        color = w < .3f ? Color.Lerp(HpsStrike, HpsMercury, w / .3f) : Color.Lerp(HpsMercury, sodium, Mathf.Clamp01((w - .3f) / .7f));
+        return output;
+    }
+
     // ---------------------------------------------------------------- the map's lamp per cell (MapWorld.BuildFixture)
     /// <summary>
     /// The lamp a map cell hangs (Red 2026-10-31, research/zone_lamps/40_cursor_brief.md s.2): a Low room L03, or the 4 ft
@@ -504,11 +579,33 @@ public static class FrontRoomsLampKit
         var mf = r != null ? r.GetComponent<MeshFilter>() : null;
         var m = mf != null ? mf.sharedMesh : null;
         if (m == null) return false;
-        for (var i = 0; i <= (int)Family.Globe; i++)
+        for (var i = 0; i <= (int)Family.DockArm; i++)
         {
             if (i == (int)Family.Wrap) continue;
             var k = Get((Family)i);
             if (k != null && k.phonePrefab != null && Load(k) && (m == k.lensMesh || m == k.phoneMesh)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The family whose lens or phone mesh <paramref name="r"/> carries, among the kits already loaded (a lens a kit built has
+    /// its kit loaded), the wrap included (its LOD0 / LOD2 meshes, the shared kit's: any wrap counts). Loads nothing; false for
+    /// any other renderer. LW3's lens hook reads it for the lens opening (FrontRoomsLampLens.AreaOf).
+    /// </summary>
+    public static bool TryFamilyOf(Renderer r, out Family family)
+    {
+        family = Family.Strip;
+        var mf = r != null ? r.GetComponent<MeshFilter>() : null;
+        var m = mf != null ? mf.sharedMesh : null;
+        if (m == null) return false;
+        if (wrapOk && (m == wrapDesktop || m == wrapPhone)) { family = Family.Wrap; return true; }
+        if (kits == null) return false;
+        for (var i = 0; i < kits.Length; i++)
+        {
+            var k = kits[i];
+            if (k == null || !k.loaded || !k.ok) continue;
+            if (m == k.lensMesh || m == k.phoneMesh) { family = (Family)i; return true; }
         }
         return false;
     }

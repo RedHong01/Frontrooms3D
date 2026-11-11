@@ -1,0 +1,60 @@
+{
+ "name": "Kit_MopRack",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "wall_unit",
+  "structures",
+  "run",
+  "closet",
+  "p20"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  50.0
+ ],
+ "lodBudget": [
+  3000,
+  1100,
+  150
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.4569999873638153,
+  0.19466739892959595,
+  -0.0
+ ],
+ "boundsMax": [
+  0.4819999933242798,
+  2.062000036239624,
+  0.28744691610336304
+ ],
+ "triangles": 2638,
+ "slots": [
+  "Prop_StainlessSatin",
+  "Prop_Rubber",
+  "Prop_WoodOak",
+  "Prop_Canvas",
+  "Prop_PlasticRed",
+  "Painted_Metal"
+ ],
+ "trianglesLod1": 1206,
+ "trianglesLod2": 330,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.012500002980232239,
+  0.14372345805168152
+ ],
+ "footprintSize": [
+  0.9389999806880951,
+  0.28744691610336304
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

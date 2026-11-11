@@ -1,0 +1,73 @@
+{
+ "name": "Kit_CRACUnit_Off",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.95,
+    0.0
+   ],
+   "size": [
+    1.83,
+    1.9,
+    0.86
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "wall_unit"
+ ],
+ "lodDistances": [
+  7.0,
+  20.0,
+  80.0
+ ],
+ "lodBudget": [
+  4200,
+  1400,
+  300
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "service": 0.9,
+ "boundsMin": [
+  -0.9150000214576721,
+  0.0,
+  -0.4300000071525574
+ ],
+ "boundsMax": [
+  0.9150000214576721,
+  1.899999976158142,
+  0.4399999976158142
+ ],
+ "triangles": 4580,
+ "slots": [
+  "Prop_PlasticGrey",
+  "Prop_SteelBeige",
+  "Prop_PlasticBlack",
+  "Prop_PerfSteel",
+  "Prop_PlasticWhite",
+  "Prop_Chrome",
+  "Prop_CompAtlas",
+  "Prop_CompIndicator_Off"
+ ],
+ "trianglesLod1": 1764,
+ "trianglesLod2": 140,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.83,
+  0.86
+ ],
+ "placement": "Wall",
+ "minCeiling": 0.0
+}

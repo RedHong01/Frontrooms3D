@@ -1,0 +1,64 @@
+{
+ "name": "Kit_StairLanding_SteelPan",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "edge",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "stair",
+  "stairwell_walkable"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  8.0,
+  18.0,
+  0.0
+ ],
+ "lodBudget": [
+  1800,
+  600,
+  100
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "stairwell_walkable STAIR author 2026-11-10 (research/stairwell/80 section 6)",
+ "boundsMin": [
+  -1.3300000429153442,
+  -0.2540000081062317,
+  -1.5700000524520874
+ ],
+ "boundsMax": [
+  1.3300000429153442,
+  0.0,
+  0.00039999998989515007
+ ],
+ "triangles": 540,
+ "slots": [
+  "Stair_Fill",
+  "Stair_SteelEnamel",
+  "Stair_PrimerChip"
+ ],
+ "trianglesLod1": 120,
+ "trianglesLod2": 36,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.7848000262310961
+ ],
+ "footprintSize": [
+  2.6600000858306885,
+  1.5704000524419826
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

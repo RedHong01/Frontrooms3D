@@ -1,0 +1,55 @@
+{
+ "name": "Kit_RecordsCarton_LidOff",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "clutter",
+  "carton"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  35.0
+ ],
+ "lodBudget": [
+  500,
+  180,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.1525000035762787,
+  0.0,
+  -0.19050000607967377
+ ],
+ "boundsMax": [
+  0.5330370664596558,
+  0.2540000081062317,
+  0.24712277948856354
+ ],
+ "triangles": 250,
+ "slots": [
+  "Prop_PaperAtlas"
+ ],
+ "trianglesLod1": 58,
+ "trianglesLod2": 10,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.19026853144168854,
+  0.028311386704444885
+ ],
+ "footprintSize": [
+  0.6855370700359344,
+  0.4376227855682373
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.304
+}

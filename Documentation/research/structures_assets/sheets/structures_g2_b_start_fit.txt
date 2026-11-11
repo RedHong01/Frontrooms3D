@@ -1,0 +1,12 @@
+structures_g2_b_start.jpg 1919x1375, 9 tiles, 3 columns
+title | G2-B · THE SLIDE START | 385/1576 FIT
+s_tub_today.png | TODAY · the tub | main: a box light, a square bar, steel boxes | label 135/617 data 352/470 FIT
+s_tub_new.png | NEW · the tub | signal head, crossbar, chain on hooks | label 121/617 data 296/484 FIT
+s_signal.png | Start light · 0.6 m | two aspects, visors, glass lenses | label 170/617 data 264/435 FIT
+s_room_today.png | TODAY · start room | main: stand-in stool, CRT box, slab | label 169/617 data 280/436 FIT
+s_room_new.png | NEW · start room | the kits; the board blank until narrative writes it | label 155/617 data 408/450 FIT
+s_chain.png | Chain · 0.9 m | 6 mm oval links, hook plates | label 117/617 data 224/488 FIT
+s_stool.png | Guard stool · 1.5 m | vinyl seat 0.76 m, chrome legs, foot ring | label 177/617 data 328/428 FIT
+s_board.png | Rules board · 1.6 m | blank enamel panel, aluminium frame | label 178/617 data 280/427 FIT
+s_cost.png | COST | about 21 k at LOD0 in the start room | label 39/617 data 288/566 FIT
+ALL LABELS FIT

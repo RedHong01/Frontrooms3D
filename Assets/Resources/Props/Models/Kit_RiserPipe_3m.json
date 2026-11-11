@@ -1,0 +1,73 @@
+{
+ "name": "Kit_RiserPipe_3m",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "bottom",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "top",
+   "pos": [
+    0.0,
+    3.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "shaft",
+  "p20"
+ ],
+ "noCollider": true,
+ "pipeRadius": 0.05715,
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  1400,
+  500,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.06965000182390213,
+  0.0,
+  -0.09264999628067017
+ ],
+ "boundsMax": [
+  0.06965000182390213,
+  3.0269999504089355,
+  0.09264999628067017
+ ],
+ "triangles": 912,
+ "slots": [
+  "RunB_SprinklerRed",
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 120,
+ "trianglesLod2": 60,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.13930000364780426,
+  0.18529999256134033
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

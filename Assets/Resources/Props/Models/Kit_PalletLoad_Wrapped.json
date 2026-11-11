@@ -1,0 +1,135 @@
+{
+ "name": "Kit_PalletLoad_Wrapped",
+ "supports": [
+  {
+   "name": "top",
+   "centre": [
+    0.0,
+    0.877,
+    0.0
+   ],
+   "size": [
+    1.0999999999999999,
+    0.8
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.4385,
+    0.0
+   ],
+   "size": [
+    1.219,
+    0.877,
+    1.016
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "filmLayout": {
+  "variant": "low",
+  "layers": [
+   [
+    0.127,
+    0.377,
+    [
+     -0.6,
+     -0.2053,
+     0.2036,
+     0.6
+    ],
+    [
+     -0.45,
+     -0.1618,
+     0.1616,
+     0.45
+    ]
+   ],
+   [
+    0.377,
+    0.627,
+    [
+     -0.6,
+     -0.1903,
+     0.215,
+     0.6
+    ],
+    [
+     -0.45,
+     -0.1557,
+     0.1428,
+     0.45
+    ]
+   ],
+   [
+    0.627,
+    0.877,
+    [
+     -0.6,
+     -0.2134,
+     0.1908,
+     0.6
+    ],
+    [
+     -0.45,
+     -0.1614,
+     0.1546,
+     0.45
+    ]
+   ]
+  ]
+ },
+ "lodDistances": [
+  5.0,
+  15.0,
+  50.0
+ ],
+ "lodBudget": [
+  3000,
+  900,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.6135004758834839,
+  0.0,
+  -0.510334312915802
+ ],
+ "boundsMax": [
+  0.6342585682868958,
+  0.8809999823570251,
+  0.5096452832221985
+ ],
+ "triangles": 2076,
+ "slots": [
+  "Prop_PinePallet",
+  "Prop_PalletFilm",
+  "Prop_Cardboard",
+  "Prop_TapeBeige"
+ ],
+ "trianglesLod1": 820,
+ "trianglesLod2": 236,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.219,
+  1.016
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.927
+}

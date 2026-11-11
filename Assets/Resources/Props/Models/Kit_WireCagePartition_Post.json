@@ -1,0 +1,55 @@
+{
+ "name": "Kit_WireCagePartition_Post",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "cage",
+  "p20"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  50.0
+ ],
+ "lodBudget": [
+  450,
+  160,
+  24
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.05000000074505806,
+  0.0,
+  -0.05000000074505806
+ ],
+ "boundsMax": [
+  0.05000000074505806,
+  2.880000114440918,
+  0.05000000074505806
+ ],
+ "triangles": 380,
+ "slots": [
+  "Painted_Metal",
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 124,
+ "trianglesLod2": 48,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.10000000149011612,
+  0.10000000149011612
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.88
+}

@@ -1,0 +1,56 @@
+{
+ "name": "Kit_WheelChock",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  1400,
+  400,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.10000000149011612,
+  -0.0060456981882452965,
+  -0.591566264629364
+ ],
+ "boundsMax": [
+  0.10000000149011612,
+  0.20000000298023224,
+  0.125
+ ],
+ "triangles": 1516,
+ "slots": [
+  "Prop_Rubber",
+  "Prop_SteelBlack",
+  "Prop_ChainOxide"
+ ],
+ "trianglesLod1": 520,
+ "trianglesLod2": 76,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.233283132314682
+ ],
+ "footprintSize": [
+  0.20000000298023224,
+  0.716566264629364
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

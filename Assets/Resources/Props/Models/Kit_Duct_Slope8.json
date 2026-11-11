@@ -1,0 +1,77 @@
+{
+ "name": "Kit_Duct_Slope8",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "start",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "end",
+   "pos": [
+    0.0,
+    0.0,
+    0.15
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "services",
+  "p20",
+  "ceiling"
+ ],
+ "noCollider": true,
+ "ductSection": [
+  0.6096,
+  0.3048
+ ],
+ "sectionLength": 1.5,
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  600,
+  200,
+  30
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.3086000084877014,
+  -0.17399592697620392,
+  -0.15000000596046448
+ ],
+ "boundsMax": [
+  0.3086000084877014,
+  0.15839999914169312,
+  0.16826552152633667
+ ],
+ "triangles": 192,
+ "slots": [
+  "Prop_DoorSlatGalv"
+ ],
+ "trianglesLod1": 176,
+ "trianglesLod2": 16,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.009132757782936096
+ ],
+ "footprintSize": [
+  0.6172000169754028,
+  0.31826552748680115
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

@@ -1,0 +1,102 @@
+{
+ "name": "Kit_ReceivingDesk",
+ "supports": [
+  {
+   "name": "shelf",
+   "centre": [
+    0.0,
+    0.212,
+    0.0
+   ],
+   "size": [
+    0.702,
+    0.53
+   ]
+  },
+  {
+   "name": "ledge",
+   "centre": [
+    0.0,
+    1.12,
+    -0.255
+   ],
+   "size": [
+    0.702,
+    0.08
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.56,
+    0.0
+   ],
+   "size": [
+    0.762,
+    1.12,
+    0.61
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "lid_centre",
+   "pos": [
+    0.0,
+    1.059,
+    0.05
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "lidSlopeDeg": 11.09,
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  2000,
+  700,
+  100
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.38499999046325684,
+  0.0,
+  -0.3050000071525574
+ ],
+ "boundsMax": [
+  0.38499999046325684,
+  1.1204999685287476,
+  0.3227677643299103
+ ],
+ "triangles": 1852,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 944,
+ "trianglesLod2": 172,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.762,
+  0.61
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.2
+}

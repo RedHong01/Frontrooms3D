@@ -1,0 +1,81 @@
+{
+ "name": "Kit_PlatformTruck_Pads",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.155,
+    0.0
+   ],
+   "size": [
+    0.762,
+    0.31,
+    1.219
+   ]
+  },
+  {
+   "centre": [
+    0.0,
+    0.64,
+    0.5745
+   ],
+   "size": [
+    0.702,
+    0.7,
+    0.05
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  50.0
+ ],
+ "lodBudget": [
+  5000,
+  1700,
+  240
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.38580000400543213,
+  0.0,
+  -0.614300012588501
+ ],
+ "boundsMax": [
+  0.38580000400543213,
+  1.0166642665863037,
+  0.614300012588501
+ ],
+ "triangles": 7380,
+ "slots": [
+  "Prop_WoodOak",
+  "Prop_SteelBlack",
+  "Prop_Rubber",
+  "Prop_FabricNavy"
+ ],
+ "trianglesLod1": 2652,
+ "trianglesLod2": 672,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.762,
+  1.219
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.05
+}

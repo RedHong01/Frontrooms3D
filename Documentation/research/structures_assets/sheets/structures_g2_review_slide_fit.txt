@@ -1,0 +1,13 @@
+structures_g2_review_slide.jpg 1920x3122, 10 tiles, 2 columns
+title | STRUCTURES G2 REVIEW THE SLIDE AS IT STANDS | 752/1576 FIT
+SP1_s00_newsteady_raw.png | SP1 s00 arrival | the hall at room scale: tile, water, arcade hold | label 145/938 data 384/781 FIT
+sp1_lip.png | exit lip | a cut end 50 mm over the water: no rolled lip | label 62/938 data 360/864 FIT
+SP1_v_lastcell_newsteady_raw.png | last cell | no bearing; flange bands like hose clamps | label 80/938 data 328/846 FIT
+SP1_v_saddlehigh_newsteady_raw.png | saddle at 1.5 m | flat tile block, round tube, no cradle or pad | label 135/938 data 360/791 FIT
+SP1_v_saddleeye_newsteady_raw.png | SL-A from the deck | clear aqua glass, not a milky laminate | label 162/938 data 304/764 FIT
+SP1_v_bendlow_newsteady_raw.png | low bend, SL-C to SL-B | 70 mm bands: no bolts, flats or sealant | label 191/938 data 312/735 FIT
+SP1_v_tub_newsteady_raw.png | start light and tub | a box with flat glowing squares; box crossbar | label 167/938 data 360/759 FIT
+SP1_v_startroom_newsteady_raw.png | start room props | stool, CRT and rules board are stand-in boxes | label 154/938 data 360/772 FIT
+sp1_door.png | tower door (D3) | the round head is cut as a staircase | label 143/938 data 288/783 FIT
+cost_slide.png | cost | harness inventory of this run; G2-b ESTIMATE | label 39/938 data 352/887 FIT
+ALL LABELS FIT

@@ -1072,9 +1072,12 @@ public sealed partial class FrontRoomsMapHunter
         var fromExit = world.InExitArea(sourceCell);
         if (fromExit)
         {
+            // Measured across the EXIT door's own line, N to X (X1 with the walkable stair, whose X2 is no neighbour of N:
+            // a noise there lies a cell and more past the line, never heard).
             var front = world.ExitFrontCell;
-            var into = Flat(world.CellCenter(sourceCell) - world.CellCenter(front)).normalized;
-            if (Vector3.Dot(Flat(source - world.CrossingPoint(front, sourceCell)), into) > ExitLineSlack) return;
+            var exit = world.ExitCell;
+            var into = Flat(world.CellCenter(exit) - world.CellCenter(front)).normalized;
+            if (Vector3.Dot(Flat(source - world.CrossingPoint(front, exit)), into) > ExitLineSlack) return;
             sourceCell = front;
         }
         var myCell = world.CellOf(position);

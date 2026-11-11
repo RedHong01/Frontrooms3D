@@ -1,0 +1,72 @@
+{
+ "name": "Kit_CagedLadder",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "bottom_rung",
+   "pos": [
+    0.0,
+    0.0,
+    0.178
+   ]
+  },
+  {
+   "name": "top",
+   "pos": [
+    0.0,
+    4.33,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "wall_unit",
+  "structures",
+  "run",
+  "shaft",
+  "p20"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  8.0,
+  24.0,
+  0.0
+ ],
+ "lodBudget": [
+  7000,
+  2500,
+  400
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.4493996798992157,
+  -0.15000009536743164,
+  -0.0
+ ],
+ "boundsMax": [
+  0.4493996798992157,
+  4.329999923706055,
+  0.9954000115394592
+ ],
+ "triangles": 5676,
+ "slots": [
+  "RunB_GalvSteel"
+ ],
+ "trianglesLod1": 1716,
+ "trianglesLod2": 1204,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.4977000057697296
+ ],
+ "footprintSize": [
+  0.8987993597984314,
+  0.9954000115394592
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

@@ -1,0 +1,6 @@
+zone_lamps_pool_grid_lens.jpg fit check 2026-11-10 (looked at full size)
+title SP1 POOL GRID: L03 LENS LEVEL (PLAN A): fits
+sentence: fits, one line
+meta: fits, one line
+tiles: TODAY 1.8 / X0.5 LENS ONLY / X0.2 REC / LENS HIDDEN, data lines: all fit, no ellipsis
+ALL LABELS FIT

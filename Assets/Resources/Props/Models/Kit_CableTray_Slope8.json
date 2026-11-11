@@ -1,0 +1,57 @@
+{
+ "name": "Kit_CableTray_Slope8",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "ceiling",
+  "structures",
+  "run",
+  "services",
+  "p20",
+  "ceiling"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  300,
+  100,
+  24
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.16300000250339508,
+  -0.0076901535503566265,
+  -0.10999999940395355
+ ],
+ "boundsMax": [
+  0.16300000250339508,
+  0.07491698116064072,
+  0.11832913756370544
+ ],
+ "triangles": 728,
+ "slots": [
+  "RunB_GalvSteel",
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 88,
+ "trianglesLod2": 48,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.004164569079875946
+ ],
+ "footprintSize": [
+  0.32600000500679016,
+  0.228329136967659
+ ],
+ "placement": "Ceiling",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

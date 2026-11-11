@@ -1,0 +1,36 @@
+structures_g4_dock.jpg 1920x2921, 33 tiles, 4 columns
+title | G4-A · SP5 DOCK KITS, HPS PACK, LIGHT ARM | 713/1552 FIT
+g4_today_s03.png | TODAY · dock s03 | 16 boxes: door, hood, arm, gate | label 154/457 data 248/291 FIT
+g4_today_s04.png | TODAY · bay s04 | slab curtain, square bollards | label 142/457 data 232/303 FIT
+door_half_3q_raw.png | NEW · coiling door | 12 x 14 ft, half up: bar at 1.20 m | label 164/457 data 272/281 FIT
+door_states_raw.png | NEW · door states | open | half up | shut (3 kits) | label 161/457 data 240/284 FIT
+door_hero_hoist_raw.png | HERO 0.35 M · hoist | gear case, pocket wheel | label 176/457 data 184/269 FIT
+door_hero_slats_raw.png | HERO 0.35 M · slats | 2-5/8 in slats, bar, handle, bolt | label 179/457 data 264/266 FIT
+door_hero_hood_raw.png | HERO 0.6 M · hood | half-hex hood, hem, head plate | label 159/457 data 240/286 FIT
+door_hero_chain_raw.png | HERO 0.4 M · hand chain | real links, keeper | label 208/457 data 144/237 FIT
+leveler_bay_3m_raw.png | NEW · leveler, bay | lip in keepers, bumpers | label 162/457 data 184/283 FIT
+leveler_deck_eye_raw.png | NEW · deck at eye | tread deck, stripes, pull ring | label 154/457 data 240/291 FIT
+leveler_hero_lip_raw.png | HERO 0.35 M · lip | 16 in lip, hinge knuckles, bands | label 156/457 data 256/289 FIT
+bumper_hero_raw.png | HERO 0.35 M · bumper | 23 tyre-rubber pads on angles | label 194/457 data 232/251 FIT
+guard_eye_3m_raw.png | NEW · edge guard | stanchions, chains, sprung gate | label 152/457 data 248/293 FIT
+guard_hero_hook_raw.png | HERO 0.35 M · snap hook | 6 mm chain, eye | label 217/457 data 120/228 FIT
+bollard_3m_raw.png | NEW · bollards | 6-5/8 in pipe, crowned, 1.07 m | label 136/457 data 240/309 FIT
+bollard_hero_foot_raw.png | HERO 0.35 M · foot | chips, caulk joint | label 170/457 data 144/275 FIT
+light_side_3m_raw.png | NEW · dock light | 4 in post, 40 in arm, PAR38 head | label 147/457 data 256/298 FIT
+light_bay_3m_raw.png | NEW · light, bay | arm swung 40 deg | label 139/457 data 128/306 FIT
+light_hero_head_raw.png | HERO 0.35 M · head lit | PAR38 lens, guard | label 199/457 data 136/246 FIT
+light_hero_off_raw.png | HERO 0.35 M · head off | the pressed lens's stipple | label 204/457 data 208/241 FIT
+wallpack_night_3m_raw.png | NEW · HPS wall pack | 4.0 m up the ramp wall, lit | label 180/457 data 216/265 FIT
+wallpack_hero_lit_raw.png | HERO 0.35 M · HPS lit | prisms smear the lamp | label 191/457 data 168/254 FIT
+wallpack_hero_off_raw.png | HERO 0.35 M · HPS off | prisms are geometry | label 196/457 data 152/249 FIT
+trucks_3m_raw.png | NEW · platform trucks | empty | pads | cartons | label 203/457 data 176/242 FIT
+dumpster_3m_raw.png | NEW · dumpster | 6 cu yd front load, sleeves, lids | label 139/457 data 264/306 FIT
+cctv_hero_raw.png | HERO 0.7 M · CCTV | housing, sunshield | label 158/457 data 144/287 FIT
+desk_3m_raw.png | NEW · receiving desk | slant lid, ledge, shelf, glides | label 182/457 data 248/263 FIT
+loads_3m_raw.png | NEW · wrapped loads | GMA pallet, 0.88 and 1.48 m | label 185/457 data 216/260 FIT
+loads_hero_film_raw.png | HERO 0.6 M · film | cartons through the film, rope | label 154/457 data 240/291 FIT
+jack_3m_raw.png | NEW · pallet jack | 27 x 48 in forks, pump, handle | label 158/457 data 240/287 FIT
+chocks_1m_raw.png | NEW · wheel chocks | out on its chain | hung on a hook | label 175/457 data 264/270 FIT
+g4_cost.png | COST | frame time not measured (rule 25) | label 39/457 data 264/406 FIT
+g4_gates.png | GATES | Roslyn PASS; Unity checks at G4 render | label 47/457 data 304/398 FIT
+ALL LABELS FIT

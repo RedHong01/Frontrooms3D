@@ -117,12 +117,12 @@ def strip(name, W, H, seed):
         cav = 1.0 - 0.25 * edge
     elif name in ("ShoeAluminium", "FasciaCap", "StainlessBrushed", "CarpetBar", "AbrasiveNosing"):
         base = {"ShoeAluminium": [0.71, 0.72, 0.72], "FasciaCap": [0.27, 0.22, 0.17], "StainlessBrushed": [0.64, 0.65, 0.65],
-                "CarpetBar": [0.70, 0.70, 0.69], "AbrasiveNosing": [0.66, 0.66, 0.64]}[name]
+                "CarpetBar": [0.64, 0.64, 0.62], "AbrasiveNosing": [0.66, 0.66, 0.64]}[name]
         base = np.array(base)
         metal[:] = 1.0
         hgt = 0.006 * br + 0.004 * n_fine
         tone = 1.0 + 0.02 * n_lo + 0.025 * br + 0.02 * n_mid
-        sm = {"ShoeAluminium": 0.62, "FasciaCap": 0.58, "StainlessBrushed": 0.72, "CarpetBar": 0.55, "AbrasiveNosing": 0.5}[name] + 0.03 * br - 0.02 * np.abs(n_mid)
+        sm = {"ShoeAluminium": 0.62, "FasciaCap": 0.58, "StainlessBrushed": 0.72, "CarpetBar": 0.42, "AbrasiveNosing": 0.5}[name] + 0.03 * br - 0.02 * np.abs(n_mid)
         # dust settles low on a shoe and in a cap's lower lip; arrises polished by hands and feet
         dust = smooth(0.25, 0.0, V) * (0.5 + 0.5 * np.clip(n_mid, -1, 1))
         tone = tone * (1.0 - 0.10 * dust) * (1.0 + 0.05 * edge)
@@ -133,7 +133,8 @@ def strip(name, W, H, seed):
             ribs = 0.5 + 0.5 * np.cos(2.0 * np.pi * (V - 0.40) / (0.55 / 9.0))
             hgt = hgt - 0.35 * top * (ribs < 0.35)
             nose = band(V, 0.31, 0.40, 0.01)
-            sm = sm + 0.10 * nose - 0.10 * top * (ribs < 0.35)
+            # FR-7 (K1 review, structures G3-b): a satin anodised bar (0.42, the nose 0.48), never a chrome rod
+            sm = sm + 0.06 * nose - 0.10 * top * (ribs < 0.35)
             tone = tone * (1.0 - 0.30 * top * (ribs < 0.35) * (0.6 + 0.4 * np.clip(n_mid, 0, 1))) * (1.0 + 0.06 * nose)
             cav = 1.0 - 0.35 * top * (ribs < 0.35)
         if name == "AbrasiveNosing":

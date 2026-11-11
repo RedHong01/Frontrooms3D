@@ -6,7 +6,11 @@ because the kits map the whole cell onto the quad. Paper is white here: Prop_Sta
 Usage: build_atlas.py <out dir> [lang]
 Languages (Red 11-03, 叙事设计 chat: world text follows the language; research/narrative/95 §5.3 words, WORLD_TYPE.md faces):
 the same cells, rules, hands and slots; only the words change (words95.py reads 95 §5.3 and the tables). A word too long for its
-place is set in the condensed cut, then narrower (to 85 %), then smaller: never cut. lang=en is byte-identical to the English atlas."""
+place is set in the condensed cut, then narrower (to 85 %), then smaller: never cut. lang=en is byte-identical to the English atlas.
+zh-Hans (11-10, the faces Red let us download): heads 黑体 Noto Sans SC 700 (R1/R3), typed lines 仿宋 Zhuque Fangsong on a
+typewriter's full-width grid (R2: one cell a character, digits and initials too; its stem laid on to Courier Prime's, the ribbon's
+spread), the visitors' and key columns in Long Cang (R4, the same blue ballpoint line as Rock Salt's); CJK em = cap / 0.70, no
+tracking (WORLD_TYPE.md §2-3)."""
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from words95 import words
@@ -17,19 +21,58 @@ F = ROOT + "/Assets/Fonts/Period1990/"
 HB, HR, HC = F + "TeXGyre/texgyreheros-bold.otf", F + "TeXGyre/texgyreheros-regular.otf", F + "TeXGyre/texgyreheroscn-bold.otf"
 TYPED = F + "CourierPrime/CourierPrime-Regular.ttf"
 HAND = os.path.expanduser("~/Library/Fonts/RockSalt.ttf")
+FW = os.path.expanduser("~/FrontRoomsVisualWork/iconography/fonts_world/")
+CJK = {"zh-Hans"}
 K, RULE, BLUE, PAPER = (26, 26, 26), (120, 120, 118), (31, 42, 92), (255, 255, 255)
 PX = 12                                    # px per mm while drawing
 CELL, N = 1024, 4
 
 
+LANG = sys.argv[2] if len(sys.argv) > 2 else "en"
+W = words(LANG) if LANG != "en" else {}
+if LANG in CJK:   # the roles' faces for zh-Hans; a path may carry "#<wght>" for the variable Noto Sans SC
+    SC = os.path.expanduser("~/Library/Fonts/NotoSansSC-VariableFont_wght.ttf")
+    HB = HC = SC + "#700"; HR = SC + "#400"
+    TYPED = FW + "zhuque/x/ZhuqueFangsong-Regular.ttf"
+    HAND = FW + "longcang/LongCang-Regular.ttf"
+
+
 def font(path, cap):
+    if LANG in CJK:   # CJK em = the Latin cap / 0.70
+        path, _, wght = path.partition("#")
+        f = ImageFont.truetype(path, max(1, round(cap / 0.70 * PX)))
+        if wght: f.set_variation_by_axes([float(wght)])
+        return f
     probe = ImageFont.truetype(path, 1000)
     b = probe.getbbox("H")
     return ImageFont.truetype(path, round(cap * PX * 1000 / (b[3] - b[1])))
 
 
-LANG = sys.argv[2] if len(sys.argv) > 2 else "en"
-W = words(LANG) if LANG != "en" else {}
+def grow_mm(path, cap):
+    """Stem laid on as a stroke (mm), CJK only. Typed: Zhuque's stem (0.056 em) up to Courier Prime Regular's (0.126 cap),
+    the ribbon's spread. Hand: Long Cang's pen (0.043 em) up to Rock Salt's line at that cap plus its 1 px ballpoint stroke."""
+    em = cap / 0.70
+    if path == TYPED: return 0.126 * cap - 0.056 * em
+    if path == HAND: return 0.087 * cap + 2 / PX - 0.043 * em
+    return 0.0
+
+
+def grid(s):
+    """A typed CJK line on the typewriter's grid: a word space next to a hanzi goes, a double space is one empty cell."""
+    out, i = [], 0
+    while i < len(s):
+        if s[i] == " ":
+            j = i
+            while j < len(s) and s[j] == " ": j += 1
+            n = j - i; prev = s[i - 1] if i else ""; nxt = s[j] if j < len(s) else ""
+            cjk = lambda c: c and ord(c) > 0x2E7F
+            if i == 0: out += [" "] * n
+            elif n >= 2: out.append(" ")
+            elif not (cjk(prev) or cjk(nxt)): out.append(" ")
+            i = j
+        else:
+            out.append(s[i]); i += 1
+    return out
 
 
 def tr(s):
@@ -48,6 +91,11 @@ class Page:
 
     def fit(self, s, x, y, paths, cap, maxw, fill=K, track=0.0, align="l", stroke=0):
         """text() in the first face that fits maxw mm; else the last face set narrower (to 85 %), else smaller."""
+        if LANG in CJK:
+            w = self.cjk_width(s, paths[0], cap)
+            if w <= maxw: return self.cjk(s, x, y, paths[0], cap, fill, align)
+            if w * 0.85 <= maxw: return self.cjk(s, x, y, paths[0], cap, fill, align, sx=maxw / w)
+            return self.fit(s, x, y, paths, cap * 0.95, maxw, fill, track, align, stroke)
         for path in paths:
             f = font(path, cap)
             w = (sum(f.getlength(c) + track * PX for c in s) - track * PX if track else f.getlength(s)) / PX
@@ -62,8 +110,36 @@ class Page:
             return
         return self.fit(s, x, y, paths, cap * 0.95, maxw, fill, track, align, stroke)
 
+    def cjk_width(self, s, path, cap):
+        if path == TYPED: return len(grid(s)) * cap / 0.70
+        return font(path, cap).getlength(s) / PX + grow_mm(path, cap)
+
+    def cjk(self, s, x, y, path, cap, fill=K, align="l", sx=1.0):
+        """CJK text, drawn at 4x so the laid-on stem keeps its fraction of a pixel; typed lines one em cell a character,
+        a half-width glyph centred in its cell; sx narrows the run (长体, never under 0.85)."""
+        q = 4
+        em = cap / 0.70 * PX * q
+        f = font(path, cap * q)
+        st = max(0, round(grow_mm(path, cap) / 2 * PX * q))
+        cells = grid(s) if path == TYPED else None
+        w = len(cells) * em if cells else f.getlength(s)
+        asc, desc = f.getmetrics()
+        pad = 2 * st + 8
+        m = Image.new("L", (int(w) + 2 * pad, asc + desc + 2 * pad), 0)
+        d = ImageDraw.Draw(m)
+        if cells:
+            for i, c in enumerate(cells):
+                if c != " ": d.text((pad + i * em + em / 2, pad + asc), c, font=f, fill=255, anchor="ms", stroke_width=st, stroke_fill=255)
+        else:
+            d.text((pad, pad + asc), s, font=f, fill=255, anchor="ls", stroke_width=st, stroke_fill=255)
+        m = m.resize((max(1, round(m.width * sx / q)), max(1, round(m.height / q))), Image.LANCZOS)
+        ww = w * sx / q
+        px = x * PX - (ww if align == "r" else ww / 2 if align == "c" else 0) - pad * sx / q
+        self.im.paste(Image.new("RGB", m.size, fill if isinstance(fill, tuple) else (fill, fill, fill)), (round(px), round(y * PX - (pad + asc) / q)), m)
+
     def text(self, s, x, y, path, cap, fill=K, track=0.0, align="l", stroke=0):
         """x, y in mm; y is the baseline."""
+        if LANG in CJK: return self.cjk(s, x, y, path, cap, fill, align)
         f = font(path, cap)
         w = sum(f.getlength(c) + track * PX for c in s) - track * PX if track else f.getlength(s)
         px = x * PX - (w if align == "r" else w / 2 if align == "c" else 0)
@@ -102,10 +178,11 @@ def form(p, heads, widths, x0, top, pitch, rows):
 
 
 def hand(p, s, x, y, cap=3.6, fill=BLUE, maxw=None):
+    s = "".join(grid(s)) if LANG in CJK else s.replace(" ", "  ")   # Rock Salt's word space is too tight; a CJK hand writes 楼梯A, 214室
     if LANG != "en" and maxw:   # a longer word is written smaller, as a hand does when the box runs out
         f = font(HAND, cap)
-        while cap > 2.0 and f.getlength(s.replace(" ", "  ")) / PX > maxw: cap -= 0.1; f = font(HAND, cap)
-    p.text(s.replace(" ", "  "), x, y, HAND, cap, fill, stroke=1)   # a ballpoint line; Rock Salt's word space is too tight
+        while cap > 2.0 and f.getlength(s) / PX > maxw: cap -= 0.1; f = font(HAND, cap)
+    p.text(s, x, y, HAND, cap, fill, stroke=1)   # a ballpoint line
 
 
 REG_HEADS = ["DATE", "NAME", "COMPANY", "VISITING", "TIME IN", "TIME OUT"]

@@ -1,0 +1,76 @@
+{
+ "name": "Kit_HoseCabinet",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "valve",
+   "pos": [
+    0.29,
+    1.4,
+    -0.055
+   ]
+  }
+ ],
+ "tags": [
+  "wall_unit",
+  "structures",
+  "run",
+  "services",
+  "p20"
+ ],
+ "noCollider": true,
+ "wallOpening": {
+  "x0": -0.45,
+  "x1": 0.45,
+  "y0": 0.98,
+  "y1": 2.0300000000000002,
+  "depth": 0.12
+ },
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  7000,
+  2200,
+  250
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.4880000054836273,
+  0.9419999718666077,
+  -0.12999999523162842
+ ],
+ "boundsMax": [
+  0.4880000054836273,
+  2.068000078201294,
+  0.09200000017881393
+ ],
+ "triangles": 5520,
+ "slots": [
+  "RunB_CabinetWhite",
+  "Prop_Glass",
+  "Prop_Chrome",
+  "Prop_Brass",
+  "RunB_FireRed",
+  "Prop_Canvas"
+ ],
+ "trianglesLod1": 2332,
+ "trianglesLod2": 276,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.018999997526407242
+ ],
+ "footprintSize": [
+  0.9760000109672546,
+  0.22199999541044235
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

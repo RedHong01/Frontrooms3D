@@ -1,0 +1,12 @@
+structures_g2_light_lw0.jpg 1919x1375, 9 tiles, 3 columns
+title | G2 LIGHT · LW0 GLINT FLASHES ON IMAGE 1 | 688/1552 FIT
+demo_p1_ev3.jpg | TODAY · demo 4.0 | image 2 at 120 deg/s: blocks on the lane line | label 149/617 data 360/456 FIT
+lw0_beach.png | Image 1 beach water | SP6 BeachHall, 120 deg/s: 1.0 (0.0 at 76) | label 176/617 data 328/429 FIT
+lw0_sp2.png | SP2 basin, planar | 120 deg/s 2.5; 76 deg/s 2.0; phones 2.5 | label 151/617 data 312/454 FIT
+ev_turn_SP6_s07_p33_t3.0_base_ev2.jpg | SP6 deck by the B2 stair | 76 deg/s 4.0: lit treads, dark nosings | label 216/617 data 304/389 FIT
+lw0_b2half.png | REC · B2 step lights half | 76 deg/s 3.0; 120 deg/s 3.0; off 2.0 | label 224/617 data 288/381 FIT
+lw0_counts.png | Counts | flashes, worst second, 30 x 18 blocks | label 59/617 data 296/546 FIT
+lw0_terms.png | Glint terms | flat water, lamp term, size, gain, roughness | label 100/617 data 352/505 FIT
+lw0_fix.png | Fix | REC: B2 lights at half; water unchanged | label 23/617 data 312/582 FIT
+lw0_cost.png | COST | the fix and the test | label 39/617 data 160/566 FIT
+ALL LABELS FIT

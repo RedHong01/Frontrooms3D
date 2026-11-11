@@ -66,6 +66,9 @@ public sealed class FrontRoomsLevelProfile : ScriptableObject
     // holds no per-cell floor levels and Apply builds no slope (research/level_space/40 s.11.7), so a ramp room would be flat.
     // Off, that card plays as the tier's plain room. A serialized switch again with the per-cell levels.
     [System.NonSerialized] public bool runRamps = false;
+    [Header("Walkable stair (contract 60 v1.1; off until the visual line's shell lands)")]
+    [Tooltip("The EXIT becomes a real stair down (MAP_GENERATION.md, Walkable stair): the exit area is 1 x 2 cells (X1 = N + (0, 1), X2 = N + (0, 2)), the next floor starts in the same two cells with its door on N, and the player walks the flights while the floor below is made (no freeze, no blackout on desktop). Needs a shell factory (FrontRoomsStairShellHost.Create, set by the visual line's stair package): without one, or off, every floor keeps C22's one-cell vestibule and the map is byte for byte as before. Takes effect on the next run.")]
+    public bool walkableStair = false;
     [Header("Floor stations (BS1)")]
     [Tooltip("Station · Waiting, the found room of a floor below the first when it stands in a Level 0 zone (FrontRoomsFloorStation). Never a random pick. With this and Station Desk both empty every floor plays as it does today.")]
     public FrontRoomsRoomModule stationWaiting;

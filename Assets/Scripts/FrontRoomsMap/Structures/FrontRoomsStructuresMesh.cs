@@ -28,6 +28,8 @@ public sealed class FrontRoomsStructuresMesh
         public Material material;
         public float ceiling;
         public bool floorGrimeOff, shadows;
+        // K2 (structures G2-a, FR-1): the hall a piece lies in (Zones; 0 = none, TODAY's key)
+        public int zone;
     }
 
     readonly Transform root;
@@ -41,6 +43,16 @@ public sealed class FrontRoomsStructuresMesh
     public bool FloorGrimeOff;
     /// <summary>Groups made from now on cast shadows (default true).</summary>
     public bool CastShadows = true;
+    /// <summary>
+    /// K2 (structures G2-a; the K1 review's FR-1): the halls of a district (root-local boxes). A piece whose centre lies in one goes
+    /// into that hall's own renderers, so its metals, glass and trims sit inside the hall's reflection probe instead of one
+    /// district-wide renderer taking another room's; the bevels still solve over the whole district in one Finish. The pool tile
+    /// (every Prop_PoolTile material: the field, the courses, the nosing, the trims) is never split: Red's tile and glaze (GZ-C)
+    /// keep the probes they were picked under (Red 2026-11-07 21:54: image 1's tile kept), and a hall's tile reflecting its own
+    /// probe drew moving streaks on SP6's B2 cheek (flash_check 3.5 at 76 deg/s). Null (TODAY, and every district that gives
+    /// none): one group per material, as before.
+    /// </summary>
+    public List<Bounds> Zones;
     /// <summary>Triangles made so far (render), for the district's cost line.</summary>
     public int Triangles { get; private set; }
     public int Renderers { get; private set; }
@@ -59,8 +71,8 @@ public sealed class FrontRoomsStructuresMesh
 
     sealed class KeyCompare : IEqualityComparer<GroupKey>
     {
-        public bool Equals(GroupKey a, GroupKey b) => a.material == b.material && Mathf.Abs(a.ceiling - b.ceiling) < 1e-3f && a.floorGrimeOff == b.floorGrimeOff && a.shadows == b.shadows;
-        public int GetHashCode(GroupKey k) => (k.material != null ? k.material.GetHashCode() : 0) ^ Mathf.RoundToInt(k.ceiling * 100f) * 31 ^ (k.floorGrimeOff ? 7 : 0) ^ (k.shadows ? 13 : 0);
+        public bool Equals(GroupKey a, GroupKey b) => a.material == b.material && Mathf.Abs(a.ceiling - b.ceiling) < 1e-3f && a.floorGrimeOff == b.floorGrimeOff && a.shadows == b.shadows && a.zone == b.zone;
+        public int GetHashCode(GroupKey k) => (k.material != null ? k.material.GetHashCode() : 0) ^ Mathf.RoundToInt(k.ceiling * 100f) * 31 ^ (k.floorGrimeOff ? 7 : 0) ^ (k.shadows ? 13 : 0) ^ k.zone * 977;
     }
 
     public FrontRoomsStructuresMesh(Transform root)
@@ -69,10 +81,18 @@ public sealed class FrontRoomsStructuresMesh
         worldOffset = root != null ? root.position : Vector3.zero;
     }
 
-    Part Get(Material m)
+    // K2: the hall a root-local point lies in (1-based; 0 outside every hall, with no halls given, or for the pool tile).
+    int ZoneOf(Vector3 local, Material m)
+    {
+        if (Zones == null || (m != null && m.name.StartsWith("Prop_PoolTile", System.StringComparison.Ordinal))) return 0;
+        for (var i = 0; i < Zones.Count; i++) if (Zones[i].Contains(local)) return i + 1;
+        return 0;
+    }
+
+    Part Get(Material m, Vector3 at = default(Vector3))
     {
         if (Bevels) m = FrontRoomsStructuresAssets.Real(m);
-        var key = new GroupKey { material = m, ceiling = Ceiling, floorGrimeOff = FloorGrimeOff, shadows = CastShadows };
+        var key = new GroupKey { material = m, ceiling = Ceiling, floorGrimeOff = FloorGrimeOff, shadows = CastShadows, zone = ZoneOf(at, m) };
         if (!groups.TryGetValue(key, out var p)) groups[key] = p = new Part();
         return p;
     }
@@ -84,7 +104,7 @@ public sealed class FrontRoomsStructuresMesh
         if (m != null)
         {
             if (Bevels) Record(center, size, Quaternion.identity, m, FrontRoomsStructureBevels.UvRule.Planar);
-            else BoxInto(Get(m), center, size, Quaternion.identity, true);
+            else BoxInto(Get(m, center), center, size, Quaternion.identity, true);
         }
         if (solid) BoxInto(collision, center, size, Quaternion.identity, false);
     }
@@ -96,7 +116,7 @@ public sealed class FrontRoomsStructuresMesh
         if (m != null)
         {
             if (Bevels) Record(center, size, rotation, m, FrontRoomsStructureBevels.UvRule.Planar);
-            else BoxInto(Get(m), center, size, rotation, true);
+            else BoxInto(Get(m, center), center, size, rotation, true);
         }
         if (solid) BoxInto(collision, center, size, rotation, false);
     }
@@ -122,7 +142,7 @@ public sealed class FrontRoomsStructuresMesh
     FrontRoomsStructureBevels.Box Record(Vector3 center, Vector3 size, Quaternion rotation, Material m, FrontRoomsStructureBevels.UvRule uv)
     {
         m = FrontRoomsStructuresAssets.Real(m);
-        var key = new GroupKey { material = m, ceiling = Ceiling, floorGrimeOff = FloorGrimeOff, shadows = CastShadows };
+        var key = new GroupKey { material = m, ceiling = Ceiling, floorGrimeOff = FloorGrimeOff, shadows = CastShadows, zone = ZoneOf(center, m) };
         var spec = EdgeOverride.HasValue ? FrontRoomsStructureBevels.Shape(EdgeOverride.Value, m) : FrontRoomsStructureBevels.For(m);
         return bevelSet.Add(center, size, rotation, spec, uv, key);
     }
@@ -160,7 +180,7 @@ public sealed class FrontRoomsStructuresMesh
         var nrm = Vector3.Cross(b - a, d - a);
         if (nrm.sqrMagnitude < 1e-10f) nrm = Vector3.Cross(c - b, a - b);
         nrm.Normalize();
-        if (m != null) QuadInto(Get(m), a, b, c, d, nrm, true);
+        if (m != null) QuadInto(Get(m, (a + b + c + d) * .25f), a, b, c, d, nrm, true);
         if (solid) QuadInto(collision, a, b, c, d, nrm, false);
     }
 
@@ -172,7 +192,7 @@ public sealed class FrontRoomsStructuresMesh
         nrm.Normalize();
         if (m != null)
         {
-            var p = Get(m);
+            var p = Get(m, (a + b + c + d) * .25f);
             var i = p.v.Count;
             p.v.Add(a); p.v.Add(b); p.v.Add(c); p.v.Add(d);
             for (var k = 0; k < 4; k++) p.n.Add(nrm);
@@ -189,7 +209,7 @@ public sealed class FrontRoomsStructuresMesh
         if (v == null || t == null) return;
         if (m != null)
         {
-            var p = Get(m);
+            var p = Get(m, Centre(v));
             var o = p.v.Count;
             p.v.AddRange(v);
             p.n.AddRange(n);
@@ -205,6 +225,15 @@ public sealed class FrontRoomsStructuresMesh
             collision.uv.AddRange(uv);
             foreach (var i in t) collision.t.Add(o + i);
         }
+    }
+
+    // K2: where a prepared triangle list lies (its bounds' centre), for its hall.
+    Vector3 Centre(List<Vector3> v)
+    {
+        if (Zones == null || v.Count == 0) return Vector3.zero;
+        Vector3 lo = v[0], hi = v[0];
+        foreach (var x in v) { lo = Vector3.Min(lo, x); hi = Vector3.Max(hi, x); }
+        return (lo + hi) * .5f;
     }
 
     void BoxInto(Part p, Vector3 c, Vector3 size, Quaternion r, bool count)

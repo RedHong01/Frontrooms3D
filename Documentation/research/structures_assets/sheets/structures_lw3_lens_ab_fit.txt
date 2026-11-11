@@ -1,0 +1,30 @@
+structures_lw3_lens_ab.jpg 1919x3648, 27 tiles, 3 columns
+title | LW3 · LENS A/B · TODAY, TIED 0.55, TIED 1.0 | 742/1544 FIT
+lw3_L0eye_steady_noplacard_lens0_raw.png | 1 Today · REC | L0 hall, eye · lens:floor 4.4-6.7 | label 121/617 data 264/484 FIT
+lw3_L0eye_steady_noplacard_lens55_raw.png | 2 Tied x0.55 | L0 hall, eye · lens:floor 15.8-24.7 | label 110/617 data 280/495 FIT
+lw3_L0eye_steady_noplacard_lens100_raw.png | 3 Tied x1.0 | L0 hall, eye · lens:floor 28.5-44.8 | label 97/617 data 280/508 FIT
+lw3_L0up_steady_noplacard_lens0_raw.png | 1 Today · REC | L0 from below · lens:floor 7.0 | label 121/617 data 240/484 FIT
+lw3_L0up_steady_noplacard_lens55_raw.png | 2 Tied x0.55 | L0 from below · lens:floor 26.1 | label 110/617 data 248/495 FIT
+lw3_L0up_steady_noplacard_lens100_raw.png | 3 Tied x1.0 | L0 from below · lens:floor 47.2 | label 97/617 data 248/508 FIT
+lw3_lenscrop_lens0.png | 1 Today · REC | lens crop · four tubes and the prism read | label 121/617 data 328/484 FIT
+lw3_lenscrop_lens55.png | 2 Tied x0.55 | lens crop · flat white panel, tubes gone | label 110/617 data 320/495 FIT
+lw3_lenscrop_lens100.png | 3 Tied x1.0 | lens crop · the same as 2 on screen | label 97/617 data 280/508 FIT
+lw3_gloss_steady_noplacard_lens0_raw.png | 1 Today · REC | SP5 waxed VCT · strip lens:floor 3.7 | label 121/617 data 288/484 FIT
+lw3_gloss_steady_noplacard_lens55_raw.png | 2 Tied x0.55 | SP5 waxed VCT · 47.1, floor unchanged | label 110/617 data 296/495 FIT
+lw3_gloss_steady_noplacard_lens100_raw.png | 3 Tied x1.0 | SP5 waxed VCT · 85.5, floor unchanged | label 97/617 data 296/508 FIT
+lw3_SP1s02_steady_noplacard_lens0_raw.png | 1 Today · REC | SP1 s02 · flash 2.0 / 3.0 (game / steady) | label 121/617 data 328/484 FIT
+lw3_SP1s02_steady_noplacard_lens55_raw.png | 2 Tied x0.55 | SP1 s02 · flash 5.0 / 5.5: OVER 3 | label 110/617 data 264/495 FIT
+lw3_SP1s02_steady_noplacard_lens100_raw.png | 3 Tied x1.0 | SP1 s02 · flash 5.5 / 5.5: OVER 3 | label 97/617 data 264/508 FIT
+lw3_gridcrop_lens0.png | 1 Today · REC | pool grid crop · plan A dim 0.4 holds | label 121/617 data 296/484 FIT
+lw3_gridcrop_lens55.png | 2 Tied x0.55 | pool grid crop · dim lost: the flash source | label 110/617 data 344/495 FIT
+lw3_gridcrop_lens100.png | 3 Tied x1.0 | pool grid crop · dim lost: the flash source | label 97/617 data 344/508 FIT
+lw3_SP6s07_steady_noplacard_lens0_raw.png | 1 Today · REC | SP6 s07 · flash 3.5 / 4.0 | label 121/617 data 200/484 FIT
+lw3_SP6s07_steady_noplacard_lens55_raw.png | 2 Tied x0.55 | SP6 s07 · flash 4.5 / 4.0 (+1.0 game only) | label 110/617 data 336/495 FIT
+lw3_SP6s07_steady_noplacard_lens100_raw.png | 3 Tied x1.0 | SP6 s07 · flash 4.0 / 4.0 | label 97/617 data 200/508 FIT
+lw3_office_steady_noplacard_lens0_raw.png | 1 Today · REC | SP4 office s06 · lens:floor 4.7-5.2 | label 121/617 data 280/484 FIT
+lw3_office_steady_noplacard_lens55_raw.png | 2 Tied x0.55 | SP4 office s06 · lens:floor 19.7-22.4 | label 110/617 data 296/495 FIT
+lw3_office_steady_noplacard_lens100_raw.png | 3 Tied x1.0 | SP4 office s06 · lens:floor 35.6-40.5 | label 97/617 data 296/508 FIT
+lw3_panel_today.png | NUMBERS | 1 Today · baseline | label 72/617 data 144/533 FIT
+lw3_panel_t055.png | NUMBERS | 2 Tied x0.55 · fails SP1 s02 | label 72/617 data 224/533 FIT
+lw3_panel_t100.png | NUMBERS | 3 Tied x1.0 · fails SP1 s02 | label 72/617 data 216/533 FIT
+ALL LABELS FIT

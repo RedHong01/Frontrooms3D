@@ -131,7 +131,9 @@ public static class FrontRoomsStructureBevels
         if (n.StartsWith("Prop_Wood", System.StringComparison.Ordinal) || n.StartsWith("Door_Veneer", System.StringComparison.Ordinal) || n.StartsWith("Prop_Plywood", System.StringComparison.Ordinal)) return Wood;
         if (n.StartsWith("Prop_Steel", System.StringComparison.Ordinal) || n.StartsWith("Prop_Stainless", System.StringComparison.Ordinal) || n.StartsWith("Prop_Alumin", System.StringComparison.Ordinal)
             || n.StartsWith("Painted_Metal", System.StringComparison.Ordinal) || n.StartsWith("RunB_GalvSteel", System.StringComparison.Ordinal) || n.StartsWith("Station_Stainless", System.StringComparison.Ordinal)
-            || n.StartsWith("Prop_Chrome", System.StringComparison.Ordinal) || n.StartsWith("Prop_Brass", System.StringComparison.Ordinal) || n.StartsWith("Trans_Alumin", System.StringComparison.Ordinal)) return Metal;
+            || n.StartsWith("Prop_Chrome", System.StringComparison.Ordinal) || n.StartsWith("Prop_Brass", System.StringComparison.Ordinal) || n.StartsWith("Trans_Alumin", System.StringComparison.Ordinal)
+            // G11 (K1 review, structures G3-b): P3's painted handrail steel is a metal (as Board it gave the 1/2 in pickets wall rounds)
+            || n.StartsWith("Prop_RailEnamel", System.StringComparison.Ordinal)) return Metal;
         if (n.IndexOf("Carpet", System.StringComparison.Ordinal) >= 0 || n.StartsWith("RunB_Floor", System.StringComparison.Ordinal) || n.StartsWith("Run_Floor", System.StringComparison.Ordinal)) return Carpet;
         if (n.StartsWith("Prop_Plastic", System.StringComparison.Ordinal) || n.StartsWith("Prop_Laminate", System.StringComparison.Ordinal) || n.StartsWith("Prop_Vinyl", System.StringComparison.Ordinal)) return Wood;
         // paper, paint, gypsum, acoustic ceilings, plenum, every other surface of the game: corner bead

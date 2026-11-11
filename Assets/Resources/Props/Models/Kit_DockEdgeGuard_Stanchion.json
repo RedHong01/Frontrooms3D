@@ -1,0 +1,84 @@
+{
+ "name": "Kit_DockEdgeGuard_Stanchion",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.5335,
+    0.0
+   ],
+   "size": [
+    0.05,
+    1.067,
+    0.05
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "eye_left",
+   "pos": [
+    -0.0451,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "name": "eye_right",
+   "pos": [
+    0.0451,
+    1.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  900,
+  300,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.07500000298023224,
+  0.0,
+  -0.07500000298023224
+ ],
+ "boundsMax": [
+  0.07500000298023224,
+  1.0670000314712524,
+  0.07500000298023224
+ ],
+ "triangles": 1566,
+ "slots": [
+  "Prop_SafetyYellow",
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 586,
+ "trianglesLod2": 86,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.05,
+  0.05
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.117
+}

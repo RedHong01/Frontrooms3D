@@ -346,7 +346,9 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     // The seal and the change of floor: None; Sealing (SealExit asked, the EXIT door shutting, until it latches and
     // locks: the map's ExitDoorSealed); Blackout (the stairwell lamp and the map's exit lamp group going to 0 over
     // BlackoutSeconds, then the floor changes in the dark, D9). The player stands still from the seal to the change.
-    enum FloorSwap { None, Sealing, Blackout }
+    // StairWalk: a walkable-stair EXIT latched; the player walks on down the shell and the floor changes in a frame at least
+    // StairLatchToChange later (FrontRooms3DGame.WalkableStair.cs); no freeze, no blackout on desktop.
+    enum FloorSwap { None, Sealing, Blackout, StairWalk }
     FloorSwap floorSwap;
     float floorSwapClock;
     // The floor start on floors 2 and up (D10, the stairwell's counterpart of UpdateStartRooms): its own clock from
@@ -1071,6 +1073,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         floorSwap = FloorSwap.None;
         floorStartShut = floorDoorOpened = floorLeftStart = false;
         floorClock = floorHeldFor = floorSwapMs = 0f;
+        // The walkable stair (FrontRooms3DGame.WalkableStair.cs): on only with the profile's switch and a shell factory.
+        StairRunBegin(profile);
         PlanExit(new CellRect(startArea.x, startArea.y, startArea.width, startArea.height), startDoorCell);
         map.ExitDoorSealed += OnExitDoorSealed;
         map.StreamFocus = map.CellCenter(startDoorCell);
@@ -1615,6 +1619,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             exitPlan = default;
             exitPlanMs = 0f;
             exitStairwell = null;
+            exitShell = null;
             exitRefused = false;
             return;
         }
@@ -1626,25 +1631,43 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             // plan's. Its floor-key lock follows below (M3).
             exitPlan = stationPlan.exit;
             exitPlanMs = stationPlan.planMs;
+            // The walkable stair: that X is X1 when X2 fits too; else floor 1 keeps C22's vestibule.
+            if (stairRun) exitPlan = StairFromStation(startArea, exitPlan);
         }
         else
         {
             var watch = System.Diagnostics.Stopwatch.StartNew();
             FrontRoomsExitPlanner.BandFor(floor, out var bandMin, out var bandMax);
-            exitPlan = FrontRoomsExitPlanner.ChooseExit(map.Cache, startArea, startDoor, floorSeed, bandMin, bandMax);
+            // The walkable stair: a 1 x 2 exit area (FrontRooms3DGame.WalkableStair.cs).
+            exitPlan = stairRun
+                ? FrontRoomsExitPlanner.ChooseStairExit(map.Cache, startArea, startDoor, floorSeed, bandMin, bandMax)
+                : FrontRoomsExitPlanner.ChooseExit(map.Cache, startArea, startDoor, floorSeed, bandMin, bandMax);
             exitPlanMs = (float)watch.Elapsed.TotalMilliseconds;
         }
         exitStairwell = null;
+        exitShell = null;
         exitRefused = false;
         if (!exitPlan.found) return;
-        map.SetExitArea(exitPlan.exitCell);
+        // The walkable stair's shell, before the map reserves X1-X2; the factory gave none: C22's vestibule after all.
+        IFrontRoomsStairShell shell = null;
+        if (exitPlan.stair)
+        {
+            shell = CreateStairShell();
+            if (shell == null)
+            {
+                exitPlan = StairFallback(startArea, startDoor);
+                if (!exitPlan.found) return;
+            }
+        }
+        map.SetExitArea(exitPlan.exitCell, exitPlan.stair);
         // BS2: a floor below the first plans its own station here, with its EXIT known (FloorKeyRule true when one fits).
         if (floor >= 2) HoldFloorStation(startArea, startDoor);
         // M3 (A13): a floor whose station holds the floor key starts with its EXIT locked, before Begin, so X's first
         // ExitDoorBuilt reads it (ExitLockChanged(null, true): no door built yet). A floor with no station, the profile's
         // modules empty or no room fitting, keeps its EXIT unlocked (A35), so a locked EXIT always has a reachable key.
         if (map.FloorKeyRule) map.SetExitLocked(true);
-        exitStairwell = FrontRoomsStairwell.Create(map, exitPlan.exitCell, transform);
+        if (exitPlan.stair) exitShell = shell;
+        else exitStairwell = FrontRoomsStairwell.Create(map, exitPlan.exitCell, transform);
     }
 
     // The planner's time for this floor's EXIT (it runs in the frame of Space on floor 1, in the change on later ones),
@@ -1685,7 +1708,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// </summary>
     bool ExitSealAllowed()
     {
-        if (floorSwap != FloorSwap.None || exitStairwell == null || exitRefused || !map.HasExitArea || map.ExitSealing) return false;
+        if (floorSwap != FloorSwap.None || (exitStairwell == null && exitShell == null) || exitRefused || !map.HasExitArea || map.ExitSealing) return false;
 #if UNITY_EDITOR
         // A bot-after-exit run goes one floor down, by its walker: once the bot plays (B1's shut on) the EXIT stays closed.
         // X16's route (-autopilotStartFloor, FrontRooms3DGame.AutoRoutes.cs) goes down by this gate too, floor by floor.
@@ -1704,8 +1727,10 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         return ExitDepth(feet) >= Mathf.Max(ExitSealDepth, relayTuning.catchDistance + .1f);
     }
 
-    // How far a point stands past the EXIT door's line, into X (negative on N's side).
-    float ExitDepth(Vector3 p) => exitStairwell == null ? float.NegativeInfinity
+    // How far a point stands past the EXIT door's line, into X (negative on N's side). A walkable-stair floor reads its shell's
+    // seal plane (ExitDoorPoint, ExitDoorForward).
+    float ExitDepth(Vector3 p) => exitShell != null ? Vector3.Dot(p - exitShell.ExitDoorPoint, exitShell.ExitDoorForward)
+        : exitStairwell == null ? float.NegativeInfinity
         : Vector3.Dot(p - exitStairwell.SouthDoorPoint, exitStairwell.transform.forward);
 
     /// <summary>
@@ -1718,6 +1743,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// </summary>
     void UpdateExitSeal(float dt)
     {
+        // A walkable-stair floor seals and changes its own way (FrontRooms3DGame.WalkableStair.cs): no freeze, no blackout.
+        if (exitShell != null && exitPlan.stair)
+        {
+            UpdateStairSeal(dt);
+            return;
+        }
         if (floorSwap == FloorSwap.None)
         {
             if (!ExitSealAllowed()) return;
@@ -1757,6 +1788,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     void OnExitDoorSealed(FrontRoomsMapWorld.Door door, Vector3 at)
     {
         if (floorSwap != FloorSwap.Sealing) return;
+        // A walkable-stair EXIT: the shell's shut leaf, no blackout, the walk goes on.
+        if (OnStairExitSealed()) return;
         if (exitStairwell != null) exitStairwell.Seal();
         EndTitleRooms();
         floorSwap = FloorSwap.Blackout;
@@ -1796,11 +1829,16 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// - the floor start (D10): its clock at 0, the stream focus on the door cell, the start lamps held dark like
     ///   the title's, Begin without building (the held north door covers the streaming, as the title's door does);
     /// - FloorChanged, and the autopilot's floor rows.
+    /// A walkable-stair EXIT (FrontRooms3DGame.WalkableStair.cs) changes the same way with three differences: the seed is
+    /// SeedForStair's (searched at the seal), the next floor starts in X1-X2 with its door on N (NextFloor with stair), and
+    /// instead of JoinNextFloor the shell and the player move up FloorToFloor (variant B, StairJoinNextFloor: PlayerRebased,
+    /// the shell's Rebased, numerals and far-wall paper). Nothing is dark: the player is walking down the shell.
     /// </summary>
     void ChangeFloor()
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
         var x = map.ExitCell;
+        var stair = exitShell != null && exitPlan.stair;
         var feet = playerRoot.position;
         if (!map.InExitArea(map.CellOf(feet))) Debug.LogWarning("[FrontRooms3D] FLOOR · the player is not in X " + x + " at the change (" + feet + ")");
         // D11 ended the title's stream rooms at the latch (OnExitDoorSealed); this only makes sure.
@@ -1839,9 +1877,11 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         floorExplored = 0;
         keyLabelSet = false;
         var profile = map.Profile;
-        var seedPlan = FrontRoomsExitPlanner.SeedFor(runSeed, floor, x, profile.Generation(runSeed), profile.ModuleData(), tier, out _);
+        var seedPlan = stair ? StairSeedFor(x, profile) : FrontRoomsExitPlanner.SeedFor(runSeed, floor, x, profile.Generation(runSeed), profile.ModuleData(), tier, out _);
         floorSeed = seedPlan.seed;
-        var door = new GridCoord(x.x, x.y + 1);
+        // The walkable stair's next floor starts in X1-X2 with its door N' = N, under the EXIT.
+        var door = stair ? FrontRoomsExitPlanner.FrontOf(x) : new GridCoord(x.x, x.y + 1);
+        floorStartedOnStair = stair;
         // A26: floor 1's station goes with its floor before NextFloor (FloorHasStation false, the set piece gone, the
         // carve off the old cache). Nothing is rebuilt: NextFloor drops every chunk next.
         if (stationPlan != null || map.HasStation)
@@ -1850,20 +1890,26 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             stationPlan = null;
             stationModuleData = null;
         }
-        map.NextFloor(floorSeed, tier, new RectInt(x.x, x.y, 1, 1), door);
+        var startRect = new RectInt(x.x, x.y, 1, stair ? 2 : 1);
+        map.NextFloor(floorSeed, tier, startRect, door, stair);
         // Q1 B (Red 2026-10-29 17:21): below a station floor 1 no zone keys are built (NextFloor cleared the flag; set
         // before Begin, so no chunk of this floor is built yet). A run with no station keeps today's zone keys.
         map.ZoneKeysOff = stationRun;
-        // The stairwell the old floor began in is two floors back by now: gone. This one is the new floor's start.
-        if (startStairwell != null) Destroy(startStairwell.gameObject);
-        startStairwell = exitStairwell;
-        startStairwell.BodyDoors = map.BodyDoors;
-        startStairwell.JoinNextFloor();
-        startStairwell.SetVisible(true);
-        PlanExit(new CellRect(x.x, x.y, 1, 1), door);
+        if (stair) StairJoinNextFloor(door);
+        else
+        {
+            // The stairwell the old floor began in is two floors back by now: gone. This one is the new floor's start.
+            if (startStairwell != null) Destroy(startStairwell.gameObject);
+            DestroyStartShell();
+            startStairwell = exitStairwell;
+            startStairwell.BodyDoors = map.BodyDoors;
+            startStairwell.JoinNextFloor();
+            startStairwell.SetVisible(true);
+        }
+        PlanExit(new CellRect(startRect.x, startRect.y, startRect.width, startRect.height), door);
         // D10: the floor start. The stream rooms' fields keep naming the start door (the autopilot's walk out reads them).
         startDoorCell = door;
-        startDoorPoint = startStairwell.NorthDoorPoint;
+        startDoorPoint = stair ? startShell.FarDoorPoint : startStairwell.NorthDoorPoint;
         floorClock = 0f;
         floorHeldFor = 0f;
         floorDoorOpened = floorLeftStart = floorStartShut = floorOpenedLate = false;
@@ -1902,6 +1948,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     /// </summary>
     void UpdateFloorStart(float dt)
     {
+        // After a walkable stair: the far door's floor start (FrontRooms3DGame.WalkableStair.cs).
+        if (floor > 1 && startShell != null)
+        {
+            UpdateStairFloorStart(dt);
+            return;
+        }
         if (floor <= 1 || startStairwell == null) return;
         floorClock += dt;
         var feet = playerRoot.position;
@@ -1976,6 +2028,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
             var show = map.IsChunkBuiltAt(startStairwell.Cell) || (playerRoot != null && map.InStartArea(map.CellOf(playerRoot.position)));
             if (show != startStairwell.Visible) startStairwell.SetVisible(show);
         }
+        // The walkable stair's shells, when they take SetVisible (IFrontRoomsStairShellVisible).
+        if (exitShell != null || startShell != null) UpdateStairShells();
     }
 
     /// <summary>
@@ -2379,7 +2433,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         }
         // C22 (D14, D9): from the seal until the floor has changed, under a second, the player stands where the
         // seal found them, deep in X: the EXIT door shuts behind them and the stairwell goes dark. The look stays free.
-        if (floorSwap != FloorSwap.None) { local = Vector2.zero; sprintHeld = false; }
+        // A walkable-stair EXIT never freezes: the player walks on down the shell (StairSwap).
+        if (floorSwap != FloorSwap.None && !StairSwap) { local = Vector2.zero; sprintHeld = false; }
         playerRoot.rotation = Quaternion.Euler(0f, yaw, 0f);
         if (rig != null) rig.SetBase(pitch);
         else cam.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
@@ -2436,7 +2491,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         PlayerWinded = winded;
         PlayerSprinting = sprinting;
         PlayerGait = GaitOf(sprinting, wish.sqrMagnitude);
-        fallSpeed = playerBody.isGrounded ? -1f : fallSpeed - 9.81f * dt;
+        fallSpeed = playerBody.isGrounded ? StairGroundStick() : fallSpeed - 9.81f * dt;
         var before = playerPos;
         if (climbTime >= 0f || TryStartClimb(wish)) Climb(dt);
         else playerBody.Move((wish * (sprinting ? Run : Walk) + glide + stepVelocity + Vector3.up * fallSpeed) * dt);
@@ -2597,7 +2652,7 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
 
     /// <summary>Hard checks (C4): false hides the prompt.</summary>
     bool CanShowInspect(FrontRoomsInspectable t) =>
-        t != null && !HarnessRunning && mapPlay && phase == Phase.Playing
+        t != null && !HarnessRunning && mapPlay && phase == Phase.Playing && !StairSwap   // the walkable stair: never between the seal and the change
         && (glassShot == null || !(glassShot.Active || glassShot.Blending))
         && climbTime < 0f && !pullClear.HasValue && (!ThreatPerceivable() || !FrontRoomsInspect.ThreatGated(t))   // C36: no threat gate on the door peek
         && FrontRoomsInspect.CanOpen(t, rig);
@@ -6479,10 +6534,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (!autoExitPlanChecked)
                 {
                     autoExitPlanChecked = true;
-                    AutoExitCheck(exitPlan.found && map.HasExitArea && map.ExitCell == exitPlan.exitCell && exitStairwell != null && exitStairwell.Cell == exitPlan.exitCell
+                    AutoExitCheck(exitPlan.found && map.HasExitArea && map.ExitCell == exitPlan.exitCell
+                            && (exitPlan.stair ? exitShell != null && map.ExitIsStair : exitStairwell != null && exitStairwell.Cell == exitPlan.exitCell)
                             && exitPlan.distance >= exitPlan.bandMin && exitPlan.distance <= exitPlan.bandMax,
-                        "floor " + floor + " (" + FloorLabel(floor) + "): the EXIT is planned and reserved, its stairwell made: " + (exitPlan.found ? ExitDetail() : "none"));
-                    if (!map.HasExitArea || exitStairwell == null) { autoExitDone = true; break; }
+                        "floor " + floor + " (" + FloorLabel(floor) + "): the EXIT is planned and reserved, its " + (exitPlan.stair ? "walkable stair's shell" : "stairwell") + " made: "
+                        + (exitPlan.found ? ExitDetail() : "none"));
+                    if (!map.HasExitArea || (exitStairwell == null && exitShell == null)) { autoExitDone = true; break; }
                 }
                 // BS2: a floor below the first with its own station: its floor key first (AutoFloorKeyStep), then N. The
                 // route step's limit counts the way there too.
@@ -6562,15 +6619,17 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                 if (floorDoorOpened)
                 {
                     autoExitHoldMax = Mathf.Max(autoExitHoldMax, floorHeldFor);
-                    var northReady = startStairwell != null && (map.BodyDoors
+                    // The walkable stair: the far door opened on arrival at the far landing (its angle is the shell's own).
+                    var northReady = startShell != null ? stairFarArrived : startStairwell != null && (map.BodyDoors
                         ? startStairwell.NorthDoorReady && startStairwell.NorthDoorAngle < .1f
                         : startStairwell.NorthDoorOpen && startStairwell.NorthDoorSwing > 0f);
                     AutoExitCheck(floorHeldFor <= StartDoorHoldLimit + .2f && northReady,
-                        "floor " + floor + ": the north door held " + AutoF(floorHeldFor) + " s (" + (floorOpenedLate ? "the " + StartDoorHoldLimit + " s limit" : "the map in sight built")
-                        + (map.BodyDoors ? "), now ready and still shut until body contact" : "), then swung out of X, away from the player"));
+                        "floor " + floor + ": the " + (startShell != null ? "far" : "north") + " door held " + AutoF(floorHeldFor) + " s (" + (floorOpenedLate ? "the " + StartDoorHoldLimit + " s limit" : "the map in sight built")
+                        + (startShell != null ? "), opened from the far landing" : map.BodyDoors ? "), now ready and still shut until body contact" : "), then swung out of X, away from the player"));
                     AutoExitNext(ExitOut);
                 }
-                else if (autoExitClock > StartDoorHoldLimit + 2f) AutoExitFail("floor " + floor + ": the north door did not open within " + (StartDoorHoldLimit + 2f) + " s of the change");
+                else if (autoExitClock > StartDoorHoldLimit + 2f + (startShell != null ? AutoStairWalkSeconds : 0f))
+                    AutoExitFail("floor " + floor + ": the " + (startShell != null ? "far" : "north") + " door did not open within " + (StartDoorHoldLimit + 2f + (startShell != null ? AutoStairWalkSeconds : 0f)) + " s of the change");
                 break;
             case ExitOut:
                 if (relay != null && relay.Released) { AutoExitFail("floor " + floor + ": the Relay was released before the start door had shut (" + relay.State + ")"); break; }
@@ -6616,7 +6675,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
                         + " ms (its frame " + AutoF(autoExitSwapFrameMs, "0.0") + " ms); north door held " + AutoF(floorHeldFor) + " s" + (floorOpenedLate ? " (limit)" : "") + "; shut "
                         + AutoF(autoExitShutSeconds) + " s after opening; Relay released " + AutoF(after) + " s after the shut; tier " + tier + ", " + tierCells.Count + " cells, " + zonesVisited.Count + " zones");
                     // Looking back from the floor at the shut north door.
-                    AutopilotLookFrom(startDoorPoint + AutoExitNorthOf(startDoorPoint) * 2.7f + Vector3.up * EyeHeight, startDoorPoint + Vector3.up * 1.3f,
+                    // (After a walkable stair the start door faces south: looking back from the south.)
+                    AutopilotLookFrom(startDoorPoint + AutoExitNorthOf(startDoorPoint) * (floorStartedOnStair ? -2.7f : 2.7f) + Vector3.up * EyeHeight, startDoorPoint + Vector3.up * 1.3f,
                         "exit_floor" + floor + "_start_door_from_floor");
                     autoExitCycles++;
                     if (autoExitCycles >= AutoExitFloors) { autoExitDone = true; break; }
@@ -6644,6 +6704,8 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
     {
         local = Vector2.zero;
         sprint = false;
+        // A walkable stair: the walk down the shell's waypoints and out of its far door (FrontRooms3DGame.WalkableStair.cs).
+        if (AutoStairSteer(dt, out local)) return true;
         var feet = playerRoot.position;
         var here = map.CellOf(feet);
         switch (autoExitStep)
@@ -6892,6 +6954,12 @@ public sealed partial class FrontRooms3DGame : MonoBehaviour
         var feetCell = map.CellOf(playerRoot.position);
         var rootKept = (map.transform.position - autoExitRootBefore).sqrMagnitude < 1e-6f;
         var parked = relay != null && relay.State == HunterState.Dormant && (hunter == null || !hunter.gameObject.activeSelf);
+        // A walkable-stair change has its own check (the shell and the player moved, the start area X1-X2 with its door on N').
+        if (floorStartedOnStair)
+        {
+            AutoStairFloorStarted(rootKept, parked, feetCell);
+            return;
+        }
         var ok = autoExitStep == ExitSeal && floor == autoExitFloorFrom + 1 && rootKept && map.HasStartArea && map.InStartArea(autoExitX) && map.InStartArea(feetCell)
             && parked && startStairwell != null && startStairwell.Cell == autoExitX && startStairwell.Sealed && startStairwell.Joined
             && map.HasExitArea && map.ExitCell != autoExitX && exitStairwell != null && map.StreamFocus.HasValue;

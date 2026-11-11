@@ -1,0 +1,68 @@
+{
+ "name": "Kit_TapeCart",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.6,
+    0.0
+   ],
+   "size": [
+    0.91,
+    1.2,
+    0.51
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  45.0
+ ],
+ "lodBudget": [
+  3600,
+  1100,
+  260
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.45500001311302185,
+  0.0,
+  -0.26550692319869995
+ ],
+ "boundsMax": [
+  0.5253335237503052,
+  1.2000000476837158,
+  0.26550692319869995
+ ],
+ "triangles": 2700,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_PlasticBlack",
+  "Prop_Chrome",
+  "Prop_CompAtlas"
+ ],
+ "trianglesLod1": 1224,
+ "trianglesLod2": 212,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.91,
+  0.51
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

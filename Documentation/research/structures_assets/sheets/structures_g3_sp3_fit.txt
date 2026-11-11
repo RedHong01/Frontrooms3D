@@ -1,0 +1,37 @@
+structures_g3_sp3.jpg 1920x2911, 34 tiles, 4 columns
+title | G3 SP3: TODAY | NEW | 335/1576 FIT
+sp3_s00_t.png | TODAY · s00 spine, west end | greybox spine | label 245/457 data 104/200 FIT
+sp3_s00_n.png | NEW · s00 spine, west end | hall probes (FR-1) | label 231/457 data 144/214 FIT
+sp3_s01_t.png | TODAY · s01 V1 slab opening | two-line rail | label 251/457 data 104/194 FIT
+sp3_s01_n.png | NEW · s01 V1 slab opening | pickets, ask 3 B | label 237/457 data 128/208 FIT
+sp3_s02_t.png | TODAY · s02 V2 stand edge | two-line rail | label 235/457 data 104/210 FIT
+sp3_s02_n.png | NEW · s02 V2 stand edge | pickets, probe | label 221/457 data 112/224 FIT
+sp3_s03_t.png | TODAY · s03 V2 pit floor | rail on the rake | label 222/457 data 128/223 FIT
+sp3_s03_n.png | NEW · s03 V2 pit floor | pickets on the rake | label 208/457 data 152/237 FIT
+sp3_s04_t.png | TODAY · s04 V4 tall room | 14.6 m of paper | label 228/457 data 120/217 FIT
+sp3_s04_n.png | NEW · s04 V4 tall room | 2 up-fills, T-bar line | label 214/457 data 176/231 FIT
+sp3_s05_t.png | TODAY · s05 V4 floor seam | paper to the lid | label 238/457 data 128/207 FIT
+sp3_s05_n.png | NEW · s05 V4 floor seam | up-fills, no shadow | label 224/457 data 152/221 FIT
+sp3_s06_t.png | TODAY · s06 computer room | two grey boxes | label 244/457 data 112/201 FIT
+sp3_s06_n.png | NEW · s06 computer room | access floor, cabinets | label 230/457 data 176/215 FIT
+sp3_s07_t.png | TODAY · s07 split level | stair, glass guard | label 209/457 data 144/236 FIT
+sp3_s07_n.png | NEW · s07 split level | as G1 (no G3 kit) | label 195/457 data 136/250 FIT
+sp3_s08_t.png | TODAY · s08 suite gallery | rail, spiral | label 229/457 data 96/216 FIT
+sp3_s08_n.png | NEW · s08 suite gallery | as G1 (no G3 kit) | label 215/457 data 136/230 FIT
+sp3_s09_t.png | TODAY · s09 training room | four laminate bars | label 232/457 data 144/213 FIT
+sp3_s09_n.png | NEW · s09 training room | rows, screen, overhead | label 218/457 data 176/227 FIT
+sp3_s10_t.png | TODAY · s10 parallel bowl | steps and rails | label 238/457 data 120/207 FIT
+sp3_s10_n.png | NEW · s10 parallel bowl | as G1 (no G3 kit) | label 224/457 data 136/221 FIT
+sp3_s11_t.png | TODAY · s11 islands | ledges | label 177/457 data 48/268 FIT
+sp3_s11_n.png | NEW · s11 islands | as G1 (no G3 kit) | label 163/457 data 136/282 FIT
+sp3_s12_t.png | TODAY · s12 sunken lounge | empty pit | label 237/457 data 72/208 FIT
+sp3_s12_n.png | NEW · s12 sunken lounge | sofa, club chairs | label 223/457 data 136/222 FIT
+sp3_s13_t.png | TODAY · s13 file mezzanine | one grey mass | label 234/457 data 104/211 FIT
+sp3_s13_n.png | NEW · s13 file mezzanine | open files, carriages | label 220/457 data 168/225 FIT
+sp3_s14_t.png | TODAY · s14 stepped floor | steps | label 236/457 data 40/209 FIT
+sp3_s14_n.png | NEW · s14 stepped floor | as G1 (no G3 kit) | label 222/457 data 136/223 FIT
+sp3_phone.png | PHONE · s00 NEW | iPhone 16 Pro tier | label 149/457 data 144/296 FIT
+sp3_flash.png | FLASH · SP3 NEW | limit 3, all pass | label 144/457 data 136/301 FIT
+sp3_cost.png | COST · SP3 | inventory, NEW steady | label 97/457 data 168/348 FIT
+sp3_gates.png | GATES · G3 render | all pass | label 161/457 data 64/284 FIT
+ALL LABELS FIT

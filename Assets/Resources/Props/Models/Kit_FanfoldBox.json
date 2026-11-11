@@ -1,0 +1,55 @@
+{
+ "name": "Kit_FanfoldBox",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "clutter"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  900,
+  300,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.2598639130592346,
+  0.0,
+  -0.22965018451213837
+ ],
+ "boundsMax": [
+  0.2598639130592346,
+  0.2800000011920929,
+  0.22965018451213837
+ ],
+ "triangles": 648,
+ "slots": [
+  "Prop_CompAtlas",
+  "Prop_Cardboard"
+ ],
+ "trianglesLod1": 456,
+ "trianglesLod2": 74,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.5197278261184692,
+  0.45930036902427673
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

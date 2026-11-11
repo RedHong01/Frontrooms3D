@@ -1,0 +1,19 @@
+structures_g2_d_heroes.jpg 1920x1381, 16 tiles, 4 columns
+title | G2-D HEROES: 0.35 M AND 3 M | 493/1576 FIT
+h_SP1_buoy3m.png | ring buoy 3 m | guard's stand | label 118/457 data 104/327 FIT
+h_SP1_buoy1m.png | ring buoy 1 m | hook, grab line | label 118/457 data 120/327 FIT
+h_SP1_buoy035.png | ring buoy 0.35 m | blank, no letters | label 148/457 data 136/297 FIT
+h_SP1_post3m.png | post 2.8 m | putty enamel | label 93/457 data 96/352 FIT
+h_SP1_postmon035.png | post monitor | 0.45 m, one CRT | label 112/457 data 120/333 FIT
+h_SP1_postctl035.png | post top 0.45 m | counter, e-stop | label 141/457 data 120/304 FIT
+h_SP2_mark3m.png | inlay 2.4 m | framed, blank | label 96/457 data 104/349 FIT
+h_SP1_mark035.png | inlay 0.35 m | deck tile, lane tone | label 109/457 data 160/336 FIT
+h_SP1_corner3m.png | cove corner 3 m | SP1 south-east | label 143/457 data 112/302 FIT
+h_SP1_corner035.png | cove corner | 0.35 m, mitred | label 106/457 data 112/339 FIT
+h_SP1_covejoint035.png | joint at cove | 0.35 m, EJ171 | label 113/457 data 104/332 FIT
+h_SP2_corner035.png | SP2 corner 0.35 | F0 north-west | label 149/457 data 104/296 FIT
+h_SP1_drain035.png | deck drain 0.35 | SP1 south deck | label 139/457 data 112/306 FIT
+h_SP6_drain035.png | SP6 drain 0.35 | dome deck | label 133/457 data 72/312 FIT
+h_KIT_rimflowsec.png | KIT edge 0.45 m | rim-flow section | label 135/457 data 128/310 FIT
+h_cost.png | COST · kits and pieces | LOD budgets | label 192/457 data 88/253 FIT
+ALL LABELS FIT

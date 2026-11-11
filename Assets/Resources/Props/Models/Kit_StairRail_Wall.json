@@ -1,0 +1,63 @@
+{
+ "name": "Kit_StairRail_Wall",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "wall",
+   "pos": [
+    0.56,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "stair",
+  "stairwell_walkable"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  10.0,
+  0.0
+ ],
+ "lodBudget": [
+  1800,
+  600,
+  90
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "stairwell_walkable STAIR author 2026-11-10 (research/stairwell/80 section 6)",
+ "boundsMin": [
+  0.47980162501335144,
+  -0.9599999785423279,
+  -0.38099998235702515
+ ],
+ "boundsMax": [
+  0.5600000023841858,
+  0.9460000395774841,
+  3.180999994277954
+ ],
+ "triangles": 8396,
+ "slots": [
+  "Stair_RailWorn",
+  "Stair_RailEnamel"
+ ],
+ "trianglesLod1": 2504,
+ "trianglesLod2": 864,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.5199008136987686,
+  1.4000000059604645
+ ],
+ "footprintSize": [
+  0.08019837737083435,
+  3.5619999766349792
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

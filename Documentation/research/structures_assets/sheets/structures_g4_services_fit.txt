@@ -1,0 +1,37 @@
+structures_g4_services.jpg 1920x2921, 34 tiles, 4 columns
+title | G4-B · SP5 SERVICES, SHAFT, CAGE, CLOSET, SP7 KITS | 854/1552 FIT
+g4b_today_s00.png | TODAY · spine s00 | duct, main, tray: tilted boxes | label 158/457 data 240/287 FIT
+g4b_today_s02.png | TODAY · spine s02 | bumper box, frame boxes | label 158/457 data 184/287 FIT
+g4b_today_s01.png | TODAY · shaft s01 | rungs, chain-link card | label 161/457 data 176/284 FIT
+g4b_today_s05.png | TODAY · cage s05 | flat chain-link, white posts | label 152/457 data 224/293 FIT
+duct_3m_raw.png | NEW · duct run | 24 x 12 in, 1.5 m sections, straps | label 134/457 data 272/311 FIT
+duct_hero_raw.png | HERO 0.6 M · duct joint | S-slip, drive cleat, spangle | label 208/457 data 224/237 FIT
+kink_raw.png | NEW · 1:8 kink | gored fitting, main + tray pieces | label 129/457 data 264/316 FIT
+slope_hero_raw.png | HERO 0.6 M · slope | gore seam, coupling bolts | label 167/457 data 200/278 FIT
+shaft_raw.png | NEW · riser shaft | caged ladder, riser, strut clamps | label 157/457 data 264/288 FIT
+ladder_hero_raw.png | HERO 0.8 M · cage | hoops, bars bolted inside | label 157/457 data 200/288 FIT
+riser_hero_raw.png | HERO 0.8 M · riser | 4 in grooved coupling | label 165/457 data 168/280 FIT
+cage_raw.png | NEW · storage cage | 4 ft door, 5 ft panel, posts | label 170/457 data 224/275 FIT
+cage_back_raw.png | NEW · cage, inside | wire lit both sides (FR-1) | label 155/457 data 208/290 FIT
+cage_hero_raw.png | HERO 0.35 M · hasp | staple, laminated padlock, bolt | label 171/457 data 248/274 FIT
+hose_raw.png | NEW · hose cabinet | semi-recessed, full glass door | label 165/457 data 240/280 FIT
+hose_hero_raw.png | HERO 0.5 M · valve | brass angle valve, linen hose | label 166/457 data 232/279 FIT
+clock_raw.png | NEW · time clock | recorder, IN and OUT racks | label 148/457 data 208/297 FIT
+clock_hero_raw.png | HERO 0.35 M · clock | bar indices, 3 hands, no digits | label 181/457 data 248/264 FIT
+clock_onein_raw.png | NEW · one card in | the event variant (blank card) | label 154/457 data 240/291 FIT
+closet_raw.png | NEW · janitor closet | mop sink, rack, floor machine | label 185/457 data 232/260 FIT
+sink_hero_raw.png | HERO 0.9 M · mop sink | molded stone, wet mops | label 192/457 data 176/253 FIT
+faucet_hero_raw.png | HERO 0.5 M · faucet | vacuum breaker, pail hook | label 175/457 data 200/270 FIT
+machine_raw.png | NEW · floor machine | 17 in, stored, cord coiled | label 178/457 data 208/267 FIT
+rack_oneout_raw.png | NEW · rack, one out | the empty holder variant | label 172/457 data 192/273 FIT
+string_raw.png | SP7 KIT · work lamps | yellow SJ cord, 3 caged lamps | label 189/457 data 232/256 FIT
+string_hero_raw.png | HERO 0.35 M · work lamp | rubber holder, A21, guard | label 223/457 data 200/222 FIT
+string_off_raw.png | OFF · dead, one out | the two off variants | label 165/457 data 160/280 FIT
+collar_raw.png | SP7 KIT · joint collar | 200 / 100 mm bands, threshold | label 196/457 data 232/249 FIT
+collar_hero_raw.png | HERO 0.4 M · fire-stop | mineral wool in the joint | label 199/457 data 200/246 FIT
+comb_raw.png | SP7 KIT · comb plate | 2.80 m, yellow band, 112 teeth | label 182/457 data 240/263 FIT
+comb_hero_raw.png | HERO 0.35 M · comb | teeth 13 to 7 mm, 25 mm pitch | label 174/457 data 232/271 FIT
+scrap_raw.png | SP7 KIT · fit-out scrap | studs, board, bead, screws | label 203/457 data 208/242 FIT
+g4b_cost.png | COST | frame time not measured (rule 25) | label 39/457 data 264/406 FIT
+g4b_gates.png | GATES | Roslyn PASS; Unity checks at G4 render | label 47/457 data 304/398 FIT
+ALL LABELS FIT

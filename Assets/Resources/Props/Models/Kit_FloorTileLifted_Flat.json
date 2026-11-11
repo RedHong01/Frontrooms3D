@@ -1,0 +1,59 @@
+{
+ "name": "Kit_FloorTileLifted_Flat",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "clutter",
+  "access_floor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  1100,
+  400,
+  80
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.34140801429748535,
+  0.001199999824166298,
+  -0.34140801429748535
+ ],
+ "boundsMax": [
+  0.34140801429748535,
+  0.11134244501590729,
+  0.34140801429748535
+ ],
+ "triangles": 688,
+ "slots": [
+  "Prop_AccessFloor",
+  "Prop_PlasticBlack",
+  "RunB_GalvSteel",
+  "Prop_Rubber",
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 336,
+ "trianglesLod2": 124,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.6828160285949707,
+  0.6828160285949707
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

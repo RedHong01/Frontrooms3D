@@ -1,0 +1,27 @@
+structures_g4_sp5.jpg 1920x1993, 24 tiles, 4 columns
+title | G4 SP5: TODAY | NEW | 335/1576 FIT
+sp5_s00_t.png | TODAY · s00 corridor head | greybox services | label 236/457 data 128/209 FIT
+sp5_s00_n.png | NEW · s00 corridor head | duct, main, tray kits | label 222/457 data 168/223 FIT
+sp5_s01_t.png | TODAY · s01 under the shaft | box riser, rungs | label 251/457 data 128/194 FIT
+sp5_s01_n.png | NEW · s01 under the shaft | caged ladder, riser | label 237/457 data 152/208 FIT
+sp5_s02_t.png | TODAY · s02 ramp, looking up | box duct, casings | label 256/457 data 136/189 FIT
+sp5_s02_n.png | NEW · s02 ramp, looking up | FD frames, DA leaves | label 242/457 data 160/203 FIT
+sp5_s03_t.png | TODAY · s03 dock platform | slab leveler, boxes | label 239/457 data 152/206 FIT
+sp5_s03_n.png | NEW · s03 dock platform | leveler, guard, light | label 225/457 data 168/220 FIT
+sp5_s04_t.png | TODAY · s04 truck bay | slab curtain | label 198/457 data 96/247 FIT
+sp5_s04_n.png | NEW · s04 truck bay | coiling door, bollards | label 184/457 data 176/261 FIT
+sp5_s05_t.png | TODAY · s05 cage front | chain-link card | label 207/457 data 120/238 FIT
+sp5_s05_n.png | NEW · s05 cage front | wire cage, hasp | label 193/457 data 120/252 FIT
+sp5_s03_tt.png | TODAY · s03 tripped (T) | battery heads only | label 207/457 data 144/238 FIT
+sp5_s03_nt.png | NEW · s03 tripped (T) | sealed beams lit | label 193/457 data 128/252 FIT
+sp5_s04_tt.png | TODAY · s04 tripped (T) | battery heads only | label 207/457 data 144/238 FIT
+sp5_s04_nt.png | NEW · s04 tripped (T) | sealed beams lit | label 193/457 data 128/252 FIT
+sp5_dock_t.png | TODAY · the dock | 16 stand-in boxes | label 146/457 data 136/299 FIT
+sp5_dock_n.png | NEW · the dock | 1990 interior dock | label 132/457 data 144/313 FIT
+sp5_closet_t.png | TODAY · closet | cart, wedge box | label 129/457 data 120/316 FIT
+sp5_closet_n.png | NEW · closet | sink, rack, machine | label 115/457 data 152/330 FIT
+sp5_phone.png | PHONE · s03 NEW | iPhone 16 Pro tier | label 149/457 data 144/296 FIT
+sp5_flash.png | FLASH · SP5 NEW | limit 3 | label 144/457 data 56/301 FIT
+sp5_cost.png | COST · SP5 | inventory, NEW steady | label 97/457 data 168/348 FIT
+sp5_gates.png | GATES · G4 render | all pass | label 161/457 data 64/284 FIT
+ALL LABELS FIT

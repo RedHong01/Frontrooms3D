@@ -1,0 +1,67 @@
+{
+ "name": "Kit_DataTerminal",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "keyboard",
+   "pos": [
+    0.0,
+    0.0,
+    0.3
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "desk_top"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  35.0
+ ],
+ "lodBudget": [
+  2000,
+  700,
+  160
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.15700000524520874,
+  0.0,
+  -0.26344865560531616
+ ],
+ "boundsMax": [
+  0.15700000524520874,
+  0.2529999911785126,
+  0.16128000617027283
+ ],
+ "triangles": 1346,
+ "slots": [
+  "Prop_PlasticBeige",
+  "Prop_PlasticBlack",
+  "Prop_ScreenCRT",
+  "Prop_CompIndicator",
+  "Prop_PlasticGrey"
+ ],
+ "trianglesLod1": 582,
+ "trianglesLod2": 94,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.05108432471752167
+ ],
+ "footprintSize": [
+  0.3140000104904175,
+  0.424728661775589
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

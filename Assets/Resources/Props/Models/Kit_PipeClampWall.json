@@ -1,0 +1,73 @@
+{
+ "name": "Kit_PipeClampWall",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "pipe_a",
+   "pos": [
+    -0.3,
+    0.0,
+    0.07145
+   ]
+  },
+  {
+   "name": "pipe_b",
+   "pos": [
+    0.3,
+    0.0,
+    0.07145
+   ]
+  }
+ ],
+ "tags": [
+  "wall_unit",
+  "structures",
+  "run",
+  "shaft",
+  "p20"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  900,
+  300,
+  30
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.4000000059604645,
+  -0.020649999380111694,
+  -0.0
+ ],
+ "boundsMax": [
+  0.4000000059604645,
+  0.020649999380111694,
+  0.10419999808073044
+ ],
+ "triangles": 1100,
+ "slots": [
+  "Prop_DoorSlatGalv",
+  "Prop_StainlessSatin"
+ ],
+ "trianglesLod1": 556,
+ "trianglesLod2": 188,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.05209999904036522
+ ],
+ "footprintSize": [
+  0.800000011920929,
+  0.10419999808073044
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

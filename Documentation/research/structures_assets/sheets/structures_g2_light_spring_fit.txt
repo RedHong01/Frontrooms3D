@@ -1,0 +1,12 @@
+structures_g2_light_spring.jpg 1919x1375, 9 tiles, 3 columns
+title | G2 LIGHT · SP6 SPRING LINE | 450/1576 FIT
+sp_dome_i0.png | TODAY · dome hall, I off | SP6 s07 up to the dome, yaw 45 pitch -25 | label 205/617 data 320/400 FIT
+sp_dome_i5.png | I on · where the term acts | log2(I5/I0): a hard face, +0.077 stop to 0 | label 234/617 data 336/371 FIT
+sp_dome_fix.png | REC · fitted room, soft 0.6 m | median +0.022, p99 +0.158 stop, no edge | label 257/617 data 312/348 FIT
+sp_grotto_i0.png | TODAY · grotto vault, I off | SP6 s08 back along the vault | label 233/617 data 224/372 FIT
+sp_grotto_i5.png | I on · walls on the box face | margin 0: inside here by rounding | label 245/617 data 264/360 FIT
+sp_grotto_fix.png | REC · fitted room, soft 0.6 m | median +0.064, p99 +0.150 stop, no edge | label 257/617 data 312/348 FIT
+sp_mask.png | Room boxes at SP6 s06 | green in, yellow on a face, red out | label 202/617 data 280/403 FIT
+sp_s06_top.png | Top raised only | the side faces then cut the dome | label 133/617 data 256/472 FIT
+sp_cause.png | Cause | hard faces at the spring lines | label 48/617 data 240/557 FIT
+ALL LABELS FIT

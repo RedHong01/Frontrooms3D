@@ -1,0 +1,15 @@
+structures_g2_d_kits.jpg 1919x2251, 12 tiles, 3 columns
+title | G2-D · THE REST OF IMAGE 1, AUTHORED | 638/1528 FIT
+d_ring3.png | Kit_RingBuoy · 3 m | 20 in, orange, 4 beckets, braided line | label 167/617 data 304/438 FIT
+d_ring1.png | Kit_RingBuoy · 1 m | the bights hang by gravity | label 167/617 data 208/438 FIT
+d_ring035.png | HERO 0.35 m · bracket | rod arms through the eye, tips up | label 200/617 data 264/405 FIT
+d_post3.png | Kit_DispatcherPost · 3 m | on the shelf footprint 1.20 x 0.42 x 1.03 | label 224/617 data 328/381 FIT
+d_post035a.png | HERO 0.35 m · controls | e-stop, counter (blank), intercom | label 211/617 data 264/394 FIT
+d_post035b.png | HERO 0.35 m · CCTV monitor | 9 in B/W in a steel case, sun hood | label 244/617 data 272/361 FIT
+d_cove3.png | Cove base · 3 m | Prop_PoolTile_Cove r 50, mitred corner | label 139/617 data 304/466 FIT
+d_cove035.png | HERO 0.35 m · inside corner | EJ171 joint across the deck | label 248/617 data 216/357 FIT
+d_drain035.png | HERO 0.35 m · deck drain | main's Kit_FloorDrain, flush | label 222/617 data 224/383 FIT
+d_mark3.png | Depth mark · 3 m | 10 Lane tiles round a blank 2 x 1 field | label 152/617 data 312/453 FIT
+d_mark035.png | HERO 0.35 m · depth mark | blank: numerals are not ours | label 228/617 data 224/377 FIT
+d_cost.png | COST | ESTIMATE until the G2-d render stage | label 39/617 data 288/566 FIT
+ALL LABELS FIT

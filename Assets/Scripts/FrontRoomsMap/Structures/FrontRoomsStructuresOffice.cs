@@ -24,6 +24,8 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
 
     FrontRoomsStructuresKit kit;
     Material wall, carpet, ceiling, fabric, metal, concrete, band, glass;
+    // K3 (游戏视觉's structures_assets G3-b, NEW only): the laylight's bays and their lamps (null in TODAY)
+    FrontRoomsStructureOfficeKits.Laylights laylights;
 
     public FrontRoomsStructuresOffice(Vector3 site)
         : base(4, "SP4", "SP4 · 办公层：三层中庭，底下是下沉工位区", "三层办公中庭和下沉工位区。", site) { }
@@ -33,6 +35,13 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
     public override void Build(FrontRoomsStructures host)
     {
         kit = new FrontRoomsStructuresKit(host, this);
+        laylights = null;
+        // K3 (游戏视觉's structures G3-b, NEW only): each hall's metals, glass and trims in its own renderers and probe (the K1 review's
+        // FR-1: the Office cap rail read as dark chrome under no probe of its room); the first hall a piece lies in takes it
+        kit.Halls(
+            FrontRoomsStructuresKit.Hall(0f, 0f, 30f, 18f, Pit - .3f, L2 + .5f),     // the stack over the pit, its floors, the raised floor
+            FrontRoomsStructuresKit.Hall(0f, 18f, 18f, 24f, -.3f, L2 + .5f),        // the slot stair hall
+            FrontRoomsStructuresKit.Hall(18f, 18f, 24f, 21f, -.3f, L2 + .5f));      // the B3 core
         wall = FrontRoomsPoolMaterials.Surface("Office_Wall", new Color(.82f, .80f, .74f));
         carpet = FrontRoomsPoolMaterials.Surface("Office_Carpet", new Color(.35f, .37f, .40f));
         ceiling = FrontRoomsPoolMaterials.Surface("Office_Ceiling", new Color(.85f, .85f, .82f));
@@ -53,6 +62,16 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         kit.Safe("slot stair hall", BuildSlot);
         kit.Safe("core", BuildCore);
         kit.Finish();
+        if (kit.New)
+        {
+            // K3: the halls' box probes (rendered once with the district's lamps on, as Slide's and Well's)
+            try { host.Look.Probe(Root, new Bounds(Site + new Vector3(15f, (Pit + L2) * .5f, 9f), new Vector3(30f, L2 - Pit, 18f)), 512); }
+            catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP4 probe", "SP4 probe failed: " + e.Message); }
+            try { host.Look.Probe(Root, new Bounds(Site + new Vector3(9f, L2 * .5f, 21f), new Vector3(18f, L2, 6f)), 256); }
+            catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP4 probe slot", "SP4 probe failed: " + e.Message); }
+            try { host.Look.Probe(Root, new Bounds(Site + new Vector3(21f, L2 * .5f, 19.5f), new Vector3(6f, L2, 3f)), 128); }
+            catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP4 probe core", "SP4 probe failed: " + e.Message); }
+        }
         kit.Safe("zone volume", () => FrontRoomsPostStack.EnsureZoneVolume(Root, "Office", new Bounds(new Vector3(15f, 4.8f, 12f), new Vector3(30f, 12.4f, 24f))));
         kit.Safe("signs", BuildSigns);
 
@@ -168,8 +187,15 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         p.Build(kit);
         // The boardroom's glass above its 1.07 sill (the sill is the guard), mullions on the cell lines.
         kit.Shell(L1, S1);
-        kit.Prism(new Vector3(18f, 0f, 6f), new Vector3(18f, 0f, 15f), S1 + 1.07f, L1 - .02f, .012f, glass, true);
-        foreach (var z in new[] { 9f, 12f }) kit.Prism(new Vector3(18f, 0f, z - .03f), new Vector3(18f, 0f, z + .03f), S1 + 1.07f, L1, .1f, band, false);
+        // K3 (NEW; S4-02): a centre-set storefront in each cell's opening (游戏视觉's P17 jambs and mid mullion, two lites, head and sill
+        // channels, 6 mm panes); today's pane keeps its collider
+        if (kit.New && BoardroomStorefront())
+            kit.Prism(new Vector3(18f, 0f, 6f), new Vector3(18f, 0f, 15f), S1 + 1.07f, L1 - .02f, .012f, null, true);
+        else
+        {
+            kit.Prism(new Vector3(18f, 0f, 6f), new Vector3(18f, 0f, 15f), S1 + 1.07f, L1 - .02f, .012f, glass, true);
+            foreach (var z in new[] { 9f, 12f }) kit.Prism(new Vector3(18f, 0f, z - .03f), new Vector3(18f, 0f, z + .03f), S1 + 1.07f, L1, .1f, band, false);
+        }
         // The F1 landing's structure under its carpet, seen from the slot's floor.
         kit.Shell(L0, 0f);
         kit.Box(12f, S1 - .3f, 18f, 18f, S1 - .05f, 21f, concrete);
@@ -177,6 +203,15 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         // A run of 1.52 panels along the west gallery's back wall.
         kit.Shell(L1, S1);
         for (var k = 0; k < 7; k++) kit.Kit("Kit_CubiclePanel", new Vector3(.45f, S1, 4.0f + k * 1.524f + .762f), 90f, new Vector3(.06f, 1.52f, 1.524f), fabric);
+    }
+
+    // K3: the boardroom's three openings (x 18, each cell z 3j + 0.04 .. + 2.96, sill F1 + 1.07, head F1 + 2.88) as storefront
+    bool BoardroomStorefront()
+    {
+        for (var j = 2; j <= 4; j++)
+            if (!FrontRoomsStructureOfficeKits.Storefront(kit, new Vector3(18f, 0f, 3f * j + .04f), new Vector3(18f, 0f, 3f * j + 2.96f), S1 + 1.07f, L1 - .02f, 2, S1))
+                return false;
+        return true;
     }
 
     // ---------------------------------------------------------------- F2: north band, east field, the slot's F2 landing
@@ -256,6 +291,15 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
     {
         var mid = (a + b) * .5f;
         var d = b - a;
+        // K3 (NEW; S4-04): a greybox panel at 1.35 or 2.16 m becomes 游戏视觉's family panel at that height (P17: Action Office /
+        // Series 9000's 53 and 85 in, 60 or 30 in wide), its collider today's prism
+        var fresh = asset == null && kit.New ? NewPanelKit(d.magnitude, height) : null;
+        if (fresh != null)
+        {
+            kit.Kit(fresh, mid, Mathf.Abs(d.x) > Mathf.Abs(d.z) ? 0f : 90f, new Vector3(d.magnitude, height, .06f), fabric, false);
+            kit.Prism(a, b, mid.y, mid.y + height, .06f, null, true);
+            return;
+        }
         if (asset != null)
         {
             // The kit's panel: pivot at its foot's centre, its length on local x, front +Z.
@@ -267,8 +311,23 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         kit.Prism(a, b, mid.y, mid.y + height, .06f, fabric, true);
     }
 
+    // K3: 游戏视觉's P17 panel for a greybox span (60 in, or 30 in under 1.1 m) at 1.35 or 2.16 m; null: none (or not in this build)
+    static string NewPanelKit(float length, float height)
+    {
+        var h = Mathf.Abs(height - 1.35f) < .05f ? "1350" : Mathf.Abs(height - 2.16f) < .05f ? "2160" : null;
+        if (h == null) return null;
+        var name = (length < 1.1f ? "Kit_CubiclePanelShort_" : "Kit_CubiclePanel_") + h;
+        return FrontRoomsKitLibrary.Has(name) ? name : null;
+    }
+
     void Post(Vector3 at, float height, string asset = null)
     {
+        // K3 (NEW): a greybox post at 1.35 or 2.16 m becomes the family post at that height (no collider, as today's)
+        if (asset == null && kit.New)
+        {
+            var post = Mathf.Abs(height - 1.35f) < .05f ? "Kit_PanelPost_1350" : Mathf.Abs(height - 2.16f) < .05f ? "Kit_PanelPost_2160" : null;
+            if (post != null && FrontRoomsKitLibrary.Has(post)) { kit.Kit(post, at, 0f, new Vector3(.064f, height, .064f), metal, false); return; }
+        }
         // The kit's post (Kit_PanelPost*) where the bay uses the kit's panels, else a greybox post.
         if (asset != null && kit.Kit(asset, at, 0f, new Vector3(.064f, height, .064f), metal, false) != null) return;
         kit.Prism(at - new Vector3(.032f, 0f, 0f), at + new Vector3(.032f, 0f, 0f), at.y, at.y + height + .01f, .064f, metal, false);
@@ -283,6 +342,13 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         var rot = Quaternion.LookRotation(d / len, Vector3.up);
         var mid = (a + b) * .5f;
         const float h = FrontRoomsStructuresKit.GuardHeight;
+        // K3 (NEW; S4-02, S4-09): the raking glass guard as built (shoe, 12 mm panes, cap rail on the rake: 游戏视觉's builder);
+        // today's collider
+        if (kit.New && FrontRoomsStructureOfficeKits.RakingGlass(kit, a, b, h))
+        {
+            kit.Mesh.Collider(mid + Vector3.up * (h * .5f), new Vector3(.06f, h, len), rot);
+            return;
+        }
         kit.Mesh.Box(mid + Vector3.up * .05f, new Vector3(.06f, .1f, len), rot, band, false);
         kit.Mesh.Box(mid + Vector3.up * ((.1f + h - .05f) * .5f), new Vector3(.012f, h - .15f, len), rot, glass, false);
         kit.Mesh.Box(mid + Vector3.up * (h - .025f), new Vector3(.06f, .05f, len + .02f), rot, band, false);
@@ -328,9 +394,18 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         for (var k = 0; k < 4; k++)
         {
             var end = c + arms[k] * 1.525f;
-            kit.Prism(c, end, Raised, Raised + 1.35f, .06f, fabric, true);
             var turn = arms[(k + 1) % 4];
-            kit.Prism(end, end + turn * 1.524f, Raised, Raised + 1.35f, .06f, fabric, true);
+            if (kit.New && NewPanelKit(1.524f, 1.35f) != null)
+            {
+                // K3 (NEW): the family's 1.35 m panels (P17), today's prism colliders
+                Panel(c, end, 1.35f, null);
+                Panel(end, end + turn * 1.524f, 1.35f, null);
+            }
+            else
+            {
+                kit.Prism(c, end, Raised, Raised + 1.35f, .06f, fabric, true);
+                kit.Prism(end, end + turn * 1.524f, Raised, Raised + 1.35f, .06f, fabric, true);
+            }
             Post(end, 1.35f);
         }
     }
@@ -364,11 +439,27 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
                 var half = .76f;
                 var a = alongX ? new Vector3(x - half, 0f, z) : new Vector3(x, 0f, z - half);
                 var b = alongX ? new Vector3(x + half, 0f, z) : new Vector3(x, 0f, z + half);
+                // K3 (NEW; S4-07): a freestanding screen on its two stabiliser feet (游戏视觉's P17), no posts; today's prism collider
+                var screen = kit.New ? FreestandingKit(h) : null;
+                if (screen != null)
+                {
+                    kit.Kit(screen, new Vector3(x, S2, z), alongX ? 0f : 90f, new Vector3(1.52f, h, .06f), fabric, false);
+                    kit.Prism(a, b, S2, S2 + h, .06f, null, true);
+                    n++;
+                    continue;
+                }
                 kit.Prism(a, b, S2, S2 + h, .06f, fabric, true);
                 Post(new Vector3(a.x, S2, a.z), h);
                 Post(new Vector3(b.x, S2, b.z), h);
                 n++;
             }
+    }
+
+    // K3: 游戏视觉's freestanding screen of this height (P17), null when it is not in this build
+    static string FreestandingKit(float h)
+    {
+        var name = h < 1.5f ? "Kit_PanelFreestanding_1350" : h < 1.9f ? "Kit_PanelFreestanding_1650" : "Kit_PanelFreestanding_2160";
+        return FrontRoomsKitLibrary.Has(name) ? name : null;
     }
 
     // ---------------------------------------------------------------- the stack's faces, fascias and the laylight
@@ -392,6 +483,22 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
         // The laylight over the whole void at +10.7: lens panels in the 0.6 grid, cool white, steady, the brightest surface;
         // its cells carry their own light (60 section 4), tuned so the pit reads lit (20 section 7: about ten times the lamp).
         kit.Shell(L2, S2);
+        if (kit.New && FrontRoomsKitLibrary.Has("Kit_Laylight_Module"))
+        {
+            // K3 (NEW; S4-08, FR-9): G1's laylight bays over the void (T-bar grid, prismatic panels with their lamp rows, per-panel age,
+            // a dead row here and there), each bay's diffuser driven by its nearest lamp (a dead or flickering lamp takes its bays
+            // with it; Tick); the same 12 lamps in the same order, none casting a shadow (30_plan rule 6: a laylight casts none)
+            laylights = new FrontRoomsStructureOfficeKits.Laylights();
+            for (var i = 0; i < 4; i++)
+                for (var j = 0; j < 3; j++)
+                {
+                    var l = kit.Lamp("laylight", LightType.Spot, new Vector3(4.875f + i * 3.75f, L2 - .08f, 5f + j * 4f), Vector3.down, 140f, 100f, 28f, 22f, new Color(.95f, .98f, 1f), true, Vector3.zero, null, Color.black);
+                    if (l != null) { laylights.AddLamp(l); kit.Host.Look.NoShadow(l); }
+                }
+            laylights.Build(kit, 3f, 3f, 18f, 15f, L2);
+            kit.Box(2.9f, L2 + .05f, 2.9f, 18.1f, L2 + .25f, 15.1f, wall, false);
+            return;
+        }
         var lens = FrontRoomsPoolMaterials.Glow("SP4 laylight lens", new Color(.95f, .98f, 1f) * 1.7f);
         kit.QuadPlanar(new Vector3(3f, L2, 3f), new Vector3(18f, L2, 3f), new Vector3(18f, L2, 15f), new Vector3(3f, L2, 15f), Vector3.down, lens);
         var tbar = FrontRoomsPoolMaterials.Lit("ceiling t-bar white", new Color(.9f, .9f, .88f), .3f);
@@ -509,6 +616,12 @@ public sealed class FrontRoomsStructuresOffice : FrontRoomsStructuresDistrict
     // ---------------------------------------------------------------- the frame
 
     public override FrontRoomsStructuresLook.Preset PresetAt(Vector3 world) => FrontRoomsStructuresLook.Preset.Office;
+
+    // K3 (NEW): the laylight's bays follow their lamps (the game's lamp modes, the budget, a blackout)
+    public override void Tick(FrontRoomsStructures host, float dt, bool isCurrent)
+    {
+        if (laylights != null && isCurrent) laylights.Tick();
+    }
 
     public override void RelayBody(FrontRoomsStructures host, bool on)
     {

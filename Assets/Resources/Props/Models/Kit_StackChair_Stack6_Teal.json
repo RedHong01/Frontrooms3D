@@ -1,0 +1,68 @@
+{
+ "name": "Kit_StackChair_Stack6_Teal",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.6175,
+    -0.075
+   ],
+   "size": [
+    0.53,
+    1.235,
+    0.7000000000000001
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "chair"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  55.0
+ ],
+ "lodBudget": [
+  6000,
+  2400,
+  400
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.24709999561309814,
+  0.0,
+  -0.41272422671318054
+ ],
+ "boundsMax": [
+  0.24709999561309814,
+  1.2264492511749268,
+  0.2485000044107437
+ ],
+ "triangles": 5320,
+ "slots": [
+  "Prop_Chrome",
+  "Prop_PlasticBlack",
+  "Prop_FabricTeal"
+ ],
+ "trianglesLod1": 1968,
+ "trianglesLod2": 384,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.07500000000000001
+ ],
+ "footprintSize": [
+  0.53,
+  0.7000000000000001
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.276
+}

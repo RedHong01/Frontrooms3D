@@ -1,0 +1,19 @@
+structures_g2_d_sp6.jpg 1920x1381, 16 tiles, 4 columns
+title | G2-D SP6: TODAY | NEW | 369/1576 FIT
+d_SP6_s01_today.png | TODAY · s01 arcade terrace | main | label 246/457 data 32/199 FIT
+d_SP6_s01_new.png | NEW · s01 arcade terrace | coves, joints | label 232/457 data 104/213 FIT
+d_SP6_v_corrcove_today.png | TODAY · corridor wall foot | knife joint | label 241/457 data 88/204 FIT
+d_SP6_v_corrcove_new.png | NEW · corridor wall foot | cove r 50 + flats | label 227/457 data 136/218 FIT
+d_SP6_s07_today.png | TODAY · s07 dome deck | main | label 200/457 data 32/245 FIT
+d_SP6_s07_new.png | NEW · s07 dome deck | inlays, drain | label 186/457 data 104/259 FIT
+d_SP6_v_mark3m_today.png | TODAY · dome deck inlay | deck only | label 206/457 data 72/239 FIT
+d_SP6_v_mark3m_new.png | NEW · dome deck inlay | blank inlay | label 192/457 data 88/253 FIT
+d_SP6_v_basindrain_today.png | TODAY · deep basin floor | bare floor | label 215/457 data 80/230 FIT
+d_SP6_v_basindrain_new.png | NEW · deep basin floor | main drain, Lane sq | label 201/457 data 152/244 FIT
+d_SP6_v_basininlet_today.png | TODAY · deep basin wall | bare wall | label 207/457 data 72/238 FIT
+d_SP6_v_basininlet_new.png | NEW · deep basin wall | return inlet | label 193/457 data 96/252 FIT
+sp6_s04_phone.png | PHONE · SP6 s04 | iPhone tier, NEW | label 149/457 data 128/296 FIT
+sp6_s04_desk.png | DESKTOP · SP6 s04 | NEW | label 168/457 data 24/277 FIT
+sp6_flash.png | FLASH · LW0 per stop | limit 3 | label 189/457 data 56/256 FIT
+sp6_cost.png | COST · SP6 NEW vs main | inventory | label 204/457 data 72/241 FIT
+ALL LABELS FIT

@@ -1,0 +1,47 @@
+structures_g3_training_files.jpg 1920x5832, 44 tiles, 4 columns
+title | G3-A2 · SP3 TRAINING ROOM AND FILE MEZZANINE KITS | 858/1552 FIT
+today_t.png | TODAY · training room | s09: 4 laminate bars | label 190/457 data 160/255 FIT
+today_f.png | TODAY · file mezzanine | s13: 1 grey mass | label 192/457 data 128/253 FIT
+room_t.png | NEW · training room | Blender, kits only | label 176/457 data 144/269 FIT
+room_f.png | NEW · file mezzanine | Blender, kits only | label 178/457 data 144/267 FIT
+h_tabs.png | HERO 0.35 M · tab edges | open shelf file, LOD0 | label 214/457 data 168/231 FIT
+h_gappy.png | HERO 0.35 M · gaps | leans, out-guides | label 171/457 data 136/274 FIT
+OpenShelfFile.png | Open shelf file · 3 M | 2.13 m · 3,050 | label 186/457 data 112/259 FIT
+OpenShelfFile_Gappy.png | Shelf file gappy · 3 M | 3,134 | label 195/457 data 40/250 FIT
+OpenShelfFile_Double.png | Double-faced · 3 M | 0.61 deep · 5,466 | label 168/457 data 136/277 FIT
+MobileShelving_5.png | Mobile 5 bays · 3 M | 4.76 m · 4,764 | label 174/457 data 112/271 FIT
+MobileShelving_5_Cartons.png | Mobile cartons · 3 M | 4,824 | label 186/457 data 40/259 FIT
+MobileShelving_3.png | Mobile 3 bays · 3 M | 3,948 | label 174/457 data 40/271 FIT
+h_lat.png | HERO 0.35 M · open drawer | hanging folders, tabs | label 241/457 data 168/204 FIT
+LateralFile_4.png | Lateral 4 · 3 M | 1.33 m · 1,448 | label 140/457 data 112/305 FIT
+LateralFile_4_Open.png | Lateral open · 3 M | the event · 2,240 | label 166/457 data 136/279 FIT
+LateralFile_5.png | Lateral 5 · 3 M | 1,702 | label 140/457 data 40/305 FIT
+FileCart.png | File cart · 3 M | 2,560 | label 133/457 data 40/312 FIT
+h_carton.png | HERO 0.35 M · carton end | die-cut flap, files | label 226/457 data 152/219 FIT
+RecordsCarton_Stack5.png | Cartons 3 + 2 · 3 M | 1,100 | label 179/457 data 40/266 FIT
+RecordsCarton_LidOff.png | Carton lid off · 3 M | 250 | label 179/457 data 24/266 FIT
+RecordsCarton_Sagging.png | Cartons sagging · 3 M | 1,060 | label 195/457 data 40/250 FIT
+h_fiche.png | HERO 0.35 M · fiche page | lit screen, carrier | label 219/457 data 152/226 FIT
+fiche.png | Fiche reader · 3 M | + carousel · 1,486 | label 164/457 data 144/281 FIT
+h_table.png | HERO 0.35 M · table edge | T-mould, handouts | label 222/457 data 136/223 FIT
+TrainingTable_Row2_Modesty.png | Row modesty · 3 M | 3.05 m · 2,084 | label 166/457 data 112/279 FIT
+TrainingTable_Row2_Tucked.png | Row tucked · 3 M | 4 chairs in · 4,836 | label 155/457 data 152/290 FIT
+TrainingTable_Row2_Handouts.png | Row handouts · 3 M | 2,518 | label 175/457 data 40/270 FIT
+h_chair.png | HERO 0.35 M · stack chair | seat 18 in, chrome | label 231/457 data 144/214 FIT
+stack6.png | Stack of six · 3 M | 5,320 | label 159/457 data 40/286 FIT
+scr_lit.png | Wall screen lit · 3 M | 70 in · 732 | label 191/457 data 88/254 FIT
+tripod.png | Tripod screen · 3 M | 904 | label 176/457 data 24/269 FIT
+h_ohp.png | HERO 0.35 M · overhead | lit stage, head | label 210/457 data 120/235 FIT
+ohp.png | Overhead on cart · 3 M | 1,448 + 2,532 | label 205/457 data 104/240 FIT
+h_lect.png | HERO 0.35 M · lectern top | lamp on, notes | label 234/457 data 112/211 FIT
+lect.png | Lectern · 3 M | walnut · 2,044 | label 123/457 data 112/322 FIT
+avtall.png | Tall AV cart · 3 M | + CRT TV · 2,992 | label 162/457 data 128/283 FIT
+h_board.png | HERO 0.35 M · board tray | markers, frame | label 226/457 data 112/219 FIT
+chalk.png | Chalkboard · 3 M | 8 x 4 ft · 1,076 | label 154/457 data 128/291 FIT
+easel.png | Flip chart easel · 3 M | 756 | label 196/457 data 24/249 FIT
+maps.png | MAPS · new surfaces | 7.5 MiB desktop, 2.9 phone | label 183/457 data 208/262 FIT
+cost_f.png | COST · file mezzanine | counted at LOD0 | label 184/457 data 120/261 FIT
+cost_t.png | COST · training room | against 62 4.5 | label 182/457 data 112/263 FIT
+sources.png | SOURCES · real sizes | R1-R6, LS57-LS99 | label 182/457 data 128/263 FIT
+placement.png | PLACEMENT · for K3 | 62 2.4 / 2.9 | label 171/457 data 96/274 FIT
+ALL LABELS FIT

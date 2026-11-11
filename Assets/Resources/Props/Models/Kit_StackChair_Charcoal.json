@@ -1,0 +1,68 @@
+{
+ "name": "Kit_StackChair_Charcoal",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.41,
+    0.0
+   ],
+   "size": [
+    0.53,
+    0.82,
+    0.55
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "chair"
+ ],
+ "lodDistances": [
+  3.5,
+  10.0,
+  40.0
+ ],
+ "lodBudget": [
+  2400,
+  900,
+  160
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.2478882074356079,
+  0.0,
+  -0.26272422075271606
+ ],
+ "boundsMax": [
+  0.2478882074356079,
+  0.8014492392539978,
+  0.2485000044107437
+ ],
+ "triangles": 2144,
+ "slots": [
+  "Prop_Chrome",
+  "Prop_PlasticBlack",
+  "Prop_FabricCharcoal"
+ ],
+ "trianglesLod1": 728,
+ "trianglesLod2": 264,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.53,
+  0.55
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.851
+}

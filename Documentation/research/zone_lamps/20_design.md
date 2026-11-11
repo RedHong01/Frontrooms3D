@@ -232,6 +232,51 @@ Sources (read 11-06; no period photo shows both fixtures, so the patent drawings
 - constructionspecifier.com and retrofitmagazine.com: metal-halide decay, dead units, darkened ceilings.
 - en.wikipedia.org/wiki/Metal-halide_lamp: warm-up, restrike, tint spread.
 
+### 3.5 Scene 4's pool grid: the L03 lens level (Red's plan A, 2026-11-10; landed)
+
+Zone lamps line, account B (local_c77e9840), 2026-11-10 12:30-13:1x. No Unity, no download, nothing played; main read only
+except the landing below. Reused: 游戏视觉's G2r turn films and flash_check.py (structures_assets/60_build.md G2rd.3, G2p.4).
+
+- **Red's words:** 游戏视觉's chat, 2026-11-10 12:23:46, plain user turn, the button answer to "SP1 和 SP6 的闪烁选哪个方案？":
+  "方案A（推荐）". Plan A as put to Red: 灯具适配 dims only the pool grid's L03 lenses; scene 4's placards are test furniture,
+  out of the count; a later "SP1 and SP6 about 20 % darker" A/B lands only on Red's pick; dark nosings and glaze unchanged.
+- **What changed:** SP1's floating lay-in grid (`FrontRoomsStructuresSlide.BuildFloatingCeiling`, 8 lit troffers, 2 dead),
+  NEW only: lens drive x `FrontRoomsTrofferKit.PoolGridLensLevel` = 0.2 (band peak 0.36 as passed, against 1.8). The light,
+  its range and tint, the lens bands, modes, `Look.Scale`, the dead lamps, the reflection proxies (they follow the light's tint,
+  not the lens drive), TODAY and every other troffer in scene 4 and the game: unchanged.
+- **Why 0.2** (scripts `W/zone_lamps/pool_grid_lens/sim/`; the films at SP1 s02 eye level, pitch 6, 152 deg in 3 s, 60 fps,
+  read as flash_check.py reads them: display-linear pixels, 30 x 18 blocks, area rule, worst second):
+  - The films reproduce G2rd.3: lenses at 1.8 count 6.0, hidden 3.0.
+  - Lens-only, as a share of the lens's displayed light over the hidden state: 0.6 4.5; 0.5 4.0; 0.4 4.0; 0.3 3.0; 0.25 2.5;
+    0.2 2.5; 0.15 3.0; 0.1 3.0 (under about 0.2 the lens turns darker than the grid around it and counts again).
+  - The lens at x 0.5 of the drive with the light at full (the l03_0.5 minus l03_0.5_troffoff films added to the hidden state):
+    4.5. Halving is not enough.
+  - Drive to share: the lens core shows 0.59 (linear, displayed) at 1.0, 0.54 at 0.7, 0.42 at 0.5, 0.19 hidden. An ACES fit
+    (Narkowicz) with emission linear in the drive meets 0.5 and 0.7 within 0.03 and puts a 0.25-0.30 share at x 0.18-0.22.
+    0.2 gives about 0.28: predicted 2.5-3.0 at s02. Under the bloom threshold (1.05) the halo falls faster than this film
+    model allows, so the render should count at or under the prediction.
+  - The court (pitch 15) counts 4.5 at every share: its lever is the grid's light (G2rd.3), not the lens.
+- **Look** (sheet `sheets/zone_lamps_pool_grid_lens.jpg`, simulated from the films, PENDING the render): at 0.2 the lens shows
+  about 1.5 x the cream grid's displayed light beside it (0.29 against 0.19 linear; 3 x at 1.8), its prismatic bands visible:
+  a softly lit lens, no longer a white glare. The two dead troffers still read dead. Honest flaw: the grid's lamps no longer
+  read as the brightest things in the hall at eye level; the wall boxes' lit lid does.
+- **Landed:** `FrontRoomsTrofferKit.cs` 12:50 (9ff67275 -> 719586f2; Roslyn mac + iOS 0 errors; the level, a static with
+  `PoolGridLensDefault` restored in ResetStatics, so a tool may vary it after Play starts and before SP1 builds), then the
+  contract `W/apply/zone_lamps_pool_grid_lens_contract/` (Kit.cs `Troffer(..., float lensLevel = 1f)`, Slide.cs passes it in NEW),
+  landed by 夸张结构调研与设计 13:06.
+- **Re-measure of 0.2 (游戏视觉, G2-d films `W/structures_assets/g2_light/renders/g2d_lw0`, game lamp modes, placards out):**
+  s02 p6 4.0, over the limit; the worst window moved to the hall's top right (wall-box scallops, white tile under the grid's
+  edge); x 0.8 exposure 2.0. On that film (same camera as G2r: off-lens pixels within 0.005) the rendered 0.2 lens sits at 10 %
+  of its displayed light over the hidden state (core 0.248 against 0.209 hidden, 0.597 at 1.8), not the 28 % the model
+  predicted (no bloom under the threshold; the ACES fit was too kind at the low end). Sweeping that share on the G2-d film
+  (`sim/lens_g2d.py`): 0-15 % 4.0; 20-26 % 3.5; **28-38 % 2.5**; 45-50 % 3.5. On the G2r film: 26 % 2.5, 28-30 % 3.0, 32 % 3.5,
+  34 % 4.0. The count is not monotonic in the lens; dimming further cannot help, a step up can.
+- **Second step, LANDED 15:08 (TrofferKit 719586f2 -> 3082fe72, mac + iOS 0 errors): 0.4 of the drive** (band peak 0.72 as passed). From the measured points (0.2 = 10 %, 0.5 = about
+  50 %, 1.0 = 100 %) 0.4 gives about 30-38 %, inside the G2-d film's 2.5 plateau. The lens reads more lit than at 0.2 (about
+  1.6 x the grid beside it): closer to image 1. The G2r film would count 3.0-4.0 at that share, but G2-d is the hall that lands.
+- **Open:** 游戏视觉 re-measures s02 p6 alone in its next render. If it is over 3.0 again, the lens is not the lever there and
+  0.4 stays for the look; the x 0.8 exposure A/B (2.0) is Red's call. SP1's s00, s01, s03, s04 and the court are not the lens.
+
 ---
 
 ## 4. Run! (Run! B corridor rig, `RunRigLayout.Corridor1x9`, built standalone at (-3000, 0, 3000))

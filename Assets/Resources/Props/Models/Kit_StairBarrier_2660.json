@@ -1,0 +1,54 @@
+{
+ "name": "Kit_StairBarrier_2660",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "stair",
+  "stairwell_walkable"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  10.0,
+  0.0
+ ],
+ "lodBudget": [
+  900,
+  300,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "stairwell_walkable STAIR author 2026-11-10 (research/stairwell/80 section 6)",
+ "boundsMin": [
+  -1.3300000429153442,
+  0.0,
+  -0.05000000074505806
+ ],
+ "boundsMax": [
+  1.3300000429153442,
+  0.9460000395774841,
+  0.05000000074505806
+ ],
+ "triangles": 2304,
+ "slots": [
+  "Stair_SteelEnamel",
+  "Stair_RailEnamel"
+ ],
+ "trianglesLod1": 496,
+ "trianglesLod2": 192,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  2.6600000858306885,
+  0.10000000149011612
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

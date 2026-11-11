@@ -69,6 +69,20 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         tile = FrontRoomsPoolMaterials.Tile;
         nosing = FrontRoomsPoolMaterials.Nosing;
         sheet = FrontRoomsPoolMaterials.Transparent("water sheet", new Color(.55f, .85f, .86f, .32f), .95f);
+        // K2 (游戏视觉's structures G2-a, NEW only): the zone lamps line's pool kits on this district's lamps (PlaceLampKits after
+        // the shell), and each hall's own renderers inside its own probe (the K1 review's FR-1); the first hall a piece lies in
+        // takes it (C9 before the island room round it)
+        kit.PoolLamps = true;
+        kit.Halls(
+            FrontRoomsStructuresKit.Hall(3f, 30f, 6f, 36f, -4f, 4f),        // C9 wet block
+            FrontRoomsStructuresKit.Hall(3f, -3f, 6f, 6f, -4f, 4f),         // corridor
+            FrontRoomsStructuresKit.Hall(6f, -3f, 15f, 3f, -4f, 4f),        // C8 covered basin
+            FrontRoomsStructuresKit.Hall(0f, 6f, 12f, 21f, -4f, 7f),        // BeachHall
+            FrontRoomsStructuresKit.Hall(-6f, 21f, 9f, 36f, -4f, 7f),       // IslandChannel
+            FrontRoomsStructuresKit.Hall(9f, 24f, 21f, 42f, -4f, 7f),       // WeirTerraces
+            FrontRoomsStructuresKit.Hall(-3f, 36f, 9f, 48f, -4f, 8.5f),     // DomeGallery, the dome and the oculus
+            FrontRoomsStructuresKit.Hall(-3f, 48f, 3f, 60.3f, -4f, 1f),     // Grotto
+            FrontRoomsStructuresKit.Hall(-18f, 3f, 0f, 21f, -4f, 7f));      // Casbah
 
         kit.Safe("corridor", BuildCorridor);
         kit.Safe("BeachHall", BuildBeachHall);
@@ -82,6 +96,35 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         kit.Safe("Casbah", BuildCasbah);
         kit.Safe("C8 covered basin", BuildCoveredBasin);
         kit.Finish();
+        // K2 (游戏视觉's structures G2-d, NEW only; review 5.2, 6, 8; G2c.4 open): the cove base and EJ171 joints on every dry deck of
+        // the halls, three deck drains, the block basins' main drains and return inlets (C1, under W3, the channel, C9), five blank
+        // depth marks, read from the finished shell (FrontRoomsStructurePoolFinish); render only, finished at once
+        if (kit.New)
+        {
+            kit.Safe("pool finish", () => new FrontRoomsStructurePoolFinish.Plan(kit, 0f, 0f)
+                .Hall(FrontRoomsStructuresKit.Hall(3f, 30f, 6f, 36f, -1.5f, 3f))
+                .Hall(FrontRoomsStructuresKit.Hall(3f, -3f, 6f, 6f, -.5f, 3f))
+                .Hall(FrontRoomsStructuresKit.Hall(6f, -3f, 15f, 3f, -.7f, 3f))
+                .Hall(FrontRoomsStructuresKit.Hall(0f, 6f, 12f, 21f, -1.5f, 6f))
+                .Hall(FrontRoomsStructuresKit.Hall(-6f, 21f, 9f, 36f, -1.5f, 6f))
+                .Hall(FrontRoomsStructuresKit.Hall(9f, 24f, 21f, 42f, -2.5f, 6f))
+                .Hall(FrontRoomsStructuresKit.Hall(-3f, 36f, 9f, 48f, -2.5f, 8f))
+                .Hall(FrontRoomsStructuresKit.Hall(-3f, 48f, 3f, 60.3f, -3.5f, 1f))
+                .Hall(FrontRoomsStructuresKit.Hall(-18f, 3f, 0f, 21f, -1.5f, 6f))
+                .Drain(new Vector3(.75f, DomeDeck, 37.2f)).Drain(new Vector3(10.5f, -.6f, 30f)).Drain(new Vector3(7.5f, 0f, 33f))
+                .Basin(new FrontRoomsStructurePoolFinish.BasinSpec(DeepFloor, DeepSurf).Drain(1.5f, 44.7f)
+                    .Inlet(0f, 43f, Vector3.right).Inlet(6f, 45f, Vector3.left).Inlet(4.5f, 47.85f, Vector3.back))
+                .Basin(new FrontRoomsStructurePoolFinish.BasinSpec(DeepFloor, DeepSurf).Drain(16.5f, 39f)
+                    .Inlet(19f, 41.85f, Vector3.back).Inlet(20.85f, 37.5f, Vector3.left).Inlet(13.5f, 36f, Vector3.forward).Inlet(19.5f, 36f, Vector3.forward))
+                .Basin(new FrontRoomsStructurePoolFinish.BasinSpec(WadeFloor, WadeSurf).Drain(4.5f, 22.5f)
+                    .Inlet(-1.5f, 21.15f, Vector3.forward).Inlet(-5.85f, 31f, Vector3.right).Inlet(-5.85f, 34.5f, Vector3.right))
+                .Basin(new FrontRoomsStructurePoolFinish.BasinSpec(WadeFloor, WadeSurf).Inlet(3.6f, 31.5f, Vector3.right))
+                .Mark(new Vector3(0f, DomeDeck, 43f), Vector3.left).Mark(new Vector3(4.5f, DomeDeck, 42f), Vector3.back)
+                .Mark(new Vector3(12f, DomeDeck, 39f), Vector3.left)
+                .Mark(new Vector3(4.8f, 0f, 24f), Vector3.forward).Mark(new Vector3(-3f, 0f, 32f), Vector3.right)
+                .Build());
+            kit.Finish();
+        }
         kit.Safe("signs", BuildSigns);
 
         Box = new Bounds(Site + new Vector3(1.5f, 2f, 28.5f), new Vector3(43f, 14f, 67f));
@@ -112,7 +155,24 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
             try { host.Look.Probe(Root, new Bounds(Site + b.center, b.size), 512); }
             catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP6 probe", "SP6 probe: " + e.Message); }
         }
+        // K2 (NEW, FR-1): a probe where the walker goes and none covers: the corridor, C8, the grotto, and C9 inside the island
+        // room's box (the halls' importance: a higher one took over every big renderer touching it, the grotto's the dome hall's)
+        if (kit.New)
+            foreach (var b in new[]
+            {
+                new Bounds(new Vector3(4.5f, Std * .5f, 1.5f), new Vector3(3f, Std, 9f)),
+                new Bounds(new Vector3(10.5f, .8f, 0f), new Vector3(9f, 4.2f, 6f)),
+                new Bounds(new Vector3(0f, -1.7f, 54.15f), new Vector3(3f, 2.6f, 12.3f)),
+                new Bounds(new Vector3(4.5f, Std * .5f, 33f), new Vector3(3f, Std, 6f)),
+            })
+            {
+                try { host.Look.Probe(Root, new Bounds(Site + b.center, b.size), 256); }
+                catch (Exception e) { FrontRoomsPoolMaterials.LogOnce("SP6 probe K2", "SP6 probe (K2): " + e.Message); }
+            }
         kit.Safe("pool zone look", BuildZoneLook);
+        // K2: after the shell's colliders and the pool rooms (a bounce binds to a box of its own room), before the dome hall's
+        // light B, which hides A's wall boxes with everything under them, the kits included
+        kit.Safe("pool lamps", kit.PlaceLampKits);
         // Last: its nine lamps join the scene's budget after every lamp of SP6, and nine keeps every later lamp's turn in the
         // budget's one-in-three shadow rule, so no other lamp in the scene changes.
         kit.Safe("dome hall light B", BuildDomeLightB);
@@ -161,6 +221,13 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
     void SlopedParapet(Vector3 a, Vector3 b, float floor = float.NaN)
     {
         var waist = float.IsNaN(floor);
+        // K2 (structures G2-c, C8; review D5): in NEW the raking tile guard (its Cap course on the rake, plumb ends); the same
+        // collider (RakeWall's, 0.2 thick, 1.07 over the line, the same bottoms)
+        if (kit.New)
+        {
+            kit.RakingGuard(a, b, waist ? a.y - .35f : floor, waist ? b.y - .35f : floor, FrontRoomsStructuresKit.GuardStyle.TileWall, tile);
+            return;
+        }
         kit.RakeWall(a, b, FrontRoomsStructuresKit.GuardHeight, waist ? a.y - .35f : floor, waist ? b.y - .35f : floor, .2f, tile, true);
     }
 
@@ -248,8 +315,10 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         // in the beach; the hall's lamps stay on in SP6 (view lamps).
         viewLamps.Add(kit.WallBox(new Vector3(12f, 3.4f, 10.5f), Vector3.left, 6f, 10f));
         viewLamps.Add(kit.WallBox(new Vector3(12f, 3.4f, 16.5f), Vector3.left, 6f, 10f));
-        viewLamps.Add(kit.WallBox(new Vector3(0f, 3.4f + Terrace, 12f), Vector3.right, 6f, 10f));
-        viewLamps.Add(kit.WallBox(new Vector3(0f, 3.4f + Terrace, 19.5f), Vector3.right, 6f, 10f));
+        // (K2, NEW: the terrace's two boxes 1.5 m under the lid, +3.90: at +4.60 a 400 W up-light 0.8 m under it was a hot spot)
+        var terraceBox = 3.4f + Terrace - (kit.New ? .7f : 0f);
+        viewLamps.Add(kit.WallBox(new Vector3(0f, terraceBox, 12f), Vector3.right, 6f, 10f));
+        viewLamps.Add(kit.WallBox(new Vector3(0f, terraceBox, 19.5f), Vector3.right, 6f, 10f));
         foreach (var d in new[] { new Vector2(7.5f, 10.5f), new Vector2(7.5f, 16.5f) }) viewLamps.Add(kit.DownFill(new Vector3(d.x, Tall - .07f, d.y), 2.4f, 11f));
         Niche(new Vector3(11.85f, -.6f, 15f), Vector3.left);
         Niche(new Vector3(6f, -.7f, 20.85f), Vector3.back);
@@ -309,8 +378,8 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         SlopedParapet(new Vector3(3.9f, .75f, 27.4f), new Vector3(3f, Terrace, 27.4f), 0f);
         // B8 stepping stones: ten tiled drums 0.9 across, tops 3 cm proud of the water, 1.2 m on centres along x -4.5, so 0.30
         // clear between them (0.6 across left 0.60 clear, the player's own width: no crossing without a jump; walk test 11-04).
-        for (var k = 0; k < 9; k++) kit.Ring(new Vector3(-4.5f, 0f, 21.6f + 1.2f * k), 0f, .45f, WadeFloor, 0f, -180f, 180f, tile, true, null, 15f);
-        kit.Ring(new Vector3(-3.6f, 0f, 32.0f), 0f, .45f, WadeFloor, 0f, -180f, 180f, tile, true, null, 15f);
+        for (var k = 0; k < 9; k++) kit.Ring(new Vector3(-4.5f, 0f, 21.6f + 1.2f * k), 0f, .45f, WadeFloor, 0f, -180f, 180f, tile, true, null, 15f, true);
+        kit.Ring(new Vector3(-3.6f, 0f, 32.0f), 0f, .45f, WadeFloor, 0f, -180f, 180f, tile, true, null, 15f, true);
         // Two STEPS INTO WATER of 8 risers from the deck's copings, west into the west arm and south into the south arm.
         kit.Shell(Tall, WadeFloor);
         kit.StepRun(new Vector3(-3f, 0f, 34.8f), Vector3.right, 1.2f, WadeFloor, 0f, tile, nosing);
@@ -386,7 +455,27 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
             var crest = t[k] - .05f;
             var below = k < 2 ? t[k + 1] - .03f : DeepSurf;
             kit.Shell(Tall, below);
-            if (k < 2)
+            if (kit.New)
+            {
+                // K2 (游戏视觉's structures G2-b, NEW only; review section 9 and D7): each crest a square porcelain weir lip (P1's
+                // section, P2's WeirLip tile, the drip groove under the nose) in place of the tile box's top and the dark nosing
+                // strip; the water leaves it as a nappe on the flow water and lands in a foam line (FrontRoomsStructureFalls)
+                var spans = k < 2 ? new[] { new Vector2(12f, 19.6f), new Vector2(20.8f, 21f) } : new[] { new Vector2(12f, 21f) };
+                foreach (var sp in spans)
+                {
+                    kit.Box(sp.x, crest - .3f, z - .15f, sp.y, crest - .06f, z, tile, false);
+                    kit.Box(sp.x, crest - .3f, z - .15f, sp.y, crest, z, null, true);
+                    var lv = new List<Vector3>();
+                    var ln = new List<Vector3>();
+                    var luv = new List<Vector2>();
+                    var lt = new List<int>();
+                    FrontRoomsStructureFalls.WeirLip(new Vector3(sp.x, 0f, z), new Vector3(sp.y, 0f, z), crest, Vector3.forward, lv, ln, luv, lt);
+                    kit.Mesh.Append(lv, ln, luv, lt, FrontRoomsPoolTile.Get("WeirLip"), false);
+                    FrontRoomsStructureFalls.Nappe(kit.PartRoot, new Vector3(sp.x + .05f, 0f, z), new Vector3(sp.y - .05f, 0f, z), surface, below, Vector3.forward, Meshes,
+                        "SP6 W" + (k + 1) + (sp.y - sp.x < 1f ? " east end" : ""));
+                }
+            }
+            else if (k < 2)
             {
                 kit.Box(12f, crest - .3f, z - .15f, 19.6f, crest, z, tile);
                 kit.Box(20.8f, crest - .3f, z - .15f, 21f, crest, z, tile);
@@ -428,6 +517,8 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         Niche(new Vector3(20.85f, -2.4f, 39f), Vector3.left);
         Niche(new Vector3(16.5f, -2.4f, 41.85f), Vector3.back);
         Niche(new Vector3(14f, -2.4f, 41.85f), Vector3.back);
+        // (K2, NEW: a ZL_NICHE_S in W3's face under the fall, aimed up at the curtain; outside the budget's pattern)
+        kit.ExtraNiche(new Vector3(16.5f, -2.2f, 36.15f), Vector3.forward, 2.0f, 6f, (Vector3.forward * .35f + Vector3.up).normalized);
         // Walls: x 9 (z 24..42) with the walk arch from the island's deck (z 24.3..26.7, springing 2.10) and the arch from
         // T3 into the dome hall (z 39.6..41.4, springing 2.10 over -1.80, crown 3.0 over it); x 21; z 42. Lid +5.40.
         kit.Shell(Tall, 0f);
@@ -505,19 +596,24 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         kit.Lamp("gallery soffit downlight", LightType.Spot, new Vector3(1.5f, Terrace - .25f, 46.5f), Vector3.down, 110f, 70f, 1.6f, 6f, new Color(.92f, .98f, 1f), false, new Vector3(.25f, .25f, .05f), FrontRoomsPoolMaterials.Steel, new Color(1.4f, 1.5f, 1.55f));
         kit.Lamp("gallery soffit downlight", LightType.Spot, new Vector3(4.5f, Terrace - .25f, 45f), Vector3.down, 110f, 70f, 1.6f, 6f, new Color(.92f, .98f, 1f), false, new Vector3(.25f, .25f, .05f), FrontRoomsPoolMaterials.Steel, new Color(1.4f, 1.5f, 1.55f));
         Niche(new Vector3(.15f, -2.4f, 43f), Vector3.right);
-        Niche(new Vector3(2.85f, -2.4f, 46f), Vector3.left);
+        // (K2, NEW: this one stood in the water with no wall behind it (x 3 is a seam of the basin there): on the C7 stair's east
+        // cheek instead, the deck wall x 3.0 over its third tread (0.72 m of water: ZL_NICHE_S), facing west into the stair)
+        Niche(new Vector3(2.85f, -2.4f, kit.New ? 40.35f : 46f), Vector3.left);
         Niche(new Vector3(4.5f, -2.4f, 47.85f), Vector3.back);
         // SP6-F7: the B2 is the Relay's way and lit as a way (rule 12): step lights in the west wall every third riser (as the
         // B4-M) and a low wall light over its landing.
+        // (K2, NEW: the B2's step and landing lights at half: the ladder of lit treads and dark nosings read 4.0 flashes a second in
+        // a turn on the deck at walking pace (LW0's check, flash_check.py); at half 3.0, the limit)
+        var b2 = kit.New ? .5f : 1f;
         for (var f = 0; f < 2; f++)
             for (var k = 2; k <= 8; k += 3)
             {
                 var y0 = f == 0 ? DomeDeck : -.3f;
                 var z0 = f == 0 ? 38.4f : 42.3f;
-                kit.Lamp("B2 step light", LightType.Spot, new Vector3(-2.83f, y0 + k * .15f + .26f, z0 + (k - .5f) * .3f), new Vector3(.6f, -1f, 0f), 110f, 70f, .45f, 1.6f, new Color(.90f, .96f, 1f), false,
+                kit.Lamp("B2 step light", LightType.Spot, new Vector3(-2.83f, y0 + k * .15f + .26f, z0 + (k - .5f) * .3f), new Vector3(.6f, -1f, 0f), 110f, 70f, .45f * b2, 1.6f, new Color(.90f, .96f, 1f), false,
                     new Vector3(.22f, .07f, .03f), FrontRoomsPoolMaterials.Steel, new Color(1.6f, 1.7f, 1.75f));
             }
-        kit.Lamp("B2 landing light", LightType.Spot, new Vector3(-2.83f, .2f, 41.7f), new Vector3(.5f, -1f, 0f), 120f, 80f, .8f, 2.5f, new Color(.90f, .96f, 1f), false,
+        kit.Lamp("B2 landing light", LightType.Spot, new Vector3(-2.83f, .2f, 41.7f), new Vector3(.5f, -1f, 0f), 120f, 80f, .8f * b2, 2.5f, new Color(.90f, .96f, 1f), false,
             new Vector3(.3f, .1f, .04f), FrontRoomsPoolMaterials.Steel, new Color(1.6f, 1.7f, 1.75f));
     }
 
@@ -576,6 +672,18 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         var oculus = new Vector2(1.5f, 43.5f);
         kit.Shell(6f, DomeDeck);
         kit.SlabRoundHole(new Vector3(3f, 0f, 42f), 6f, rim, DomeLid + .16f, .16f, tile);
+        if (kit.New)
+        {
+            // K2 (structures G2-c, C4; review D2, D4), NEW only, light A and B alike: whole 150 mm tiles in rings from a crown
+            // roundel to the rim, one flat facet a tile, joints staggered; the oculus cut true round with a bullnose turning the shell
+            // up into its shaft, the shaft's inside face in 75 mm columns from the shell to its lamp housing (it no longer pokes
+            // 0.2 m under the shell). No collider, as today.
+            var dome = new FrontRoomsStructureCurveTile.Out();
+            FrontRoomsStructureCurveTile.Dome(dome, centre, R, rim, oculus, .6f, 7.2f);
+            kit.AppendCurve(dome, tile);
+        }
+        else
+        {
         const int rings = 12, segs = 64;
         for (var i = 0; i < rings; i++)
         {
@@ -604,6 +712,7 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         var rho = Vector2.Distance(oculus, new Vector2(3f, 42f));
         var yo = centre.y + Mathf.Sqrt(R * R - rho * rho);
         kit.Ring(new Vector3(oculus.x, 0f, oculus.y), .6f, .75f, yo - .2f, 7.2f, -180f, 180f, tile, false, null, 15f);
+        }
         kit.Lid(oculus.x - .8f, oculus.y - .8f, oculus.x + .8f, oculus.y + .8f, 7.2f, tile, .1f, false);
         var l = kit.Lamp("oculus (metal-halide downlight)", LightType.Spot, new Vector3(oculus.x, 7.1f, oculus.y), Vector3.down, 21f, 18f, 120f, 14f, new Color(.95f, .98f, 1f), true, Vector3.zero, null, Color.black);
         viewLamps.Add(l);
@@ -673,11 +782,17 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         // The vault: the renderer group BuildDome's pieces went into (tile at ceiling +6.0; nothing else in SP6 starts over +3.55).
         foreach (var r in Root.GetComponentsInChildren<MeshRenderer>(true))
         {
-            if (r == null || r.sharedMaterial != tile) continue;
+            if (r == null || r.sharedMaterial == null) continue;
             var b = r.bounds;
-            if (b.min.y > Site.y + DomeLid - .05f && b.Contains(Site + new Vector3(3f, 5f, 42f))) AddShade(r, VaultShade, true);
+            if (r.sharedMaterial == tile)
+            {
+                if (b.min.y > Site.y + DomeLid - .05f && b.Contains(Site + new Vector3(3f, 5f, 42f))) AddShade(r, VaultShade, true);
+            }
+            // K2 (structures G2-c, C4): in NEW the oculus shaft and its round are in the 75 mm tile, their own renderer
+            else if (kit.New && r.sharedMaterial.name.StartsWith("Prop_PoolTile_Field", StringComparison.Ordinal) && b.min.y > Site.y + DomeLid - .05f
+                && b.Contains(Site + new Vector3(Oculus.x, 6.6f, Oculus.y))) AddShade(r, VaultShade, true);
         }
-        if (domeShades.Count != 1) FrontRoomsPoolMaterials.LogOnce("SP6 dome vault", "SP6 dome hall light B: " + domeShades.Count + " vault renderers found (1 expected).");
+        if (domeShades.Count < 1 || domeShades.Count > (kit.New ? 2 : 1)) FrontRoomsPoolMaterials.LogOnce("SP6 dome vault", "SP6 dome hall light B: " + domeShades.Count + " vault renderers found (" + (kit.New ? "1-2" : "1") + " expected).");
         foreach (var p in Root.GetComponentsInChildren<ReflectionProbe>(true))
             if (p != null && (p.transform.position - (Site + DomeProbeCentre)).sqrMagnitude < .01f) domeProbe = p;
 
@@ -961,6 +1076,7 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         var halfAngle = Mathf.Asin(1.5f / VaultR);
         var arcY = crown - VaultR;
         const int facets = 12;
+        if (kit.New) GrottoVaultNew(spring, crown, VaultR, Mouth, halfAngle, arcY);
         for (var f = 0; f < facets; f++)
         {
             var t0 = -halfAngle + 2f * halfAngle * f / facets;
@@ -970,9 +1086,10 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
             float v0 = VaultR * (t0 + halfAngle), v1 = VaultR * (t1 + halfAngle);
             var mid = (p0 + p1) * .5f;
             var inward = new Vector3(-mid.x, arcY - mid.y, 0f).normalized;
+            // K2 (structures G2-c, C5): in NEW today's 12 facets stay as the collider only (GrottoVaultNew draws the vault)
             kit.Quad(new Vector3(p0.x, p0.y, Mouth), new Vector3(p1.x, p1.y, Mouth), new Vector3(p1.x, p1.y, 59.4f), new Vector3(p0.x, p0.y, 59.4f), inward,
-                new Vector2(Mouth, v0), new Vector2(Mouth, v1), new Vector2(59.4f, v1), new Vector2(59.4f, v0), tile, true);
-            if (crown + .01f - Mathf.Min(p0.y, p1.y) > .003f)
+                new Vector2(Mouth, v0), new Vector2(Mouth, v1), new Vector2(59.4f, v1), new Vector2(59.4f, v0), kit.New ? null : tile, true);
+            if (!kit.New && crown + .01f - Mathf.Min(p0.y, p1.y) > .003f)
                 kit.QuadPlanar(new Vector3(p0.x, p0.y, Mouth - .001f), new Vector3(p1.x, p1.y, Mouth - .001f), new Vector3(p1.x, crown + .01f, Mouth - .001f), new Vector3(p0.x, crown + .01f, Mouth - .001f), Vector3.back, tile);
         }
         kit.Box(-1.5f, crown + .002f, 48f, 1.5f, crown + .1f, 59.4f, tile, false);
@@ -988,6 +1105,32 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
         Niche(new Vector3(1.45f, -2.4f, 54f), Vector3.left);
         Niche(new Vector3(-1.45f, -2.4f, 57f), Vector3.right);
         Niche(new Vector3(1.45f, -2.4f, 49.5f), Vector3.left);
+    }
+
+    // K2 (structures G2-c, C5; Red's ask 2 A), NEW only: the grotto's segmental vault (r 3.90) in 150 mm courses, one flat facet a
+    // course, the first starting on the springing (-0.90: the walls' 14th course ends there, so the vault begins on a joint), the
+    // courses fitted to the arc (u = z along the passage, v the course); the mouth's spandrel closed to the crown per facet as today.
+    // Render only: today's 12 facets are its collider.
+    void GrottoVaultNew(float spring, float crown, float vaultR, float mouth, float halfAngle, float arcY)
+    {
+        var field = FrontRoomsPoolTile.Get("FieldMesh");
+        var m = field != null ? field : tile;
+        var arc = 2f * halfAngle * vaultR;
+        var n = Mathf.Max(4, Mathf.RoundToInt(arc / FrontRoomsStructuresKit.Course));
+        for (var f = 0; f < n; f++)
+        {
+            var t0 = -halfAngle + 2f * halfAngle * f / n;
+            var t1 = -halfAngle + 2f * halfAngle * (f + 1) / n;
+            var p0 = new Vector2(vaultR * Mathf.Sin(t0), arcY + vaultR * Mathf.Cos(t0));
+            var p1 = new Vector2(vaultR * Mathf.Sin(t1), arcY + vaultR * Mathf.Cos(t1));
+            float v0 = f * FrontRoomsStructuresKit.Course, v1 = (f + 1) * FrontRoomsStructuresKit.Course;
+            var mid = (p0 + p1) * .5f;
+            var inward = new Vector3(-mid.x, arcY - mid.y, 0f).normalized;
+            kit.Quad(new Vector3(p0.x, p0.y, mouth), new Vector3(p1.x, p1.y, mouth), new Vector3(p1.x, p1.y, 59.4f), new Vector3(p0.x, p0.y, 59.4f), inward,
+                new Vector2(mouth, v0), new Vector2(mouth, v1), new Vector2(59.4f, v1), new Vector2(59.4f, v0), m);
+            if (crown + .01f - Mathf.Min(p0.y, p1.y) > .003f)
+                kit.QuadPlanar(new Vector3(p0.x, p0.y, mouth - .001f), new Vector3(p1.x, p1.y, mouth - .001f), new Vector3(p1.x, crown + .01f, mouth - .001f), new Vector3(p0.x, crown + .01f, mouth - .001f), Vector3.back, tile);
+        }
     }
 
     // ---------------------------------------------------------------- T_PL_Casbah (F6; x -18..0, z 3..21; Tall 5.4)
@@ -1112,6 +1255,9 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
                 if (!gone) kit.Box(x + .005f, -.04f, z + .005f, x + .595f, 0f, z + .595f, panel);
                 kit.Box(x - .02f, -1.8f, z - .02f, x + .02f, -.04f, z + .02f, FrontRoomsPoolMaterials.Steel, false);
             }
+        // K2 (structures G2-c, C12; review D6): C8 is the balance tank's service floor (Red's ask 3: the two-line rail in service
+        // zones), and each hole's four runs share one post a corner (the K1 review's FR-5 / G8); NEW only, colliders unchanged
+        kit.ServiceRails = kit.SharedPosts = kit.New;
         foreach (var m in missing)
         {
             // A tube rail round each hole, guarded whatever the drop (70 section 1).
@@ -1120,6 +1266,7 @@ public sealed class FrontRoomsStructuresPoolTerrain : FrontRoomsStructuresDistri
             kit.Guard(new Vector3(m.x - .05f, 0f, m.y - .05f), new Vector3(m.x - .05f, 0f, m.y + .65f), 0f, FrontRoomsStructuresKit.GuardStyle.Rail);
             kit.Guard(new Vector3(m.x + .65f, 0f, m.y - .05f), new Vector3(m.x + .65f, 0f, m.y + .65f), 0f, FrontRoomsStructuresKit.GuardStyle.Rail);
         }
+        kit.ServiceRails = kit.SharedPosts = false;
         kit.Shell(Std, -1.8f);
         kit.StepRun(new Vector3(10.8f, 0f, 0f), Vector3.left, 2.4f, -1.8f, 0f, tile, nosing);
         kit.Coping(new Vector3(10.8f, 0f, -3f), new Vector3(10.8f, 0f, -1.2f), 0f, tile);

@@ -1,0 +1,17 @@
+structures_g2_overview.jpg 1920x4226, 14 tiles, 2 columns
+title | G2 · IMAGE 1 POOL GROUP · OVERVIEW | 621/1552 FIT
+o_sp1_t.png | TODAY · SP1 s02 catch pool | main before G2: stand-ins, prism edges | label 246/938 data 304/680 FIT
+o_sp1_n.png | NEW · SP1 s02 catch pool | P1-A, gel coat, roll-out edge, drain | label 232/938 data 288/694 FIT
+o_sp2_t.png | TODAY · SP2 s05 F0 gallery | main: the basin from +4.5 | label 247/938 data 200/679 FIT
+o_sp2_n.png | NEW · SP2 s05 F0 gallery | roll-out edge, cove, fittings, P1-A | label 233/938 data 280/693 FIT
+o_sp6_t.png | TODAY · SP6 s06 the dome | main: spiral joints, a ragged oculus | label 228/938 data 288/698 FIT
+o_sp6_n.png | NEW · SP6 s06 the dome | whole-tile rings, the oculus cut round | label 214/938 data 304/712 FIT
+o_ride.png | The ride · SP1, 16.7 s | slot (SL-B), milky tube (SL-A), SL-C, the exit | label 196/938 data 368/730 FIT
+o_phone.png | Phone · SP1 s02 | iPhone 16 Pro tier, Medium, NEW | label 149/938 data 248/777 FIT
+o_h1.png | Hero 0.35 m · flume flange | ribs, hex bolts, washers, sealant | label 243/938 data 264/683 FIT
+o_h2.png | Hero 0.35 m · tub escutcheon | the crossbar's flange on the tile | label 264/938 data 264/662 FIT
+o_gates.png | GATES | all pass but LW0 at SP1 and SP6 | label 47/938 data 248/879 FIT
+o_cost.png | COST | the harness's inventories | label 39/938 data 200/887 FIT
+o_flash.png | FLASH | SP1 7.0, SP2 2.5, SP6 4.5 | label 47/938 data 200/879 FIT
+o_open.png | OPEN | nothing new for Red but the flash | label 39/938 data 264/887 FIT
+ALL LABELS FIT

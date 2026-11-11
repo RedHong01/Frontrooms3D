@@ -1,0 +1,72 @@
+{
+ "name": "Kit_StairGuard_Flight",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "top_post",
+   "pos": [
+    -0.56,
+    1.067,
+    -0.035
+   ]
+  },
+  {
+   "name": "bottom_post",
+   "pos": [
+    -0.56,
+    -0.683,
+    2.5550000000000006
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "stair",
+  "stairwell_walkable"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  12.0,
+  0.0
+ ],
+ "lodBudget": [
+  4000,
+  1200,
+  150
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "stairwell_walkable STAIR author 2026-11-10 (research/stairwell/80 section 6)",
+ "boundsMin": [
+  -0.6100000143051147,
+  -1.75,
+  -0.08500000089406967
+ ],
+ "boundsMax": [
+  -0.5099999904632568,
+  1.0730000734329224,
+  2.6050000190734863
+ ],
+ "triangles": 4108,
+ "slots": [
+  "Stair_SteelEnamel",
+  "Stair_RailWorn",
+  "Stair_RailEnamel"
+ ],
+ "trianglesLod1": 536,
+ "trianglesLod2": 72,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.5600000023841858,
+  1.2600000090897083
+ ],
+ "footprintSize": [
+  0.10000002384185791,
+  2.690000019967556
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

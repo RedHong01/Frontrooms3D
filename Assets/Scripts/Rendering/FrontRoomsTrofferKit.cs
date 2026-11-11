@@ -40,6 +40,22 @@ public static class FrontRoomsTrofferKit
     public const float LensPeak = 1.8f;
     /// <summary>Troffer_Lens.mat's authored peak, the reference LensDrive scales from when the asset cannot be read.</summary>
     public const float SharedLensPeak = 2.2f;
+    /// <summary>
+    /// Scene 4's pool grid only (SP1's floating lay-in ceiling, FrontRoomsStructuresSlide.BuildFloatingCeiling, NEW): its L03
+    /// lenses at this share of the map's lens drive, so LensDrive x 0.4 = a band peak of 0.72 as passed against LensPeak 1.8.
+    /// Their lights, tint, bands and lamp logic (modes, Scale, dead lamps) are unchanged; no other troffer moves. Red
+    /// 2026-11-10 12:23 picked plan A for the scene-4 pool flashes (in the game visual line's chat): dim only these lenses.
+    /// Why 0.4 (zone lamps line, research/zone_lamps/20_design.md section 3.5): LW0's check (flash_check.py, area rule, worst
+    /// second, 76 deg/s) at SP1 s02 eye level read 6.0 with the lenses at 1.8 (structures_assets 60_build.md G2rd.3). The
+    /// first step, 0.2, rendered darker than predicted (the lens at 10 % of its displayed light over the hidden state, as
+    /// cream as the grid) and counted 4.0 in the G2-d films; on that film every share from 0 to 15 % counts 4.0, while 28-38 %
+    /// counts 2.5 (the count is not monotonic in the lens level; 45-50 % is 3.5 again). 0.4 puts the lens at about 30-38 %:
+    /// a lit lens, about 1.6 x the grid's displayed light. The court, s00, s01, s03 and s04 do not move with the lens. A tool
+    /// may set PoolGridLensLevel after Play starts and before SP1 builds (the structure assets key rebuilds it); ResetStatics
+    /// restores the default.
+    /// </summary>
+    public const float PoolGridLensDefault = .4f;
+    public static float PoolGridLensLevel = PoolGridLensDefault;
     public const string LensName = "Lens", HousingName = "Housing", SoilName = "Soil";
     public const string ResourceRoot = "Props/Troffer/";
     public const string Model = "Models/Troffer_L03";
@@ -75,6 +91,7 @@ public static class FrontRoomsTrofferKit
         lensMaterial = null;
         housingSource = soilSource = null;
         hang = 0f;
+        PoolGridLensLevel = PoolGridLensDefault;
         live.Clear();
         pending.Clear();
         liveCount = 0;

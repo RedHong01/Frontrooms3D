@@ -1,0 +1,72 @@
+{
+ "name": "Kit_RiserPipe_3m_Galv2",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "bottom",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "top",
+   "pos": [
+    0.0,
+    3.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "shaft",
+  "p20"
+ ],
+ "noCollider": true,
+ "pipeRadius": 0.03015,
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  700,
+  260,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.0364999994635582,
+  0.0,
+  -0.0364999994635582
+ ],
+ "boundsMax": [
+  0.0364999994635582,
+  3.0220000743865967,
+  0.0364999994635582
+ ],
+ "triangles": 300,
+ "slots": [
+  "RunB_GalvSteel"
+ ],
+ "trianglesLod1": 84,
+ "trianglesLod2": 60,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.0729999989271164,
+  0.0729999989271164
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

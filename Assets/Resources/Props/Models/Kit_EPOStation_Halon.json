@@ -1,0 +1,60 @@
+{
+ "name": "Kit_EPOStation_Halon",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "wall_decor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "lodBudget": [
+  2400,
+  800,
+  160
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.19499999284744263,
+  0.0,
+  -0.0
+ ],
+ "boundsMax": [
+  0.20000000298023224,
+  0.15000000596046448,
+  0.08399999886751175
+ ],
+ "triangles": 1810,
+ "slots": [
+  "Prop_CompAtlas",
+  "RunB_FireRed",
+  "Prop_PlasticBlack",
+  "Prop_Glass",
+  "Prop_Chrome",
+  "Prop_CompIndicator",
+  "Prop_PlasticWhite"
+ ],
+ "trianglesLod1": 730,
+ "trianglesLod2": 242,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.002500005066394806,
+  0.041999999433755875
+ ],
+ "footprintSize": [
+  0.39499999582767487,
+  0.08399999886751175
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

@@ -1,0 +1,12 @@
+structures_g2_a_lw0.jpg 1919x1375, 9 tiles, 3 columns
+title | G2-A · LW0 WITH THE POOL KITS IN | 558/1552 FIT
+w_beach.png | LW0 · beach water 120 deg/s | SP6 BeachHall: 1.0, probe 0.5, I5 1.0 | label 264/617 data 296/341 FIT
+w_beach76.png | LW0 · beach water 76 deg/s | 0.0, probe 0.0, I5 0.0: PASS | label 251/617 data 224/354 FIT
+w_sp2.png | SP2 basin · 76 deg/s | 1.5, probe 1.5, I5 1.0 | label 186/617 data 176/419 FIT
+w_sp1.png | SP1 catch pool · 120 | 2.0, probe 2.0, I5 2.0; 76: 0.5 / 0.0 | label 196/617 data 296/409 FIT
+w_s07.png | Open · SP6 B2 deck 76 | 4.0, probe 3.0, I5 3.5: over 3 | label 203/617 data 240/402 FIT
+w_dip.png | Home dip · SP2 F0 | one step out, quartz holds: 0.0 | label 158/617 data 248/447 FIT
+w_counts.png | Counts | flashes, worst second, 30 x 18 blocks | label 59/617 data 296/546 FIT
+w_s07panel.png | B2 deck | what moved the count, and what did not | label 68/617 data 304/537 FIT
+w_cost.png | COST | the test | label 39/617 data 64/566 FIT
+ALL LABELS FIT

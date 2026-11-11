@@ -1,0 +1,43 @@
+structures_g3_computer_room.jpg 1920x5317, 40 tiles, 4 columns
+title | G3-A1 · SP3 COMPUTER ROOM KITS | 563/1552 FIT
+today.png | TODAY · computer room | s06: 3 grey stand-ins | label 202/457 data 168/243 FIT
+h_window.png | HERO 0.35 M · reel window | tape drive, LOD0, vFOV 76 | label 239/457 data 200/206 FIT
+h_reel.png | HERO 0.35 M · file reel | pack, label, hub latch | label 208/457 data 176/237 FIT
+h_cpu.png | HERO 0.35 M · CPU panel | key switch, lit keys, VFD | label 215/457 data 200/230 FIT
+SystemCabinet_CPU.png | CPU cabinet · 3 M | 1.83 m · 3,086 | label 154/457 data 112/291 FIT
+SystemCabinet_Disk.png | Disk cabinet · 3 M | 1.83 m · 4,052 | label 159/457 data 112/286 FIT
+SystemCabinet_Comms.png | Comms cabinet · 3 M | 1.52 m · 2,680 | label 178/457 data 112/267 FIT
+SystemCabinet_PDU.png | PDU cabinet · 3 M | 1.52 m · 4,744 | label 154/457 data 112/291 FIT
+SystemCabinet_DiskPack.png | Disk pack drive · 3 M | 0.95 m · 3,748 | label 187/457 data 112/258 FIT
+TapeDrive_Reel_Static.png | 9-track tape unit · 3 M | 1.69 m · 8,918 | label 208/457 data 112/237 FIT
+TapeDrive_Cartridge.png | Cartridge unit · 3 M | 1.69 m · 4,570 | label 180/457 data 112/265 FIT
+LinePrinter.png | Line printer · 3 M | 1.13 m · 3,466 | label 160/457 data 112/285 FIT
+LinePrinter_rear.png | Line printer rear · 3 M | stacker window | label 206/457 data 112/239 FIT
+CRACUnit.png | CRAC unit · 3 M | 1.83 m · 4,580 | label 136/457 data 112/309 FIT
+h_crac.png | HERO 0.35 M · CRAC panel | LCD, keys, lamps | label 225/457 data 128/220 FIT
+DataTerminal.png | Data terminal · 3 M | 1,346 · screen dark | label 173/457 data 152/272 FIT
+DotMatrixPrinter_OnStand.png | Dot matrix stand · 3 M | 2,936 | label 200/457 data 40/245 FIT
+DotMatrixPrinter_Desk.png | Dot matrix desk · 3 M | 1,324 | label 191/457 data 40/254 FIT
+EPOStation.png | EPO station · 3 M | at 1.2 m · 1,116 | label 153/457 data 128/292 FIT
+EPOStation_Halon.png | EPO + halon · 3 M | 1,810 | label 155/457 data 40/290 FIT
+TapeRack.png | Tape rack · 3 M | 1.98 m · 5,194 | label 139/457 data 112/306 FIT
+TapeRack_Gaps.png | Tape rack gaps · 3 M | abandoned · 4,154 | label 184/457 data 136/261 FIT
+TapeCart.png | Tape cart · 3 M | 2,700 | label 138/457 data 40/307 FIT
+FanfoldBox.png | Fanfold carton · 3 M | 648 | label 187/457 data 24/258 FIT
+FanfoldBox_Stack.png | Printout stack · 3 M | 114 | label 184/457 data 24/261 FIT
+HalonCylinder.png | Halon cylinder · 3 M | 1.55 m · 1,512 | label 183/457 data 112/262 FIT
+HalonCylinder_Pair.png | Halon pair · 3 M | 3,116 | label 145/457 data 40/300 FIT
+ChartRecorder.png | Chart recorder · 3 M | at 1.5 m · 1,390 | label 192/457 data 128/253 FIT
+h_chart.png | HERO 0.35 M · chart | 10 in chart, pens | label 181/457 data 136/264 FIT
+FloorTileLifted.png | Lifted panel · 3 M | lifter on · 688 | label 160/457 data 120/285 FIT
+FloorTileLifted_Flat.png | Panel set down · 3 M | 688 | label 187/457 data 24/258 FIT
+AccessFloor_CellOpen_3m.png | Floor cell open · 3 M | the void · 4,132 | label 193/457 data 128/252 FIT
+AccessFloor_CellPerf_3m.png | Floor cell perf · 3 M | air row · 2,712 | label 193/457 data 120/252 FIT
+row.png | VARIANTS · a row | _Charcoal CPU, PDU _Off | label 148/457 data 184/297 FIT
+maps.png | MAPS · new surfaces | 9.2 MiB desktop, 2.3 phone | label 183/457 data 208/262 FIT
+cost_a1.png | COST · large kits | counted at LOD0 | label 152/457 data 120/293 FIT
+cost_a2.png | COST · small kits | counted at LOD0 | label 153/457 data 120/292 FIT
+cost_b.png | COST · the room | against 62 4.5 | label 141/457 data 112/304 FIT
+sources.png | SOURCES · real sizes | S1-S8, LS56, LS83-86 | label 182/457 data 160/263 FIT
+placement.png | PLACEMENT · for K3 | 62 2.3 programme | label 171/457 data 128/274 FIT
+ALL LABELS FIT

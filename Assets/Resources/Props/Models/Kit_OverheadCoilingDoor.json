@@ -1,0 +1,92 @@
+{
+ "name": "Kit_OverheadCoilingDoor",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    2.7335000000000003,
+    0.07
+   ],
+   "size": [
+    3.658,
+    3.067,
+    0.06
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "bar_bottom",
+   "pos": [
+    0.0,
+    1.2,
+    0.07
+   ]
+  },
+  {
+   "name": "hoist_wheel",
+   "pos": [
+    2.118,
+    4.3,
+    0.24
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19",
+  "wall_unit"
+ ],
+ "state": "halfUp",
+ "opening": [
+  3.658,
+  4.267
+ ],
+ "lodDistances": [
+  14.0,
+  40.0,
+  0.0
+ ],
+ "lodBudget": [
+  16000,
+  4500,
+  600
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -2.100399971008301,
+  0.0,
+  -0.0002403059770585969
+ ],
+ "boundsMax": [
+  2.140000104904175,
+  4.955783843994141,
+  0.5799999833106995
+ ],
+ "triangles": 19338,
+ "slots": [
+  "Prop_DoorSlatGalv",
+  "Painted_Metal",
+  "Prop_Rubber",
+  "Prop_ChainOxide"
+ ],
+ "trianglesLod1": 3054,
+ "trianglesLod2": 762,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.07
+ ],
+ "footprintSize": [
+  3.658,
+  0.06
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 5.0
+}

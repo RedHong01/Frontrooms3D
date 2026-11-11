@@ -1,0 +1,64 @@
+{
+ "name": "Kit_StorefrontJamb",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "top",
+   "pos": [
+    0.0,
+    1.7211,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p17",
+  "office",
+  "storefront"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  900,
+  200,
+  30
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-b 2026-11-10 (30_plan.md P17 structures_office_props: storefront)",
+ "boundsMin": [
+  -0.022224999964237213,
+  0.0,
+  -0.061650000512599945
+ ],
+ "boundsMax": [
+  0.02362775057554245,
+  1.7210999727249146,
+  0.061650000512599945
+ ],
+ "triangles": 156,
+ "slots": [
+  "Trans_AluminiumSatin",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 68,
+ "trianglesLod2": 48,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.0007013753056526184,
+  -0.0
+ ],
+ "footprintSize": [
+  0.04585275053977966,
+  0.12330000102519989
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.771
+}

@@ -1,0 +1,69 @@
+{
+ "name": "Kit_OverheadProjector",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "beam",
+   "pos": [
+    0.0,
+    0.64,
+    0.1
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "desk_top"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  35.0
+ ],
+ "lodBudget": [
+  2600,
+  1000,
+  150
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.1818000078201294,
+  0.0,
+  -0.5131150484085083
+ ],
+ "boundsMax": [
+  0.1818000078201294,
+  0.6992444396018982,
+  0.2214999943971634
+ ],
+ "triangles": 1448,
+ "slots": [
+  "Prop_PlasticBeige",
+  "Prop_Rubber",
+  "Prop_PlasticGrey",
+  "Prop_ProjectionLit_Off",
+  "Prop_Glass",
+  "Prop_SteelBlack",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 832,
+ "trianglesLod2": 162,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.14580752700567245
+ ],
+ "footprintSize": [
+  0.3636000156402588,
+  0.7346150428056717
+ ],
+ "placement": "DeskTop",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

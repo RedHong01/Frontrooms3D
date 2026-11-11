@@ -63,9 +63,13 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
             };
             Ladder(b);
             if (kit.New) GuardRow(b, FrontRoomsStructuresKit.GuardStyle.TileWall, FrontRoomsStructuresKit.GuardStyle.Glass, FrontRoomsStructuresKit.GuardStyle.Rail, FrontRoomsStructuresKit.GuardStyle.TileWall);
+            // NEW (G2-d, C13; ask 1: KIT all three side by side; 30_plan K-02): three plinth pockets of row 2 hold one exhibit basin
+            // each, so the plate builds no floor or lid there; EdgeExhibits lays them as the plate would (the same collider)
+            if (kit.New) foreach (var i in ExhibitColumns) b.Fill(i, 2, i, 2, FrontRoomsStructuresKit.Plate.Kind.Held, 0f, Tall, 1);
             b.Build(kit);
             // NEW (K-02; G1 review FIX 9): the deck's cove base and one movement joint in sealant
             if (kit.New) DeckCoveAndJoint();
+            if (kit.New) EdgeExhibits();
             Below(Hall2Z, FrontRoomsStructuresKit.PoolStorey, b.SectionDepth, tile, tile, tile);
             // Pool hall light (70 section 2): metal-halide wall boxes throwing up on both long walls every 6 m, about 3.4 m up
             // (70 section 2), a down-fill grid; view lamps, so the hall's far half is lit from the arrival (review KIT-F6).
@@ -132,8 +136,36 @@ public sealed class FrontRoomsStructuresKitRow : FrontRoomsStructuresDistrict
             path.Add(new Vector3(X, Up, z0 + R + Flat + Lift + .003f));
         }
         else path.Add(new Vector3(X, Up, z0));
-        path.Add(new Vector3(X, Up, z1));
+        // G2-d (C13): the joint's line x 19.5 crosses plinth pocket 6, which now holds the rim-flow exhibit: it ends at that
+        // exhibit's edge line (under the edge's deck leg) instead of running on over its water
+        path.Add(new Vector3(X, Up, X > ExhibitColumns[2] * 3f && X < ExhibitColumns[2] * 3f + 3f ? Hall2Z + 7.5f : z1));
         kit.SealantJoint(Dense(path, .6f), new Vector3(0f, 1f, 1f));
+    }
+
+    // NEW (G2-d, C13; ask 1 "KIT all three side by side"; 30_plan K-02 "one bay of each edge system (roll-out, rim-flow,
+    // recessed) and one of each fitting"): in the tile hall's plinth pockets (columns 2, 4, 6 of row 2, between plinths 1-2, 2-3,
+    // 3-4) an exhibit basin a bay long for each system at its own water (roll-out 50 mm under the deck, rim-flow at the deck,
+    // recessed 0.30 under), its edge on the open south side, the pool cove, a main drain and a return inlet; a deck drain in front
+    // of the roll-out one. Each pocket's floor collider and lid exactly as the plate lays a floor cell (Plate.Build), the deck in
+    // front of the basin render only: the walk test sees today's floor (over the exhibit's water too: the known limit).
+    static readonly int[] ExhibitColumns = { 2, 4, 6 };
+
+    void EdgeExhibits()
+    {
+        var tile = FrontRoomsPoolMaterials.Tile;
+        var kinds = new[] { FrontRoomsStructureCurveTile.Edge.RollOut, FrontRoomsStructureCurveTile.Edge.RimFlow, FrontRoomsStructureCurveTile.Edge.Recessed };
+        var waters = new[] { -.05f, -.03f, -.30f };
+        const float Face = .08f, EdgeZ = Hall2Z + 7.5f;
+        for (var k = 0; k < ExhibitColumns.Length; k++)
+        {
+            float x0 = ExhibitColumns[k] * 3f, x1 = x0 + 3f, z0 = Hall2Z + 6f, z1 = Hall2Z + 9f;
+            kit.Shell(Tall, 0f);
+            kit.Slab(x0, z0, x1, z1, 0f, null, .2f);
+            kit.Lid(x0, z0, x1, z1, Tall, tile);
+            kit.Slab(x0, z0, x1, EdgeZ, 0f, tile, .2f, false);
+            FrontRoomsStructurePoolFinish.EdgeExhibit(kit, x0, x1, EdgeZ, z1 - Face, -.95f, waters[k], kinds[k]);
+        }
+        FrontRoomsStructurePoolFinish.FloorKit(kit, "Kit_FloorDrain", new Vector3(ExhibitColumns[0] * 3f + 1.5f, 0f, Hall2Z + 6.6f));
     }
 
     // A path with a point at least every 'step' metres along each segment (the corners kept), for sweeps seen up close.

@@ -1,0 +1,68 @@
+{
+ "name": "Kit_DumpsterFrontLoad",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.89,
+    0.0
+   ],
+   "size": [
+    2.15,
+    1.78,
+    1.7
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  3500,
+  1200,
+  200
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -1.0750000476837158,
+  0.0,
+  -0.887999951839447
+ ],
+ "boundsMax": [
+  1.0750000476837158,
+  1.7916947603225708,
+  0.8600000143051147
+ ],
+ "triangles": 3364,
+ "slots": [
+  "Prop_DumpsterGreen",
+  "Prop_SteelBlack",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 1500,
+ "trianglesLod2": 88,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  2.15,
+  1.7
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.85
+}

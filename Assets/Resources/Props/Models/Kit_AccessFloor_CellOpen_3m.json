@@ -1,0 +1,58 @@
+{
+ "name": "Kit_AccessFloor_CellOpen_3m",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "access_floor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  8.0,
+  22.0,
+  90.0
+ ],
+ "lodBudget": [
+  4600,
+  1700,
+  400
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -1.5007328987121582,
+  -0.3100000023841858,
+  -1.5
+ ],
+ "boundsMax": [
+  1.5,
+  0.0005999999702908099,
+  1.5
+ ],
+ "triangles": 4132,
+ "slots": [
+  "Prop_AccessFloor",
+  "Prop_PlasticBlack",
+  "Stair_Slab",
+  "RunB_GalvSteel",
+  "Prop_CompAtlas",
+  "Prop_FlexConduit"
+ ],
+ "trianglesLod1": 1660,
+ "trianglesLod2": 396,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.00036644935607910156,
+  -0.0
+ ],
+ "footprintSize": [
+  3.000732898712158,
+  3.0
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

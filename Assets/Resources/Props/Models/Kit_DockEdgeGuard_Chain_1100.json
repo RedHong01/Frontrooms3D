@@ -1,0 +1,73 @@
+{
+ "name": "Kit_DockEdgeGuard_Chain_1100",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "end_left",
+   "pos": [
+    -0.55,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "end_right",
+   "pos": [
+    0.55,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "noCollider": true,
+ "span": 1.1,
+ "sag": 0.12,
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  2600,
+  700,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.559499979019165,
+  -0.13023816049098969,
+  -0.0103919031098485
+ ],
+ "boundsMax": [
+  0.559499979019165,
+  0.017482968047261238,
+  0.0103919031098485
+ ],
+ "triangles": 2400,
+ "slots": [
+  "Prop_ChainOxide"
+ ],
+ "trianglesLod1": 1112,
+ "trianglesLod2": 296,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  1.11899995803833,
+  0.020783806219697
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

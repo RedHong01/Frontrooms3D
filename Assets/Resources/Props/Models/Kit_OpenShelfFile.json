@@ -1,0 +1,81 @@
+{
+ "name": "Kit_OpenShelfFile",
+ "supports": [
+  {
+   "name": "top",
+   "centre": [
+    0.0,
+    2.134,
+    0.0
+   ],
+   "size": [
+    0.914,
+    0.305
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    1.067,
+    0.0
+   ],
+   "size": [
+    0.914,
+    2.134,
+    0.305
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "shelving",
+  "hero"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  4500,
+  1800,
+  250
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.4569999873638153,
+  0.0,
+  -0.1525000035762787
+ ],
+ "boundsMax": [
+  0.4569999873638153,
+  2.134000062942505,
+  0.1525000035762787
+ ],
+ "triangles": 3050,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_PaperAtlas"
+ ],
+ "trianglesLod1": 1000,
+ "trianglesLod2": 242,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.914,
+  0.305
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.184
+}

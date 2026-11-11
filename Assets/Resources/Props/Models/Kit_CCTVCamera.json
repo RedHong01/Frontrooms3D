@@ -1,0 +1,69 @@
+{
+ "name": "Kit_CCTVCamera",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "lens",
+   "pos": [
+    0.16058334708213806,
+    0.025857970118522644,
+    0.4973367750644684
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19",
+  "wall_unit"
+ ],
+ "noCollider": true,
+ "aimYawDeg": 35.0,
+ "aimPitchDeg": -25.0,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  1600,
+  500,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.11856526881456375,
+  -0.2199999988079071,
+  -0.0
+ ],
+ "boundsMax": [
+  0.2532195448875427,
+  0.2674001455307007,
+  0.5908758044242859
+ ],
+ "triangles": 1416,
+ "slots": [
+  "Prop_PlasticBeige",
+  "Prop_SteelBlack",
+  "Prop_Glass",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 608,
+ "trianglesLod2": 88,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.06732713803648949,
+  0.29543790221214294
+ ],
+ "footprintSize": [
+  0.3717848137021065,
+  0.5908758044242859
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

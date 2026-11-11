@@ -1,0 +1,69 @@
+{
+ "name": "Kit_FileCart_Empty",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.455,
+    0.0
+   ],
+   "size": [
+    0.8700000000000001,
+    0.91,
+    0.41
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "cart"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  45.0
+ ],
+ "lodBudget": [
+  2200,
+  900,
+  140
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.43849998712539673,
+  0.0,
+  -0.20667999982833862
+ ],
+ "boundsMax": [
+  0.4050000011920929,
+  0.925000011920929,
+  0.20499999821186066
+ ],
+ "triangles": 2368,
+ "slots": [
+  "Prop_Rubber",
+  "Prop_Chrome",
+  "Prop_PlasticBlack",
+  "Prop_SteelPutty"
+ ],
+ "trianglesLod1": 1312,
+ "trianglesLod2": 356,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.8700000000000001,
+  0.41
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.975
+}

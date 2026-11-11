@@ -1,0 +1,55 @@
+{
+ "name": "Kit_StairGuard_Landing_420",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "stair",
+  "stairwell_walkable"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  12.0,
+  0.0
+ ],
+ "lodBudget": [
+  1600,
+  500,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "stairwell_walkable STAIR author 2026-11-10 (research/stairwell/80 section 6)",
+ "boundsMin": [
+  -0.19095000624656677,
+  0.05000000447034836,
+  -0.020982377231121063
+ ],
+ "boundsMax": [
+  0.19095000624656677,
+  1.0879427194595337,
+  0.020982377231121063
+ ],
+ "triangles": 588,
+ "slots": [
+  "Stair_RailWorn",
+  "Stair_RailEnamel",
+  "Stair_SteelEnamel"
+ ],
+ "trianglesLod1": 84,
+ "trianglesLod2": 24,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.38190001249313354,
+  0.041964754462242126
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

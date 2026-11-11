@@ -1,0 +1,18 @@
+stair_walk_gate.jpg 1919x2167, 15 tiles, 3 columns
+title | STAIR WALK GATE | 268/1576 FIT
+gr_film_seal_54.png | Film · seal | frame 54, t 0.90 s | label 97/617 data 144/508 FIT
+gr_film_change_133.png | Film · before change | frame 133, t 2.22 s | label 182/617 data 152/423 FIT
+gr_film_change_134.png | Film · after change | frame 134, t 2.23 s | label 171/617 data 152/434 FIT
+gr_film_OpenFarDoor_221.png | Film · far door opens | frame 221, t 3.68 s | label 191/617 data 152/414 FIT
+gr_film_OpenFarDoor_237.png | Film · through the far door | frame 237, t 3.95 s | label 246/617 data 152/359 FIT
+gr_newoff_landing.png | NEW off · landing | diff x32: black = 0 px | label 155/617 data 176/450 FIT
+gr_old_A_18.png | Window A · before | far wall wrap, t 0.30 s | label 161/617 data 184/444 FIT
+gr_new_A_18.png | Window A · landed | +x wall wrap, t 0.30 s | label 160/617 data 176/445 FIT
+gr_newoff_far_door.png | NEW off · far door | diff x32: black = 0 px | label 168/617 data 176/437 FIT
+gr_old_B_105.png | Window B · before | far wall wrap, t 1.75 s | label 162/617 data 184/443 FIT
+gr_new_B_105.png | Window B · landed | +x wall wrap, t 1.75 s | label 161/617 data 176/444 FIT
+gr_turn_102.png | Turn 76 deg/s · landed | worst second 2.5 of 3 | label 206/617 data 168/399 FIT
+gr_walk.png | WALK TEST | harness PASS / FAIL lines | label 85/617 data 200/520 FIT
+gr_flash.png | FLASH CHECK | limit 3 in any second | label 102/617 data 168/503 FIT
+gr_next.png | NEXT | open items, combined test | label 37/617 data 200/568 FIT
+ALL LABELS FIT

@@ -1,0 +1,57 @@
+{
+ "name": "Kit_WheelChock_Hung",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19",
+  "wall_unit"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  9.0,
+  30.0
+ ],
+ "lodBudget": [
+  1400,
+  400,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.10000000149011612,
+  -0.4399999976158142,
+  -0.0060456981882452965
+ ],
+ "boundsMax": [
+  0.10000000149011612,
+  0.05000000074505806,
+  0.20000000298023224
+ ],
+ "triangles": 1050,
+ "slots": [
+  "Prop_SteelBlack",
+  "Prop_Rubber",
+  "Prop_ChainOxide"
+ ],
+ "trianglesLod1": 340,
+ "trianglesLod2": 64,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.09697715239599347
+ ],
+ "footprintSize": [
+  0.20000000298023224,
+  0.20604570116847754
+ ],
+ "placement": "Wall",
+ "service": 0.5,
+ "minCeiling": 0.0
+}

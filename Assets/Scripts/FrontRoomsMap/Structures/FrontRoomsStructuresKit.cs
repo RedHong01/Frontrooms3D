@@ -93,7 +93,7 @@ public sealed class FrontRoomsStructuresKit
         var go = new GameObject(name);
         go.transform.SetParent(Root, false);
         partRoot = go.transform;
-        Mesh = new FrontRoomsStructuresMesh(partRoot) { Ceiling = 2.9f, Bevels = isNew };
+        Mesh = new FrontRoomsStructuresMesh(partRoot) { Ceiling = 2.9f, Bevels = isNew, Zones = halls };
         partName = name;
         return partRoot;
     }
@@ -103,19 +103,39 @@ public sealed class FrontRoomsStructuresKit
     {
         Finish();
         partRoot = null;
-        Mesh = new FrontRoomsStructuresMesh(Root) { Bevels = isNew };
+        Mesh = new FrontRoomsStructuresMesh(Root) { Bevels = isNew, Zones = halls };
         partName = District.Code;
     }
 
     /// <summary>Make the renderers and the collider of what is pending (call once at the end of a district's build).</summary>
     public void Finish()
     {
+        // K2 (structures G2-c): the pool edges and tile caps of this part, chained corner to corner, before its renderers are made
+        if (isNew) FlushRuns();
         var ceiling = Mesh.Ceiling;
         var grime = Mesh.FloorGrimeOff;
         var shadows = Mesh.CastShadows;
         Mesh.Finish(partName, District.Meshes);
-        Mesh = new FrontRoomsStructuresMesh(partRoot != null ? partRoot : Root) { Ceiling = ceiling, FloorGrimeOff = grime, CastShadows = shadows, Bevels = isNew };
+        Mesh = new FrontRoomsStructuresMesh(partRoot != null ? partRoot : Root) { Ceiling = ceiling, FloorGrimeOff = grime, CastShadows = shadows, Bevels = isNew, Zones = halls };
     }
+
+    /// <summary>
+    /// K2 (structures G2-a; the K1 review's FR-1), NEW only: the district's halls (district-local boxes): from here on the shell's
+    /// renderers are split by hall (FrontRoomsStructuresMesh.Zones; the bevels still solve over the whole district), so each
+    /// hall's metals, glass and trims take its own reflection probe. TODAY ignores it (one group per material, bit for bit).
+    /// </summary>
+    public void Halls(params Bounds[] boxes)
+    {
+        if (!isNew || boxes == null || boxes.Length == 0) return;
+        halls = new List<Bounds>(boxes);
+        Mesh.Zones = halls;
+    }
+
+    List<Bounds> halls;
+
+    /// <summary>K2: a hall's box for Halls, from its footprint (district metres) and the heights its pieces span.</summary>
+    public static Bounds Hall(float x0, float z0, float x1, float z1, float y0, float y1) =>
+        new Bounds(new Vector3((x0 + x1) * .5f, (y0 + y1) * .5f, (z0 + z1) * .5f), new Vector3(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0), Mathf.Abs(z1 - z0)));
 
     /// <summary>Run one piece of a build; a failure logs once and the rest of the district goes on.</summary>
     public bool Safe(string what, Action build)
@@ -354,6 +374,15 @@ public sealed class FrontRoomsStructuresKit
     void RoundHead(Vector3 a, Vector3 t, float thick, float from, float to, float spring, float top, Material m, bool solid)
     {
         if (spring >= top) return;
+        // K2 (structures G2-c, C2), NEW only: the intrados in courses by its radius with the bullnose on both arrises, the spandrels
+        // stopping at the round (FrontRoomsStructureCurveTile.Arch); the colliders below are today's (m = null)
+        if (isNew && m != null && CurveTile(m, out var own, out var ownPitch))
+        {
+            var o = new FrontRoomsStructureCurveTile.Out();
+            FrontRoomsStructureCurveTile.Arch(o, a, t, thick, from, to, spring, top, Vector3.Dot(W(new Vector3(a.x, 0f, a.z)), t));
+            AppendCurve(o, m);
+            m = null;
+        }
         var r = (to - from) * .5f;
         var mid = from + r;
         var s = new Vector3(t.z, 0f, -t.x);
@@ -432,9 +461,26 @@ public sealed class FrontRoomsStructuresKit
     /// A curved wall (annular prism) round c from angle a0 to a1 (degrees from +x toward +z), radii rIn..rOut, y0..y1, with
     /// holes. UVs scaled so a full circle holds whole 0.15 m tiles on each face. Solid adds a box per segment and interval.
     /// </summary>
-    public void Ring(Vector3 c, float rIn, float rOut, float y0, float y1, float a0, float a1, Material m, bool solid = true, IList<RingHole> holes = null, float segDeg = 7.5f)
+    public void Ring(Vector3 c, float rIn, float rOut, float y0, float y1, float a0, float a1, Material m, bool solid = true, IList<RingHole> holes = null, float segDeg = 7.5f,
+        bool capRound = false)
     {
         if (a1 < a0) { var sw = a0; a0 = a1; a1 = sw; }
+        // K2 (structures G2-c, C1; Red's ask 2 A), NEW only: tiled rings as a setter lays them (FrontRoomsStructureCurveTile.Ring:
+        // one flat facet a tile column in the tile its radius takes, holes on the true circle with bullnose reveals, solid caps
+        // with their normal, capRound: a free top's bullnose); the colliders below are today's, call for call (m = null)
+        if (isNew && m != null && CurveTile(m, out var own, out var ownPitch))
+        {
+            var o = new FrontRoomsStructureCurveTile.Out();
+            List<FrontRoomsStructureCurveTile.Hole> hs = null;
+            if (holes != null)
+            {
+                hs = new List<FrontRoomsStructureCurveTile.Hole>(holes.Count);
+                foreach (var h in holes) hs.Add(new FrontRoomsStructureCurveTile.Hole(h.a0, h.a1, h.y0, h.y1, h.round));
+            }
+            FrontRoomsStructureCurveTile.Ring(o, c, rIn, rOut, y0, y1, a0, a1, hs, capRound, true, own, ownPitch);
+            AppendCurve(o, m);
+            m = null;
+        }
         var n = Mathf.Max(1, Mathf.CeilToInt((a1 - a0) / segDeg));
         var kOut = TileFit(rOut);
         var kIn = TileFit(rIn);
@@ -925,13 +971,20 @@ public sealed class FrontRoomsStructuresKit
         // its top (so the feet stand at most half a riser over a tread and the headroom under a landing a turn up is kept),
         // flat across a landing, to the top floor half a tread past the last riser.
         var ramp = new List<Vector2> { new Vector2(a - stepDeg * .5f, baseY) };
+        // K2 (structures G2-c, C3; review D9), NEW only, the pool's tiled spirals: each tread a block on a helicoid waist (a smooth
+        // soffit under the whole stair, not a sawtooth of floating boxes), the pool's nosing L on each step, the ribbons faceted by
+        // radius under a Cap course, and between walls an inside helical handrail on the newel; the colliders are today's
+        var newTreads = isNew && tread != null && CurveTile(tread, out var tOwn, out var tPitch);
+        var poolNosing = newTreads && nosing != null && NosingKindOf(nosing, tread) == NosingKind.Pool;
         for (var k = 0; k < n - 1; k++)
         {
             var span = k == landingAfter ? landingDeg * sign : stepDeg;
             var top = baseY + (k + 1) * riser;
             var b = a + span;
-            Sector(c, rIn, rOut, Mathf.Min(a, b), Mathf.Max(a, b), top, thick, tread, false, 6f);
-            if (nosing != null)
+            if (newTreads) SpiralTread(c, rIn, rOut, a, b, top, riser, tread, k == 0 ? baseY : top - riser);
+            else Sector(c, rIn, rOut, Mathf.Min(a, b), Mathf.Max(a, b), top, thick, tread, false, 6f);
+            if (poolNosing) SpiralNosing(c, rIn, rOut, a, top, sign);
+            else if (nosing != null)
             {
                 // The nosing on the leading (lower) edge: a radial strip 50 mm into the tread.
                 var w = NosingTread / Mathf.Max(.3f, (rIn + rOut) * .5f) * Mathf.Rad2Deg * sign;
@@ -951,10 +1004,132 @@ public sealed class FrontRoomsStructuresKit
         HelixRamp(c, rIn + .01f, rOut - .01f, ramp);
         if (ribbon != null)
         {
-            if (outerRibbon > 0f) Ribbon(c, rOut, rOut + outerRibbon, samples, ribbonHeight, ribbon);
-            if (innerRibbon > 0f && rIn - innerRibbon > .01f) Ribbon(c, rIn - innerRibbon, rIn, samples, ribbonHeight, ribbon);
+            if (isNew && CurveTile(ribbon, out var rOwn, out var rPitch))
+            {
+                if (outerRibbon > 0f) RibbonNew(c, rOut, rOut + outerRibbon, samples, ribbonHeight, ribbon, rOwn, rPitch);
+                if (innerRibbon > 0f && rIn - innerRibbon > .01f) RibbonNew(c, rIn - innerRibbon, rIn, samples, ribbonHeight, ribbon, rOwn, rPitch);
+            }
+            else
+            {
+                if (outerRibbon > 0f) Ribbon(c, rOut, rOut + outerRibbon, samples, ribbonHeight, ribbon);
+                if (innerRibbon > 0f && rIn - innerRibbon > .01f) Ribbon(c, rIn - innerRibbon, rIn, samples, ribbonHeight, ribbon);
+            }
         }
+        if (newTreads && innerRibbon <= 0f && outerRibbon <= 0f && rIn > .05f) SpiralRail(c, rIn, samples);
         return a;
+    }
+
+    // K2 (structures G2-c, C3): one tread of a pool spiral in NEW: its top (a..b at 'top'), its riser at a (facing the step below,
+    // from riserFoot), and under it the helicoid waist: the soffit runs from 'top - riser - waist' at a to 'top - waist' at b, so the
+    // treads' soffits make one smooth helicoid. Render only.
+    void SpiralTread(Vector3 c, float rIn, float rOut, float a, float b, float top, float riser, Material m, float riserFoot)
+    {
+        const float Waist = .12f;
+        var up = Vector3.up;
+        var steps = Mathf.Max(1, Mathf.CeilToInt(Mathf.Abs(b - a) / 6f));
+        var acc = 0f;
+        var rm = (rIn + rOut) * .5f;
+        for (var q = 0; q < steps; q++)
+        {
+            var ta = Mathf.Lerp(a, b, q / (float)steps);
+            var tb = Mathf.Lerp(a, b, (q + 1) / (float)steps);
+            var ia = c + Polar(Vector3.zero, rIn, ta);
+            var ib = c + Polar(Vector3.zero, rIn, tb);
+            var oa = c + Polar(Vector3.zero, rOut, ta);
+            var ob = c + Polar(Vector3.zero, rOut, tb);
+            ia.y = ib.y = oa.y = ob.y = 0f;
+            QuadPlanar(ia + up * top, ib + up * top, ob + up * top, oa + up * top, up, m);
+            float sa = top - riser - Waist + riser * q / steps, sb = top - riser - Waist + riser * (q + 1) / steps;
+            var seg = Mathf.Abs(tb - ta) * Mathf.Deg2Rad * rm;
+            Quad(ia + up * sa, ib + up * sb, ob + up * sb, oa + up * sa, Vector3.down,
+                new Vector2(acc, 0f), new Vector2(acc + seg, 0f), new Vector2(acc + seg, rOut - rIn), new Vector2(acc, rOut - rIn), m);
+            acc += seg;
+        }
+        var pIn = c + Polar(Vector3.zero, rIn, a);
+        var pOut = c + Polar(Vector3.zero, rOut, a);
+        pIn.y = pOut.y = 0f;
+        var tan = new Vector3(-Mathf.Sin(a * Mathf.Deg2Rad), 0f, Mathf.Cos(a * Mathf.Deg2Rad));
+        RadialFace(pIn, pOut, Mathf.Min(riserFoot, top - riser - Waist), top, -tan * (b >= a ? 1f : -1f), m);
+    }
+
+    // K2 (structures G2-c, C3): the pool's nosing L (Red's dark nosing, 50 mm on the tread, 25 mm down the riser) along a spiral
+    // step's leading edge, its nose out over the step below.
+    void SpiralNosing(Vector3 c, float rIn, float rOut, float a, float top, float sign)
+    {
+        var p0 = c + Polar(Vector3.zero, rIn + .001f, a);
+        var p1 = c + Polar(Vector3.zero, rOut - .001f, a);
+        p0.y = p1.y = top;
+        if (sign < 0f) { var sw = p0; p0 = p1; p1 = sw; }
+        var m = FrontRoomsStructuresAssets.FarAA(FrontRoomsPoolTile.Get("Nosing"), NosingFarAA);
+        if (m != null) Lay(p0, p1, FrontRoomsStructureProfiles.PoolNosing(), m, Vector2.zero, false);
+    }
+
+    // K2 (structures G2-c, C3, C8): a ribbon in NEW: its faces faceted by radius (FrontRoomsStructureCurveTile.HelixBand), a Cap
+    // course along its helical top (the top on the guard's height), today's colliders (Ribbon with no material).
+    void RibbonNew(Vector3 c, float r0, float r1, List<Vector2> samples, float guard, Material m, string own, float ownPitch)
+    {
+        var o = new FrontRoomsStructureCurveTile.Out();
+        FrontRoomsStructureCurveTile.HelixBand(o, new Vector3(c.x, 0f, c.z), r0, r1, samples, .3f, guard - TileCapThick, own, ownPitch);
+        AppendCurve(o, m);
+        var sorted = new List<Vector2>(samples);
+        sorted.Sort((p, q) => p.x.CompareTo(q.x));
+        float lo = sorted[0].x, hi = sorted[sorted.Count - 1].x;
+        if (hi - lo > 1e-3f)
+        {
+            var steps = Mathf.Max(2, Mathf.CeilToInt((hi - lo) / 3f));
+            var rm = (r0 + r1) * .5f;
+            var path = new List<Vector3>();
+            for (var i = 0; i <= steps; i++)
+            {
+                var th = Mathf.Lerp(lo, hi, i / (float)steps);
+                var p = c + Polar(Vector3.zero, rm, th);
+                p.y = FrontRoomsStructureCurveTile.HelixH(sorted, th) + guard - TileCapThick;
+                path.Add(p);
+            }
+            var opts = FrontRoomsStructureProfiles.SweepOptions.Default;
+            opts.plumb = true;
+            opts.capStart = opts.capEnd = true;
+            opts.u0 = FrontRoomsStructureProfiles.WorldU(W(path[0]), path[1] - path[0]);
+            SweepTo(m, path, FrontRoomsStructureCurveTile.CapSection(r1 - r0, TileCapThick), opts);
+        }
+        Ribbon(c, r0, r1, samples, guard, null);
+    }
+
+    // K2 (structures G2-c, C3; 30_plan S1-03): a spiral between walls (the tower) takes an inside helical handrail on the newel:
+    // the 42.2 mm stainless tube 1 1/2 in off the newel, 0.90 m over the nosing line, on G1-b's cast wall brackets about every 1.5 m.
+    void SpiralRail(Vector3 c, float rNewel, List<Vector2> samples)
+    {
+        const float Off = .0592f, H = .9f;
+        var sorted = new List<Vector2>(samples);
+        sorted.Sort((p, q) => p.x.CompareTo(q.x));
+        float lo = sorted[0].x, hi = sorted[sorted.Count - 1].x;
+        if (hi - lo < 10f) return;
+        var rr = rNewel + Off;
+        // 12 degrees a segment on r 0.31 (a sagitta of 1.7 mm, the 42 mm tube's 24 sides): about 5.8 k triangles for four turns
+        var steps = Mathf.Max(2, Mathf.CeilToInt((hi - lo) / 12f));
+        var path = new List<Vector3>();
+        for (var i = 0; i <= steps; i++)
+        {
+            var th = Mathf.Lerp(lo, hi, i / (float)steps);
+            var p = c + Polar(Vector3.zero, rr, th);
+            p.y = FrontRoomsStructureCurveTile.HelixH(sorted, th) + H;
+            path.Add(p);
+        }
+        var metal = RailMetal(Family.Pool);
+        var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+        o.capStart = o.capEnd = true;
+        o.creaseDeg = 25f;
+        SweepTo(metal, path, RailTube, o, Vector3.up);
+        var arcLen = (hi - lo) * Mathf.Deg2Rad * rr;
+        var nb = Mathf.Max(2, Mathf.RoundToInt(arcLen / 1.5f));
+        for (var j = 0; j < nb; j++)
+        {
+            var th = lo + (hi - lo) * (j + .5f) / nb;
+            var at = c + Polar(Vector3.zero, rr, th);
+            at.y = FrontRoomsStructureCurveTile.HelixH(sorted, th) + H;
+            var tan = new Vector3(-Mathf.Sin(th * Mathf.Deg2Rad), 0f, Mathf.Cos(th * Mathf.Deg2Rad));
+            Fitting("Kit_RailBracket_Wall", at, -tan);
+        }
     }
 
     /// <summary>A flat walking surface (collision only) on an annular sector a0..a1 at y: a landing whose own boxes would
@@ -1151,6 +1326,19 @@ public sealed class FrontRoomsStructuresKit
     /// <summary>A water surface (no collider, no shadow): level water is the "wrong" turquoise.</summary>
     public void Water(float x0, float z0, float x1, float z1, float y, FrontRoomsPoolMaterials.Water kind = FrontRoomsPoolMaterials.Water.Level)
     {
+        // K2: the pool rig's niches read the district's own water (PlaceLampKits)
+        if (poolLamps && Root != null)
+        {
+            var w0 = Root.TransformPoint(new Vector3(Mathf.Min(x0, x1), y, Mathf.Min(z0, z1)));
+            var w1 = Root.TransformPoint(new Vector3(Mathf.Max(x0, x1), y, Mathf.Max(z0, z1)));
+            waterRects.Add(new FrontRoomsStructuresPoolLamps.WaterRect(Rect.MinMaxRect(w0.x, w0.z, w1.x, w1.z), w0.y));
+        }
+        // K2 (structures G2-c): the district's waters (district-local) for the pool edges' water side
+        if (isNew)
+        {
+            waterLocal.Add(new Vector4(Mathf.Min(x0, x1), Mathf.Min(z0, z1), Mathf.Max(x0, x1), Mathf.Max(z0, z1)));
+            waterLocalY.Add(y);
+        }
         var m = FrontRoomsPoolMaterials.WaterOf(kind);
         if (m == null) return;
         var keep = Mesh.CastShadows;
@@ -1172,12 +1360,32 @@ public sealed class FrontRoomsStructuresKit
         Box(new Vector3(hx, floorY - .25f, lz - t), new Vector3(hx + t, rimY, hz + t), m);
         Box(new Vector3(lx, floorY - .25f, lz - t), new Vector3(hx, rimY, lz), m);
         Box(new Vector3(lx, floorY - .25f, hz), new Vector3(hx, rimY, hz + t), m);
+        // K2 (structures G2-c, C6), NEW only: the pool's sanitary cove (P2's Prop_PoolTile_Cove, r 50 with its flats) round the
+        // basin's floor at every wall's foot, mitred at the corners (A.3.1; PC10-PC12); render only
+        if (isNew && CurveTile(m, out var own, out var op))
+        {
+            var cove = FrontRoomsPoolTile.Get("Cove");
+            var zm = (lz + hz) * .5f;
+            if (cove != null)
+                CoveBase(new[] { new Vector3(lx, floorY, zm), new Vector3(lx, floorY, hz), new Vector3(hx, floorY, hz), new Vector3(hx, floorY, lz), new Vector3(lx, floorY, lz), new Vector3(lx, floorY, zm) }, cove);
+            // C9: its main drain and return inlets, placed at Finish (when its water is known)
+            pendingBasins.Add(new Vector4(lx, lz, hx, hz));
+            pendingBasinFloor.Add(floorY);
+        }
     }
 
     /// <summary>A tiled coping along a..b on a rim at y: 0.30 wide (half over the edge line toward <paramref name="outward"/>), 0.05 proud.</summary>
     public void Coping(Vector3 a, Vector3 b, float y, Material m)
     {
         a.y = b.y = 0f;
+        // K2 (structures G2-c, C6; Red's ask 1, decided), NEW only: the basin's edge as built (roll-out, rim-flow, or a tank's
+        // bullnose coping), decided and chained corner to corner at Finish; the collider here is today's coping's, exactly
+        if (isNew && m != null && CurveTile(m, out var own, out var op) && (b - a).sqrMagnitude > 4e-4f)
+        {
+            PrismCollider(a, b, y - .08f, y + .03f, .32f);
+            pendingEdges.Add(new PendingEdge { a = a, b = b, y = y, m = m });
+            return;
+        }
         Prism(a, b, y - .08f, y + .03f, .32f, m, true);
     }
 
@@ -1241,8 +1449,10 @@ public sealed class FrontRoomsStructuresKit
 
     static string ColorKey(Color c) => c.r.ToString("0.00") + "," + c.g.ToString("0.00") + "," + c.b.ToString("0.00");
 
-    /// <summary>The game's troffer (L03 kit, the map's lens drive) on a ceiling point, with Level 0's or the Office's light.</summary>
-    public Light Troffer(Vector3 ceiling, bool view, bool office = false, float scale = 1f, float range = 10f, bool dead = false)
+    /// <summary>The game's troffer (L03 kit, the map's lens drive) on a ceiling point, with Level 0's or the Office's light.
+    /// <paramref name="lensLevel"/> scales the lens drive only (the light keeps its level): SP1's pool grid passes
+    /// FrontRoomsTrofferKit.PoolGridLensLevel (zone lamps line, plan A of 2026-11-10).</summary>
+    public Light Troffer(Vector3 ceiling, bool view, bool office = false, float scale = 1f, float range = 10f, bool dead = false, float lensLevel = 1f)
     {
         var root = new GameObject(dead ? "Fixture (L03, dead)" : "Fixture (L03)");
         root.transform.SetParent(PartRoot, false);
@@ -1279,6 +1489,11 @@ public sealed class FrontRoomsStructuresKit
             lens.SetPropertyBlock(block);
             return null;
         }
+        if (!Mathf.Approximately(lensLevel, 1f))
+        {
+            var k = Mathf.Max(0f, lensLevel);
+            drive = new Color(drive.r * k, drive.g * k, drive.b * k, drive.a);
+        }
         var lightGo = new GameObject("Light");
         lightGo.transform.SetParent(root.transform, false);
         lightGo.transform.localPosition = new Vector3(0f, -FrontRooms.Map.ModuleUnits.LampDrop, 0f);
@@ -1306,6 +1521,15 @@ public sealed class FrontRoomsStructuresKit
     {
         outward.y = 0f;
         outward.Normalize();
+        // K2 (NEW in a pool district): the same light in the same place in the budget, no stand-in body; P1-A goes on the wall
+        // in PlaceLampKits, the light moves to its lamp (thrown 30 degrees, or along the aim given)
+        if (poolLamps && FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.WallBox))
+        {
+            var k = Lamp("metal-halide wall box", LightType.Spot, pos + outward * .14f, Vector3.up, spot, inner, intensity, range, new Color(.90f, .97f, 1f), view,
+                Vector3.zero, null, Color.black);
+            if (k != null) lampRequests.Add(new LampRequest { kind = LampKind.Box, light = k, pos = pos, dir = outward, aim = aim });
+            return k;
+        }
         // Thrown up 30 degrees off the wall into the room with a 110-degree cone, so the lid, not the first metre of wall over
         // the box, takes the light (70 section 2: the ceiling the brightest surface; review SP1-F8, SP2-F17, KIT-F1: the
         // straight-up 150-degree boxes bloomed the wall and left the lid darker than the walls). SP6's dome boxes aim their own.
@@ -1326,12 +1550,30 @@ public sealed class FrontRoomsStructuresKit
     }
 
     /// <summary>A soft down-fill under a lid (pool halls), aimed down.</summary>
-    public Light DownFill(Vector3 pos, float intensity = 3f, float range = 12f, bool view = true) =>
-        Lamp("down-fill", LightType.Spot, pos, Vector3.down, 150f, 110f, intensity, range, new Color(.92f, .98f, 1f), view, new Vector3(.45f, .45f, .12f), FrontRoomsPoolMaterials.Steel, new Color(1.4f, 1.5f, 1.55f));
+    public Light DownFill(Vector3 pos, float intensity = 3f, float range = 12f, bool view = true)
+    {
+        // K2 (NEW in a pool district): the bounce of the lit lid keeps its light and loses its body; PlaceLampKits binds it to its
+        // box (it follows the box's lamp), or puts ZL_FLUSH on the lid where no box shares its lid
+        if (poolLamps && FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.WallBox))
+        {
+            var k = Lamp("down-fill", LightType.Spot, pos, Vector3.down, 150f, 110f, intensity, range, new Color(.92f, .98f, 1f), view, Vector3.zero, null, Color.black);
+            if (k != null) lampRequests.Add(new LampRequest { kind = LampKind.Fill, light = k, pos = pos });
+            return k;
+        }
+        return Lamp("down-fill", LightType.Spot, pos, Vector3.down, 150f, 110f, intensity, range, new Color(.92f, .98f, 1f), view, new Vector3(.45f, .45f, .12f), FrontRoomsPoolMaterials.Steel, new Color(1.4f, 1.5f, 1.55f));
+    }
 
     /// <summary>An underwater lamp on a basin wall, facing <paramref name="into"/>.</summary>
     public Light Underwater(Vector3 pos, Vector3 into, float intensity = 2.2f, float range = 6f, bool view = true)
     {
+        // K2 (NEW in a pool district): the same light (its object keeps the name the water preview looks for), no stand-in body;
+        // P2-A or ZL_NICHE_S goes on the wall in PlaceLampKits, by the water at the wall's foot
+        if (poolLamps && FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.Niche))
+        {
+            var k = Lamp("underwater", LightType.Spot, pos, into, 120f, 60f, intensity, range, new Color(.75f, .95f, 1f), view, Vector3.zero, null, Color.black);
+            if (k != null) lampRequests.Add(new LampRequest { kind = LampKind.Niche, light = k, pos = pos, dir = into });
+            return k;
+        }
         // A round lens in its square niche plate, cyan-shifted and below clipping, so it reads as a lamp under the water rather
         // than a white card (review SP6-F11).
         var l = Lamp("underwater", LightType.Spot, pos, into, 120f, 60f, intensity, range, new Color(.75f, .95f, 1f), view, new Vector3(.3f, .3f, .06f), FrontRoomsPoolMaterials.Steel, new Color(.9f, 1.6f, 1.7f));
@@ -1351,6 +1593,177 @@ public sealed class FrontRoomsStructuresKit
             UnityEngine.Object.Destroy(lens.gameObject);
         }
         return l;
+    }
+
+    // ---------------------------------------------------------------- K2: the zone lamps line's pool kits (structures G2-a)
+    //
+    // 游戏视觉's structures_assets G2-a (Red 2026-11-07 21:54 and 21:58: image 1's pools lit by image 2's lamps; research/
+    // structures_assets/60_build.md "G2-a"). NEW in SP1, SP2 and SP6 (PoolLamps): WallBox, DownFill and Underwater make the
+    // lights they always made, in the same order (the budget's pattern and the TODAY / NEW comparison unchanged), without the
+    // stand-in bodies, and queue them; after the district's last Finish, when its shell has colliders, PlaceLampKits puts the
+    // production kits on them (FrontRoomsStructuresPoolLamps: P1-A on the wall face, P2-A or ZL_NICHE_S by the water at the
+    // wall's foot, each bounce bound to its box or ZL_FLUSH on its lid) and hands them to the look (lens, glow, the
+    // metal-halide drive, never a shadow). A kit missing: that call builds today's stand-in. TODAY: nothing here runs.
+
+    enum LampKind { Box, Fill, Niche }
+
+    sealed class LampRequest
+    {
+        public LampKind kind;
+        public Light light;
+        public Vector3 pos, dir, aim;
+        public bool small;
+    }
+
+    readonly List<LampRequest> lampRequests = new List<LampRequest>();
+    readonly List<FrontRoomsStructuresPoolLamps.WaterRect> waterRects = new List<FrontRoomsStructuresPoolLamps.WaterRect>();
+    bool poolLamps;
+
+    /// <summary>K2: set by SP1, SP2 and SP6 at the start of their build; true only in NEW.</summary>
+    public bool PoolLamps
+    {
+        get { return poolLamps; }
+        set { poolLamps = value && isNew; }
+    }
+
+    /// <summary>
+    /// K2 (NEW in a pool district): an extra ZL_NICHE_S where a stair or a weir goes into deep enough water (the zone lamps
+    /// line's rule: one on a stair's cheek where the water there is 0.60 m or more; one in a weir's receiving basin under the
+    /// fall, aimed up at the curtain along <paramref name="aim"/>). A lamp outside the budget's shadow pattern (later lamps
+    /// keep their turns) that never shadows; its object carries the underwater lamps' name, so the water preview takes it as a
+    /// wet niche. Null in TODAY or when the kit is missing.
+    /// </summary>
+    public Light ExtraNiche(Vector3 pos, Vector3 into, float intensity, float range, Vector3 aim = default(Vector3))
+    {
+        if (!poolLamps || !FrontRoomsLampKit.Available(FrontRoomsLampKit.Family.NicheSmall)) return null;
+        var look = Host != null ? Host.Look : null;
+        if (look != null) look.AddingOutside = true;
+        Light k;
+        try { k = Lamp("underwater", LightType.Spot, pos, into, 120f, 60f, intensity, range, new Color(.75f, .95f, 1f), false, Vector3.zero, null, Color.black); }
+        finally { if (look != null) look.AddingOutside = false; }
+        if (k != null) lampRequests.Add(new LampRequest { kind = LampKind.Niche, light = k, pos = pos, dir = into, aim = aim, small = true });
+        return k;
+    }
+
+    // a lamp belongs to the pool room it hangs in, never to the one over it (rooms reach 3 m under their floor for the water)
+    const float RoomBelow = .25f;
+
+    int Seed(Vector3 p, int salt) => District.Key * 7919 ^ Mathf.RoundToInt(p.x * 10f) * 73856093 ^ Mathf.RoundToInt(p.y * 10f) * 19349663
+        ^ Mathf.RoundToInt(p.z * 10f) * 83492791 ^ salt * 1013904223;
+
+    static string V(Vector3 v) => v.x.ToString("0.00") + "," + v.y.ToString("0.00") + "," + v.z.ToString("0.00");
+
+    /// <summary>
+    /// K2: the pool kits on the queued lights, once, after the district's last Finish (its colliders exist): the wall boxes
+    /// first (each bounce looks for its box), then the niches, then the bounces. Logs what it placed and what it left out.
+    /// </summary>
+    public void PlaceLampKits()
+    {
+        if (!poolLamps || lampRequests.Count == 0 || Root == null) return;
+        Physics.SyncTransforms();
+        FrontRoomsStructuresPoolLamps.Scope = Root;
+        try { PlaceQueued(); }
+        finally { FrontRoomsStructuresPoolLamps.Scope = null; }
+    }
+
+    void PlaceQueued()
+    {
+        var look = Host != null ? Host.Look : null;
+        var phone = FrontRoomsLampKit.PhoneTier;
+        var boxes = new List<FrontRoomsStructuresPoolLamps.Box>();
+        int patches = 0, deep = 0, small = 0, follow = 0, flush = 0, bare = 0, left = 0;
+        var notes = new System.Text.StringBuilder();
+        string note;
+        var boxRequests = new List<LampRequest>();
+        foreach (var r in lampRequests)
+        {
+            if (r.kind != LampKind.Box || r.light == null) continue;
+            var aim = r.aim.sqrMagnitude > 1e-6f ? Root.TransformDirection(r.aim) : Vector3.zero;
+            var box = FrontRoomsStructuresPoolLamps.PlaceWallBox(r.light.transform.parent, r.light, Root.TransformPoint(r.pos), Root.TransformDirection(r.dir), aim, phone, out note);
+            if (box == null) { left++; notes.Append(" | box ").Append(V(r.pos)).Append(": ").Append(note); continue; }
+            boxes.Add(box);
+            boxRequests.Add(r);
+            var patch = box.glow != null && box.glow.gameObject.activeSelf ? box.glow : null;
+            if (patch != null) patches++;
+            if (look != null) look.AttachLens(r.light, box.lens, FrontRoomsStructuresPoolLamps.BoxLensDrive, patch);
+        }
+        // the temperaments (ask 5 B) where a pool room has three boxes or more; a room's only one or two stay steady, so no hall
+        // is left with a failing or dead box for its light (SP6's dome hall: a failing south box made its B2 deck flash, LW0)
+        if (look != null)
+            for (var i = 0; i < boxes.Count; i++)
+            {
+                Rect room, other;
+                float y0, y1;
+                var mates = 0;
+                if (look.PoolRoomAt(District, boxes[i].face + boxes[i].outward * .5f, out room, out y0, out y1, RoomBelow))
+                    foreach (var b in boxes)
+                        if (look.PoolRoomAt(District, b.face + b.outward * .5f, out other, out y0, out y1, RoomBelow) && other == room) mates++;
+                var r = boxRequests[i];
+                look.SetHid(r.light, Seed(r.pos, 1), FrontRoomsStructuresPoolLamps.Drift(Root.TransformPoint(r.pos)), mates > 0 && mates < 3);
+            }
+        foreach (var r in lampRequests)
+        {
+            if (r.kind != LampKind.Niche || r.light == null) continue;
+            var n = FrontRoomsStructuresPoolLamps.PlaceNiche(r.light.transform.parent, r.light, Root.TransformPoint(r.pos), Root.TransformDirection(r.dir), waterRects, phone, r.small, out note);
+            if (n == null)
+            {
+                // no wall, no water or too shallow for either niche: a light under the water with no lamp is put out
+                left++;
+                notes.Append(" | niche ").Append(V(r.pos)).Append(": ").Append(note);
+                if (look != null) look.Scale(r.light, 0f);
+                continue;
+            }
+            if (n.Small) small++; else deep++;
+            if (r.aim.sqrMagnitude > 1e-6f) r.light.transform.rotation = Quaternion.LookRotation(Root.TransformDirection(r.aim).normalized, Root.TransformDirection(r.dir));
+            if (look != null)
+            {
+                look.Retune(r.light);
+                look.AttachLens(r.light, n.lens, FrontRoomsStructuresPoolLamps.NicheLensDrive(r.light.color));
+                look.SetNiche(r.light, Seed(r.pos, 2));
+            }
+        }
+        foreach (var r in lampRequests)
+        {
+            if (r.kind != LampKind.Fill || r.light == null) continue;
+            var at = Root.TransformPoint(r.pos);
+            FrontRoomsStructuresPoolLamps.Box best = null;
+            var bestD = float.MaxValue;
+            // the same pool room as the district gave it (a stair core's landing is not the hall's lid, though its door looks in)
+            var fillRoom = default(Rect);
+            float f0, f1;
+            var fillHas = look != null && look.PoolRoomAt(District, at, out fillRoom, out f0, out f1, RoomBelow);
+            foreach (var b in boxes)
+            {
+                float d;
+                if (!FrontRoomsStructuresPoolLamps.Bind(at, b, out d) || d >= bestD) continue;
+                Rect boxRoom;
+                if (fillHas && look.PoolRoomAt(District, b.face + b.outward * .5f, out boxRoom, out f0, out f1, RoomBelow) && boxRoom != fillRoom) continue;
+                best = b;
+                bestD = d;
+            }
+            if (best != null)
+            {
+                follow++;
+                if (look != null) look.Follow(r.light, best.light);
+                continue;
+            }
+            var lens = FrontRoomsStructuresPoolLamps.PlaceFlush(r.light.transform.parent, at, phone, out note);
+            if (lens != null)
+            {
+                flush++;
+                if (look != null) look.AttachLens(r.light, lens, FrontRoomsStructuresPoolLamps.FlushLensDrive(r.light.color));
+            }
+            else
+            {
+                bare++;
+                notes.Append(" | bounce ").Append(V(r.pos)).Append(": ").Append(note);
+                if (look != null) look.NoShadow(r.light);
+            }
+        }
+        Debug.Log(FrontRoomsStructures.Log + District.Code + " pool lamps (K2, structures G2-a): " + boxes.Count + " P1-A wall boxes (" + patches + " lit-ceiling patches under a flat lid), "
+            + deep + " P2-A niches, " + small + " ZL_NICHE_S, " + follow + " bounces following their box, " + flush + " ZL_FLUSH, " + bare + " bounces with neither"
+            + (left > 0 ? "; left out " + left : "") + (look != null ? "; " + look.RigLine(District.Key) : "") + notes);
+        lampRequests.Clear();
     }
 
     // ---------------------------------------------------------------- props, signs, stops, blockers, marks
@@ -1514,6 +1927,54 @@ public sealed class FrontRoomsStructuresKit
         return m != null ? m : fallback;
     }
 
+    // K2 (structures G2-c): whether a material is the pool's tile for FrontRoomsStructureCurveTile, and which: the white field
+    // (Prop_PoolTile_FieldMesh, at any water line, or the LS stand-in) takes the tile by radius (own null); another pool tile (the
+    // aqua course, a mosaic) keeps its own material and pitch (own ""); anything else is not tile (today's geometry).
+    static bool CurveTile(Material m, out string own, out float ownPitch)
+    {
+        own = null;
+        ownPitch = .15f;
+        if (m == null) return false;
+        var n = m.name ?? "";
+        if (n.StartsWith("Prop_PoolTile_FieldMesh", StringComparison.Ordinal) || n.StartsWith("Structures / pool tile", StringComparison.Ordinal)) return true;
+        if (!n.StartsWith("Prop_PoolTile_", StringComparison.Ordinal) && !m.IsKeywordEnabled("_FR_TILE")) return false;
+        own = "";
+        if (m.HasProperty("_TileSize") && m.HasProperty("_TileGrid"))
+        {
+            var size = m.GetVector("_TileSize");
+            var grid = m.GetVector("_TileGrid");
+            if (size.x > 1e-3f && grid.x >= 1f) ownPitch = size.x / grid.x;
+        }
+        return true;
+    }
+
+    // K2 (structures G2-c): a curve build's lists into the shell, each tile kind in its material (at the caller's water line when
+    // the caller's tile has one); key "" is the caller's own material.
+    public void AppendCurve(FrontRoomsStructureCurveTile.Out o, Material like)
+    {
+        foreach (var kv in o.Kinds)
+        {
+            var l = kv.Value;
+            if (l.t.Count == 0) continue;
+            var mat = kv.Key.Length == 0 ? like : CurveMat(kv.Key, like);
+            if (mat == null) continue;
+            Mesh.Append(l.v, l.n, l.uv, l.t, mat, false);
+        }
+    }
+
+    static readonly int WaterYId = Shader.PropertyToID("_WaterY");
+
+    static Material CurveMat(string kind, Material like)
+    {
+        if (like != null && like.name != null && like.name.IndexOf("(water ", StringComparison.Ordinal) >= 0 && like.HasProperty(WaterYId))
+        {
+            var w = FrontRoomsPoolTile.ForWater(kind, like.GetFloat(WaterYId));
+            if (w != null) return w;
+        }
+        var m = FrontRoomsPoolTile.Get(kind);
+        return m != null ? m : like;
+    }
+
     // Rail metal by family (G1-b's kit variants): stainless in the pool, putty steel in the Office, painted steel elsewhere.
     Material RailMetal(Family f)
     {
@@ -1642,8 +2103,14 @@ public sealed class FrontRoomsStructuresKit
                 return true;
             }
             case GuardStyle.TileWall:
-                // today's prism: the bevels give its top and its free ends the tile's bullnose (the trim a tiler sets there)
-                return false;
+            {
+                // K2 (structures G2-c, C8): in the pool a Cap course on the wall (A.2.4, A.3.3); elsewhere today's prism, whose
+                // bevels give its top and free ends the tile's bullnose
+                var w = wall != null ? wall : FrontRoomsPoolMaterials.Tile;
+                if (!CurveTile(w, out var own, out var op)) return false;
+                TileGuard(a, b, t, len, floorY, top, w);
+                return true;
+            }
             case GuardStyle.Glass:
                 GlassGuard(a, b, t, len, floorY, top, height, cap, fam);
                 return true;
@@ -1672,14 +2139,19 @@ public sealed class FrontRoomsStructuresKit
         {
             var q = a + t * (len * k / count);
             q.y = 0f;
+            // K2 (structures G2-c, C12): where guards share a corner, one post (and its flange and saddle) stands there
+            if (SharedPosts && !postsAt.Add(PostKey(q))) continue;
             Tube(new Vector3(q.x, floorY, q.z), new Vector3(q.x, postTop, q.z), RailTube, metal, false);
             Fitting(KitName("Kit_RailPost_BaseFlange", fam), new Vector3(q.x, floorY, q.z), t);
             if (hasSaddle) Fitting(saddle, new Vector3(q.x, postTop, q.z), t);
         }
         Tube(a + Vector3.up * railY, b + Vector3.up * railY, RailTube, metal, true);
-        Fitting(KitName("Kit_RailEnd_Cap", fam), a + Vector3.up * railY, -t);
-        Fitting(KitName("Kit_RailEnd_Cap", fam), b + Vector3.up * railY, t);
-        var pickets = FrontRoomsStructuresAssets.Rails == FrontRoomsStructuresAssets.PublicRail.Pickets && fam != Family.Run && District.Key != 5;
+        if (!SharedPosts)
+        {
+            Fitting(KitName("Kit_RailEnd_Cap", fam), a + Vector3.up * railY, -t);
+            Fitting(KitName("Kit_RailEnd_Cap", fam), b + Vector3.up * railY, t);
+        }
+        var pickets = FrontRoomsStructuresAssets.Rails == FrontRoomsStructuresAssets.PublicRail.Pickets && fam != Family.Run && District.Key != 5 && !ServiceRails;
         if (pickets)
         {
             var by = floorY + .10f;
@@ -1783,23 +2255,39 @@ public sealed class FrontRoomsStructuresKit
     // 1/2 in square pickets every ~140 mm between two rails (y0 bottom rail axis, y1 top rail axis), none on a post.
     void Pickets(Vector3 a, Vector3 b, Vector3 t, float len, float y0, float y1, int posts, Material metal)
     {
-        const float Bar = .0127f, Pitch = .14f;
-        var n = Mathf.Max(1, Mathf.RoundToInt(len / Pitch));
+        // G12 (K1 review, structures G3-b): bay by bay between the posts' faces, as many 1/2 in bars as keep every clear gap at
+        // 6 in or less (the period's sphere) beside the posts too, evenly spread (it skipped a picket near a post: 157 mm gaps)
+        const float Bar = .0127f, Gap = .1524f;
         var rot = Quaternion.LookRotation(t);
-        for (var k = 0; k < n; k++)
-        {
-            var f = (k + .5f) / n;
-            var nearest = Mathf.Round(f * posts) / posts;
-            if (Mathf.Abs(f - nearest) * len < .045f) continue;
-            var q = a + t * (len * f);
-            Mesh.Box(new Vector3(q.x, (y0 + y1) * .5f, q.z), new Vector3(Bar, y1 - y0, Bar), rot, metal, false);
-        }
+        var bays = Mathf.Max(1, posts);
+        var bay = len / bays;
+        var clear = bay - 2f * RailR;
+        var n = Mathf.Max(1, Mathf.CeilToInt((clear - Gap) / (Gap + Bar)));
+        for (var j = 0; j < bays; j++)
+            for (var k = 0; k < n; k++)
+            {
+                var q = a + t * (j * bay + RailR + clear * (k + 1f) / (n + 1f));
+                Mesh.Box(new Vector3(q.x, (y0 + y1) * .5f, q.z), new Vector3(Bar, y1 - y0, Bar), rot, metal, false);
+            }
     }
 
     // 1988 UBC structural glass: 12 mm panes (<= 1.52 m, 6 mm gaps, polished edges) in a continuous aluminium base shoe with its
     // gaskets, an aluminium cap rail over them (or the half-wall's own timber cap where one is given), no posts.
     void GlassGuard(Vector3 a, Vector3 b, Vector3 t, float len, float floorY, float top, float height, Material cap, Family fam)
     {
+        // K2 (structures G2-c, C14; FR-2): an end on a lower run's end steps back onto this run's own floor (render only: the
+        // collider at the end of this method keeps the run's own line)
+        var ca = a;
+        var cb = b;
+        foreach (var g in glassEnds)
+        {
+            if (g.w >= floorY - 1e-3f) continue;
+            if (Flat(new Vector3(g.x, 0f, g.z) - a) < 1e-3f) a += t * GlassEndInset;
+            else if (Flat(new Vector3(g.x, 0f, g.z) - b) < 1e-3f) b -= t * GlassEndInset;
+        }
+        glassEnds.Add(new Vector4(ca.x, 0f, ca.z, floorY));
+        glassEnds.Add(new Vector4(cb.x, 0f, cb.z, floorY));
+        len = Vector3.Distance(a, b);
         var trim = Trim();
         var strip = FrontRoomsStructureProfiles.StripV(fam == Family.Pool ? FrontRoomsStructureProfiles.Strip.StainlessBrushed : FrontRoomsStructureProfiles.Strip.ShoeAluminium);
         var fa = new Vector3(a.x, floorY, a.z);
@@ -1831,7 +2319,7 @@ public sealed class FrontRoomsStructuresKit
         else Lay(a + Vector3.up * (top - .038f), b + Vector3.up * (top - .038f), CapRailSection, trim, strip);
         Fitting(fam == Family.Pool ? "Kit_GlassShoe_EndCap_Stainless" : "Kit_GlassShoe_EndCap", fa, -t);
         Fitting(fam == Family.Pool ? "Kit_GlassShoe_EndCap_Stainless" : "Kit_GlassShoe_EndCap", fb, t);
-        Mesh.Collider((a + b) * .5f + Vector3.up * (floorY + top) * .5f, new Vector3(.06f, height, len), Quaternion.LookRotation(t));
+        Mesh.Collider((ca + cb) * .5f + Vector3.up * (floorY + top) * .5f, new Vector3(.06f, height, Vector3.Distance(ca, cb)), Quaternion.LookRotation(t));
     }
 
     static Mesh paneCube;
@@ -1963,8 +2451,13 @@ public sealed class FrontRoomsStructuresKit
             var n = new Vector3(t.z, 0f, -t.x);
             var u0 = Vector3.Dot(W(p0), t);
             var u1 = u0 + Vector3.Distance(p0, p1);
-            Quad(p0 + Vector3.up * y0, p1 + Vector3.up * y0, p1 + Vector3.up * y1, p0 + Vector3.up * y1, n,
+            // FR-1 (K1 review; structures G4-b's shared ask): the woven wire as two faces 3.4 mm apart (10 ga), each lit as a front
+            // face from its own side with the same metre UVs, so the alpha-cut diamonds coincide (one face read near-black from behind)
+            var wo = n * .0017f;
+            Quad(p0 + wo + Vector3.up * y0, p1 + wo + Vector3.up * y0, p1 + wo + Vector3.up * y1, p0 + wo + Vector3.up * y1, n,
                 new Vector2(u0, y0), new Vector2(u1, y0), new Vector2(u1, y1), new Vector2(u0, y1), wire);
+            Quad(p1 - wo + Vector3.up * y0, p0 - wo + Vector3.up * y0, p0 - wo + Vector3.up * y1, p1 - wo + Vector3.up * y1, -n,
+                new Vector2(u1, y0), new Vector2(u0, y0), new Vector2(u0, y1), new Vector2(u1, y1), wire);
         }
         Mesh.Collider((a + b) * .5f + Vector3.up * (floorY + top) * .5f, new Vector3(.05f, height, len), Quaternion.LookRotation(t));
     }
@@ -1979,10 +2472,21 @@ public sealed class FrontRoomsStructuresKit
                 RakingCap(a, b, height, .2f, .04f, cap != null ? cap : CapMaterial());
                 return true;
             case GuardStyle.TileWall:
-                RakeWall(a, b, height, bottomA, bottomB, .2f, wall != null ? wall : FrontRoomsPoolMaterials.Tile, true);
+            {
+                var w = wall != null ? wall : FrontRoomsPoolMaterials.Tile;
+                if (CurveTile(w, out var own, out var op))
+                {
+                    // K2 (structures G2-c, C8; G3, G14): today's collider, the wall to the cap's foot, the Cap course on the rake
+                    RakeWall(a, b, height, bottomA, bottomB, .2f, null, true);
+                    RakeWall(a, b, height - TileCapThick, bottomA, bottomB, .2f, w, false);
+                    RakingTileCap(a, b, height - TileCapThick, .2f, w);
+                    return true;
+                }
+                RakeWall(a, b, height, bottomA, bottomB, .2f, w, true);
                 // the rake's top in a course of bullnose cap tile
-                RakingCap(a, b, height + .012f, .2f, .012f, wall != null ? wall : FrontRoomsPoolMaterials.Tile);
+                RakingCap(a, b, height + .012f, .2f, .012f, w);
                 return true;
+            }
             case GuardStyle.Rail:
             {
                 var metal = RailMetal(fam);
@@ -2105,7 +2609,8 @@ public sealed class FrontRoomsStructuresKit
         var normal = Vector3.Cross(slope, side);
         if (normal.y < 0f) normal = -normal;
         var soffit = FamilyOf(treadMat) == Family.Pool ? treadMat : Surf("Stair_Slab", treadMat);
-        Mesh.Box((s0 + s1) * .5f - normal * (Waist * .5f), new Vector3(width, Waist, Vector3.Distance(s0, s1)), Quaternion.LookRotation(slope, normal), soffit, false);
+        // G7 (K1 review, structures G3-b): the waist 2 mm inside the steps' sides each side (their coplanar sides z-fought)
+        Mesh.Box((s0 + s1) * .5f - normal * (Waist * .5f), new Vector3(width - .004f, Waist, Vector3.Distance(s0, s1)), Quaternion.LookRotation(slope, normal), soffit, false);
     }
 
     // One nosing along a step's front edge (edge: the riser line at the step's centre, y 0; top: the tread's height).
@@ -2221,6 +2726,338 @@ public sealed class FrontRoomsStructuresKit
         FrontRoomsStructureProfiles.Sweep(sweepV, sweepN, sweepUV, sweepT, path, normalHint, FrontRoomsStructureProfiles.Sealant(.010f, .0004f), o);
         Mesh.Append(sweepV, sweepN, sweepUV, sweepT, Trim(), false);
     }
+
+    // ---------------------------------------------------------------- K2 (structures G2-c): pool edges and tile caps
+
+    struct PendingEdge
+    {
+        public Vector3 a, b;
+        public float y;
+        public Material m;
+    }
+
+    struct PendingCap
+    {
+        public Vector3 a, b;
+        public float y, width, thick;
+        public Material m;
+    }
+
+    readonly List<PendingEdge> pendingEdges = new List<PendingEdge>();
+    readonly List<PendingCap> pendingCaps = new List<PendingCap>();
+    readonly List<Vector4> waterLocal = new List<Vector4>();
+    readonly List<float> waterLocalY = new List<float>();
+
+    /// <summary>The cap course's height on a tiled guard (a double-bullnose cap tile 45 mm over the wall's top course).</summary>
+    const float TileCapThick = .045f;
+
+    // Kit.Prism's collider alone, exactly as Prism makes it (a, b on plan).
+    void PrismCollider(Vector3 a, Vector3 b, float y0, float y1, float thick)
+    {
+        a.y = 0f;
+        b.y = 0f;
+        var d = b - a;
+        var len = d.magnitude;
+        if (len < 1e-4f || y1 - y0 < 1e-4f || thick < 1e-4f) return;
+        Mesh.Collider((a + b) * .5f + Vector3.up * ((y0 + y1) * .5f), new Vector3(thick, y1 - y0, len), Quaternion.LookRotation(d / len, Vector3.up));
+    }
+
+    // The water (district-local) under plan point p below height y: its surface, or NaN.
+    float WaterUnder(Vector3 p, float y)
+    {
+        var best = float.NaN;
+        for (var i = 0; i < waterLocal.Count; i++)
+        {
+            var r = waterLocal[i];
+            var wy = waterLocalY[i];
+            if (p.x < r.x || p.x > r.z || p.z < r.y || p.z > r.w) continue;
+            if (wy > y - .005f || wy < y - 1.2f) continue;
+            if (float.IsNaN(best) || wy > best) best = wy;
+        }
+        return best;
+    }
+
+    void FlushRuns()
+    {
+        if (pendingEdges.Count > 0) FlushEdges();
+        if (pendingCaps.Count > 0) FlushCaps();
+        if (pendingBasins.Count > 0) FlushBasins();
+    }
+
+    readonly List<Vector4> pendingBasins = new List<Vector4>();
+    readonly List<float> pendingBasinFloor = new List<float>();
+
+    // K2 (structures G2-c, C9; 30_plan S1-08, S2-01; A.5.1, BR:S40 2-5): a tiled basin's fittings as built: the main drain at its
+    // deepest point (a flat slotted grate in a square of the dark Lane tile, "marked plainly in an appropriate contrasting color"),
+    // return inlets 0.3 m under the water on its two long walls (one a 3 m), clear of its niches. Ladders none: image 1's ways out
+    // are steps. Kits render only (no collider); the Lane square 1 mm over the floor.
+    void FlushBasins()
+    {
+        var lane = FrontRoomsPoolTile.Get("Lane");
+        for (var i = 0; i < pendingBasins.Count; i++)
+        {
+            var r = pendingBasins[i];
+            var floorY = pendingBasinFloor[i];
+            var centre = new Vector3((r.x + r.z) * .5f, floorY, (r.y + r.w) * .5f);
+            var waterY = float.NaN;
+            for (var k = 0; k < waterLocal.Count; k++)
+            {
+                var w = waterLocal[k];
+                if (centre.x < w.x || centre.x > w.z || centre.z < w.y || centre.z > w.w || waterLocalY[k] < floorY) continue;
+                waterY = waterLocalY[k];
+            }
+            if (float.IsNaN(waterY)) continue;
+            const float Frame = .225f;
+            if (lane != null)
+                QuadPlanar(centre + new Vector3(-Frame, .001f, -Frame), centre + new Vector3(-Frame, .001f, Frame), centre + new Vector3(Frame, .001f, Frame), centre + new Vector3(Frame, .001f, -Frame), Vector3.up, lane);
+            Fitting("Kit_MainDrainGrate", centre + Vector3.up * .001f, Vector3.right);
+            // the two long walls (x or z), their inside faces facing into the basin
+            var alongX = r.z - r.x >= r.w - r.y;
+            var len = alongX ? r.z - r.x : r.w - r.y;
+            var n = Mathf.Max(1, Mathf.RoundToInt(len / 3f));
+            var y = waterY - .3f;
+            if (y < floorY + .15f) continue;
+            for (var side = 0; side < 2; side++)
+            {
+                Vector3 inward;
+                if (alongX) inward = side == 0 ? Vector3.forward : Vector3.back;
+                else inward = side == 0 ? Vector3.right : Vector3.left;
+                for (var k = 0; k < n; k++)
+                {
+                    var f = (k + .5f) / n;
+                    var at = alongX ? new Vector3(Mathf.Lerp(r.x, r.z, f), y, side == 0 ? r.y : r.w) : new Vector3(side == 0 ? r.x : r.z, y, Mathf.Lerp(r.y, r.w, f));
+                    // clear of a niche: slide along the wall away from any underwater lamp within 0.7 m
+                    var tAlong = alongX ? Vector3.right : Vector3.forward;
+                    for (var tries = 0; tries < 3 && NicheNear(at, .7f); tries++) at += tAlong * .75f;
+                    if (NicheNear(at, .7f)) continue;
+                    Fitting("Kit_ReturnInlet", at, Vector3.Cross(Vector3.up, inward));
+                }
+            }
+        }
+        pendingBasins.Clear();
+        pendingBasinFloor.Clear();
+    }
+
+    // whether one of this district's underwater lamps lies within d (plan) of a district-local point
+    bool NicheNear(Vector3 local, float d)
+    {
+        var wp = W(local);
+        foreach (var l in lights)
+        {
+            if (l == null || l.transform.parent == null || l.transform.parent.name != "Lamp · underwater") continue;
+            var p = l.transform.position;
+            if (new Vector2(p.x - wp.x, p.z - wp.z).magnitude < d && Mathf.Abs(p.y - wp.y) < 1f) return true;
+        }
+        return false;
+    }
+
+    // Each pending coping: its water side (the side over a water lower than its deck), turned so the water lies on its path's left
+    // (the plumb frame's +x over the deck), its system (ask 1 by district; a tank's edge 0.6 m over its water: the bullnose coping);
+    // then chained end to end (same deck, system, water and material) and swept: mitred corners, closed ends where steps, a
+    // flume's bed or a weir cut it. A coping with no water beside it keeps today's prism (render; its collider is already made).
+    void FlushEdges()
+    {
+        var segs = new List<PendingEdge>();
+        var kinds = new List<int>();
+        var waters = new List<float>();
+        foreach (var e in pendingEdges)
+        {
+            var d = e.b - e.a;
+            var len = d.magnitude;
+            var t = d / len;
+            var side = Vector3.Cross(Vector3.up, t);
+            var mid = (e.a + e.b) * .5f;
+            var wr = WaterUnder(mid + side * .35f, e.y);
+            var wl = WaterUnder(mid - side * .35f, e.y);
+            if (float.IsNaN(wr) == float.IsNaN(wl))
+            {
+                var keep = Mesh.EdgeOverride;
+                Prism(e.a, e.b, e.y - .08f, e.y + .03f, .32f, e.m, false);
+                Mesh.EdgeOverride = keep;
+                continue;
+            }
+            var s = e;
+            var wy = wl;
+            if (!float.IsNaN(wr)) { s.a = e.b; s.b = e.a; wy = wr; }
+            var depth = e.y - wy;
+            FrontRoomsStructureCurveTile.Edge kind;
+            if (depth > .2f) kind = FrontRoomsStructureCurveTile.Edge.Tank;
+            else
+                switch (FrontRoomsStructuresAssets.EdgeFor(District.Key))
+                {
+                    case FrontRoomsStructuresAssets.PoolEdge.RimFlow: kind = FrontRoomsStructureCurveTile.Edge.RimFlow; break;
+                    case FrontRoomsStructuresAssets.PoolEdge.Recessed: kind = FrontRoomsStructureCurveTile.Edge.Recessed; break;
+                    default: kind = FrontRoomsStructureCurveTile.Edge.RollOut; break;
+                }
+            segs.Add(s);
+            kinds.Add((int)kind);
+            waters.Add(wy);
+        }
+        pendingEdges.Clear();
+        var used = new bool[segs.Count];
+        for (var i = 0; i < segs.Count; i++)
+        {
+            if (used[i]) continue;
+            used[i] = true;
+            var chain = new List<Vector3> { segs[i].a, segs[i].b };
+            for (var grew = true; grew;)
+            {
+                grew = false;
+                for (var j = 0; j < segs.Count; j++)
+                {
+                    if (used[j] || kinds[j] != kinds[i] || segs[j].m != segs[i].m || Mathf.Abs(segs[j].y - segs[i].y) > 1e-3f) continue;
+                    if (Flat(segs[j].a - chain[chain.Count - 1]) < 1e-3f) { chain.Add(segs[j].b); used[j] = grew = true; }
+                    else if (Flat(segs[j].b - chain[0]) < 1e-3f) { chain.Insert(0, segs[j].a); used[j] = grew = true; }
+                }
+            }
+            EdgeSweep(chain, segs[i].y, (FrontRoomsStructureCurveTile.Edge)kinds[i], segs[i].m, waters[i]);
+        }
+    }
+
+    static float Flat(Vector3 d) { return Mathf.Sqrt(d.x * d.x + d.z * d.z); }
+
+    void EdgeSweep(List<Vector3> chain, float y, FrontRoomsStructureCurveTile.Edge kind, Material like, float waterY)
+    {
+        var closed = chain.Count > 3 && Flat(chain[0] - chain[chain.Count - 1]) < 1e-3f;
+        var path = new List<Vector3>();
+        if (closed)
+        {
+            // a closed loop starts and ends at its first side's middle (one seamless butt there, every corner mitred)
+            var m0 = (chain[0] + chain[1]) * .5f;
+            path.Add(m0);
+            for (var k = 1; k < chain.Count; k++) path.Add(chain[k]);
+            path[path.Count - 1] = chain[0];
+            path.Add(m0);
+        }
+        else path.AddRange(chain);
+        for (var k = 0; k < path.Count; k++) path[k] = new Vector3(path[k].x, y, path[k].z);
+        var section = FrontRoomsStructureCurveTile.EdgeSection(kind, .32f, out var tileKind);
+        var mat = FrontRoomsPoolTile.ForWater(tileKind, W(new Vector3(0f, waterY, 0f)).y);
+        if (mat == null) mat = like;
+        var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+        o.plumb = true;
+        o.creaseDeg = 10f;
+        o.u0 = FrontRoomsStructureProfiles.WorldU(W(path[0]), path[1] - path[0]);
+        SweepTo(mat, path, section, o);
+        if (closed) return;
+        // the open ends: the section's own outline closed down its body (the edge's returned end)
+        EdgeEnd(path[0], path[1] - path[0], section, mat, -1f);
+        EdgeEnd(path[path.Count - 1], path[path.Count - 1] - path[path.Count - 2], section, mat, 1f);
+    }
+
+    void EdgeEnd(Vector3 at, Vector3 along, FrontRoomsStructureProfiles.Section s, Material m, float sign)
+    {
+        along.y = 0f;
+        if (along.sqrMagnitude < 1e-8f || m == null) return;
+        along.Normalize();
+        var r = Vector3.Cross(Vector3.up, along).normalized;
+        var n = s.P.Length;
+        var poly = new Vector2[n + 1];
+        for (var i = 0; i < n; i++) poly[i] = s.P[i];
+        poly[n] = new Vector2(s.P[0].x, s.P[n - 1].y);
+        var order = FrontRoomsStructureProfiles.EarClip(poly);
+        sweepV.Clear(); sweepN.Clear(); sweepUV.Clear(); sweepT.Clear();
+        var nrm = along * sign;
+        foreach (var q in poly)
+        {
+            sweepV.Add(at + r * q.x + Vector3.up * q.y);
+            sweepN.Add(nrm);
+            sweepUV.Add(new Vector2(q.x, q.y));
+        }
+        for (var i = 0; i + 2 < order.Count; i += 3)
+        {
+            int a = order[i], b = order[i + 1], c = order[i + 2];
+            if (Vector3.Dot(Vector3.Cross(sweepV[b] - sweepV[a], sweepV[c] - sweepV[a]), nrm) < 0f) { var t = b; b = c; c = t; }
+            sweepT.Add(a); sweepT.Add(b); sweepT.Add(c);
+        }
+        Mesh.Append(sweepV, sweepN, sweepUV, sweepT, m, false);
+    }
+
+    // The tiled guards' and parapets' Cap courses, chained end to end (either way round) and swept with mitred corners and returned
+    // ends, in the field tile (each 150 mm along one cap tile); the cap's volume keeps the wall's top arrises square (no round under it).
+    void FlushCaps()
+    {
+        var segs = new List<PendingCap>(pendingCaps);
+        pendingCaps.Clear();
+        var used = new bool[segs.Count];
+        for (var i = 0; i < segs.Count; i++)
+        {
+            if (used[i]) continue;
+            used[i] = true;
+            var chain = new List<Vector3> { segs[i].a, segs[i].b };
+            for (var grew = true; grew;)
+            {
+                grew = false;
+                for (var j = 0; j < segs.Count; j++)
+                {
+                    if (used[j] || segs[j].m != segs[i].m || Mathf.Abs(segs[j].y - segs[i].y) > 1e-3f || Mathf.Abs(segs[j].width - segs[i].width) > 1e-3f) continue;
+                    Vector3 sa = segs[j].a, sb = segs[j].b;
+                    if (Flat(sa - chain[chain.Count - 1]) < 1e-3f) { chain.Add(sb); used[j] = grew = true; }
+                    else if (Flat(sb - chain[chain.Count - 1]) < 1e-3f) { chain.Add(sa); used[j] = grew = true; }
+                    else if (Flat(sb - chain[0]) < 1e-3f) { chain.Insert(0, sa); used[j] = grew = true; }
+                    else if (Flat(sa - chain[0]) < 1e-3f) { chain.Insert(0, sb); used[j] = grew = true; }
+                }
+            }
+            var c = segs[i];
+            var closed = chain.Count > 3 && Flat(chain[0] - chain[chain.Count - 1]) < 1e-3f;
+            var path = new List<Vector3>();
+            if (closed)
+            {
+                var m0 = (chain[0] + chain[1]) * .5f;
+                path.Add(m0);
+                for (var k = 1; k < chain.Count; k++) path.Add(chain[k]);
+                path[path.Count - 1] = chain[0];
+                path.Add(m0);
+            }
+            else path.AddRange(chain);
+            for (var k = 0; k < path.Count; k++) path[k] = new Vector3(path[k].x, c.y, path[k].z);
+            var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+            o.plumb = true;
+            o.creaseDeg = 10f;
+            o.capStart = o.capEnd = !closed;
+            o.u0 = FrontRoomsStructureProfiles.WorldU(W(path[0]), path[1] - path[0]);
+            SweepTo(c.m, path, FrontRoomsStructureCurveTile.CapSection(c.width, c.thick), o);
+        }
+    }
+
+    // A tiled guard in the pool (NEW): the wall to the cap's foot (bevelled, its top arrises kept square by the cap's volume), the
+    // Cap course on it (chained at Finish), today's collider for the guard's full height.
+    void TileGuard(Vector3 a, Vector3 b, Vector3 t, float len, float floorY, float top, Material wall)
+    {
+        const float Thick = .2f;
+        var capFoot = top - TileCapThick;
+        Prism(a, b, floorY, capFoot, Thick, wall, false);
+        PrismCollider(a, b, floorY, top, Thick);
+        Mesh.Occluder((a + b) * .5f + Vector3.up * (capFoot + TileCapThick * .5f), new Vector3(Thick, TileCapThick, len), Quaternion.LookRotation(t, Vector3.up));
+        pendingCaps.Add(new PendingCap { a = a, b = b, y = capFoot, width = Thick, thick = TileCapThick, m = wall });
+    }
+
+    // A raking tiled guard's cap (NEW; the K1 review's G3 and G14): the Cap course along the rake, its top on the guard's height and
+    // its ends plumb, flush with the wall's plumb ends (it neither stands 12 mm proud nor leans past them).
+    void RakingTileCap(Vector3 a, Vector3 b, float capFoot, float width, Material m)
+    {
+        if (m == null || (b - a).sqrMagnitude < 1e-6f) return;
+        var o = FrontRoomsStructureProfiles.SweepOptions.Default;
+        o.plumb = true;
+        o.capStart = o.capEnd = true;
+        o.u0 = FrontRoomsStructureProfiles.WorldU(W(a), b - a);
+        SweepTo(m, new[] { a + Vector3.up * capFoot, b + Vector3.up * capFoot }, FrontRoomsStructureCurveTile.CapSection(width, TileCapThick), o);
+    }
+
+    /// <summary>K2 (structures G2-c, C12): rails in a service zone (Red's ask 3: the two-line rail, pickets only on public floors) for
+    /// the guards made while it is set (SP6's C8 balance tank).</summary>
+    public bool ServiceRails;
+    /// <summary>K2 (structures G2-c, C12; the K1 review's FR-5 / G8): guards made while it is set share one post where their ends
+    /// meet (a hole's square guard: one post a corner, not two 0.11 m apart).</summary>
+    public bool SharedPosts;
+    readonly HashSet<long> postsAt = new HashSet<long>();
+
+    static long PostKey(Vector3 p) => ((long)Mathf.RoundToInt(p.x * 200f) << 32) ^ (long)(Mathf.RoundToInt(p.z * 200f) & 0xffffffff);
+
+    // K2 (structures G2-c, C14; the K1 review's FR-2): glass guard ends, so a run that starts or ends where a lower run ends steps its
+    // shoe, panes and end fitting back onto its own floor (the court's +1.8 run over the +1.2 run's end at x 3.9).
+    readonly List<Vector4> glassEnds = new List<Vector4>();
+    const float GlassEndInset = .045f;
 
     // The carpet bar along an edge at height y, its nose out toward 'outward' (horizontal).
     void EdgeBar(Vector3 a, Vector3 b, float y, Vector3 outward)

@@ -1,0 +1,77 @@
+{
+ "name": "Kit_CubiclePanelShort_1350",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.6730999999999999,
+    0.0
+   ],
+   "size": [
+    0.762,
+    1.3461999999999998,
+    0.064
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "top_centre",
+   "pos": [
+    0.0,
+    1.3461999999999998,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p17",
+  "office",
+  "panel"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  1300,
+  600,
+  100
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-b 2026-11-10 (30_plan.md P17 structures_office_props: panel)",
+ "boundsMin": [
+  -0.38100001215934753,
+  0.0,
+  -0.03350000083446503
+ ],
+ "boundsMax": [
+  0.38100001215934753,
+  1.3461999893188477,
+  0.03350000083446503
+ ],
+ "triangles": 920,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_FabricCubicle",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 256,
+ "trianglesLod2": 116,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.762,
+  0.064
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.396
+}

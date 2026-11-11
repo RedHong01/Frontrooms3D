@@ -1,0 +1,12 @@
+structures_g2_a_gate.jpg 1919x1375, 9 tiles, 3 columns
+title | G2-A · GATES AND FR-1 | 381/1576 FIT
+g_main_SP6_s07.png | TODAY · main's code | SP6 s07, noise off | label 168/617 data 144/437 FIT
+g_k2_SP6_s07.png | TODAY · with G2-a | SP6 s07, NEW off, noise off | label 155/617 data 216/450 FIT
+g_diff_SP6_s07.png | Difference over 1/255 | 0 px | label 202/617 data 32/403 FIT
+g_main_SP2_s08.png | TODAY · main's code | SP2 s08, noise off | label 168/617 data 144/437 FIT
+g_k2_SP2_s08.png | TODAY · with G2-a | SP2 s08, NEW off, noise off | label 155/617 data 216/450 FIT
+g_diff_SP2_s08.png | Difference over 1/255 | 0 px | label 202/617 data 32/403 FIT
+g_phone_sp2.png | Phone · SP2 s08 NEW | iPhone 16 Pro, Medium, the water's phone tier | label 188/617 data 360/417 FIT
+g_phone_sp6.png | Phone · SP6 s07 NEW | kits' phone meshes, no housing | label 188/617 data 240/417 FIT
+g_gates.png | Gates | all passed | label 47/617 data 80/558 FIT
+ALL LABELS FIT

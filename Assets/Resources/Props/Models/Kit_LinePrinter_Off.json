@@ -1,0 +1,73 @@
+{
+ "name": "Kit_LinePrinter_Off",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.565,
+    0.0
+   ],
+   "size": [
+    0.87,
+    1.13,
+    0.755
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  4800,
+  1600,
+  360
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "service": 1.0,
+ "boundsMin": [
+  -0.43700000643730164,
+  0.0,
+  -0.39149999618530273
+ ],
+ "boundsMax": [
+  0.43700000643730164,
+  1.1299999952316284,
+  0.38749998807907104
+ ],
+ "triangles": 3466,
+ "slots": [
+  "Prop_SteelBrown",
+  "Prop_SteelBeige",
+  "Prop_PerfSteel",
+  "Prop_PlasticPutty",
+  "Prop_PlasticBlack",
+  "Prop_CompAtlas",
+  "Prop_CompIndicator_Off",
+  "Prop_Glass",
+  "Prop_Aluminium"
+ ],
+ "trianglesLod1": 1642,
+ "trianglesLod2": 250,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.87,
+  0.755
+ ],
+ "placement": "Floor",
+ "minCeiling": 0.0
+}

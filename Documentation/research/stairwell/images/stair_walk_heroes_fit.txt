@@ -1,0 +1,19 @@
+stair_walk_heroes.jpg 1920x1411, 16 tiles, 4 columns
+title | STAIR WALK HEROES | 310/1576 FIT
+hr_hero_nosing.png | HERO 0.38 m · nosing above | tread tops, fill swirl | label 241/457 data 176/204 FIT
+hr_hero_nosing_walk.png | HERO 0.35 m · walk line | worn face reads dark | label 213/457 data 160/232 FIT
+hr_hero_guard_top.png | HERO 0.4 m · guard top | rail, pickets, newel | label 204/457 data 160/241 FIT
+hr_hero_valve.png | HERO 0.6 m · hose valve | riser, valve, cap | label 211/457 data 136/234 FIT
+hr_hero_rail_end.png | HERO 0.45 m · rail end | bracket, return | label 201/457 data 120/244 FIT
+hr_exit_landing.png | 3 m · exit landing | turn wrap on the +x wall | label 157/457 data 192/288 FIT
+hr_flight1_down.png | 3 m · flight 1 | wrap edge-on, far wall lit | label 127/457 data 208/318 FIT
+hr_turn_landing.png | 3 m · turn landing | well guard, flight 2 | label 165/457 data 160/280 FIT
+hr_flight2_down.png | 3 m · flight 2 | down to the far landing | label 127/457 data 184/318 FIT
+hr_far_approach.png | 3 m · far approach | far landing below | label 170/457 data 136/275 FIT
+hr_far_door_stair.png | 3 m · far door | from the far landing | label 132/457 data 160/313 FIT
+hr_nprime_far_door.png | N-prime · far door | the new floor's side | label 165/457 data 160/280 FIT
+hr_r_hero_nosing_walk.png | Phone · walk line | reduced tier | label 155/457 data 96/290 FIT
+hr_r_turn_landing.png | Phone · turn landing | reduced tier | label 183/457 data 96/262 FIT
+hr_r_far_door_stair.png | Phone · far door | reduced tier | label 150/457 data 96/295 FIT
+hr_cost.png | COST | LOD0 / LOD1 / LOD2 per kit | label 39/457 data 208/406 FIT
+ALL LABELS FIT

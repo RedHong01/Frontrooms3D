@@ -1,0 +1,59 @@
+{
+ "name": "Kit_EPOStation",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "wall_decor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "lodBudget": [
+  1400,
+  500,
+  100
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.15000000596046448,
+  0.0,
+  -0.0
+ ],
+ "boundsMax": [
+  0.15000000596046448,
+  0.15000000596046448,
+  0.08399999886751175
+ ],
+ "triangles": 1116,
+ "slots": [
+  "Prop_CompAtlas",
+  "RunB_FireRed",
+  "Prop_PlasticBlack",
+  "Prop_Glass",
+  "Prop_Chrome",
+  "Prop_CompIndicator"
+ ],
+ "trianglesLod1": 436,
+ "trianglesLod2": 140,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.041999999433755875
+ ],
+ "footprintSize": [
+  0.30000001192092896,
+  0.08399999886751175
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

@@ -1,0 +1,72 @@
+{
+ "name": "Kit_FlipChartEasel_PagesOver",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.6,
+    -0.25
+   ],
+   "size": [
+    0.7,
+    1.2,
+    0.65
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "easel"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  45.0
+ ],
+ "lodBudget": [
+  1600,
+  600,
+  100
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.36000001430511475,
+  0.0,
+  -0.6127842664718628
+ ],
+ "boundsMax": [
+  0.36000001430511475,
+  1.8675885200500488,
+  0.07500000298023224
+ ],
+ "triangles": 900,
+ "slots": [
+  "Prop_Aluminium",
+  "Prop_Rubber",
+  "Prop_SteelBlack",
+  "Prop_Hardboard",
+  "Prop_PaperAtlas",
+  "Trans_AluminiumSatin",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 516,
+ "trianglesLod2": 136,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.24999999999999997
+ ],
+ "footprintSize": [
+  0.7,
+  0.6499999999999999
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.918
+}

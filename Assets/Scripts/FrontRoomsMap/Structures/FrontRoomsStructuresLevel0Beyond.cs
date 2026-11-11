@@ -99,12 +99,60 @@ public sealed partial class FrontRoomsStructuresLevel0
         kit.Shell(2.9f, -.9f);
         kit.StepRun(new Vector3(66f, 0f, 16.5f), Vector3.right, 1.2f, -.9f, 0f, carpet, null);
         var laminate = FrontRoomsPoolMaterials.Surface("Prop_LaminateBeige", new Color(.8f, .75f, .62f));
+        if (kit.New && FrontRoomsKitLibrary.Has("Kit_TrainingTable_Row2"))
+        {
+            TrainingNew();
+            return;
+        }
         for (var j = 2; j <= 5; j++)
         {
             var y = -.3f * (j - 2);
             kit.StandIn("training table row", new Vector3(60f, y + .37f, 3f * j + .6f), new Vector3(8.4f, .74f, .6f), laminate);
         }
         kit.StandIn("projection screen", new Vector3(60f, -.9f + 1.75f, 17.9f), new Vector3(5.4f, 1.7f, .04f), FrontRoomsPoolMaterials.Lit("screen white", new Color(.9f, .9f, .88f), .2f), 0f, false);
+    }
+
+    // K3 (NEW; S3-09, 62 2.4): a 1989 training room of 游戏视觉's P16 kits. Tiers 0 / -0.30 / -0.60 each hold a row (two ganged
+    // tables and one between: the stand-ins' 8.4 m) in the tier's middle with its chairs behind it on the same tier, facing the
+    // screen; the front tier (-0.90) is the presenter's: the overhead on its cart throwing back to the pulled-down screen, the
+    // lectern, the board, the instructor's table with its modesty panels toward the rows, the easel, the TV on the tall cart, a
+    // stack of chairs on a side aisle. Kit colliders (bodies) replace the stand-ins' (walk test at render).
+    void TrainingNew()
+    {
+        float[] x = { 57.327f, 60f, 62.672f };
+        string[][] rows =
+        {
+            new[] { "Kit_TrainingTable_Row2_Tucked", "Kit_TrainingTable", "Kit_TrainingTable_Row2_Tucked_Teal" },              // back (z 6..9)
+            new[] { "Kit_TrainingTable_Row2_Tucked_Charcoal", "Kit_TrainingTable_Dove", "Kit_TrainingTable_Row2_Tucked" },       // middle
+            new[] { "Kit_TrainingTable_Row2_Handouts", "Kit_TrainingTable", "Kit_TrainingTable_Row2_Handouts" },               // the session
+        };
+        for (var j = 2; j <= 4; j++)
+        {
+            var y = -.3f * (j - 2);
+            // the session row (j 4) 0.2 m toward the presenter: its pulled-out chairs then stand 0.82 m clear of the riser behind
+            // them (0.62 m left two one-way pockets in the walk test, G3 render 2026-11-11: a player could drop in and not climb out)
+            var z = 3f * j + 1.5f + (j == 4 ? .2f : 0f);
+            var row = rows[j - 2];
+            for (var k = 0; k < 3; k++)
+                kit.Kit(row[k], new Vector3(x[k], y, z), 180f, new Vector3(k == 1 ? 1.53f : 3.05f, .74f, .46f));
+            if (j == 4)
+            {
+                // the session's chairs pulled out behind their places (the tucked rows carry theirs)
+                foreach (var cx in new[] { 56.1f, 56.9f, 57.7f, 58.5f, 59.6f, 60.4f, 61.5f, 62.3f, 63.1f, 63.9f })
+                    kit.Kit(cx > 60.8f && cx < 62f ? "Kit_StackChair_Teal" : "Kit_StackChair", new Vector3(cx, y, z - .62f), 0f, new Vector3(.5f, .8f, .51f));
+            }
+        }
+        const float yF = -.9f;
+        kit.Kit("Kit_ProjectionScreen_WallLit", new Vector3(58.8f, 2.75f, 17.92f), 180f, new Vector3(1.9f, .26f, .11f), null, false);
+        kit.Kit("Kit_AVCart_Low", new Vector3(58.8f, yF, 16.2f), 0f, new Vector3(.61f, .66f, .5f));
+        kit.Kit("Kit_OverheadProjector_Lit", new Vector3(58.8f, yF + .661f, 16.2f), 0f, new Vector3(.36f, .7f, .74f), null, false);
+        kit.Kit("Kit_Lectern", new Vector3(61.6f, yF, 16.95f), 0f, new Vector3(.66f, 1.44f, .51f));
+        kit.Kit("Kit_MarkerBoard_Written", new Vector3(62.6f, yF, 17.92f), 180f, new Vector3(2.45f, 1.23f, .08f), null, false);
+        kit.Kit("Kit_TrainingTable_Row2_Modesty", new Vector3(63.2f, yF, 16.0f), 0f, new Vector3(3.05f, .74f, .46f));
+        kit.Kit("Kit_FlipChartEasel_Written", new Vector3(65.0f, yF, 16.9f), 200f, new Vector3(.72f, 1.85f, .69f));
+        var cart = kit.Kit("Kit_AVCart_Tall", new Vector3(55.6f, yF, 16.8f), 30f, new Vector3(.61f, 1.07f, .5f));
+        if (cart != null) kit.Kit("Kit_CRTTV", new Vector3(55.6f, yF + 1.068f, 16.8f), 30f, new Vector3(.62f, .5f, .49f), null, false);
+        kit.Kit("Kit_StackChair_Stack6", new Vector3(54.7f, -.6f, 13.5f), 75f, new Vector3(.5f, 1.23f, .66f));
     }
 
     // ---------------------------------------------------------------- (g) F9: the Relay stand-in on the far rim
@@ -196,6 +244,21 @@ public sealed partial class FrontRoomsStructuresLevel0
         for (var i = 0; i < 3; i++)
             for (var j = 0; j < 3; j++)
                 kit.Troffer(new Vector3(148.5f + 3f * i, 2.9f, 7.5f + 3f * j + FrontRooms.Map.ModuleUnits.TrofferOffsetZ), false);
+        if (kit.New)
+        {
+            // K3 (NEW; S3-11): the game's lounge seating on the pit's floor (x 150..154.8, z 9..13.8 past its step runs): the charcoal
+            // sofa against the north half-wall, two club chairs, a turned side table with the pleated lamp, another with an ashtray,
+            // the smoking stand (62 Q4, the smoking event, stays the owners'); kit colliders (walk test at render)
+            const float yL = -.6f;
+            kit.Kit("Kit_Sofa3_Charcoal", new Vector3(152.4f, yL, 13.3f), 180f, new Vector3(2f, .82f, .91f));
+            kit.Kit("Kit_ClubChair", new Vector3(154.2f, yL, 11.4f), -90f, new Vector3(.84f, .82f, .86f));
+            kit.Kit("Kit_ClubChair", new Vector3(151.0f, yL, 10.2f), 40f, new Vector3(.84f, .82f, .86f));
+            kit.Kit("Kit_SideTableTurned", new Vector3(154.0f, yL, 12.95f), 0f, new Vector3(.46f, .66f, .46f));
+            kit.Kit("Kit_TableLampPleated", new Vector3(154.0f, yL + .66f, 12.95f), 0f, new Vector3(.38f, .62f, .38f), null, false);
+            kit.Kit("Kit_SideTableTurned", new Vector3(152.3f, yL, 11.2f), 0f, new Vector3(.46f, .66f, .46f));
+            kit.Kit("Kit_Ashtray", new Vector3(152.3f, yL + .66f, 11.2f), 20f, new Vector3(.12f, .03f, .12f), null, false);
+            kit.Kit("Kit_SmokingStand", new Vector3(150.6f, yL, 12.9f), 0f, new Vector3(.34f, .62f, .34f));
+        }
     }
 
     // ---------------------------------------------------------------- (j) the file mezzanine's gallery, B4-S and B2
@@ -210,7 +273,8 @@ public sealed partial class FrontRoomsStructuresLevel0
         kit.Slab(171f, 10.5f, 183f, 15f, g, carpet, .2f);
         kit.Shell(5.4f, 0f);
         var steel = FrontRoomsPoolMaterials.Surface("Prop_SteelBeige", new Color(.75f, .72f, .65f));
-        foreach (var z in new[] { 11.6f, 13.0f, 14.4f }) kit.StandIn("file shelving row", new Vector3(177.6f, 1.05f, z), new Vector3(9.6f, 2.1f, .45f), steel);
+        if (kit.New && FrontRoomsKitLibrary.Has("Kit_OpenShelfFile")) MezzanineNew();
+        else foreach (var z in new[] { 11.6f, 13.0f, 14.4f }) kit.StandIn("file shelving row", new Vector3(177.6f, 1.05f, z), new Vector3(9.6f, 2.1f, .45f), steel);
         for (var i = 0; i < 4; i++) kit.Troffer(new Vector3(172.5f + 3f * i, g - .2f, 12.75f), false);
         // B4-S: 2.5 across round a post, 15 x 0.18, 14 treads of 23 degrees (322), the last riser on the north radius, a landing
         // west of it against the west wall (the split suite's B4-S, resized after the walk test of 11-04: 1.7 across was too
@@ -240,6 +304,34 @@ public sealed partial class FrontRoomsStructuresLevel0
         // Glass guards on the gallery's open south edge, but where the two landings join it.
         kit.Shell(5.4f, g);
         kit.Guard(new Vector3(172.5f, 0f, 10.58f), new Vector3(181.2f, 0f, 10.58f), g, FrontRoomsStructuresKit.GuardStyle.Glass);
+    }
+
+    // K3 (NEW; S3-12, 62 2.9): the records room under the gallery, 游戏视觉's P16 kits. Row 1 (z 11.6): ten open end-tab files facing
+    // the stair's aisle (a gappy one in four, never two together); rows 2 and 3 (z 13.0, 14.4): mobile carriages on their floor rails,
+    // a 4-bay and a 5-bay each side of a 0.9 m cross aisle, their hand wheels toward it, one aisle open between them (blind aisles on
+    // purpose, 62 section 0); laterals on the east wall with one drawer out and the file cart by it, cartons where the gallery's shadow
+    // falls, the fiche reader on a desk in the open half. Kit colliders (bodies) replace the stand-ins' (walk test at render).
+    void MezzanineNew()
+    {
+        string[] row1 = { "Kit_OpenShelfFile", "Kit_OpenShelfFile", "Kit_OpenShelfFile_Gappy", "Kit_OpenShelfFile", "Kit_OpenShelfFile", "Kit_OpenShelfFile", "Kit_OpenShelfFile_Gappy", "Kit_OpenShelfFile", "Kit_OpenShelfFile_Gappy", "Kit_OpenShelfFile" };
+        for (var k = 0; k < row1.Length; k++) kit.Kit(row1[k], new Vector3(173.257f + .914f * k, 0f, 11.6f), 180f, new Vector3(.914f, 2.134f, .305f));
+        kit.Kit("Kit_MobileShelving_4", new Vector3(174.7225f, 0f, 13.0f), 0f, new Vector3(3.845f, 2.103f, .61f));
+        kit.Kit("Kit_MobileShelving_5_Cartons", new Vector3(179.979f, 0f, 13.0f), 180f, new Vector3(4.758f, 2.103f, .61f));
+        kit.Kit("Kit_MobileShelving_4", new Vector3(174.7225f, 0f, 14.4f), 0f, new Vector3(3.845f, 2.103f, .61f));
+        kit.Kit("Kit_MobileShelving_5", new Vector3(179.979f, 0f, 14.4f), 180f, new Vector3(4.758f, 2.103f, .61f));
+        foreach (var x in new[] { 173.2f, 174.72f, 176.2f, 178.2f, 179.98f, 181.8f })
+            kit.Kit("Kit_MobileShelving_Rail", new Vector3(x, 0f, 13.42f), 0f, new Vector3(.1f, .03f, 3f), null, false);
+        kit.Kit("Kit_LateralFile_4", new Vector3(182.69f, 0f, 6.7f), -90f, new Vector3(.92f, 1.33f, .46f));
+        kit.Kit("Kit_LateralFile_4_Open", new Vector3(182.69f, 0f, 7.65f), -90f, new Vector3(.92f, 1.33f, .46f));
+        kit.Kit("Kit_LateralFile_5", new Vector3(182.69f, 0f, 8.6f), -90f, new Vector3(.92f, 1.67f, .46f));
+        kit.Kit("Kit_FileCart", new Vector3(181.25f, 0f, 7.75f), 10f, new Vector3(.84f, .93f, .41f));
+        kit.Kit("Kit_RecordsCarton_Stack5", new Vector3(171.45f, 0f, 12.6f), 90f, new Vector3(.64f, .77f, .4f));
+        kit.Kit("Kit_RecordsCarton_Sagging", new Vector3(171.4f, 0f, 13.55f), 80f, new Vector3(.34f, 1.02f, .4f));
+        kit.Kit("Kit_RecordsCarton_Stack3", new Vector3(171.4f, 0f, 14.35f), 95f, new Vector3(.34f, .77f, .41f));
+        kit.Kit("Kit_RecordsCarton_LidOff", new Vector3(177.1f, 0f, 12.2f), 5f, new Vector3(.69f, .25f, .44f), null, false);
+        kit.Kit("Kit_OfficeDesk", new Vector3(179.6f, 0f, 7.0f), 0f, new Vector3(1.52f, .74f, .76f));
+        kit.Kit("Kit_MicroficheReader_Carousel", new Vector3(179.4f, .74f, 6.92f), 0f, new Vector3(.69f, .53f, .85f), null, false);
+        kit.Kit("Kit_TaskChair", new Vector3(179.8f, 0f, 7.62f), 180f, new Vector3(.6f, .9f, .6f));
     }
 
     // ---------------------------------------------------------------- the beyond signs (70 section 5's bullets, verbatim) and stops

@@ -33,6 +33,14 @@ public sealed class FrontRoomsWaterSurface : MonoBehaviour
     [Tooltip("Where the zone's reflection probe counts as captured, above the water (m), at the room's centre.")]
     public float probeHeight = 1.6f;
 
+    [Header("The room its light reaches (FrontRoomsWaterSubmerged)")]
+    [Tooltip("Off (the default): the light the water throws into its room (the niches' thrown light, the mirror, the bounce) stops at the reflection box above (roomMargin, roomHeight). On: at the box below instead, so a room that is not centred on its water, or rises above the lid the reflections use (a dome, a vault), is described as it is. The reflections keep the box above either way.")]
+    public bool lightRoom;
+    [Tooltip("With lightRoom: how far the light's room reaches past the water's rectangle on each side (m): x toward -x, y toward +x, z toward -z, w toward +z.")]
+    public Vector4 lightRoomPad = Vector4.zero;
+    [Tooltip("With lightRoom: the light room's top over the water (m).")]
+    public float lightRoomHeight = 2.9f;
+
     [Header("Submerged (FrontRoomsWaterSubmerged)")]
     [Tooltip("Absorption scale (17 Q1): the club 1 (physical), the pool level 3-5, one or two rooms 9. Below 0: the zone's (FrontRoomsZoneLookProfile.waterAbsorbScale).")]
     public float absorbScale = -1f;
@@ -63,8 +71,17 @@ public sealed class FrontRoomsWaterSurface : MonoBehaviour
         FrontRoomsWaterPlanar.Register(target, y, refraction, box, new Vector3(box.center.x, y + probeHeight, box.center.z));
         if (ringId == 0) ringId = nextId++;
         FrontRoomsWaterRings.RegisterWater(ringId, new Rect(b.min.x, b.min.z, b.size.x, b.size.z), y);
-        FrontRoomsWaterSubmerged.Register(ringId, new Rect(b.min.x, b.min.z, b.size.x, b.size.z),
-            new Rect(box.min.x, box.min.z, box.size.x, box.size.z), y, box.max.y, absorbScale, basinAlbedo, thrownGain);
+        // the water's light reaches the reflection box's room, or the light room given (structures G2-a: scene 4's rooms fitted
+        // to their walls, the dome and the vault included, so no face of the box crosses a wall or a spring line)
+        var lit = new Rect(box.min.x, box.min.z, box.size.x, box.size.z);
+        var litTop = box.max.y;
+        if (lightRoom)
+        {
+            lit = Rect.MinMaxRect(b.min.x - Mathf.Max(lightRoomPad.x, 0f), b.min.z - Mathf.Max(lightRoomPad.z, 0f),
+                b.max.x + Mathf.Max(lightRoomPad.y, 0f), b.max.z + Mathf.Max(lightRoomPad.w, 0f));
+            litTop = y + Mathf.Max(lightRoomHeight, .1f);
+        }
+        FrontRoomsWaterSubmerged.Register(ringId, new Rect(b.min.x, b.min.z, b.size.x, b.size.z), lit, y, litTop, absorbScale, basinAlbedo, thrownGain);
         FrontRoomsWaterSubmerged.SetSources(ringId, causticSourceA, causticSourceB, causticSourceRadius);
         FrontRoomsWaterSubmerged.SetDepth(ringId, depth > 0f ? depth : (kind == Kind.Ankle ? .12f : 1.2f));
     }

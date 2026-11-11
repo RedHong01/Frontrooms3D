@@ -1,0 +1,21 @@
+stair_walk_kits.jpg 1919x3133, 18 tiles, 3 columns
+title | STAIR WALK KITS | 260/1552 FIT
+a_flight.png | Flight 1 · 3 m | 10 x 175 / 9 x 280, 1.12 m wide | label 127/617 data 248/478 FIT
+a_turn.png | Turn landing · 3 m | well 0.42 m, 42 in guard | label 165/617 data 192/440 FIT
+a_far.png | Two flights · 3 m | flight 2 to the far landing | label 157/617 data 216/448 FIT
+a_valve.png | Hose station · 3 m | 4 in riser, valve at 1.37 m | label 163/617 data 216/442 FIT
+a_over.png | Shell overview | 2.66 x 5.66 m clear, inset | label 131/617 data 208/474 FIT
+h_tread.png | HERO 0.35 m · nosing | pan lip, worn steel, primer | label 187/617 data 216/418 FIT
+h_guard.png | HERO 0.35 m · guard top | 1-1/4 in rail, 1/2 in pickets | label 217/617 data 232/388 FIT
+h_rail.png | HERO 0.35 m · rail end | G1 bracket, 12 in, return | label 201/617 data 200/404 FIT
+h_valve.png | HERO 0.35 m · valve | cast brass, red handwheel | label 179/617 data 200/426 FIT
+k_flight.png | Flight kit · 4 m | C10 stringers, 12 ga pans | label 138/617 data 200/467 FIT
+k_guard.png | Flight guard · 4.4 m | 4 in sphere, 6 in triangle | label 181/617 data 208/424 FIT
+k_rail.png | Wall rail · 3 m | 38 mm clear, 0.91 m | label 137/617 data 152/468 FIT
+k_valve.png | Hose valve kit · 3 m | stub 0.60-1.80 m, tee | label 178/617 data 168/427 FIT
+k_g1540.png | Landing guard · 3 m | 42 in, exit landing edge | label 175/617 data 192/430 FIT
+k_barrier.png | Barrier · 3.2 m | ADAAG 4.4.2, under 80 in | label 139/617 data 192/466 FIT
+p_cost.png | Cost | over the plan on rails and valve | label 39/617 data 256/566 FIT
+p_period.png | Period | 1988-91 US egress stair | label 55/617 data 184/550 FIT
+p_state.png | State | contract README DRAFT | label 46/617 data 168/559 FIT
+ALL LABELS FIT

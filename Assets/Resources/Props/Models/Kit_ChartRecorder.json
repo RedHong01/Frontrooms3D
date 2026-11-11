@@ -1,0 +1,59 @@
+{
+ "name": "Kit_ChartRecorder",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "wall_decor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  8.0,
+  30.0
+ ],
+ "lodBudget": [
+  1600,
+  500,
+  100
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "boundsMin": [
+  -0.18199999630451202,
+  0.0,
+  -0.0
+ ],
+ "boundsMax": [
+  0.18000000715255737,
+  0.4000000059604645,
+  0.15450000762939453
+ ],
+ "triangles": 1390,
+ "slots": [
+  "Prop_SteelBeige",
+  "Prop_Glass",
+  "Prop_PlasticBlack",
+  "Prop_CompAtlas",
+  "Prop_Chrome",
+  "Prop_CompIndicator"
+ ],
+ "trianglesLod1": 646,
+ "trianglesLod2": 128,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0009999945759773254,
+  0.07725000381469727
+ ],
+ "footprintSize": [
+  0.3620000034570694,
+  0.15450000762939453
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

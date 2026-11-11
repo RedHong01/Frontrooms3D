@@ -77,17 +77,20 @@ let CJK: Set<String> = ["zh-Hans", "zh-Hant", "ja", "ko"]
 // zh-Hans signs: 黑体 (Noto Sans SC = Source Han Sans SC, OFL 1.1), Heros Bold -> 700, Heros -> 400, Heros Cn Bold -> 700 (CJK is not condensed).
 let SC_SANS = NSString(string: "~/Library/Fonts/NotoSansSC-VariableFont_wght.ttf").expandingTildeInPath
 let CJK_SRC = NSString(string: "~/FrontRoomsInteractionWork/settings/localization/fonts/src/").expandingTildeInPath + "/"
-let RU_BOLD = FONT.replacingOccurrences(of: "TeXGyre/", with: "RobotoCondensed/RobotoCondensed-Bold.ttf")
-let RU_REG = FONT.replacingOccurrences(of: "TeXGyre/", with: "RobotoCondensed/RobotoCondensed-Regular.ttf")   // the fine print, as Heros Regular elsewhere
+// ru signs: PT Sans (ParaType, OFL 1.1, drawn from the Soviet-era public grotesques; downloaded 11-10 on Red's word, kept
+// outside the repo, only pixels ship): Heros Bold -> PT Sans Bold, Heros -> PT Sans Regular, Heros Cn Bold -> PT Sans Narrow Bold.
+let PT_SANS = NSString(string: "~/FrontRoomsVisualWork/iconography/fonts_world/ptsans/").expandingTildeInPath + "/"
+let RU_BOLD = PT_SANS + "PT_Sans-Web-Bold.ttf", RU_REG = PT_SANS + "PT_Sans-Web-Regular.ttf", RU_COND = PT_SANS + "PT_Sans-Narrow-Web-Bold.ttf"
 func varFont(_ path: String, _ weight: Double) -> CTFontDescriptor {
   let base = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: path) as CFURL) as! [CTFontDescriptor])[0]
   return CTFontDescriptorCreateCopyWithAttributes(base, [kCTFontVariationAttribute as String: [0x77676874: weight]] as CFDictionary) }
 var CJK_BOLD: CTFontDescriptor? = nil, CJK_REG: CTFontDescriptor? = nil
-var RU_DESC: CTFontDescriptor? = nil, RU_REG_DESC: CTFontDescriptor? = nil
+var RU_DESC: CTFontDescriptor? = nil, RU_REG_DESC: CTFontDescriptor? = nil, RU_COND_DESC: CTFontDescriptor? = nil
 func faceOf(_ face: Face) -> (CTFontDescriptor, Double, String) {
   let r = face == .bold ? capB : face == .reg ? capR : capC
-  if LANG == "ru", face == .reg, let d = RU_REG_DESC { return (d, capRatio(d), "Roboto Condensed Regular") }
-  if LANG == "ru", let d = RU_DESC { return (d, capRatio(d), "Roboto Condensed Bold") }
+  if LANG == "ru", let b = RU_DESC, let g = RU_REG_DESC, let c = RU_COND_DESC {
+    let d = face == .bold ? b : face == .reg ? g : c
+    return (d, capRatio(d), face == .bold ? "PT Sans Bold" : face == .reg ? "PT Sans" : "PT Sans Narrow Bold") }
   if CJK.contains(LANG), let b = CJK_BOLD, let g = CJK_REG { return (face == .reg ? g : b, 0.70, face == .reg ? "Noto Sans CJK 400" : "Noto Sans CJK 700") }
   return (face == .bold ? BOLD : face == .reg ? REG : CNB, r, face == .bold ? "Heros Bold" : face == .reg ? "Heros" : "Heros Cn Bold") }
 enum Ink { case print, red, white, tint, phos }   // phos: a phosphor field, invisible as ink; it only seeds the underprint
@@ -113,7 +116,7 @@ func call(_ n: Int, _ rule: String, _ x: Double, _ y: Double, _ note: String) { 
 func fitArgs(_ s: String, cap: Double, face: Face, track: Double, maxw: Double) -> (Double, Face, Double) {
   if LANG == "en" || maxw <= 0 { return (cap, face, 1) }
   var f = face
-  if measure(s, cap: cap, face: f, track: track) > maxw && LANG != "ru" && !CJK.contains(LANG) && f == .bold { f = .cond }
+  if measure(s, cap: cap, face: f, track: track) > maxw && !CJK.contains(LANG) && f == .bold { f = .cond }
   let w = measure(s, cap: cap, face: f, track: track)
   if w <= maxw { return (cap, f, 1) }
   if w * 0.85 <= maxw { return (cap, f, maxw / w) }
@@ -122,9 +125,9 @@ func fitArgs(_ s: String, cap: Double, face: Face, track: Double, maxw: Double) 
   return (c, f, 0.85) }
 // One block, one face (WORLD_TYPE.md §3): the alarm items and the legend rows are each set in one face for the whole block
 // and every sheet of the language, Heros Bold while each line fits, else Heros Cn Bold; the lines of one row share one
-// width (narrower to 85 %, then one smaller size). Russian and CJK have one face.
+// width (narrower to 85 %, then one smaller size). Russian takes PT Sans Bold / Narrow Bold the same way; CJK has one face.
 func blockFace(_ rows: [(String, Bool, Bool)], maxw: Double, cap: Double, track: Double) -> Face {   // (row, may take two lines, one line preferred)
-  if LANG == "en" || LANG == "ru" || CJK.contains(LANG) { return .bold }
+  if LANG == "en" || CJK.contains(LANG) { return .bold }
   for (r, two, one) in rows {
     let ls = two ? breakLines(r, maxw: maxw, cap: cap, face: .bold, track: track, preferOne: one) : [r]
     if ls.contains(where: { measure($0, cap: cap, face: .bold, track: track) > maxw }) { return .cond } }
@@ -289,7 +292,7 @@ func sheet(level: String, tb: [String]) {
   var hf = Face.bold, hc = 15.0, hk = 1.0
   if LANG != "en" {
     func longest(_ f: Face) -> Double { ["LEVEL 0", "LEVEL B9", "LEVEL B10+"].map { measure($0, cap: 15, face: f, track: 0.6) }.max()! }
-    if LANG != "ru" && !CJK.contains(LANG) && measure("EVACUATION PLAN", cap: 15, face: .bold, track: 0.6) > 392 - longest(.bold) - 10 { hf = .cond }
+    if !CJK.contains(LANG) && measure("EVACUATION PLAN", cap: 15, face: .bold, track: 0.6) > 392 - longest(.bold) - 10 { hf = .cond }
     (hc, _, hk) = fitArgs("EVACUATION PLAN", cap: 15, face: hf, track: 0.6, maxw: 392 - longest(hf) - 10) }
   text("EVACUATION PLAN", 20, 37, cap: hc, face: hf, track: 0.6, sx: hk)          // header, ISO §6 b: band >= 19.5, caps >= 11.7
   text(level, 412, 37, cap: 15, face: hf, track: 0.6, align: 2)                   // floor designation = the floor count (L9)
@@ -305,7 +308,7 @@ func sheet(level: String, tb: [String]) {
     func sum(_ f: Face, _ c: Double, _ ts: [String] = tb) -> Double { ts.map { measure($0, cap: c, face: f, track: 0.15) }.reduce(0, +) }
     // the face is decided by every floor's block (LEVEL 0, B9, and B10+ at its 3.2 mm), so the sheets of a language match
     let floors: [(String, Double)] = [("LEVEL 0", 3.6), ("LEVEL B9", 3.6), ("LEVEL B10+", 3.2)]
-    if LANG != "ru" && floors.contains(where: { sum(.bold, $0.1, [$0.0] + Array(tb.dropFirst())) + 6 * pad > 112 }) { tf = .cond }
+    if floors.contains(where: { sum(.bold, $0.1, [$0.0] + Array(tb.dropFirst())) + 6 * pad > 112 }) { tf = .cond }
     if sum(tf, cap) + 6 * pad > 112 { tk = max(0.85, (112 - 6 * pad) / sum(tf, cap))
       for _ in 0..<6 where sum(tf, tc) * tk + 6 * pad > 112 && tc > cap * 0.7 { tc = max(cap * 0.7, tc * (112 - 6 * pad) / (sum(tf, tc) * tk)) } }
     cx = 300.0; cells = []
@@ -848,7 +851,8 @@ for a in CommandLine.arguments.dropFirst(3) where a.hasPrefix("lang=") {
   let cjkFiles = ["zh-Hant": "TC", "ja": "JP", "ko": "KR"]
   if let k = cjkFiles[LANG] { CJK_BOLD = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: CJK_SRC + "NotoSans\(k)-Bold.otf") as CFURL) as! [CTFontDescriptor])[0]; CJK_REG = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: CJK_SRC + "NotoSans\(k)-Regular.otf") as CFURL) as! [CTFontDescriptor])[0] }
   if LANG == "ru" { RU_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_BOLD) as CFURL) as! [CTFontDescriptor])[0]
-    RU_REG_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_REG) as CFURL) as! [CTFontDescriptor])[0] }
+    RU_REG_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_REG) as CFURL) as! [CTFontDescriptor])[0]
+    RU_COND_DESC = (CTFontManagerCreateFontDescriptorsFromURL(URL(fileURLWithPath: RU_COND) as CFURL) as! [CTFontDescriptor])[0] }
   // The stair's run arrow (叙事 11-03, narrative/95 §5) and the zh-Hant YOU ARE HERE row used in both places.
   let dn = ["zh-Hans": "下", "zh-Hant": "下", "ja": "下", "ko": "아래", "de": "AB", "fr": "DESC.", "es": "BAJA", "pt-BR": "DESCE", "ru": "ВНИЗ"]
   if let d = dn[LANG] { OVR["DN"] = d }

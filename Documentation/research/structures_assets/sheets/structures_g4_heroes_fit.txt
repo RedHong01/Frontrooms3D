@@ -1,0 +1,31 @@
+structures_g4_heroes.jpg 1920x2299, 28 tiles, 4 columns
+title | G4 SP5 HEROES: 0.35 M AND 3 M | 535/1576 FIT
+h_hood_035.png | hood 0.35 m | 24 ga, hem, rivets | label 107/457 data 144/338 FIT
+h_hood_300.png | door head 3 m | hood, guides, chain | label 122/457 data 152/323 FIT
+h_hoist_035.png | hoist 0.35 m | pocket wheel, case | label 111/457 data 144/334 FIT
+h_slats_035.png | slats 0.35 m | V joints, spangle | label 114/457 data 136/331 FIT
+h_slats_300.png | curtain 3 m | half up, bar 1.20 | label 101/457 data 136/344 FIT
+h_lip_035.png | leveler lip 0.35 | hinge, lentil tread | label 145/457 data 152/300 FIT
+h_lip_300.png | dock face 3 m | lip, bumpers, chocks | label 120/457 data 160/325 FIT
+h_deck_035.png | deck 0.35 m | lentil tread plate | label 106/457 data 144/339 FIT
+h_hps_035.png | HPS 0.35 m | refractor prisms | label 97/457 data 128/348 FIT
+h_hps_300.png | HPS 3 m | on the block wall | label 67/457 data 136/378 FIT
+h_par_035.png | dock light 0.35 | PAR38, wire guard | label 138/457 data 136/307 FIT
+h_par_300.png | dock light 3 m | arm on its post | label 126/457 data 120/319 FIT
+h_hasp_035.png | hasp 0.35 m | laminated padlock | label 106/457 data 136/339 FIT
+h_hasp_300.png | cage door 3 m | 4 ft door, panel | label 122/457 data 128/323 FIT
+h_wireback_060.png | wire from inside | two faces, backlit | label 142/457 data 144/303 FIT
+h_wirefront_060.png | wire from front | 10 ga woven | label 142/457 data 88/303 FIT
+h_clock_035.png | time clock 0.35 | blank cards | label 139/457 data 88/306 FIT
+h_clock_300.png | time clock 3 m | goal landing | label 127/457 data 96/318 FIT
+h_hose_035.png | hose cabinet 0.35 | valve, linen hose | label 156/457 data 136/289 FIT
+h_hose_300.png | hose cabinet 3 m | semi-recessed | label 144/457 data 104/301 FIT
+h_sink_120.png | mop sink 1.2 m | molded stone | label 127/457 data 96/318 FIT
+h_machine_140.png | floor machine | stored upright | label 120/457 data 112/325 FIT
+h_duct_280.png | services 2.8 m | duct, main, tray | label 128/457 data 128/317 FIT
+h_fd1_300.png | FD1 3 m | frame, DA leaves | label 69/457 data 128/376 FIT
+h_wireback_t.png | TODAY · wire inside | one-faced K1 guard | label 166/457 data 144/279 FIT
+h_hps_t.png | TODAY · HPS head | a lit box | label 146/457 data 72/299 FIT
+h_lip_t.png | TODAY · leveler | a slab | label 138/457 data 48/307 FIT
+h_cost.png | COST · kits | LOD budgets | label 98/457 data 88/347 FIT
+ALL LABELS FIT

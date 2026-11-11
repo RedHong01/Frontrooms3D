@@ -1,0 +1,14 @@
+structures_g2_d_kit.jpg 1919x1741, 11 tiles, 3 columns
+title | G2-D KIT: THREE POOL EDGES | 450/1576 FIT
+d_KIT_v_edges_today.png | TODAY · tile hall row 2 | plinth pockets | label 207/617 data 112/398 FIT
+d_KIT_v_edges_new.png | NEW · tile hall row 2 | three edge bays | label 193/617 data 120/412 FIT
+d_KIT_s04_today.png | TODAY · s04 plinth front | main | label 222/617 data 32/383 FIT
+d_KIT_s04_new.png | NEW · s04 plinth front | exhibits | label 208/617 data 64/397 FIT
+kit_rollout3m.png | NEW · roll-out 3 m | ask 1, KIT row | label 170/617 data 112/435 FIT
+kit_rimflow3m.png | NEW · rim-flow 3 m | ask 1, KIT row | label 172/617 data 112/433 FIT
+kit_recessed3m.png | NEW · recessed 3 m | ask 1, KIT row | label 173/617 data 112/432 FIT
+kit_rolloutsec.png | NEW · roll-out 0.45 m | from its water | label 200/617 data 112/405 FIT
+kit_rimflowsec.png | NEW · rim-flow 0.45 m | from its water | label 202/617 data 112/403 FIT
+kit_recessedsec.png | NEW · recessed 0.45 m | from its water | label 203/617 data 112/402 FIT
+kit_cost.png | COST · KIT NEW vs main | inventory | label 195/617 data 72/410 FIT
+ALL LABELS FIT

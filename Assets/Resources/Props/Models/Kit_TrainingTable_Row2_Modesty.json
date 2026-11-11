@@ -1,0 +1,83 @@
+{
+ "name": "Kit_TrainingTable_Row2_Modesty",
+ "supports": [
+  {
+   "name": "top",
+   "centre": [
+    0.0,
+    0.737,
+    0.0
+   ],
+   "size": [
+    3.048,
+    0.457
+   ]
+  }
+ ],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.3685,
+    0.0
+   ],
+   "size": [
+    3.048,
+    0.737,
+    0.457
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "table"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  55.0
+ ],
+ "lodBudget": [
+  2500,
+  950,
+  130
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -1.5269927978515625,
+  0.0,
+  -0.2314927875995636
+ ],
+ "boundsMax": [
+  1.5269927978515625,
+  0.7369999885559082,
+  0.23149999976158142
+ ],
+ "triangles": 2084,
+ "slots": [
+  "Prop_LaminateFawn",
+  "Prop_PVCEdge",
+  "Prop_Backer",
+  "Prop_SteelBlack",
+  "Prop_PlasticBlack"
+ ],
+ "trianglesLod1": 1364,
+ "trianglesLod2": 248,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  3.048,
+  0.457
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.787
+}

@@ -1,0 +1,17 @@
+structures_g2_d_sp1.jpg 1920x1381, 14 tiles, 4 columns
+title | G2-D SP1: TODAY | NEW | 369/1576 FIT
+d_SP1_s02_today.png | TODAY · s02 catch pool | main | label 207/457 data 32/238 FIT
+d_SP1_s02_new.png | NEW · s02 catch pool | coves, inlays, drain | label 193/457 data 160/252 FIT
+d_SP1_v_cove_today.png | TODAY · south wall foot | knife joint | label 212/457 data 88/233 FIT
+d_SP1_v_cove_new.png | NEW · south wall foot | cove r 50 + flats | label 198/457 data 136/247 FIT
+d_SP1_v_corner3m_today.png | TODAY · SE corner 3 m | knife joint | label 195/457 data 88/250 FIT
+d_SP1_v_corner3m_new.png | NEW · SE corner 3 m | mitred cove | label 181/457 data 88/264 FIT
+d_SP1_v_startroom_today.png | TODAY · start room | shelf + CRT | label 169/457 data 88/276 FIT
+d_SP1_v_startroom_new.png | NEW · start room | dispatcher post | label 155/457 data 120/290 FIT
+d_SP1_v_mark3m_today.png | TODAY · south edge 3 m | deck only | label 202/457 data 72/243 FIT
+d_SP1_v_mark3m_new.png | NEW · south edge 3 m | blank inlays | label 188/457 data 96/257 FIT
+d_SP1_v_cctv3m_today.png | TODAY · east wall | bare wall | label 156/457 data 72/289 FIT
+d_SP1_v_cctv3m_new.png | NEW · east wall | CCTV (G4 kit, trial) | label 142/457 data 160/303 FIT
+sp1_flash.png | FLASH · LW0 per stop | limit 3 | label 189/457 data 56/256 FIT
+sp1_cost.png | COST · SP1 NEW vs main | inventory | label 204/457 data 72/241 FIT
+ALL LABELS FIT

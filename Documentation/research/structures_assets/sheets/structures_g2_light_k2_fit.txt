@@ -1,0 +1,9 @@
+structures_g2_light_k2.jpg 1919x1597, 6 tiles, 3 columns
+title | G2 LIGHT · K2 POOL LAMPS ON IMAGE 1 | 624/1552 FIT
+k2_sp1.png | SP1 · 10 P1-A, 3 small niches | catch pool 0.90 m: ZL_NICHE_S x 3 | label 267/617 data 264/338 FIT
+k2_sp2.png | SP2 · 12 P1-A, 8 P2-A | basin 0.995 m: P2-A at -0.75 | label 197/617 data 224/408 FIT
+k2_sp6.png | SP6 · 21 P1-A, 24 P2-A, 1 small | boxes moved 0.15 m to the wall face | label 288/617 data 280/317 FIT
+k2_legend.png | Legend | from the census of today's stand-ins | label 57/617 data 288/548 FIT
+k2_rules.png | Rules | the lamp line's note of 21:58, applied | label 49/617 data 304/556 FIT
+k2_cost.png | COST | counted from the kits' sidecars | label 39/617 data 248/566 FIT
+ALL LABELS FIT

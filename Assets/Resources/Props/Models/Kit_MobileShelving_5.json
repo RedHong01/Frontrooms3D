@@ -1,0 +1,82 @@
+{
+ "name": "Kit_MobileShelving_5",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    -1.249000902703301e-16,
+    1.067,
+    0.0
+   ],
+   "size": [
+    4.626,
+    2.134,
+    0.61
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "aisleEnd",
+   "pos": [
+    2.3129999999999997,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "shelving",
+  "mobile"
+ ],
+ "lodDistances": [
+  6.0,
+  18.0,
+  70.0
+ ],
+ "lodBudget": [
+  7000,
+  2800,
+  300
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -2.312999963760376,
+  0.03500000014901161,
+  -0.3050000071525574
+ ],
+ "boundsMax": [
+  2.445499897003174,
+  2.138000011444092,
+  0.3050000071525574
+ ],
+ "triangles": 4764,
+ "slots": [
+  "Prop_SteelPutty",
+  "Prop_WoodLaminate",
+  "Prop_Aluminium",
+  "Prop_SteelBlack",
+  "Prop_Chrome",
+  "Prop_PlasticBlack",
+  "Prop_PaperAtlas"
+ ],
+ "trianglesLod1": 3012,
+ "trianglesLod2": 412,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  4.626,
+  0.61
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.188
+}

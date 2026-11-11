@@ -1,0 +1,61 @@
+{
+ "name": "Kit_DispatcherPost",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "slide",
+  "p15"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  3.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  8700,
+  2700,
+  450
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.6460000276565552,
+  0.0,
+  -0.0
+ ],
+ "boundsMax": [
+  0.6000000238418579,
+  1.3100000619888306,
+  0.41999998688697815
+ ],
+ "triangles": 8636,
+ "slots": [
+  "Prop_VinylCharcoal",
+  "Prop_PlasticPutty",
+  "Plenum_Dark",
+  "Prop_ChromeSatin",
+  "Prop_SteelBlack",
+  "Prop_PlasticBlack",
+  "Prop_ScreenCRT",
+  "Prop_PlasticRed",
+  "RunB_BucketYellow"
+ ],
+ "trianglesLod1": 2626,
+ "trianglesLod2": 432,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.023000001907348633,
+  0.20999999344348907
+ ],
+ "footprintSize": [
+  1.246000051498413,
+  0.41999998688697815
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

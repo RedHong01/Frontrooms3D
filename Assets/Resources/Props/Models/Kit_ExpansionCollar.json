@@ -1,0 +1,68 @@
+{
+ "name": "Kit_ExpansionCollar",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "sp7",
+  "p20",
+  "unwired"
+ ],
+ "noCollider": true,
+ "section": [
+  2.84,
+  2.9
+ ],
+ "farShore": {
+  "CollarZ0": 17.6,
+  "JointZ": 17.8,
+  "CollarZ1": 17.92,
+  "proud": 0.006
+ },
+ "wiredInSP7": false,
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  3500,
+  1000,
+  150
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -1.4274529218673706,
+  0.0,
+  -0.21250000596046448
+ ],
+ "boundsMax": [
+  1.4276933670043945,
+  2.9074809551239014,
+  0.125
+ ],
+ "triangles": 3612,
+ "slots": [
+  "RunB_GalvSteel",
+  "Prop_SteelBlack",
+  "Prop_StainlessSatin",
+  "Prop_Fireproofing"
+ ],
+ "trianglesLod1": 420,
+ "trianglesLod2": 196,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.00012022256851196289,
+  -0.04375000298023224
+ ],
+ "footprintSize": [
+  2.855146288871765,
+  0.3375000059604645
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.9
+}

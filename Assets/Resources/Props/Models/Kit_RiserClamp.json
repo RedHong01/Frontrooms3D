@@ -1,0 +1,54 @@
+{
+ "name": "Kit_RiserClamp",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "shaft",
+  "p20"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  700,
+  220,
+  40
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.18000000715255737,
+  0.0,
+  -0.07589999586343765
+ ],
+ "boundsMax": [
+  0.18000000715255737,
+  0.03200000151991844,
+  0.07589999586343765
+ ],
+ "triangles": 720,
+ "slots": [
+  "Prop_SteelBlack"
+ ],
+ "trianglesLod1": 320,
+ "trianglesLod2": 120,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.36000001430511475,
+  0.1517999917268753
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

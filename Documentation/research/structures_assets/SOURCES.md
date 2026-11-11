@@ -132,6 +132,18 @@ Fetch-tool side effect of Part B: WebFetch cached one ICC PDF on the history of 
 
 Nothing was downloaded. No image from these sources is copied anywhere; the evidence images of §11 are our own frames.
 
+## Part D · G2 review additions (N1-N3)
+
+Added at the G2 package (2026-11-10) from `60_build.md` "G2 review · assets", G2r.6, where they are cited (the flume's flanges, the glass-block pavers). Same columns as above.
+
+| Id | What | URL | How read | Note |
+|---|---|---|---|---|
+| N1 | US 4,149,710, P. P. Rouchard, "Waterslide amusement device", filed 1977-09-21, granted 1979-04-17 | https://patents.google.com/patent/US4149710A/en | read (via a fetch summary) | fibreglass-reinforced resin modules; transverse end flanges bolted with threaded fasteners; a viscous mastic (silicone) or a gasket between the faces; steel support plates bolted to the flanges |
+| N2 | US 4,198,043, Timbes and Price, 1980 | https://patents.google.com/patent/US4198043 | [search] | a modular sectional flume; earlier flumes were sheet metal or laid-up fibreglass on open frames |
+| N3 | Pittsburgh Corning glass block family including paver units; paver floors on aluminium grids, 6 and 8 in | https://sweets.construction.com/swts_content_files/778/P19351.htm ; https://aecinfo.com/innovate-building-solutions/glass-block-floor-with-pavers/product.html | [search] | both current (LATER): they show the system's form only |
+
+Nothing was downloaded for Part D either.
+
 ## Reused from other topics (not re-read; their own `SOURCES.md` files hold the rows)
 
 - BR: `research/bathroom_rooms/SOURCES.md` (S40 TM 5-662 of 1986, S41 the 1960 pool catalogue, S43 the 1965 tile book, S45, S46, S49; T1-T9 of `70_look_build.md` §4.1).

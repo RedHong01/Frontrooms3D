@@ -1,0 +1,79 @@
+{
+ "name": "Kit_RecordsCarton_Stack5",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    -0.162,
+    0.387,
+    0.0
+   ],
+   "size": [
+    0.325,
+    0.774,
+    0.401
+   ]
+  },
+  {
+   "centre": [
+    0.162,
+    0.258,
+    0.0
+   ],
+   "size": [
+    0.325,
+    0.516,
+    0.401
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "file_mezzanine",
+  "clutter",
+  "carton"
+ ],
+ "lodDistances": [
+  3.0,
+  9.0,
+  35.0
+ ],
+ "lodBudget": [
+  2000,
+  700,
+  150
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.3201570510864258,
+  0.0,
+  -0.19789324700832367
+ ],
+ "boundsMax": [
+  0.3194916844367981,
+  0.7739999890327454,
+  0.20140932500362396
+ ],
+ "triangles": 1100,
+ "slots": [
+  "Prop_PaperAtlas"
+ ],
+ "trianglesLod1": 100,
+ "trianglesLod2": 50,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.649,
+  0.401
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.824
+}

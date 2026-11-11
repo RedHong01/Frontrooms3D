@@ -1,0 +1,30 @@
+structures_g2_sp6.jpg 1920x8167, 27 tiles, 2 columns
+title | G2 · SP6 DEEP POOL TERRAIN · TODAY VS NEW | 742/1576 FIT
+SP6_s00_today.png | TODAY · s00 arrival corridor | main: the tiled corridor | label 262/938 data 192/664 FIT
+SP6_s00_new.png | NEW · s00 arrival corridor | the far arch in courses with its bullnose | label 248/938 data 328/678 FIT
+SP6_s01_today.png | TODAY · s01 arcade terrace | main: stand-in boxes, a prism edge | label 246/938 data 272/680 FIT
+SP6_s01_new.png | NEW · s01 arcade terrace | rim-flow edges, P1-A boxes | label 232/938 data 208/694 FIT
+SP6_s02_today.png | TODAY · s02 on the island | main: the island's edges | label 227/938 data 192/699 FIT
+SP6_s02_new.png | NEW · s02 on the island | rim-flow edges, arches in courses | label 213/938 data 264/713 FIT
+SP6_s03_today.png | TODAY · s03 weir terrace top | main: white sheets at W1-W3 | label 262/938 data 216/664 FIT
+SP6_s03_new.png | NEW · s03 weir terrace top | porcelain weir lips, nappes, foam lines | label 248/938 data 312/678 FIT
+SP6_s04_today.png | TODAY · s04 weir terrace foot | main: the terraces, stand-ins | label 271/938 data 232/655 FIT
+SP6_s04_new.png | NEW · s04 weir terrace foot | the stair's nosings, P1-A boxes, lips | label 257/938 data 296/669 FIT
+SP6_s05_today.png | TODAY · s05 dome gallery | main: stand-in boxes on the gallery | label 227/938 data 280/699 FIT
+SP6_s05_new.png | NEW · s05 dome gallery | P1-A boxes; Cap courses on the tiled guards | label 213/938 data 344/713 FIT
+SP6_s06_today.png | TODAY · s06 under the dome | main: spiral joints, a ragged oculus | label 245/938 data 288/681 FIT
+SP6_s06_new.png | NEW · s06 under the dome | whole tiles in rings, the oculus cut round | label 231/938 data 336/695 FIT
+SP6_s07_today.png | TODAY · s07 dome hall deck | main: B2's lit treads, no cap | label 243/938 data 232/683 FIT
+SP6_s07_new.png | NEW · s07 dome hall deck | B2's raking cap; its step lights at half (K2) | label 229/938 data 360/697 FIT
+SP6_s08_today.png | TODAY · s08 the cave's niche | main: a white stand-in disc | label 251/938 data 216/675 FIT
+SP6_s08_new.png | NEW · s08 the cave's niche | P2-A in the vault of 21 courses | label 237/938 data 248/689 FIT
+SP6_s09_today.png | TODAY · s09 on the tile blocks | main: white stand-in boxes | label 271/938 data 208/655 FIT
+SP6_s09_new.png | NEW · s09 on the tile blocks | P1-A boxes in place of the stand-ins | label 257/938 data 288/669 FIT
+SP6_s10_today.png | TODAY · s10 access-floor tank | main: picket cages, two posts a corner | label 272/938 data 304/654 FIT
+SP6_s10_new.png | NEW · s10 access-floor tank | two-line rails, one post a corner (ask 3 A) | label 258/938 data 344/668 FIT
+SP6_s04_phone.png | Phone · s04 | iPhone 16 Pro tier, Medium, NEW | label 110/938 data 248/816 FIT
+SP6_s07_phone.png | Phone · s07 | iPhone 16 Pro tier, Medium, NEW | label 110/938 data 248/816 FIT
+SP6_s04_off.png | Lamps off · s04 | lamps at 0: the ambient and probes stay | label 145/938 data 312/781 FIT
+SP6_cost.png | COST | TODAY -> NEW, the harness's inventories | label 39/938 data 312/887 FIT
+SP6_flash.png | FLASH | the project's flash_check on the final code | label 47/938 data 344/879 FIT
+ALL LABELS FIT

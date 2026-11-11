@@ -1,0 +1,95 @@
+{
+ "name": "Kit_TapeDrive_Reel_Static_Off",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.845,
+    0.0
+   ],
+   "size": [
+    0.76,
+    1.69,
+    0.75
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "name": "reelFile",
+   "pos": [
+    0.17,
+    1.215,
+    0.304
+   ]
+  },
+  {
+   "name": "reelMachine",
+   "pos": [
+    -0.17,
+    1.215,
+    0.304
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "p16",
+  "computer_room",
+  "wall_unit"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  8600,
+  3000,
+  650
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a1 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 computer room)",
+ "service": 1.2,
+ "boundsMin": [
+  -0.3835500180721283,
+  0.0,
+  -0.38700002431869507
+ ],
+ "boundsMax": [
+  0.3835500180721283,
+  1.6914499998092651,
+  0.3970000147819519
+ ],
+ "triangles": 8918,
+ "slots": [
+  "Prop_PlasticGrey",
+  "Prop_SteelBeige",
+  "Prop_PerfSteel",
+  "Prop_CompAtlas",
+  "Prop_PlasticBlack",
+  "Prop_CompIndicator_Off",
+  "Prop_Glass",
+  "Prop_Chrome",
+  "Prop_PlasticPutty",
+  "Painted_Metal",
+  "Prop_Aluminium",
+  "Prop_PlasticWhite",
+  "Prop_Rubber"
+ ],
+ "trianglesLod1": 4802,
+ "trianglesLod2": 1068,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.76,
+  0.75
+ ],
+ "placement": "Wall",
+ "minCeiling": 0.0
+}

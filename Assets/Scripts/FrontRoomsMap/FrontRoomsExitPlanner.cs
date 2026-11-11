@@ -65,11 +65,25 @@ namespace FrontRooms.Map
         /// </summary>
         public int lostToFrontRules;
 
-        /// <summary>The next floor's start door cell: X's north neighbour.</summary>
-        public GridCoord NextDoorCell => new GridCoord(exitCell.x, exitCell.y + 1);
+        /// <summary>
+        /// The walkable stair (FrontRoomsLevelProfile.walkableStair, contract 60 v1.1): the exit area is 1 x 2, X1 = exitCell
+        /// (= N + (0, 1)) and X2 = TurnCell (= N + (0, 2)), and the next floor starts in those two cells with its door on N.
+        /// False (C22's one-cell vestibule) for every plan ChooseExit, FromStartGroup and the C22 tools make. Never serialized,
+        /// so every report that writes an ExitPlan reads as before.
+        /// </summary>
+        [NonSerialized] public bool stair;
 
-        /// <summary>The next floor's start area: X alone.</summary>
-        public CellRect NextStartArea => new CellRect(exitCell.x, exitCell.y, 1, 1);
+        /// <summary>The next floor's start door cell: X's north neighbour (C22); N itself with the walkable stair (N' = N, the far door under the EXIT).</summary>
+        public GridCoord NextDoorCell => stair ? frontCell : new GridCoord(exitCell.x, exitCell.y + 1);
+
+        /// <summary>The next floor's start area: X alone (C22); X1 and X2 with the walkable stair.</summary>
+        public CellRect NextStartArea => stair ? new CellRect(exitCell.x, exitCell.y, 1, 2) : new CellRect(exitCell.x, exitCell.y, 1, 1);
+
+        /// <summary>The cells the map leaves to the stairwell on this floor: the same rect as NextStartArea (1 x 1, or 1 x 2 with the stair).</summary>
+        public CellRect ExitArea => NextStartArea;
+
+        /// <summary>X2 = X1 + (0, 1), the walkable stair's turn end (meaningful while stair).</summary>
+        public GridCoord TurnCell => new GridCoord(exitCell.x, exitCell.y + 1);
     }
 
     /// <summary>What SeedFor found for a floor after the first (D2).</summary>
@@ -209,9 +223,23 @@ namespace FrontRooms.Map
         /// candidates nearest the band asked (NearestGap). Generates the chunks the walk touches at the cache's
         /// current Tier: set the floor's tier on the cache first.
         /// </summary>
-        public static ExitPlan ChooseExit(FrontRoomsMapCache cache, CellRect startArea, GridCoord startDoor, int floorSeed, int bandMin, int bandMax)
+        public static ExitPlan ChooseExit(FrontRoomsMapCache cache, CellRect startArea, GridCoord startDoor, int floorSeed, int bandMin, int bandMax) =>
+            Choose(cache, startArea, startDoor, floorSeed, bandMin, bandMax, false);
+
+        /// <summary>
+        /// The walkable stair's EXIT (FrontRoomsLevelProfile.walkableStair; contract 60 v1.1 and MAP_GENERATION.md "Walkable
+        /// stair"): ChooseExit's bands, walk, pick and front rules with exit = X1, and the stair's cell rules on both cells:
+        /// StairCellsFit (X1 and X2 off the start area and its ring, X1 chunk-local i 1..6 and j 1..5 so X2 stays in X1's
+        /// chunk, the one that never shifts; neither cell in a room or a key's cell; no column on the pair's six corners),
+        /// the walk to N round both cells, StairKeepsChunkWhole and the pair's dead end (IsStairDeadEnd). The plan's stair
+        /// is true, so NextDoorCell is N and NextStartArea X1-X2.
+        /// </summary>
+        public static ExitPlan ChooseStairExit(FrontRoomsMapCache cache, CellRect startArea, GridCoord startDoor, int floorSeed, int bandMin, int bandMax) =>
+            Choose(cache, startArea, startDoor, floorSeed, bandMin, bandMax, true);
+
+        static ExitPlan Choose(FrontRoomsMapCache cache, CellRect startArea, GridCoord startDoor, int floorSeed, int bandMin, int bandMax, bool stair)
         {
-            var plan = new ExitPlan();
+            var plan = new ExitPlan { stair = stair };
             if (cache == null || InArea(startArea, startDoor)) return plan;
             bandMin = Math.Max(1, bandMin);
             bandMax = Math.Max(bandMin, bandMax);
@@ -231,7 +259,7 @@ namespace FrontRooms.Map
                     if (lo == prevLo && hi == prevHi) continue;
                 }
                 var glass = attempt >= 3;
-                if (!TryBand(cache, startArea, startDoor, floorSeed, lo, hi, bandMin, bandMax, glass, ref plan, out var bandLost))
+                if (!TryBand(cache, startArea, startDoor, floorSeed, lo, hi, bandMin, bandMax, glass, stair, ref plan, out var bandLost))
                 {
                     lost += bandLost;
                     continue;
@@ -304,7 +332,7 @@ namespace FrontRooms.Map
         public static int NearestGap(int distance, int askedMin, int askedMax) =>
             distance < askedMin ? askedMin - distance : distance > askedMax ? distance - askedMax : 0;
 
-        static bool TryBand(FrontRoomsMapCache cache, CellRect area, GridCoord door, int floorSeed, int lo, int hi, int askedMin, int askedMax, bool glass, ref ExitPlan plan,
+        static bool TryBand(FrontRoomsMapCache cache, CellRect area, GridCoord door, int floorSeed, int lo, int hi, int askedMin, int askedMax, bool glass, bool stair, ref ExitPlan plan,
             out int lostToFrontRules)
         {
             // Every N lies at most hi - 1 steps out (removing X never shortens a walk), so the walk stops there.
@@ -315,14 +343,21 @@ namespace FrontRooms.Map
             {
                 var front = pair.Key;
                 var exit = new GridCoord(front.x, front.y + 1);
-                if (!ExitCellFits(cache, area, exit)) continue;
+                if (stair ? !StairCellsFit(cache, area, exit) : !ExitCellFits(cache, area, exit)) continue;
                 // The walk to N without X. If X is no nearer the door than N, no shortest walk to N passes
                 // through X, so the plain distance stands; otherwise walk again round X.
                 var steps = pair.Value;
-                if (dist.TryGetValue(exit, out var toExit) && toExit < steps)
+                if (stair)
+                {
+                    // The walkable stair: the same round X1 and X2 (a shortest walk through either would reach it first).
+                    var turn = new GridCoord(exit.x, exit.y + 1);
+                    if ((dist.TryGetValue(exit, out var toX1) && toX1 < steps) || (dist.TryGetValue(turn, out var toX2) && toX2 < steps))
+                        steps = WalkStepsAround(cache, area, door, front, StairArea(exit), hi - 1, glass);
+                }
+                else if (dist.TryGetValue(exit, out var toExit) && toExit < steps)
                     steps = WalkStepsTo(cache, area, door, front, exit, hi - 1, glass);
                 if (steps < 0 || steps + 1 < lo || steps + 1 > hi) continue;
-                if (!KeepsChunkWhole(cache, area, exit, front)) continue;
+                if (stair ? !StairKeepsChunkWhole(cache, area, exit, front) : !KeepsChunkWhole(cache, area, exit, front)) continue;
                 // The front rules last, so the cells they turn down are counted among those every other rule let through.
                 before++;
                 var standard = FrontStandard(cache, front);
@@ -334,7 +369,7 @@ namespace FrontRooms.Map
                     if (view == SightlineView.MayGetWindow) shiftOnly++;
                 }
                 if (!standard || view != SightlineView.Clear) continue;
-                found.Add(new Candidate { exit = exit, distance = steps + 1, deadEnd = IsDeadEnd(cache, exit) });
+                found.Add(new Candidate { exit = exit, distance = steps + 1, deadEnd = stair ? IsStairDeadEnd(cache, exit) : IsDeadEnd(cache, exit) });
             }
             lostToFrontRules = found.Count == 0 ? before : 0;
             if (found.Count == 0) return false;
@@ -396,6 +431,134 @@ namespace FrontRooms.Map
             cache.Edge(exit, new GridCoord(exit.x - 1, exit.y)) == EdgeKind.Wall
             && cache.Edge(exit, new GridCoord(exit.x + 1, exit.y)) == EdgeKind.Wall
             && cache.Edge(exit, new GridCoord(exit.x, exit.y + 1)) == EdgeKind.Wall;
+
+        // ---------- The walkable stair's cell rules (contract 60 v1.1; 关卡设计's plan of 10-22, steps 1-2) ----------
+
+        /// <summary>The walkable stair's exit area for X1: X1 and X2 = X1 + (0, 1), 1 x 2.</summary>
+        public static CellRect StairArea(GridCoord exit) => new CellRect(exit.x, exit.y, 1, 2);
+
+        /// <summary>A floor that began on a walkable stair: its start area is the last X1-X2 (1 x 2) and its door N' lies right south of X1.</summary>
+        public static bool IsStairStart(CellRect area, GridCoord door) => area.w == 1 && area.h == 2 && door.x == area.x && door.y == area.y - 1;
+
+        /// <summary>
+        /// ExitCellFits for the walkable stair's pair: X1 and X2 off the start area and its ring; X1 chunk-local i 1..6 and
+        /// j 1..5, so X2 (j 2..6), the pair's edges, its six corners and N all lie in X1's chunk, the one that never shifts
+        /// (D5), and X2 is never a chunk border's gate; neither cell inside a room rect of the chunk; no column on any of the
+        /// pair's six corners; neither cell its zone's key site or key cell.
+        /// </summary>
+        public static bool StairCellsFit(FrontRoomsMapCache cache, CellRect area, GridCoord exit)
+        {
+            var turn = new GridCoord(exit.x, exit.y + 1);
+            if (cache == null || InAreaOrRing(area, exit) || InAreaOrRing(area, turn)) return false;
+            var coord = MapGrid.ChunkOf(exit);
+            var origin = MapGrid.ChunkOrigin(coord);
+            int i = exit.x - origin.x, j = exit.y - origin.y;
+            if (i < 1 || i > N - 2 || j < 1 || j > N - 3) return false;
+            var chunk = cache.Get(coord);
+            foreach (var room in chunk.rooms)
+                if (room.Contains(i, j) || room.Contains(i, j + 1)) return false;
+            const int c = N + 1;
+            for (var dj = 0; dj <= 2; dj++)
+                if (chunk.pillar[i + (j + dj) * c] || chunk.pillar[i + 1 + (j + dj) * c]) return false;
+            return !KeyCellOf(cache, exit) && !KeyCellOf(cache, turn);
+        }
+
+        /// <summary>The cell is its own zone's key site cell or key cell (a key always lies in its own zone: ExitCellFits's rule).</summary>
+        public static bool KeyCellOf(FrontRoomsMapCache cache, GridCoord cell)
+        {
+            var home = cache.Get(cache.ZoneOf(cell).id);
+            return home.hasKey && (home.keyCell == cell || home.keySiteCell == cell);
+        }
+
+        /// <summary>The pair is a dead end off N: X1's generated west and east edges and X2's west, east and north edges are walls (X1-X2 is inside the stair).</summary>
+        public static bool IsStairDeadEnd(FrontRoomsMapCache cache, GridCoord exit)
+        {
+            var turn = new GridCoord(exit.x, exit.y + 1);
+            return cache.Edge(exit, new GridCoord(exit.x - 1, exit.y)) == EdgeKind.Wall
+                && cache.Edge(exit, new GridCoord(exit.x + 1, exit.y)) == EdgeKind.Wall
+                && cache.Edge(turn, new GridCoord(turn.x - 1, turn.y)) == EdgeKind.Wall
+                && cache.Edge(turn, new GridCoord(turn.x + 1, turn.y)) == EdgeKind.Wall
+                && cache.Edge(turn, new GridCoord(turn.x, turn.y + 1)) == EdgeKind.Wall;
+        }
+
+        /// <summary>
+        /// KeepsChunkWhole for the pair: inside X1's chunk, never through the start area, every edge but a wall passable,
+        /// N reaches X1, and without X1 and X2 N still reaches every other cell it reached with them (a set comparison,
+        /// safe when the start area cuts the chunk). Reads only X1's chunk, which never shifts.
+        /// </summary>
+        public static bool StairKeepsChunkWhole(FrontRoomsMapCache cache, CellRect area, GridCoord exit, GridCoord front)
+        {
+            var chunk = cache.Get(MapGrid.ChunkOf(exit));
+            var origin = chunk.Origin;
+            var turn = new GridCoord(exit.x, exit.y + 1);
+            if (MapGrid.ChunkOf(front) != chunk.coord || MapGrid.ChunkOf(turn) != chunk.coord) return false;
+            var x1 = MapGrid.LocalIndex(exit.x - origin.x, exit.y - origin.y);
+            var x2 = MapGrid.LocalIndex(turn.x - origin.x, turn.y - origin.y);
+            var n = MapGrid.LocalIndex(front.x - origin.x, front.y - origin.y);
+            var withPair = new bool[MapGrid.CellsPerChunk];
+            var withoutPair = new bool[MapGrid.CellsPerChunk];
+            ReachInChunk(chunk, area, n, -1, -1, withPair);
+            if (!withPair[x1]) return false;
+            ReachInChunk(chunk, area, n, x1, x2, withoutPair);
+            for (var k = 0; k < withPair.Length; k++)
+                if (withPair[k] && k != x1 && k != x2 && !withoutPair[k]) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// The walk's distances from <paramref name="door"/> as WalkDistances, never into the start area nor into the rect
+        /// <paramref name="avoid"/> (the walkable stair's X1-X2).
+        /// </summary>
+        public static Dictionary<GridCoord, int> WalkDistancesAround(FrontRoomsMapCache cache, CellRect area, GridCoord door, CellRect avoid, int maxSteps, bool glass = false)
+        {
+            var dist = new Dictionary<GridCoord, int>();
+            if (InArea(area, door) || InArea(avoid, door)) return dist;
+            var queue = new Queue<GridCoord>();
+            dist[door] = 0;
+            queue.Enqueue(door);
+            while (queue.Count > 0)
+            {
+                var cell = queue.Dequeue();
+                var d = dist[cell];
+                if (d >= maxSteps) continue;
+                foreach (var step in Steps4)
+                {
+                    var next = cell + step;
+                    if (dist.ContainsKey(next) || InArea(area, next) || InArea(avoid, next)) continue;
+                    var kind = cache.Edge(cell, next);
+                    if (kind == EdgeKind.Wall || (!glass && kind == EdgeKind.Window)) continue;
+                    dist[next] = d + 1;
+                    queue.Enqueue(next);
+                }
+            }
+            return dist;
+        }
+
+        /// <summary>Walking steps from the door to <paramref name="target"/> round the rect <paramref name="avoid"/>; -1 beyond <paramref name="maxSteps"/>.</summary>
+        public static int WalkStepsAround(FrontRoomsMapCache cache, CellRect area, GridCoord door, GridCoord target, CellRect avoid, int maxSteps, bool glass = false)
+        {
+            var dist = WalkDistancesAround(cache, area, door, avoid, maxSteps, glass);
+            return dist.TryGetValue(target, out var steps) ? steps : -1;
+        }
+
+        /// <summary>
+        /// Floor 1's start-group EXIT (FromStartGroup's X, A26) as the walkable stair: when X2 = X + (0, 1) fits too on the
+        /// carved cache (StairCellsFit, StairKeepsChunkWhole), the same plan with stair true and the pair's dead end; else
+        /// the plan as it was (stair false: that floor keeps C22's vestibule) and <paramref name="why"/> says which rule.
+        /// The distance, band and front rules are the plan's: X1 is X, so the walk to N and the door are unchanged.
+        /// </summary>
+        public static ExitPlan StairFromStartGroup(FrontRoomsMapCache cache, CellRect area, ExitPlan plan, out string why)
+        {
+            why = null;
+            if (!plan.found) { why = "no EXIT"; return plan; }
+            if (!StairCellsFit(cache, area, plan.exitCell)) { why = "StairCellsFit"; return plan; }
+            if (!StairKeepsChunkWhole(cache, area, plan.exitCell, plan.frontCell)) { why = "StairKeepsChunkWhole"; return plan; }
+            var stair = plan;
+            stair.stair = true;
+            stair.deadEnd = IsStairDeadEnd(cache, plan.exitCell);
+            stair.deadEnds = stair.nearestDeadEnds = stair.deadEnd ? 1 : 0;
+            return stair;
+        }
 
         // ---------- The front rules (C23 step 1, 2026-10-22) ----------
 
@@ -482,7 +645,10 @@ namespace FrontRooms.Map
 
         // Cells of one chunk reached from local index `from` over its own inner edges (not walls), never through
         // `avoid` or a start-area cell. Fills `seen`; returns the count.
-        static int ReachInChunk(MapChunk chunk, CellRect area, int from, int avoid, bool[] seen)
+        static int ReachInChunk(MapChunk chunk, CellRect area, int from, int avoid, bool[] seen) => ReachInChunk(chunk, area, from, avoid, -1, seen);
+
+        // The same, never through `avoid` nor `avoidB` (-1: none; the walkable stair's X1 and X2).
+        static int ReachInChunk(MapChunk chunk, CellRect area, int from, int avoid, int avoidB, bool[] seen)
         {
             var origin = chunk.Origin;
             var stack = new Stack<int>();
@@ -502,7 +668,7 @@ namespace FrontRooms.Map
                     else if (d == 2) { if (j + 1 >= N) continue; nj++; kind = chunk.north[k]; }
                     else { if (j == 0) continue; nj--; kind = chunk.north[k - N]; }
                     var next = MapGrid.LocalIndex(ni, nj);
-                    if (seen[next] || next == avoid || !MapGrid.Passable(kind)) continue;
+                    if (seen[next] || next == avoid || next == avoidB || !MapGrid.Passable(kind)) continue;
                     if (InArea(area, new GridCoord(origin.x + ni, origin.y + nj))) continue;
                     seen[next] = true;
                     count++;
@@ -613,6 +779,97 @@ namespace FrontRooms.Map
         /// <summary>SeedFor with the cache a map makes from generation numbers and a module library (FrontRoomsMapWorld.CreateCache), at <paramref name="tier"/>.</summary>
         public static FloorSeedPlan SeedFor(int runSeed, int floor, GridCoord exitCell, MapSettings settings, IReadOnlyList<RoomModuleData> modules, int tier, out FrontRoomsMapCache cache) =>
             SeedFor(runSeed, floor, exitCell, seed => CacheFor(settings, modules, seed, tier), out cache);
+
+        /// <summary>
+        /// SeedFor after a walkable-stair EXIT (ExitPlan.stair): the new floor starts in X1-X2 (1 x 2) with its door on N' = N,
+        /// the far door directly under the EXIT, and the way on runs south (-z) out of the shell. The same k = 0, 1, ... and
+        /// the same fallbacks as SeedFor, with the tests turned round: N' is Standard-height Level 0 (StartRowStandard), the
+        /// edge from N' to N' + (0, -1) is neither wall nor glass and the walk from there leads into the maze without coming
+        /// back into N' or X1-X2 (StairRowLeadsOn, glass blocks it); no zone key or key site lies in X1 or X2 (a reserved
+        /// cell's key is never spawned; StairKeyInArea); preferred, the placard wall beside the door (FarDoorPlacardWest).
+        /// </summary>
+        public static FloorSeedPlan SeedForStair(int runSeed, int floor, GridCoord exitCell, Func<int, FrontRoomsMapCache> cacheForSeed, out FrontRoomsMapCache cache)
+        {
+            cache = null;
+            if (cacheForSeed == null) return new FloorSeedPlan { seed = FloorSeed(runSeed, floor, 0) };
+            var door = FrontOf(exitCell);
+            var area = StairArea(exitCell);
+            FrontRoomsMapCache fallback = null, standardOnly = null;
+            var fallbackPlan = new FloorSeedPlan();
+            var standardOnlyPlan = new FloorSeedPlan();
+            for (var k = 0; k < MaxSeedTries; k++)
+            {
+                var seed = FloorSeed(runSeed, floor, k);
+                var probe = cacheForSeed(seed);
+                var standard = StartRowStandard(probe, door, 0);
+                if (!standard && (fallback != null || standardOnly != null)) continue;
+                if (!StairRowLeadsOn(probe, door, area, true)) continue;
+                if (StairKeyInArea(probe, area)) continue;
+                var placard = standard && FarDoorPlacardWest(probe, door);
+                var plan = new FloorSeedPlan { seed = seed, tries = k + 1, standard = standard, leadsOn = true, placardWest = placard };
+                if (placard)
+                {
+                    cache = probe;
+                    return plan;
+                }
+                if (standard)
+                {
+                    if (standardOnly == null) { standardOnly = probe; standardOnlyPlan = plan; }
+                    continue;
+                }
+                fallback = probe;
+                fallbackPlan = plan;
+            }
+            if (standardOnly != null)
+            {
+                cache = standardOnly;
+                return standardOnlyPlan;
+            }
+            if (fallback != null)
+            {
+                cache = fallback;
+                return fallbackPlan;
+            }
+            var first = FloorSeed(runSeed, floor, 0);
+            cache = cacheForSeed(first);
+            return new FloorSeedPlan { seed = first, tries = MaxSeedTries };
+        }
+
+        /// <summary>SeedForStair with the cache a map makes from generation numbers and a module library, at <paramref name="tier"/>.</summary>
+        public static FloorSeedPlan SeedForStair(int runSeed, int floor, GridCoord exitCell, MapSettings settings, IReadOnlyList<RoomModuleData> modules, int tier, out FrontRoomsMapCache cache) =>
+            SeedForStair(runSeed, floor, exitCell, seed => CacheFor(settings, modules, seed, tier), out cache);
+
+        /// <summary>
+        /// The walkable stair's way on from its start door N' (south of X1): the edge to N' + (0, -1) is neither wall nor glass,
+        /// and from that cell the walk reaches the maze (LeadsIntoMaze) without coming back into N' or <paramref name="area"/>.
+        /// </summary>
+        public static bool StairRowLeadsOn(FrontRoomsMapCache cache, GridCoord door, CellRect area, bool glassBlocks)
+        {
+            var ahead = new GridCoord(door.x, door.y - 1);
+            var onward = cache.Edge(door, ahead);
+            if (onward == EdgeKind.Wall || onward == EdgeKind.Window) return false;
+            return LeadsIntoMaze(cache, ahead, area, door, glassBlocks);
+        }
+
+        /// <summary>A zone key's cell or key site cell lies in the rect (the walkable stair's start area, which the map leaves out on the new floor).</summary>
+        public static bool StairKeyInArea(FrontRoomsMapCache cache, CellRect area)
+        {
+            for (var y = area.y; y < area.y + area.h; y++)
+            for (var x = area.x; x < area.x + area.w; x++)
+                if (KeyCellOf(cache, new GridCoord(x, y))) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// G1 for the walkable stair's start door (the door turned round, facing -z): N''s west edge is Open, and the cell
+        /// west of N' has a wall on its north edge, the stair's own wall line, for the B1+ sheet to hang on beside the far
+        /// door on the maze side (the mirror of StairDoorPlacardWest). The mount itself is the visual line's.
+        /// </summary>
+        public static bool FarDoorPlacardWest(FrontRoomsMapCache cache, GridCoord door)
+        {
+            var west = new GridCoord(door.x - 1, door.y);
+            return StartDoorWestOpen(cache, door) && cache.Edge(west, new GridCoord(west.x, west.y + 1)) == EdgeKind.Wall;
+        }
 
         /// <summary>A cache for one seed of these generation numbers, generating at <paramref name="tier"/>.</summary>
         public static FrontRoomsMapCache CacheFor(MapSettings settings, IReadOnlyList<RoomModuleData> modules, int seed, int tier)

@@ -8,7 +8,7 @@ Path keys: `M` = `Frontrooms3D` (the main project); `S` = `M/Assets/Scripts`; `R
 
 | id | Source | Used for |
 |---|---|---|
-| F00 | This line's research notes, `W/light_design/research_notes/光影水反 AAA 照明设计研究/`: `frontrooms_current_stack.md` (read-only audit of main, 2026-11-05, with texture means measured by 128 × 128 downsampling), `gi_colour_bleeding.md`, `interior_lighting_design.md`, `volumetric_light.md`, `water_reflection_interplay.md`, `windows_daylight_glass.md` | [EST] arithmetic, measured texture means, inferences |
+| F00 | This line's research notes, `W/water/light_design/research_notes/光影水反 AAA 照明设计研究/`: `frontrooms_current_stack.md` (read-only audit of main, 2026-11-05, with texture means measured by 128 × 128 downsampling), `gi_colour_bleeding.md`, `interior_lighting_design.md`, `volumetric_light.md`, `water_reflection_interplay.md`, `windows_daylight_glass.md` | [EST] arithmetic, measured texture means, inferences |
 | F01 | `M/Assets/Settings/FrontRooms_URP.asset:19-31, 45-82` | desktop and WebGL URP asset; probe blending 0, box projection 0 (:55-57) |
 | F02 | `M/Assets/Settings/FrontRooms_URP_Handheld.asset:19-82`; `FrontRooms_URP_Handheld_Renderer.asset:72-83` | handheld pair; SSAO after opaque from depth |
 | F03 | `M/ProjectSettings/QualitySettings.asset:187, 293, 347, 394-398` | platform defaults; realtime probes off on Handheld |
@@ -42,7 +42,7 @@ Path keys: `M` = `Frontrooms3D` (the main project); `S` = `M/Assets/Scripts`; `R
 | F31 | `R/glass/11_reflections_and_raytracing.md` §0, §2.5 | probe re-render costs |
 | F32 | `D/handoff/visual.md:15-30` | P1-A and P2-A pending, photosafety flash count, water-light fix |
 | F33 | `D/VISUAL_STANDARD.md:12-13, 23` | desktop reference; Red's lens 1.8 |
-| F34 | `W/water_light/for_water_line.md` (lines 9, 16, 36, 39) | water-light constants and costs |
+| F34 | `W/water/light/for_water_line.md` (lines 9, 16, 36, 39) | water-light constants and costs |
 | F35 | `S/Rendering/FrontRoomsRunRig.cs:206-209, 1725-1790, 2752-2772` | per-renderer SH in the Run! rig |
 | F36 | `U`: `ShaderLibrary/GlobalIllumination.hlsl:35-41, 423-494`; `ShaderLibrary/UnityInput.hlsl:110-177`; `ShaderLibrary/RealtimeLights.hlsl:54-79`; `ShaderLibrary/Lighting.hlsl:48-70`; `Runtime/UniversalRenderPipelineCore.cs:1683-1691`; `Runtime/RendererFeatures/SurfaceCacheGIRendererFeature/SurfaceCacheGIRendererFeature.cs:1`; `Runtime/Overrides/` | URP 17.6 behaviour |
 | F37 | `CORE`: `Runtime/Lighting/ProbeVolume/ProbeVolume.hlsl:988-993`; `ShaderLibrary/CommonLighting.hlsl:269-342`; `Editor/Lighting/IESImporter.cs:29-105` | normalisation, occlusion helpers, IES import |

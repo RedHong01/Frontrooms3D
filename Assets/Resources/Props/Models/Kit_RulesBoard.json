@@ -1,0 +1,54 @@
+{
+ "name": "Kit_RulesBoard",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "slide",
+  "p15"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  2.5,
+  9.0,
+  32.0
+ ],
+ "lodBudget": [
+  700,
+  300,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G1-b 2026-11-06 (30_plan.md section 2)",
+ "boundsMin": [
+  -0.44999998807907104,
+  0.0,
+  -0.0
+ ],
+ "boundsMax": [
+  0.44999998807907104,
+  1.1999999284744263,
+  0.04899999871850014
+ ],
+ "triangles": 1292,
+ "slots": [
+  "Prop_PlasticWhite",
+  "Trans_AluminiumSatin"
+ ],
+ "trianglesLod1": 460,
+ "trianglesLod2": 60,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.02449999935925007
+ ],
+ "footprintSize": [
+  0.8999999761581421,
+  0.04899999871850014
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

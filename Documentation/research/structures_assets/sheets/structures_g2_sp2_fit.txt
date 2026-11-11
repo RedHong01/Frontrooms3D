@@ -1,0 +1,27 @@
+structures_g2_sp2.jpg 1920x7111, 24 tiles, 2 columns
+title | G2 · SP2 THE WELL, EVERY FLOOR · TODAY VS NEW | 810/1576 FIT
+SP2_s00_today.png | TODAY · s00 F3 arrival | main: Level 0 behind the glass guard | label 206/938 data 288/720 FIT
+SP2_s00_new.png | NEW · s00 F3 arrival | as main: G2 left F3 / F2 / F1 alone | label 192/938 data 280/734 FIT
+SP2_s01_today.png | TODAY · s01 F3 down the well | main: the well from the guard | label 267/938 data 232/659 FIT
+SP2_s01_new.png | NEW · s01 F3 down the well | as main up here; F0's new edges far below | label 253/938 data 328/673 FIT
+SP2_s02_today.png | TODAY · s02 F2 west rail | main: the office floor | label 224/938 data 176/702 FIT
+SP2_s02_new.png | NEW · s02 F2 west rail | as main up here; F0 far below | label 210/938 data 232/716 FIT
+SP2_s03_today.png | TODAY · s03 F2 bridge | main: the bridge over the well | label 197/938 data 240/729 FIT
+SP2_s03_new.png | NEW · s03 F2 bridge | as main up here; F0 far below | label 183/938 data 232/743 FIT
+SP2_s04_today.png | TODAY · s04 F1 plant floor | main: Run! plant floor, east | label 244/938 data 224/682 FIT
+SP2_s04_new.png | NEW · s04 F1 plant floor | as main | label 230/938 data 56/696 FIT
+SP2_s05_today.png | TODAY · s05 F0 gallery | main: the basin from +4.5 | label 208/938 data 200/718 FIT
+SP2_s05_new.png | NEW · s05 F0 gallery | roll-out edge, cove, drain and inlets, P1-A boxes | label 194/938 data 392/732 FIT
+SP2_s06_today.png | TODAY · s06 F0 spiral top | main: B4-L's tread boxes | label 231/938 data 192/695 FIT
+SP2_s06_new.png | NEW · s06 F0 spiral top | helicoid soffit, nosings, faceted ribbons, Cap | label 217/938 data 368/709 FIT
+SP2_s07_today.png | TODAY · s07 F0 up at E7 | main: an emissive slab under a grid | label 214/938 data 280/712 FIT
+SP2_s07_new.png | NEW · s07 F0 up at E7 | E7 from below: glass-block pavers in a T-grid | label 200/938 data 360/726 FIT
+SP2_s08_today.png | TODAY · s08 F0 up the well | main: stand-in wall boxes | label 243/938 data 200/683 FIT
+SP2_s08_new.png | NEW · s08 F0 up the well | P1-A boxes, the cascade film, Cap courses | label 229/938 data 328/697 FIT
+SP2_s09_today.png | TODAY · s09 F1 stair core | main: Relay's stair, up | label 232/938 data 184/694 FIT
+SP2_s09_new.png | NEW · s09 F1 stair core | as main | label 218/938 data 56/708 FIT
+SP2_s08_phone.png | Phone · s08 | iPhone 16 Pro tier, Medium, NEW | label 110/938 data 248/816 FIT
+SP2_s08_off.png | Lamps off · s08 | lamps at 0: the ambient and probes stay | label 145/938 data 312/781 FIT
+SP2_cost.png | COST | TODAY -> NEW, the harness's inventories | label 39/938 data 312/887 FIT
+SP2_flash.png | FLASH | the project's flash_check on the final code | label 47/938 data 344/879 FIT
+ALL LABELS FIT

@@ -1,0 +1,57 @@
+{
+ "name": "Kit_ProjectionScreen_Wall",
+ "supports": [],
+ "colliders": [],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "p16",
+  "training_room",
+  "wall_decor"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  5.0,
+  15.0,
+  60.0
+ ],
+ "lodBudget": [
+  1300,
+  500,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G3-a2 2026-11-10 (30_plan.md P16 structures_l0_props, the SP3 training room and file mezzanine)",
+ "boundsMin": [
+  -0.9465000033378601,
+  -0.2615000009536743,
+  -0.0
+ ],
+ "boundsMax": [
+  0.9465000033378601,
+  0.002499997615814209,
+  0.11421999335289001
+ ],
+ "triangles": 724,
+ "slots": [
+  "Painted_Metal",
+  "Prop_PlasticBlack",
+  "Prop_SteelBlack",
+  "Prop_PlasticWhite"
+ ],
+ "trianglesLod1": 508,
+ "trianglesLod2": 116,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  0.05710999667644501
+ ],
+ "footprintSize": [
+  1.8930000066757202,
+  0.11421999335289001
+ ],
+ "placement": "Wall",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

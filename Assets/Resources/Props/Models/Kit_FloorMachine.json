@@ -1,0 +1,71 @@
+{
+ "name": "Kit_FloorMachine",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.24,
+    0.0
+   ],
+   "size": [
+    0.52,
+    0.48,
+    0.52
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "closet",
+  "p20"
+ ],
+ "lodDistances": [
+  5.0,
+  15.0,
+  50.0
+ ],
+ "lodBudget": [
+  5000,
+  1700,
+  200
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.2565372884273529,
+  0.0,
+  -0.28600001335144043
+ ],
+ "boundsMax": [
+  0.2565372884273529,
+  1.1377240419387817,
+  0.25600001215934753
+ ],
+ "triangles": 6142,
+ "slots": [
+  "Prop_Rubber",
+  "Prop_PlasticBlack",
+  "Prop_PlasticGrey",
+  "Prop_SteelPutty",
+  "Prop_Chrome",
+  "Prop_StainlessSatin"
+ ],
+ "trianglesLod1": 2826,
+ "trianglesLod2": 1522,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.52,
+  0.52
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 0.0
+}

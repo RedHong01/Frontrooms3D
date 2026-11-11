@@ -1,0 +1,84 @@
+{
+ "name": "Kit_WireCagePartition_Door",
+ "supports": [],
+ "colliders": [],
+ "anchors": [
+  {
+   "name": "hinge",
+   "pos": [
+    -0.6096,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "name": "hasp",
+   "pos": [
+    0.635,
+    1.16,
+    0.0374
+   ]
+  },
+  {
+   "name": "latch_post",
+   "pos": [
+    0.635,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "tags": [
+  "structures",
+  "run",
+  "cage",
+  "p20"
+ ],
+ "noCollider": true,
+ "lodDistances": [
+  6.0,
+  18.0,
+  60.0
+ ],
+ "lodBudget": [
+  3200,
+  1100,
+  120
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-b 2026-11-10 (30_plan.md P20; 63 sections 3.1, 3.2, 6.1; 62)",
+ "boundsMin": [
+  -0.6096000075340271,
+  0.04999995231628418,
+  -0.00634999992325902
+ ],
+ "boundsMax": [
+  0.6669999957084656,
+  2.8299999237060547,
+  0.07189999520778656
+ ],
+ "triangles": 2944,
+ "slots": [
+  "Painted_Metal",
+  "Prop_WireMesh",
+  "Prop_SteelBlack",
+  "Prop_StainlessSatin",
+  "Prop_PlasticBlack",
+  "Prop_Chrome"
+ ],
+ "trianglesLod1": 812,
+ "trianglesLod2": 276,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  0.02869999408721924,
+  0.03277499764226377
+ ],
+ "footprintSize": [
+  1.2766000032424927,
+  0.07824999513104558
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 2.88
+}

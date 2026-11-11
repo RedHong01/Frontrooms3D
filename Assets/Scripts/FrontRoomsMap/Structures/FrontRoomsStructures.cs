@@ -420,6 +420,9 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         look.Tick(walker.EyePosition, current.Key, dt);
     }
 
+    // K2: the Home dip (the game's W1 dip: under HidDropOut 0.80, so the arcs go out)
+    const float PoolDipLine = .6f, PoolDipSeconds = 1.2f;
+
     void Keys()
     {
         var k = Keyboard.current;
@@ -493,15 +496,30 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         // Shift held: Shift + . is the lens A/B of 光影水反's LW3 (FrontRoomsStructuresWater.cs)
         if (FrontRoomsStructuresAssets.New && !(k.leftShiftKey.isPressed || k.rightShiftKey.isPressed))
         {
-            var ask = k.quoteKey.wasPressedThisFrame ? 1 : k.slashKey.wasPressedThisFrame ? 2 : k.commaKey.wasPressedThisFrame ? 3 : k.periodKey.wasPressedThisFrame ? 5 : 0;
+            var ask = k.quoteKey.wasPressedThisFrame ? 1 : k.slashKey.wasPressedThisFrame ? 2 : k.commaKey.wasPressedThisFrame ? 3 : k.backquoteKey.wasPressedThisFrame ? 4 : k.periodKey.wasPressedThisFrame ? 5 : 0;
             if (ask > 0)
             {
                 var line = FrontRoomsStructuresAssets.Cycle(ask);
                 if (ask == 5) FrontRoomsStructuresLampModes.SetGameModes(FrontRoomsStructuresAssets.Lamps == FrontRoomsStructuresAssets.LampModes.Game);
-                else RefreshCurrent();
+                // ask 4 (` : Red's paper at the wrong scale) is FrontRooms/Surface's global (structures_scale_terms): nothing to rebuild
+                else if (ask != 4) RefreshCurrent();
                 Flash(line);
                 return;
             }
+        }
+        // Home (K2, 游戏视觉's structures G2-a): a dip of the pool district's line, as the game's W1 dip, so the pool rig's
+        // metal-halide cycle is seen in place: every wall box drops out at once (one step) and its quartz lamp holds 15 % in warm
+        // white, the arcs restrike after 8 s and warm up over 24 s, blue-green first; the niches dim with the line and come back.
+        // SP1, SP2 and SP6 in NEW; not with Shift held (Shift + . is 光影水反's lens A/B)
+        if (k.homeKey.wasPressedThisFrame && !(k.leftShiftKey.isPressed || k.rightShiftKey.isPressed))
+        {
+            if ((current.Key == 1 || current.Key == 2 || current.Key == 6) && FrontRoomsStructuresAssets.NewFor(current.Key))
+            {
+                look.Dip(current.Key, PoolDipLine, PoolDipSeconds);
+                Flash("灯线下陷（Home）：池厅的金卤壁灯一起熄灭，壁灯里的石英灯留 15% 暖光；8 秒后重新点火，24 秒里从暗青慢慢亮到白；水下灯跟着暗一下再回来。");
+            }
+            else Flash("灯线下陷（Home）只在 SP1、SP2、SP6 的新资产里有（灯具适配的金卤壁灯和水下灯）。");
+            return;
         }
         Key[] districtKeys = { Key.L, Key.N, Key.T, Key.F, Key.V, Key.B, Key.Y, Key.O, Key.H };
         foreach (var key in districtKeys)
@@ -602,7 +620,7 @@ public sealed class FrontRoomsStructures : MonoBehaviour
         if (flash != null && Time.time < flashUntil) Text(new Rect(cx - 380f, cy + 112f, 760f, 48f), flash, centreStyle, Accent);
 
         Text(new Rect(24f, Screen.height - 30f, 1800f, 20f),
-            "点击：看  ·  WASD 走  ·  左 Ctrl 跑  ·  Shift 慢走  ·  E 使用  ·  1-6 区域  ·  7 泳池路线  ·  8 模组件  ·  9 SP7  ·  0 大厅  ·  R 回到站点  ·  [ ] 换站点  ·  L 灯  ·  Q 泳池外观  ·  ` 瓷砖  ·  - = 凹凸明暗  ·  \\ 表面新旧  ·  V 变体  ·  C Relay 体型  ·  M 尺寸  ·  G 说明  ·  Esc 鼠标",
+            "点击：看  ·  WASD 走  ·  左 Ctrl 跑  ·  Shift 慢走  ·  E 使用  ·  1-6 区域  ·  7 泳池路线  ·  8 模组件  ·  9 SP7  ·  0 大厅  ·  R 回到站点  ·  [ ] 换站点  ·  L 灯  ·  Home 灯线下陷（泳池）  ·  Q 泳池外观  ·  ` 瓷砖  ·  - = 凹凸明暗  ·  \\ 表面新旧  ·  V 变体  ·  C Relay 体型  ·  M 尺寸  ·  G 说明  ·  Esc 鼠标",
             smallStyle, Muted);
 
         if (!guide) return;

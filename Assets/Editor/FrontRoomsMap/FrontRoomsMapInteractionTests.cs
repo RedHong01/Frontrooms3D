@@ -302,10 +302,16 @@ using UnityEngine;
 ///   archWidth, the floor station branch of ValidateStation; BS1's rules on floors 2-5 of 16 runs with the stand-ins; BS2 on
 ///   a map for Station Waiting and Station Desk, a floor change with the key held; BS3's walk gap on the first send; a no-fit
 ///   floor as A35). FloorStationFitBatch is BS1's fit run (not a row).
+/// - The walkable stair (contract 60 v1.1, MAP_GENERATION.md "Walkable stair"; FrontRoomsMapInteractionTests.WalkableStair.cs):
+///   WalkableStair (the flag off as C22: the profile's default, the 1 x 1 areas and edges, no forced shadow, a C22 floor after a
+///   stair floor built byte for byte as before; the flag on with an editor stand-in shell: ChooseStairExit's cell rules, the
+///   validator's RunStairExits and SeedForStair on three seeds, the 1 x 2 exit area's edges, keep-outs, lamp group and forced
+///   shadows, the next floor's 1 x 2 start area with nothing of the map on N'-X1, its lamp groups by the door's side, the Relay
+///   deaf to X2, the shell's frame on the map's lines before and after the +FloorToFloor move, the far door no USE target).
 /// Writes Verification/map-interaction-tests.json.
 /// Headless: -executeMethod FrontRoomsMapInteractionTests.RunBatch -quit (throws on FAIL).
 /// </summary>
-public static class FrontRoomsMapInteractionTests
+public static partial class FrontRoomsMapInteractionTests
 {
     const float Dt = 1f / 60f;
 
@@ -405,6 +411,7 @@ public static class FrontRoomsMapInteractionTests
             AlarmDoorGame(roots, profiles);
             RunCards(roots, profiles);
             FloorStations(roots);
+            WalkableStair(roots, profiles);
         }
         catch (Exception e)
         {

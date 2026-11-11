@@ -1,0 +1,67 @@
+{
+ "name": "Kit_Bollard",
+ "supports": [],
+ "colliders": [
+  {
+   "centre": [
+    0.0,
+    0.5335,
+    0.0
+   ],
+   "size": [
+    0.17,
+    1.067,
+    0.17
+   ]
+  }
+ ],
+ "anchors": [],
+ "tags": [
+  "structures",
+  "run",
+  "dock",
+  "p19"
+ ],
+ "lodDistances": [
+  4.0,
+  12.0,
+  40.0
+ ],
+ "lodBudget": [
+  1400,
+  300,
+  60
+ ],
+ "lodHandBuilt": true,
+ "runB": "production 2026-10-22 (run_b_production/10_plan.md)",
+ "structures": "structures_assets G4-a 2026-11-10 (30_plan.md P19, 63 section 6.1)",
+ "boundsMin": [
+  -0.09719999879598618,
+  -0.009999999776482582,
+  -0.09719999879598618
+ ],
+ "boundsMax": [
+  0.09719999879598618,
+  1.0750000476837158,
+  0.09719999879598618
+ ],
+ "triangles": 1496,
+ "slots": [
+  "Prop_SafetyYellow",
+  "Plenum_Dark"
+ ],
+ "trianglesLod1": 412,
+ "trianglesLod2": 60,
+ "frontAxis": "+Z",
+ "footprintCentre": [
+  -0.0,
+  -0.0
+ ],
+ "footprintSize": [
+  0.17,
+  0.17
+ ],
+ "placement": "Floor",
+ "service": 0.0,
+ "minCeiling": 1.117
+}
